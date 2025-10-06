@@ -1622,8 +1622,8 @@ MonoBehaviour:
   whatIsGround:
     serializedVersion: 2
     m_Bits: 8
-  sprintAnimationSpeedMultiplier: 0.5
   animator: {fileID: 929905472}
+  sprintAnimationSpeedMultiplier: 0.8
 --- !u!54 &1375363668
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1666,8 +1666,9 @@ MonoBehaviour:
   dashSpeed: 200
   dashDuration: 0.2
   dashCd: 1.5
+  maxDashes: 2
   cooldownText: {fileID: 911670057}
-  dashReadyText: {fileID: 1040120645}
+  dashCountText: {fileID: 1040120645}
   dashKey: 101
 --- !u!114 &1375363670
 MonoBehaviour:

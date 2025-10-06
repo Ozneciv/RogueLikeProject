@@ -7,21 +7,20 @@ public class PlayerM : MonoBehaviour
     public float sprintSpeed = 10f;
     public float rotationSpeed = 10f;
 
+
     public Transform groundCheck;
     public LayerMask whatIsGround;
 
     private bool grounded;
 
     [Header("Animation")]
+    public Animator animator;
     public float sprintAnimationSpeedMultiplier = 0.8f;
-    public Animator animator; // Adicione esta variável para o Animator do objeto filho
 
     private Rigidbody rb;
     private Vector3 moveDirection;
-
     private float currentSpeed;
     
-    // Referência ao script de ataque para verificar o estado
     private PrimaryAttackKnife attackScript;
 
     private void Start()
@@ -33,7 +32,12 @@ public class PlayerM : MonoBehaviour
         }
         rb.freezeRotation = true;
         
-        // Pega o componente do script de ataque
+        animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            Debug.LogError("Animator não encontrado.");
+        }
+        
         attackScript = GetComponentInChildren<PrimaryAttackKnife>();
         if (attackScript == null)
         {
@@ -44,13 +48,12 @@ public class PlayerM : MonoBehaviour
     private void Update()
     {
         grounded = Physics.CheckSphere(groundCheck.position, 0.2f, whatIsGround);
+
         MyInput();
         LookAtMoveDirection();
         
-        // Ajusta a velocidade da animação com base na velocidade do personagem
         if (animator != null)
         {
-            // Se o personagem estiver atacando, a velocidade da animação é 1f
             if (attackScript != null && animator.GetBool("isSAKnife"))
             {
                 animator.speed = 1f;
@@ -99,6 +102,7 @@ public class PlayerM : MonoBehaviour
 
         moveDirection = new Vector3(horizontalInput, 0, verticalInput).normalized;
 
+
     }
 
     private void MovePlayer()
@@ -115,5 +119,5 @@ public class PlayerM : MonoBehaviour
         }
     }
 
-
+ 
 }
