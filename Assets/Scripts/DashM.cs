@@ -10,21 +10,17 @@ public class DashM : MonoBehaviour
     public float dashSpeed = 30f;
     public float dashDuration = 0.2f;
 
-    [Header("Cooldown")]
-    public float dashCd = 1.5f;
+    [Header("Dash")]
     public int maxDashes = 2;
     private int dashesLeft;
-    private float dashCdTimer;
 
     [Header("UI")]
-    public TextMeshProUGUI cooldownText;
     public TextMeshProUGUI dashCountText;
 
     [Header("Input")]
     public KeyCode dashKey = KeyCode.E;
 
-    // A variável isDashing foi removida deste script
-    // A lógica de controle de movimento agora está no PlayerM.cs
+    private bool isDashing = false;
 
     private void Start()
     {
@@ -35,25 +31,14 @@ public class DashM : MonoBehaviour
         }
         
         dashesLeft = maxDashes;
-        if (cooldownText != null) cooldownText.enabled = false;
         if (dashCountText != null) dashCountText.enabled = true;
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(dashKey) && dashesLeft > 0 && dashCdTimer <= 0)
+        if (Input.GetKeyDown(dashKey) && dashesLeft > 0 && !isDashing)
         {
             StartCoroutine(PerformDash());
-        }
-
-        // Lógica do cooldown do dash
-        if (dashesLeft <= 0 && dashCdTimer > 0)
-        {
-            dashCdTimer -= Time.deltaTime;
-        }
-        else if (dashesLeft <= 0 && dashCdTimer <= 0)
-        {
-            dashesLeft = maxDashes;
         }
 
         HandleDashUI();
@@ -61,6 +46,7 @@ public class DashM : MonoBehaviour
 
     private IEnumerator PerformDash()
     {
+        isDashing = true;
         dashesLeft--;
         
         Vector3 dashDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical")).normalized;
@@ -73,30 +59,30 @@ public class DashM : MonoBehaviour
         rb.AddForce(dashDirection * dashSpeed, ForceMode.VelocityChange);
 
         yield return new WaitForSeconds(dashDuration);
+
+        isDashing = false;
     }
 
     private void HandleDashUI()
     {
-        if (dashesLeft > 0)
+        if (dashCountText != null)
         {
-            cooldownText.enabled = false;
-            dashCountText.enabled = true;
-            dashCountText.text = "Dash (" + dashesLeft + ")";
-        }
-        else
-        {
-            dashCountText.enabled = false;
-            if (dashCdTimer > 0)
+            if (dashesLeft > 0)
             {
-                cooldownText.enabled = true;
-                cooldownText.text = dashCdTimer.ToString("F1");
+                dashCountText.text = "Dash: " + dashesLeft;
             }
             else
             {
-                cooldownText.enabled = false;
-                dashCountText.enabled = true;
-                dashCountText.text = "Dash (" + dashesLeft + ")";
+                dashCountText.text = "Dash: 0";
             }
+        }
+    }
+    public void RechargeDashes(int amount)
+    {
+        dashesLeft += amount;
+        if (dashesLeft > maxDashes)
+        {
+            dashesLeft = maxDashes;
         }
     }
 }

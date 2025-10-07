@@ -58,12 +58,12 @@ Material:
     - _glow_spread: 5
     - _wobble_amount: 0.108
     - _wobble_distance: 0.003
-    - _wobble_frequency: 8.28
+    - _wobble_frequency: 8
     - _wobble_speed: 0
     m_Colors:
     - _Color: {r: 1.7221197, g: 1.7221197, b: 1.7221197, a: 1}
     - _Vector3: {r: 0, g: 0, b: 0, a: 0}
     - _interiorPos: {r: 0, g: 0, b: 0, a: 0}
-    - _interior_color: {r: 0.2347304, g: 0.11356357, b: 0.8301887, a: 1}
+    - _interior_color: {r: 0.8867924, g: 0.65721077, b: 0.054378804, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

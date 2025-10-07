@@ -7,7 +7,13 @@ public class PlayerM : MonoBehaviour
     public float sprintSpeed = 10f;
     public float rotationSpeed = 10f;
 
-
+    [Header("Dash")]
+    public float dashSpeed = 30f;
+    public float dashDuration = 0.2f;
+    public float dashCd = 1.5f;
+    public int maxDashes = 2;
+    private int dashesLeft;
+    private float dashCdTimer;
     public Transform groundCheck;
     public LayerMask whatIsGround;
 
@@ -20,7 +26,7 @@ public class PlayerM : MonoBehaviour
     private Rigidbody rb;
     private Vector3 moveDirection;
     private float currentSpeed;
-    
+
     private PrimaryAttackKnife attackScript;
 
     private void Start()
@@ -31,13 +37,13 @@ public class PlayerM : MonoBehaviour
             Debug.LogError("Rigidbody não encontrado. Adicione um Rigidbody ao jogador.");
         }
         rb.freezeRotation = true;
-        
+
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
         {
             Debug.LogError("Animator não encontrado.");
         }
-        
+
         attackScript = GetComponentInChildren<PrimaryAttackKnife>();
         if (attackScript == null)
         {
@@ -51,7 +57,7 @@ public class PlayerM : MonoBehaviour
 
         MyInput();
         LookAtMoveDirection();
-        
+
         if (animator != null)
         {
             if (attackScript != null && animator.GetBool("isSAKnife"))
@@ -118,6 +124,13 @@ public class PlayerM : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
     }
+    public void RechargeDashes(int amount)
+    {
+        dashesLeft += amount;
+        if (dashesLeft > maxDashes)
+        {
+            dashesLeft = maxDashes;
+        }
+    }
 
- 
 }
