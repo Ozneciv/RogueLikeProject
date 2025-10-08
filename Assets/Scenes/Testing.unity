@@ -1855,7 +1855,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   walkSpeed: 4
-  sprintSpeed: 10
+  sprintSpeed: 8
   rotationSpeed: 10
   dashSpeed: 30
   dashDuration: 0.2
@@ -1866,7 +1866,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   animator: {fileID: 929905472}
-  sprintAnimationSpeedMultiplier: 0.8
+  sprintAnimationSpeedMultiplier: 0.7
 --- !u!54 &1375363668
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2597,10 +2597,11 @@ MonoBehaviour:
   currentDamage: 0
   currentRange: 0
   playerRb: {fileID: 1375363668}
-  defaultDamage: 15
+  defaultDamage: 10
   defaultRange: 2
   daggerDamage: 30
   daggerRange: 5
+  comboDelay: 0.5
   attackRange: 2
   enemyLayer:
     serializedVersion: 2
@@ -5242,9 +5243,9 @@ GameObject:
   - component: {fileID: 9080148695428539337}
   - component: {fileID: 5308882718739770476}
   - component: {fileID: 7946610328230516902}
-  - component: {fileID: 9080148695428539338}
   - component: {fileID: 9080148695428539340}
   - component: {fileID: 9080148695428539339}
+  - component: {fileID: 9080148695428539341}
   m_Layer: 0
   m_Name: Limblood
   m_TagString: Untagged
@@ -5512,18 +5513,6 @@ Transform:
   - {fileID: 1264704710}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -180, y: 0, z: -90}
---- !u!114 &9080148695428539338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8451281286455032179}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 632c6bf9ec0d6414d8d04cfaa3693725, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Dagger_Pickup
 --- !u!54 &9080148695428539339
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5572,6 +5561,18 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.011477556
   m_Center: {x: 0.011477556, y: 0.00026222086, z: -0.000000011990776}
+--- !u!114 &9080148695428539341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8451281286455032179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 632c6bf9ec0d6414d8d04cfaa3693725, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Dagger_Pickup
 --- !u!4 &9118793901677377776
 Transform:
   m_ObjectHideFlags: 0

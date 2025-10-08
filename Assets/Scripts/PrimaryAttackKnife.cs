@@ -16,9 +16,12 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float daggerRange = 5f;
 
     [Header("Attack Settings")]
-    public float attackRange = 2f;
+    public float comboDelay = 0.5f; // Tempo máximo entre os cliques para um combo
+    public float attackRange = 2f; // Alcance do ataque
     public LayerMask enemyLayer;
 
+    private float lastClickTime;
+    private int clickCount = 0;
     private bool isAttacking = false;
 
     private void Start()
@@ -30,9 +33,24 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Q) && !isAttacking)
+        // Reseta o contador de cliques se o tempo de combo acabar
+        if (Time.time - lastClickTime > comboDelay)
         {
-            StartCoroutine(PerformSingleAttack());
+            clickCount = 0;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            lastClickTime = Time.time;
+            clickCount++;
+            
+            // Exibe a contagem de cliques no console
+            Debug.Log("Cliques no combo: " + clickCount);
+
+            if (!isAttacking)
+            {
+                StartCoroutine(PerformSingleAttack());
+            }
         }
     }
 
@@ -61,14 +79,17 @@ public class PrimaryAttackKnife : MonoBehaviour
             }
         }
     }
+
     // Função pública para que o Player_WeaponManager possa atualizar os valores
     public void EquipWeapon(int damage, float range)
     {
         currentDamage = damage;
         currentRange = range;
     }
-      public void EndAttack()
-    {
-        animator.SetBool("isSAKnife", false);
-    }
+
+    // Esta função foi removida, pois a lógica de combo será no Update()
+    // private IEnumerator PerformSingleAttack() {}
+
+    // Esta função foi removida, pois a lógica de combo será no Update()
+    // public void EndAttack() {}
 }

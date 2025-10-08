@@ -44,11 +44,7 @@ public class PlayerM : MonoBehaviour
             Debug.LogError("Animator não encontrado.");
         }
 
-        attackScript = GetComponentInChildren<PrimaryAttackKnife>();
-        if (attackScript == null)
-        {
-            Debug.LogError("PrimaryAttackKnife não encontrado.");
-        }
+
     }
 
     private void Update()
