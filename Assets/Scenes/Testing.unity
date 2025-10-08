@@ -1132,9 +1132,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damageText: {fileID: 499552099}
-  displayTime: 0.5
+  displayTime: 0.1
   hitColor: {r: 1, g: 0, b: 0, a: 1}
-  hitFlashTime: 0.5
+  hitFlashTime: 0.1
 --- !u!136 &849731008
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1817,7 +1817,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1375363659}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 1.2196, z: 0}
   m_LocalScale: {x: 1, y: 1.1496, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1826,7 +1826,7 @@ Transform:
   - {fileID: 543450652089006103}
   - {fileID: 470519958}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!114 &1375363666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2594,18 +2594,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PrimaryAttackKnife
   animator: {fileID: 929905472}
-  currentDamage: 0
-  currentRange: 0
   playerRb: {fileID: 1375363668}
-  defaultDamage: 10
+  currentRange: 0
   defaultRange: 2
-  daggerDamage: 30
   daggerRange: 5
-  comboDelay: 0.5
-  attackRange: 2
+  defaultDamages: 0a0000000f0000001e000000
+  daggerDamages: 19000000230000003c000000
   enemyLayer:
     serializedVersion: 2
     m_Bits: 64
+  attackLungeForces:
+  - 2
+  - 2
+  - 8
+  comboResetTime: 1.2
 --- !u!137 &938200804682592150
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0

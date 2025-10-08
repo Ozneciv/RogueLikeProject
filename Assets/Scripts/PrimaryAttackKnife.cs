@@ -1,95 +1,129 @@
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
 public class PrimaryAttackKnife : MonoBehaviour
 {
+    [Header("Required Components")]
     public Animator animator;
-
-    // Variáveis para controle de dano e alcance
-    [Header("Attack Stats")]
-    public int currentDamage;
-    public float currentRange;
     public Rigidbody playerRb;
-    public int defaultDamage = 10;
+
+    [Header("Attack Stats")]
+    public float currentRange;
     public float defaultRange = 2f;
-    public int daggerDamage = 30;
     public float daggerRange = 5f;
 
-    [Header("Attack Settings")]
-    public float comboDelay = 0.5f; // Tempo máximo entre os cliques para um combo
-    public float attackRange = 2f; // Alcance do ataque
-    public LayerMask enemyLayer;
+    // --- MUDANÇA 1: Arrays de Dano ---
+    // Agora temos listas de dano para cada tipo de arma.
+    [Header("Weapon Damages")]
+    public int[] defaultDamages = { 10, 15, 30 };
+    public int[] daggerDamages = { 25, 35, 60 }; // Exemplo de dano para a adaga
+    private int[] currentDamages; // O dano que está ativo no momento
 
-    private float lastClickTime;
-    private int clickCount = 0;
-    private bool isAttacking = false;
+    [Header("Attack Settings")]
+    public LayerMask enemyLayer;
+    public float[] attackLungeForces = { 2f, 2f, 8f };
+
+    [Header("Combo Settings")]
+    public float comboResetTime = 1.2f;
+    private int comboStep = 0;
+    private bool canAttack = true;
+    private Coroutine comboResetCoroutine;
 
     private void Start()
     {
-        // Define os valores iniciais do ataque
-        currentDamage = defaultDamage;
-        currentRange = defaultRange;
+        // Começa com a arma padrão (mãos vazias)
+        EquipDefaultWeapon();
     }
 
     private void Update()
     {
-        // Reseta o contador de cliques se o tempo de combo acabar
-        if (Time.time - lastClickTime > comboDelay)
+        if (Input.GetKeyDown(KeyCode.Q) && canAttack)
         {
-            clickCount = 0;
-        }
-
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            lastClickTime = Time.time;
-            clickCount++;
-            
-            // Exibe a contagem de cliques no console
-            Debug.Log("Cliques no combo: " + clickCount);
-
-            if (!isAttacking)
+            if (comboResetCoroutine != null)
             {
-                StartCoroutine(PerformSingleAttack());
+                StopCoroutine(comboResetCoroutine);
             }
+            PerformNextAttack();
         }
     }
 
-    private IEnumerator PerformSingleAttack()
+    private void PerformNextAttack()
     {
-        isAttacking = true;
-        animator.SetBool("isSAKnife", true);
+        canAttack = false;
+        comboStep++;
 
-        // Espera 1 segundo para forçar a parada da animação
-        yield return new WaitForSeconds(1.0f);
+        animator.SetInteger("ComboStep", comboStep);
+        animator.SetTrigger("Attack");
 
-        // Força a parada da animação
-        animator.SetBool("isSAKnife", false);
-        isAttacking = false;
+        if (playerRb != null && comboStep <= attackLungeForces.Length)
+        {
+            float forceToApply = attackLungeForces[comboStep - 1];
+            playerRb.AddForce(transform.forward * forceToApply, ForceMode.Impulse);
+        }
+
+        comboResetCoroutine = StartCoroutine(ResetComboAfterTime());
     }
 
-    // Função que causa dano, chamada no momento do ataque
+    // --- MUDANÇA 2: Lógica de Dano no CauseDamage ---
     public void CauseDamage()
     {
-        Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, currentRange, enemyLayer);
-        foreach (Collider enemy in enemiesInRange)
+        // Garante que temos um golpe válido e um array de dano configurado
+        if (comboStep > 0 && comboStep <= currentDamages.Length)
         {
-            if (enemy.gameObject.GetComponent<DummyHealth>() != null)
+            // Pega o dano correto da lista baseado no golpe atual
+            int damageToDeal = currentDamages[comboStep - 1];
+
+            Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, currentRange, enemyLayer);
+            foreach (Collider enemy in enemiesInRange)
             {
-                enemy.gameObject.GetComponent<DummyHealth>().TakeDamage(currentDamage);
+                DummyHealth enemyHealth = enemy.gameObject.GetComponent<DummyHealth>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(damageToDeal);
+                }
             }
+            Debug.Log("Ataque " + comboStep + " causou " + damageToDeal + " de dano.");
         }
     }
 
-    // Função pública para que o Player_WeaponManager possa atualizar os valores
-    public void EquipWeapon(int damage, float range)
+    public void OpenAttackWindow()
     {
-        currentDamage = damage;
-        currentRange = range;
+        canAttack = true;
     }
 
-    // Esta função foi removida, pois a lógica de combo será no Update()
-    // private IEnumerator PerformSingleAttack() {}
 
-    // Esta função foi removida, pois a lógica de combo será no Update()
-    // public void EndAttack() {}
+
+    public void ResetCombo()
+    {
+        Debug.Log("Combo resetado.");
+        comboStep = 0;
+        animator.SetInteger("ComboStep", 0);
+        canAttack = true;
+        if (comboResetCoroutine != null)
+        {
+            StopCoroutine(comboResetCoroutine);
+            comboResetCoroutine = null;
+        }
+    }
+
+    private IEnumerator ResetComboAfterTime()
+    {
+        yield return new WaitForSeconds(comboResetTime);
+        ResetCombo();
+    }
+
+    // --- MUDANÇA 3: Funções para Trocar de Arma ---
+    public void EquipDefaultWeapon()
+    {
+        currentDamages = defaultDamages;
+        currentRange = defaultRange;
+        Debug.Log("Arma Padrão Equipada.");
+    }
+
+    public void EquipDaggerWeapon()
+    {
+        currentDamages = daggerDamages;
+        currentRange = daggerRange;
+        Debug.Log("Adaga Equipada.");
+    }
 }
