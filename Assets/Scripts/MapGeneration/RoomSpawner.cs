@@ -33,6 +33,7 @@ public class RoomSpawner : MonoBehaviour
         //    Debug.Log("Trigger ativada!");
         //    GenerateRooms();
         //}
+        //teste
     }
     void GenerateRooms()
     {
