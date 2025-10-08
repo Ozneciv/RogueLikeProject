@@ -1,23 +1,32 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PrimaryAttackKnife : MonoBehaviour
 {
+    // --- MUDANÇA 1: Variável de Estado de Ataque ---
+    // Esta variável será 'true' quando um combo estiver ativo. Outros scripts podem lê-la.
+    public bool isAttacking { get; private set; }
+
     [Header("Required Components")]
     public Animator animator;
     public Rigidbody playerRb;
+
+    // ... (O resto do script continua igual) ...
+    [Header("Weapon Hitbox")]
+    public Collider handHitbox;
+    private Collider equippedWeaponHitbox;
+    private Collider currentHitbox;
 
     [Header("Attack Stats")]
     public float currentRange;
     public float defaultRange = 2f;
     public float daggerRange = 5f;
 
-    // --- MUDANÇA 1: Arrays de Dano ---
-    // Agora temos listas de dano para cada tipo de arma.
     [Header("Weapon Damages")]
     public int[] defaultDamages = { 10, 15, 30 };
-    public int[] daggerDamages = { 25, 35, 60 }; // Exemplo de dano para a adaga
-    private int[] currentDamages; // O dano que está ativo no momento
+    public int[] daggerDamages = { 25, 35, 60 };
+    private int[] currentDamages;
 
     [Header("Attack Settings")]
     public LayerMask enemyLayer;
@@ -28,30 +37,31 @@ public class PrimaryAttackKnife : MonoBehaviour
     private int comboStep = 0;
     private bool canAttack = true;
     private Coroutine comboResetCoroutine;
+    private List<Collider> enemiesHitInThisAttack;
 
     private void Start()
     {
-        // Começa com a arma padrão (mãos vazias)
+        enemiesHitInThisAttack = new List<Collider>();
         EquipDefaultWeapon();
+        isAttacking = false; // Garante que começa como 'false'
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Q) && canAttack)
         {
-            if (comboResetCoroutine != null)
-            {
-                StopCoroutine(comboResetCoroutine);
-            }
+            if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
             PerformNextAttack();
         }
     }
 
     private void PerformNextAttack()
     {
+        // --- MUDANÇA 2: Ativar o Estado de Ataque ---
+        isAttacking = true;
+
         canAttack = false;
         comboStep++;
-
         animator.SetInteger("ComboStep", comboStep);
         animator.SetTrigger("Attack");
 
@@ -60,42 +70,41 @@ public class PrimaryAttackKnife : MonoBehaviour
             float forceToApply = attackLungeForces[comboStep - 1];
             playerRb.AddForce(transform.forward * forceToApply, ForceMode.Impulse);
         }
-
         comboResetCoroutine = StartCoroutine(ResetComboAfterTime());
     }
 
-    // --- MUDANÇA 2: Lógica de Dano no CauseDamage ---
-    public void CauseDamage()
+    public void EnableHitbox()
     {
-        // Garante que temos um golpe válido e um array de dano configurado
+        enemiesHitInThisAttack.Clear();
+        if (currentHitbox != null) currentHitbox.enabled = true;
+    }
+
+    public void DisableHitbox()
+    {
+        if (currentHitbox != null) currentHitbox.enabled = false;
+    }
+
+    public void RegisterHit(Collider enemyCollider)
+    {
+        if (enemiesHitInThisAttack.Contains(enemyCollider)) return;
+        enemiesHitInThisAttack.Add(enemyCollider);
+
         if (comboStep > 0 && comboStep <= currentDamages.Length)
         {
-            // Pega o dano correto da lista baseado no golpe atual
             int damageToDeal = currentDamages[comboStep - 1];
-
-            Collider[] enemiesInRange = Physics.OverlapSphere(transform.position, currentRange, enemyLayer);
-            foreach (Collider enemy in enemiesInRange)
-            {
-                DummyHealth enemyHealth = enemy.gameObject.GetComponent<DummyHealth>();
-                if (enemyHealth != null)
-                {
-                    enemyHealth.TakeDamage(damageToDeal);
-                }
-            }
-            Debug.Log("Ataque " + comboStep + " causou " + damageToDeal + " de dano.");
+            enemyCollider.GetComponent<DummyHealth>().TakeDamage(damageToDeal);
+            Debug.Log("ACERTOU com " + currentHitbox.name + "! Ataque " + comboStep + " causou " + damageToDeal + " de dano em " + enemyCollider.name);
         }
     }
 
-    public void OpenAttackWindow()
-    {
-        canAttack = true;
-    }
-
-
-
+    public void OpenAttackWindow() { canAttack = true; }
+    
     public void ResetCombo()
     {
-        Debug.Log("Combo resetado.");
+        // --- MUDANÇA 3: Desativar o Estado de Ataque ---
+        isAttacking = false;
+
+        // Debug.Log("Combo resetado.");
         comboStep = 0;
         animator.SetInteger("ComboStep", 0);
         canAttack = true;
@@ -111,19 +120,23 @@ public class PrimaryAttackKnife : MonoBehaviour
         yield return new WaitForSeconds(comboResetTime);
         ResetCombo();
     }
-
-    // --- MUDANÇA 3: Funções para Trocar de Arma ---
+    
     public void EquipDefaultWeapon()
     {
         currentDamages = defaultDamages;
         currentRange = defaultRange;
-        Debug.Log("Arma Padrão Equipada.");
+        currentHitbox = handHitbox;
+
+        if (equippedWeaponHitbox != null) equippedWeaponHitbox.enabled = false;
     }
 
-    public void EquipDaggerWeapon()
+    public void EquipDaggerWeapon(Collider daggerHitbox)
     {
         currentDamages = daggerDamages;
         currentRange = daggerRange;
-        Debug.Log("Adaga Equipada.");
+        equippedWeaponHitbox = daggerHitbox;
+        currentHitbox = equippedWeaponHitbox;
+
+        if (handHitbox != null) handHitbox.enabled = false;
     }
 }

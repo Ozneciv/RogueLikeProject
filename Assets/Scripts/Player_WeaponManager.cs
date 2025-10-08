@@ -26,7 +26,7 @@ public class Player_WeaponManager : MonoBehaviour
         if (attackScript != null)
         {
             // --- Mude esta linha ---
-            attackScript.EquipDaggerWeapon(); // Antigamente era EquipWeapon(...)
+            attackScript.EquipDaggerWeapon(dagger.GetComponent<Collider>());
         }
 
         Debug.Log("Adaga equipada com sucesso!");

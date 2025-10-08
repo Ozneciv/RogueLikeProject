@@ -2,23 +2,16 @@ using UnityEngine;
 
 public class PlayerM : MonoBehaviour
 {
+    // --- MUDANÇA 1: Referências aos outros scripts ---
+    public DashM dashScript; // Arraste o componente DashM aqui
+    public PrimaryAttackKnife attackScript; // Arraste o componente PrimaryAttackKnife aqui
+
     [Header("Movement")]
     public float walkSpeed = 5f;
     public float sprintSpeed = 10f;
     public float rotationSpeed = 10f;
 
-    [Header("Dash")]
-    public float dashSpeed = 30f;
-    public float dashDuration = 0.2f;
-    public float dashCd = 1.5f;
-    public int maxDashes = 2;
-    private int dashesLeft;
-    private float dashCdTimer;
-    public Transform groundCheck;
-    public LayerMask whatIsGround;
-
-    private bool grounded;
-
+    // ... (O resto das suas variáveis de movimento continua igual) ...
     [Header("Animation")]
     public Animator animator;
     public float sprintAnimationSpeedMultiplier = 0.8f;
@@ -26,8 +19,6 @@ public class PlayerM : MonoBehaviour
     private Rigidbody rb;
     private Vector3 moveDirection;
     private float currentSpeed;
-
-    private PrimaryAttackKnife attackScript;
 
     private void Start()
     {
@@ -43,20 +34,17 @@ public class PlayerM : MonoBehaviour
         {
             Debug.LogError("Animator não encontrado.");
         }
-
-
     }
 
     private void Update()
     {
-        grounded = Physics.CheckSphere(groundCheck.position, 0.2f, whatIsGround);
-
         MyInput();
         LookAtMoveDirection();
 
         if (animator != null)
         {
-            if (attackScript != null && animator.GetBool("isSAKnife"))
+            // ... (A sua lógica de animação continua a mesma) ...
+            if (attackScript != null && attackScript.isAttacking)
             {
                 animator.speed = 1f;
             }
@@ -85,6 +73,11 @@ public class PlayerM : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // Se um dash estiver acontecendo, esta função para aqui.
+        if (dashScript != null && dashScript.isDashing)
+        {
+            return;
+        }
         MovePlayer();
     }
 
@@ -93,7 +86,9 @@ public class PlayerM : MonoBehaviour
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         float verticalInput = Input.GetAxisRaw("Vertical");
 
-        if (Input.GetKey(KeyCode.LeftShift))
+        // --- MUDANÇA 2: Condição para Correr ---
+        // Agora só é possível correr se NÃO estiver atacando.
+        if (Input.GetKey(KeyCode.LeftShift) && (attackScript == null || !attackScript.isAttacking))
         {
             currentSpeed = sprintSpeed;
         }
@@ -103,8 +98,6 @@ public class PlayerM : MonoBehaviour
         }
 
         moveDirection = new Vector3(horizontalInput, 0, verticalInput).normalized;
-
-
     }
 
     private void MovePlayer()
@@ -120,13 +113,34 @@ public class PlayerM : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
     }
-    public void RechargeDashes(int amount)
+        // Adicione esta função dentro da classe PlayerM
+
+    public void Die()
     {
-        dashesLeft += amount;
-        if (dashesLeft > maxDashes)
-        {
-            dashesLeft = maxDashes;
-        }
+
+    Debug.Log("O jogador morreu!");
+
+    if (animator != null)
+    {
+        // NOVO: Força a animação a ser "in-loco", ignorando o movimento embutido nela.
+        animator.applyRootMotion = true; 
+        animator.SetTrigger("Death");
     }
 
+    if (rb != null)
+    {
+        rb.linearVelocity = Vector3.zero;
+        // COMENTADO: Deixamos a gravidade agir para o corpo cair realisticamente.
+        // rb.isKinematic = true; 
+    }
+
+    // Desativa os scripts de controle para que o jogador não possa mais se mover ou atacar
+    if (dashScript != null) dashScript.enabled = false;
+    if (attackScript != null) attackScript.enabled = false;
+    this.enabled = false; 
+
+    // COMENTADO: Mantemos o collider PRINCIPAL para que o corpo não atravesse o chão.
+    // Ver a solução avançada abaixo.
+    // GetComponent<Collider>().enabled = false;
+}
 }
