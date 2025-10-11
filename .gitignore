@@ -100,3 +100,7 @@ InitTestScene*.unity*
 
 # Configurações locais
 .vsconfig
+.plastic/plastic.wktree
+.plastic/plastic.changes
+.plastic/plastic.wktree
+/Assets/Scenes
