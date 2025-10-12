@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class MagicStone_AI : MonoBehaviour
+public class MagicStone : MonoBehaviour
 {
     [Header("Referências")]
     public Transform playerTransform;

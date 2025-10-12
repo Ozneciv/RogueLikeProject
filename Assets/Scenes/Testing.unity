@@ -1754,21 +1754,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cfcbaac7507df847b44ee4e63c99efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicStone_AI
-  playerTransform: {fileID: 543450652089006103}
-  attackMarkerPrefab: {fileID: 6322343090781995344, guid: 320efa9d5e7309b4b9d17d64819d667d, type: 3}
-  attackBeamPrefab: {fileID: 2483372131443543816, guid: f54fc3daba38628458d1ea5adb6d8c44, type: 3}
-  activationDistance: 10
-  moveSpeed: 4
-  minOrbitDistance: 10
-  maxOrbitDistance: 12
-  orbitDirection: 1
-  floatHeight: 0.2
-  floatSpeed: 1
-  attackInterval: 3
-  attackTelegraphTime: 1
-  teleportCooldown: 30
-  teleportRange: 4
-  teleportDistanceFactor: 0.7
 --- !u!114 &866207324
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1805,10 +1790,10 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 112
+  m_Constraints: 80
   m_CollisionDetection: 0
 --- !u!114 &866207329
 MonoBehaviour:
@@ -1827,6 +1812,27 @@ MonoBehaviour:
   textOffset: {x: 0, y: 2, z: 0}
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   hitFlashTime: 0.2
+--- !u!135 &866207333
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 866207322}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.043711174
+  m_Center: {x: -0.00023458665, y: -0.0014646056, z: -0.0019286122}
 --- !u!95 &929905472
 Animator:
   serializedVersion: 7
@@ -2205,7 +2211,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d63be24ab45035947a8a8f18401b1ba0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.6
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d63be24ab45035947a8a8f18401b1ba0, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2263,6 +2269,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d63be24ab45035947a8a8f18401b1ba0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 866207329}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d63be24ab45035947a8a8f18401b1ba0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 866207333}
   m_SourcePrefab: {fileID: 100100000, guid: d63be24ab45035947a8a8f18401b1ba0, type: 3}
 --- !u!1 &1259122827 stripped
 GameObject:
@@ -2286,9 +2295,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9961ce0803a61a749ab9cba77a1dc411, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TotemSpawner
-  skullPrefab: {fileID: 2951462683167261025, guid: 1161a3590328b3b4e826e8915fc00b8f, type: 3}
-  totalSkullsToSpawn: 1000
-  spawnInterval: 0.01
+  skullPrefab: {fileID: 1155010451884850368, guid: 17526d5d2a1393e438fd19d86fdfed1c, type: 3}
+  totalSkullsToSpawn: 50
+  spawnInterval: 3
   spawnRadius: 10
   spawnHeightOffset: 1.5
   activationDistance: 20
@@ -2304,7 +2313,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 100
+  maxHealth: 200
   floatingDamageTextPrefab: {fileID: 7378325969558604460, guid: 381d820142739174b95708c8ae506627, type: 3}
   textOffset: {x: 0, y: 2, z: 0}
   hitColor: {r: 1, g: 0, b: 0, a: 1}
