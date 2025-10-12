@@ -44,10 +44,10 @@ Material:
     m_Floats:
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _edge_threshold: 2.5
+    - _edge_threshold: -2
     m_Colors:
     - _base_color: {r: 0, g: 0.7433963, b: 0.11952641, a: 0}
-    - _glow_color: {r: 0.37735844, g: 0.37735844, b: 0.37735844, a: 0}
+    - _glow_color: {r: 1, g: 0.7950881, b: 0.06132078, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &7972110635937092140

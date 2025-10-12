@@ -8,6 +8,11 @@ public class MagicStone_AI : MonoBehaviour
     public GameObject attackMarkerPrefab;
     public GameObject attackBeamPrefab;
 
+    [Header("Ativação")]
+    [Tooltip("A que distância o inimigo 'acorda' e começa a agir.")]
+    public float activationDistance = 25f;
+    private bool isAwake = false;
+
     [Header("Comportamento de Movimento")]
     public float moveSpeed = 4f;
     public float minOrbitDistance = 12f;
@@ -26,10 +31,9 @@ public class MagicStone_AI : MonoBehaviour
     [Header("Teleporte")]
     public float teleportCooldown = 30f;
     public float teleportRange = 4f;
-    // --- NOVA VARIÁVEL AQUI ---
     [Tooltip("Fator de distância do teleporte. 1.0 = lado oposto do mapa. 0.5 = metade do caminho.")]
     [Range(0.1f, 1.0f)]
-    public float teleportDistanceFactor = 0.7f;
+    public float teleportDistanceFactor = 0.7f; // Linha que estava faltando
 
     private float teleportTimer;
     private float attackTimer;
@@ -40,8 +44,6 @@ public class MagicStone_AI : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
         startY = transform.position.y;
-        teleportTimer = 0;
-        attackTimer = attackInterval / 2;
 
         if (Random.value > 0.5f)
         {
@@ -53,13 +55,33 @@ public class MagicStone_AI : MonoBehaviour
     {
         if (playerTransform == null) return;
 
-        teleportTimer -= Time.deltaTime;
-        attackTimer -= Time.deltaTime;
-
-        HandleMovement();
-        HandleTeleport();
-        HandleAttack();
         HandleFloating();
+
+        if (!isAwake)
+        {
+            if (Vector3.Distance(transform.position, playerTransform.position) < activationDistance)
+            {
+                WakeUp();
+            }
+        }
+        else
+        {
+            teleportTimer -= Time.deltaTime;
+            attackTimer -= Time.deltaTime;
+
+            HandleMovement();
+            HandleTeleport();
+            HandleAttack();
+        }
+    }
+    
+    void WakeUp()
+    {
+        isAwake = true;
+        Debug.Log(gameObject.name + " foi ativado!");
+
+        teleportTimer = 0;
+        attackTimer = attackInterval / 2;
     }
 
     void HandleMovement()
@@ -114,13 +136,9 @@ public class MagicStone_AI : MonoBehaviour
     void Teleport()
     {
         Debug.Log("MagicStone teleportou!");
-        
-        // --- LÓGICA DO TELEPORTE MODIFICADA ---
-        // Agora multiplica a posição oposta pelo fator de distância
         Vector3 newPosition = -playerTransform.position * teleportDistanceFactor;
-        newPosition.y = transform.position.y; // Mantém a mesma altura
+        newPosition.y = transform.position.y;
         transform.position = newPosition;
-
         teleportTimer = teleportCooldown;
     }
 
