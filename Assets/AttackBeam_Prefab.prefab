@@ -104,4 +104,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AttackBeam
   damage: 20
   radius: 1.5
-  lifetime: 0.5
+  lifetime: 0.25

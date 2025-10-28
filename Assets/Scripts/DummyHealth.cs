@@ -1,22 +1,28 @@
 using UnityEngine;
-using TMPro;
 using System.Collections;
 
 public class DummyHealth : MonoBehaviour
 {
-    // --- MUDANÇA 1: Remover referências antigas e adicionar a do prefab ---
-    // public TextMeshProUGUI damageText; // Não precisamos mais disso
-    public GameObject floatingDamageTextPrefab; // Arraste o seu novo prefab aqui
-    public Vector3 textOffset = new Vector3(0, 2f, 0); // Ajuste a altura em que o texto aparece
+    [Header("Vida")]
+    public int maxHealth = 100;
+    // --- MUDANÇA 1: Propriedade para a Vida Atual ---
+    // Outros scripts (como o TotemSpawner) podem LER a vida, mas apenas este script pode MODIFICÁ-LA.
+    public int CurrentHealth { get; private set; }
 
-    [Header("Visual Feedback")]
+    [Header("Feedback de Dano")]
+    public GameObject floatingDamageTextPrefab;
+    public Vector3 textOffset = new Vector3(0, 2f, 0);
     public Color hitColor = Color.red;
     public float hitFlashTime = 0.2f;
+    
     private Color originalColor;
     private Renderer dummyRenderer;
 
     private void Start()
     {
+        // --- MUDANÇA 2: Inicializar a Vida ---
+        CurrentHealth = maxHealth;
+
         dummyRenderer = GetComponent<Renderer>();
         if (dummyRenderer != null)
         {
@@ -26,23 +32,33 @@ public class DummyHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        Debug.Log(gameObject.name + " recebeu " + damage + " de dano.");
+        // Se já estiver com vida zero ou menos, não faz nada.
+        if (CurrentHealth <= 0) return;
 
-        // --- MUDANÇA 2: Lógica para instanciar o texto flutuante ---
+        // --- MUDANÇA 3: Subtrair o Dano da Vida ---
+        CurrentHealth -= damage;
+
+        Debug.Log(gameObject.name + " recebeu " + damage + " de dano. Vida restante: " + CurrentHealth);
+
+        // Instancia o texto flutuante de dano
         if (floatingDamageTextPrefab != null)
         {
-            // Cria uma instância do prefab na posição do inimigo + um deslocamento (offset)
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
-            
-            // Pega o script do objeto recém-criado e define o texto
             textObject.GetComponent<FloatingDamageText>().SetText(damage.ToString());
         }
 
-        // Lógica do flash vermelho continua a mesma
+        // Feedback visual de flash vermelho
         if (dummyRenderer != null)
         {
             dummyRenderer.material.color = hitColor;
             Invoke("ResetColor", hitFlashTime);
+        }
+
+        // --- MUDANÇA 4: Checar se Morreu ---
+        if (CurrentHealth <= 0)
+        {
+            CurrentHealth = 0; // Garante que a vida não fique negativa
+            Die();
         }
     }
 
@@ -52,5 +68,17 @@ public class DummyHealth : MonoBehaviour
         {
             dummyRenderer.material.color = originalColor;
         }
+    }
+
+    // --- MUDANÇA 5: Função de Morte ---
+    private void Die()
+    {
+        Debug.Log(gameObject.name + " foi destruído.");
+        
+        // Opcional: Adicionar um efeito de explosão/morte aqui antes de destruir.
+        // Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
+
+        // Remove o objeto do jogo.
+        Destroy(gameObject);
     }
 }
