@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class MagicStone : MonoBehaviour
+public class MagicStone_AI : MonoBehaviour
 {
     [Header("Referências")]
     public Transform playerTransform;
@@ -9,7 +9,6 @@ public class MagicStone : MonoBehaviour
     public GameObject attackBeamPrefab;
 
     [Header("Ativação")]
-    [Tooltip("A que distância o inimigo 'acorda' e começa a agir.")]
     public float activationDistance = 25f;
     private bool isAwake = false;
 
@@ -31,9 +30,13 @@ public class MagicStone : MonoBehaviour
     [Header("Teleporte")]
     public float teleportCooldown = 30f;
     public float teleportRange = 4f;
-    [Tooltip("Fator de distância do teleporte. 1.0 = lado oposto do mapa. 0.5 = metade do caminho.")]
-    [Range(0.1f, 1.0f)]
-    public float teleportDistanceFactor = 0.7f; // Linha que estava faltando
+    // --- NOVAS VARIÁVEIS AQUI ---
+    [Tooltip("A distância MÍNIMA para a qual a pedra vai se teleportar, a partir do jogador.")]
+    public float minTeleportDistance = 15f;
+    [Tooltip("A distância MÁXIMA para a qual a pedra vai se teleportar, a partir do jogador.")]
+    public float maxTeleportDistance = 20f;
+    
+    // A variável 'teleportDistanceFactor' foi removida por ser obsoleta.
 
     private float teleportTimer;
     private float attackTimer;
@@ -79,7 +82,6 @@ public class MagicStone : MonoBehaviour
     {
         isAwake = true;
         Debug.Log(gameObject.name + " foi ativado!");
-
         teleportTimer = 0;
         attackTimer = attackInterval / 2;
     }
@@ -133,11 +135,23 @@ public class MagicStone : MonoBehaviour
         }
     }
 
+    // --- LÓGICA DO TELEPORTE MODIFICADA ---
     void Teleport()
     {
         Debug.Log("MagicStone teleportou!");
-        Vector3 newPosition = -playerTransform.position * teleportDistanceFactor;
-        newPosition.y = transform.position.y;
+
+        // 1. Pega uma direção 2D aleatória (um ponto na borda de um círculo).
+        Vector2 randomDirection = Random.insideUnitCircle.normalized;
+        // 2. Pega uma distância aleatória entre o mínimo e o máximo definidos.
+        float randomDistance = Random.Range(minTeleportDistance, maxTeleportDistance);
+
+        // 3. Calcula o "deslocamento" a partir da posição do jogador.
+        Vector3 offset = new Vector3(randomDirection.x, 0, randomDirection.y) * randomDistance;
+        
+        // 4. A nova posição é a posição ATUAL do jogador + o deslocamento.
+        Vector3 newPosition = playerTransform.position + offset;
+        newPosition.y = transform.position.y; // Mantém a mesma altura.
+
         transform.position = newPosition;
         teleportTimer = teleportCooldown;
     }
