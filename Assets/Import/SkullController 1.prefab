@@ -234,7 +234,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d482dbe7eec93fe4982b02ec40e47af9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageZone
-  damageAmount: 20
+  damageAmount: 100
   damageInterval: 1
   pulseVisualizer: {fileID: 7408488882371780389}
 --- !u!1 &4107422237573638928

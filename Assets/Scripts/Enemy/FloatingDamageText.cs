@@ -1,29 +1,38 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class FloatingDamageText : MonoBehaviour
 {
+    // --- MUDANÇA PRINCIPAL AQUI ---
+    [Header("Referências")]
+    [Tooltip("Arraste o objeto de texto (filho) que tem o TextMeshProUGUI aqui.")]
+    public TextMeshProUGUI textMesh; // Agora é público!
+
     [Header("Animação")]
     public float lifetime = 1f;
     public float floatSpeed = 1.5f;
 
-    private TextMeshProUGUI textMesh;
     private float timer;
     private Color startColor;
 
     void Awake()
     {
-        textMesh = GetComponentInChildren<TextMeshProUGUI>();
+        // Agora, em vez de procurar, apenas checamos se a referência foi arrastada no Inspector.
         if (textMesh == null)
         {
-            Debug.LogError("FloatingDamageText: Não foi possível encontrar o componente TextMeshProUGUI nos filhos!");
+            Debug.LogError("FloatingDamageText: A referência para o 'textMesh' NÃO FOI ARRASTADA no Inspector!", this.gameObject);
+            return; // Para o script se a referência estiver faltando.
         }
+        
         startColor = textMesh.color;
         timer = lifetime;
     }
 
     void Update()
     {
+        if (textMesh == null) return; // Não faz nada se a referência estiver quebrada
+
         transform.position += Vector3.up * floatSpeed * Time.deltaTime;
         transform.LookAt(transform.position + Camera.main.transform.forward);
 
@@ -38,24 +47,13 @@ public class FloatingDamageText : MonoBehaviour
         }
     }
 
-    // Função pública para que o inimigo possa definir qual número mostrar
     public void SetText(string text)
     {
-        // MENSAGEM DE DEBUG AQUI
-        Debug.Log("SetText foi chamado! Novo texto deveria ser: " + text);
-
         if (textMesh == null)
         {
-            textMesh = GetComponentInChildren<TextMeshProUGUI>();
+            Debug.LogError("SetText falhou porque a referência ao textMesh é NULA!", this.gameObject);
+            return;
         }
-        
-        if (textMesh != null)
-        {
-            textMesh.text = text;
-        }
-        else
-        {
-            Debug.LogError("SetText falhou porque a referência ao textMesh é NULA!");
-        }
+        textMesh.text = text;
     }
 }
