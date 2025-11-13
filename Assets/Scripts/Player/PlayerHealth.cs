@@ -36,7 +36,38 @@ public class PlayerHealth : MonoBehaviour
 
     void Start()
     {
+        try
+        {
+            healthBarSlider = GameObject.Find("HealthBar_Slider").GetComponent<Slider>();
+            gooBarImage = GameObject.Find("Goo_Fill").GetComponent<Image>();
+            armorBarImage = GameObject.Find("ArmorBar_Fill").GetComponent<Image>();
+            armorText = GameObject.Find("ArmorText").GetComponent<TextMeshProUGUI>();
+        
+         // (Encontra os outros componentes do jogador)
+            playerMovement = GetComponent<PlayerM>();
+            playerAnimator = GetComponentInChildren<Animator>();
+        }
+        catch (System.Exception e)
+    {
+        Debug.LogError("PlayerHealth: Falha ao encontrar componentes da UI! Verifique os NOMES dos objetos no Canvas. Erro: " + e.Message);
+    }
         playerLayer = gameObject.layer;
+        if (healthBarSlider == null)
+        {
+        healthBarSlider = GameObject.Find("HealthBar_Slider").GetComponent<Slider>();
+        }
+        if (gooBarImage == null)
+        {
+        gooBarImage = GameObject.Find("Goo_Fill").GetComponent<Image>();
+        }
+        if (armorBarImage == null)
+        {
+        armorBarImage = GameObject.Find("ArmorBar_Fill").GetComponent<Image>();
+        }
+        if (armorText == null)
+        {
+        armorText = GameObject.Find("ArmorText").GetComponent<TextMeshProUGUI>();
+        }
 
         if (currentSpawnPoint == null)
         {

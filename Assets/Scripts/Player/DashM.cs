@@ -36,6 +36,20 @@ public class DashM : MonoBehaviour
         
         // Começa o jogo com o máximo de dashes
         dashesLeft = maxDashes;
+        if (dashCountText == null)
+        {
+        // Certifique-se de que o seu objeto de texto do dash se chama "DashText"
+            GameObject textObj = GameObject.Find("DashText");
+            if (textObj != null)
+        {
+            dashCountText = textObj.GetComponent<TextMeshProUGUI>();
+        }
+            else
+        {
+            Debug.LogWarning("DashM: Objeto 'DashText' não encontrado.");
+        }
+        }
+        if (dashCountText != null) dashCountText.enabled = true;
     }
 
     private void Update()
