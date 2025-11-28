@@ -8,7 +8,7 @@ public class PlayerHealth : MonoBehaviour
     [Header("Configurações de Vida e Armadura")]
     public int maxHealth = 100;
     public int maxArmor = 200;
-    public int currentHealth { get; private set; } // Deixei público para o Mercador checar
+    public int currentHealth { get; private set; } // Público para o Mercador ler
     private int currentArmor;
     private int cursedHealthLost = 0; // "Memória" da vida amaldiçoada
 
@@ -17,13 +17,13 @@ public class PlayerHealth : MonoBehaviour
     public PrimaryAttackKnife playerAttack;
     public Animator playerAnimator;
     public ScreenFader screenFader;
-    public Transform initialSpawnPoint;
+    // 'initialSpawnPoint' foi removido pois o GameManager define a posição
     private Transform currentSpawnPoint;
 
     [Header("UI (Interface)")]
     public Slider healthBarSlider; // A barra de vida verde
-    public Image gooBarImage; // A barra de "gosma" que fica por baixo
-    public Image armorBarImage;
+    public Image gooBarImage;      // A barra de "gosma" que fica por baixo
+    public Image armorBarImage;    // A imagem de preenchimento da armadura
     public TextMeshProUGUI armorText;
 
     [Header("Modificadores de Pacto")]
@@ -35,57 +35,54 @@ public class PlayerHealth : MonoBehaviour
     private bool diedFallingForward;
 
     void Start()
-    {
-        try
         {
-            healthBarSlider = GameObject.Find("HealthBar_Slider").GetComponent<Slider>();
-            gooBarImage = GameObject.Find("Goo_Fill").GetComponent<Image>();
-            armorBarImage = GameObject.Find("ArmorBar_Fill").GetComponent<Image>();
-            armorText = GameObject.Find("ArmorText").GetComponent<TextMeshProUGUI>();
-        
-         // (Encontra os outros componentes do jogador)
-            playerMovement = GetComponent<PlayerM>();
-            playerAnimator = GetComponentInChildren<Animator>();
-        }
-        catch (System.Exception e)
-    {
-        Debug.LogError("PlayerHealth: Falha ao encontrar componentes da UI! Verifique os NOMES dos objetos no Canvas. Erro: " + e.Message);
-    }
         playerLayer = gameObject.layer;
-        if (healthBarSlider == null)
-        {
-        healthBarSlider = GameObject.Find("HealthBar_Slider").GetComponent<Slider>();
-        }
-        if (gooBarImage == null)
-        {
-        gooBarImage = GameObject.Find("Goo_Fill").GetComponent<Image>();
-        }
-        if (armorBarImage == null)
-        {
-        armorBarImage = GameObject.Find("ArmorBar_Fill").GetComponent<Image>();
-        }
-        if (armorText == null)
-        {
-        armorText = GameObject.Find("ArmorText").GetComponent<TextMeshProUGUI>();
-        }
-
-        if (currentSpawnPoint == null)
-        {
-            currentSpawnPoint = initialSpawnPoint;
-        }
-        if (currentSpawnPoint != null)
-        {
-            transform.position = currentSpawnPoint.position;
-            transform.rotation = currentSpawnPoint.rotation;
-        }
+        
+        // Tenta encontrar a UI na primeira cena (pode falhar se for a Base, e tudo bem)
+        FindUIReferences();
         
         FullHeal();
-    }
+        }
+
+    // --- NOVA FUNÇÃO PÚBLICA ---
+    // O GameManager vai chamar isso toda vez que entrar na GameScene
+        public void FindUIReferences()
+        {
+            try
+            {
+            // Busca pelos nomes EXATOS da sua hierarquia
+            GameObject healthObj = GameObject.Find("HealthBar_Slider"); 
+            if (healthObj != null) healthBarSlider = healthObj.GetComponent<Slider>();
+
+            GameObject gooObj = GameObject.Find("Goo_Fill");
+            if (gooObj != null) gooBarImage = gooObj.GetComponent<Image>();
+
+            GameObject armorObj = GameObject.Find("ArmorBar_Fill"); 
+            if (armorObj != null) armorBarImage = armorObj.GetComponent<Image>();
+
+            GameObject textObj = GameObject.Find("ArmorText");
+            if (textObj != null) armorText = textObj.GetComponent<TextMeshProUGUI>();
+
+            // Conecta componentes internos
+            if (playerMovement == null) playerMovement = GetComponent<PlayerM>();
+            if (playerAnimator == null) playerAnimator = GetComponentInChildren<Animator>();
+            if (playerAttack == null) playerAttack = GetComponent<PrimaryAttackKnife>();
+
+            // Atualiza visualmente se encontrou
+            UpdateHealthBar();
+            UpdateArmorBar();
+            }
+            catch (System.Exception e)
+            {
+               Debug.LogWarning("PlayerHealth: UI não encontrada (normal se estiver na Base).");
+            }
+        }
 
     public void TakeDamage(int damage)
     {
         if (isDead) return;
 
+        // Aplica o multiplicador de dano recebido (dos pactos)
         int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
 
         // Dano é aplicado primeiro à armadura
@@ -97,7 +94,7 @@ public class PlayerHealth : MonoBehaviour
             UpdateArmorBar();
         }
 
-        // Dano restante vai para a vida "normal" (não a amaldiçoada)
+        // Dano restante vai para a vida "normal" (respeitando o limite da gosma)
         if (finalDamage > 0)
         {
             int damageableHealth = currentHealth - cursedHealthLost;
@@ -113,7 +110,7 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    // Função para o Mercador usar (dano amaldiçoado)
+    // Função para o Mercador usar (dano amaldiçoado permanente na run)
     public void TakeCursedDamage(int amount)
     {
         if (isDead) return;
@@ -122,7 +119,7 @@ public class PlayerHealth : MonoBehaviour
         int actualCost = Mathf.Min(amount, currentHealth);
 
         currentHealth -= actualCost;
-        cursedHealthLost += actualCost; // A "gosma" aumenta
+        cursedHealthLost += actualCost; // A "gosma" aumenta, reduzindo a vida máxima efetiva
         
         if (currentHealth <= 0)
         {
@@ -134,14 +131,16 @@ public class PlayerHealth : MonoBehaviour
     void Die()
     {
         isDead = true;
-        Debug.Log("O jogador morreu! Iniciando sequência de respawn.");
+        Debug.Log("O jogador morreu! Iniciando sequência de retorno.");
 
-        // Desativa os controles e muda a camada de física
-        playerMovement.enabled = false;
+        // Desativa controles
+        if (playerMovement != null) playerMovement.enabled = false;
         if (playerAttack != null) playerAttack.enabled = false;
+        
+        // Muda layer para não colidir com inimigos
         gameObject.layer = LayerMask.NameToLayer("DeadBody");
         
-        // Escolhe e dispara uma animação de morte aleatória
+        // Toca animação
         if (playerAnimator != null)
         {
             if (Random.value > 0.5f)
@@ -160,54 +159,49 @@ public class PlayerHealth : MonoBehaviour
 
     IEnumerator RespawnSequence()
     {
+        // Espera a animação de morte terminar
         yield return new WaitForSeconds(2.0f);
 
+        // Escurece a tela
         if (screenFader != null)
         {
             yield return StartCoroutine(screenFader.FadeOut());
         }
         
-        // Ação ocorre com a tela preta
-        transform.position = currentSpawnPoint.position;
-        transform.rotation = currentSpawnPoint.rotation;
-        FullHeal();
-
-        if (playerAnimator != null)
+        // --- VOLTAR PARA A BASE ---
+        // Como mudamos para a arquitetura "Clean Slate", a morte recarrega a cena da Base.
+        if (GameManager.instance != null)
         {
-            playerAnimator.applyRootMotion = true;
-            if (diedFallingForward)
-            {
-                playerAnimator.SetTrigger("Revive1");
-            }
-            else
-            {
-                playerAnimator.SetTrigger("Revive2");
-            }
+            GameManager.instance.ReturnToBase();
+        }
+        else
+        {
+            // Fallback: Apenas recarrega a cena atual se não houver GameManager
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
         
-        if (screenFader != null)
-        {
-            yield return StartCoroutine(screenFader.FadeIn());
-        }
+        // O código abaixo não será executado se a cena mudar, 
+        // mas é mantido caso você queira usar respawn na mesma fase no futuro.
     }
 
-    // Função pública chamada pelo PlayerAnimationEvents
+    // Função pública chamada pelo PlayerAnimationEvents (para animação de Revive)
     public void HandleReviveCompletion()
     {
-        Debug.Log("Animação de reviver completa. Devolvendo controle ao jogador.");
-
+        // Esta função é usada quando o jogador revive NA MESMA CENA.
+        // No fluxo atual de "Voltar para Base", ela pode não ser chamada,
+        // mas é bom mantê-la para compatibilidade.
+        
         if (playerAnimator != null)
         {
             playerAnimator.applyRootMotion = false;
         }
         
         isDead = false;
-        playerMovement.enabled = true;
+        if (playerMovement != null) playerMovement.enabled = true;
         if (playerAttack != null) playerAttack.enabled = true;
         gameObject.layer = playerLayer; 
     }
 
-    // Reseta vida, armadura e a "gosma"
     void FullHeal()
     {
         cursedHealthLost = 0;
@@ -232,17 +226,16 @@ public class PlayerHealth : MonoBehaviour
     {
         if (healthBarSlider != null)
         {
-            // A barra verde mostra a vida atual
             healthBarSlider.value = (float)currentHealth / maxHealth;
         }
 
         if (gooBarImage != null)
         {
-            // Controla a visibilidade e o preenchimento da gosma
+            // A gosma aparece se houver vida perdida permanentemente
             if (cursedHealthLost > 0)
             {
                 gooBarImage.enabled = true;
-                // A gosma preenche a barra de "vida perdida"
+                // A gosma preenche até onde a vida "normal" iria
                 gooBarImage.fillAmount = (float)(currentHealth + cursedHealthLost) / maxHealth;
             }
             else
@@ -264,7 +257,7 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    // Função para a AnaLu usar
+    // Função usada pelo LevelGenerator
     public void SetCurrentSpawnPoint(Transform newSpawnPoint)
     {
         currentSpawnPoint = newSpawnPoint;
@@ -273,5 +266,31 @@ public class PlayerHealth : MonoBehaviour
             transform.position = newSpawnPoint.position;
             transform.rotation = newSpawnPoint.rotation;
         }
+    }
+    // ... (dentro do PlayerHealth.cs)
+
+    // Função chamada pelo GameManager ao voltar para a Base
+    public void ResetPlayerState()
+    {
+        isDead = false;
+        
+        // 1. Reseta Vida e Armadura
+        FullHeal(); 
+
+        // 2. Reativa o Movimento e Ataque
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerAttack != null) playerAttack.enabled = true;
+
+        // 3. Reseta a Camada Física (para colidir com inimigos de novo na próxima run)
+        gameObject.layer = playerLayer; 
+
+        // 4. Reseta Animação (Volta para Idle)
+        if (playerAnimator != null)
+        {
+            playerAnimator.Rebind(); // Reseta o Animator completamente
+            playerAnimator.Update(0f);
+        }
+
+        Debug.Log("Estado do Jogador Resetado para a Base!");
     }
 }

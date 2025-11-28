@@ -1,9 +1,9 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class EventSystemPersistence : MonoBehaviour
 {
-    // A trava de Singleton para o EventSystem
-    public static EventSystemPersistence instance; 
+    public static EventSystemPersistence instance;
 
     void Awake()
     {
@@ -14,6 +14,12 @@ public class EventSystemPersistence : MonoBehaviour
         }
         else
         {
+            // --- CORREÇÃO DO ERRO ---
+            // Desativa o componente EventSystem IMEDIATAMENTE para a Unity não reclamar
+            // que existem dois ativos ao mesmo tempo.
+            var system = GetComponent<EventSystem>();
+            if (system != null) system.enabled = false;
+            
             Destroy(this.gameObject);
         }
     }

@@ -218,7 +218,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 20
-  floatingDamageTextPrefab: {fileID: 7378325969558604460, guid: 381d820142739174b95708c8ae506627, type: 3}
+  floatingDamageTextPrefab: {fileID: 7217528928149285678, guid: d0cfc8be9256baf4d853d1a092c24d9d, type: 3}
   textOffset: {x: 0, y: 2, z: 0}
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   hitFlashTime: 0.2
@@ -234,7 +234,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d482dbe7eec93fe4982b02ec40e47af9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageZone
-  damageAmount: 100
+  damageAmount: 10
   damageInterval: 1
   pulseVisualizer: {fileID: 7408488882371780389}
 --- !u!1 &4107422237573638928

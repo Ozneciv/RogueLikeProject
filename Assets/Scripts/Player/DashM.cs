@@ -27,31 +27,25 @@ public class DashM : MonoBehaviour
     public KeyCode dashKey = KeyCode.E;
 
     private void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-        if (rb == null)
         {
-            Debug.LogError("Rigidbody não encontrado. Adicione um Rigidbody ao jogador.");
-        }
+           rb = GetComponent<Rigidbody>();
+          dashesLeft = maxDashes;
         
-        // Começa o jogo com o máximo de dashes
-        dashesLeft = maxDashes;
-        if (dashCountText == null)
-        {
-        // Certifique-se de que o seu objeto de texto do dash se chama "DashText"
-            GameObject textObj = GameObject.Find("DashText");
-            if (textObj != null)
-        {
-            dashCountText = textObj.GetComponent<TextMeshProUGUI>();
+         // Tenta encontrar UI no inicio
+         FindUIReferences();
         }
-            else
-        {
-            Debug.LogWarning("DashM: Objeto 'DashText' não encontrado.");
-        }
-        }
-        if (dashCountText != null) dashCountText.enabled = true;
-    }
 
+        // --- NOVA FUNÇÃO PÚBLICA ---
+        public void FindUIReferences()
+        {
+            GameObject textObj = GameObject.Find("DashText"); //
+            if (textObj != null)
+            {
+             dashCountText = textObj.GetComponent<TextMeshProUGUI>();
+             dashCountText.enabled = true;
+            HandleDashUI(); // Atualiza o texto imediatamente
+            }
+        }
     private void Update()
     {
         // Lógica para iniciar o dash

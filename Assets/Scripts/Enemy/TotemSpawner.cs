@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic; // Necessário para usar Listas
 
 public class TotemSpawner : MonoBehaviour
 {
@@ -10,8 +11,6 @@ public class TotemSpawner : MonoBehaviour
     public int totalSkullsToSpawn = 3;
     public float spawnInterval = 5f;
     public float spawnRadius = 10f;
-    // --- NOVA VARIÁVEL AQUI ---
-    [Tooltip("A altura acima do totem em que as caveiras irão aparecer.")]
     public float spawnHeightOffset = 1.5f;
 
     [Header("Ativação")]
@@ -22,18 +21,23 @@ public class TotemSpawner : MonoBehaviour
     private bool isActivated = false;
     private DummyHealth health;
 
+    // --- MUDANÇA 1: Lista para rastrear as caveiras criadas ---
+    private List<GameObject> activeSkulls = new List<GameObject>();
+
     void Start()
     {
         health = GetComponent<DummyHealth>();
-        playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null) playerTransform = player.transform;
         spawnTimer = spawnInterval;
     }
 
     void Update()
     {
+        // Se o totem morrer, o OnDestroy cuida das caveiras.
         if (health != null && health.CurrentHealth <= 0)
         {
-            this.enabled = false;
+            // O DummyHealth vai destruir este objeto em breve.
             return;
         }
 
@@ -41,42 +45,48 @@ public class TotemSpawner : MonoBehaviour
         {
             if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) < activationDistance)
             {
-                Debug.Log("Totem ativado!");
                 isActivated = true;
             }
             return;
         }
         
-        if (skullsSpawned >= totalSkullsToSpawn)
+        if (skullsSpawned < totalSkullsToSpawn)
         {
-            return;
-        }
-
-        spawnTimer -= Time.deltaTime;
-        if (spawnTimer <= 0)
-        {
-            SpawnSkull();
-            spawnTimer = spawnInterval;
+            spawnTimer -= Time.deltaTime;
+            if (spawnTimer <= 0)
+            {
+                SpawnSkull();
+                spawnTimer = spawnInterval;
+            }
         }
     }
 
     void SpawnSkull()
     {
         skullsSpawned++;
-        Debug.Log("Totem invocando caveira " + skullsSpawned + "/" + totalSkullsToSpawn);
-
+        
         Vector2 randomCirclePoint = Random.insideUnitCircle.normalized * spawnRadius;
         Vector3 spawnPosition = transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
-
-        // --- LÓGICA DA ALTURA MODIFICADA ---
-        // Agora usa a altura do totem + o offset definido.
         spawnPosition.y = transform.position.y + spawnHeightOffset;
 
-        Instantiate(skullPrefab, spawnPosition, Quaternion.identity);
+        // --- MUDANÇA 2: Guardar a caveira na lista ---
+        GameObject newSkull = Instantiate(skullPrefab, spawnPosition, Quaternion.identity);
+        activeSkulls.Add(newSkull);
+    }
 
-        if (skullsSpawned >= totalSkullsToSpawn)
+    // --- MUDANÇA 3: Função chamada automaticamente quando o Totem é destruído ---
+    private void OnDestroy()
+    {
+        // Percorre a lista de caveiras criadas
+        foreach (GameObject skull in activeSkulls)
         {
-            Debug.Log("Totem terminou de invocar.");
+            // Se a caveira ainda existe (não foi destruída pelo jogador), nós a destruímos
+            if (skull != null)
+            {
+                Instantiate(skull.GetComponent<DamageZone>().pulseVisualizer.gameObject, skull.transform.position, Quaternion.identity); // Opcional: Efeito visual ao sumir
+                Destroy(skull);
+            }
         }
+        Debug.Log("Totem destruído: todas as caveiras vinculadas foram removidas.");
     }
 }

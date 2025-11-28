@@ -162,9 +162,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8551674286305367355, guid: d2b3d4f4cf598bf42a212ed7944be7a0, type: 3}
       propertyPath: m_Name
-      value: Room_10x20_Transition Variant
+      value: Room_10x20_Transition
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -4016202190174527823, guid: d2b3d4f4cf598bf42a212ed7944be7a0, type: 3}
     m_RemovedGameObjects:
     - {fileID: 3268245732375251471, guid: d2b3d4f4cf598bf42a212ed7944be7a0, type: 3}
     - {fileID: 8229827510429745281, guid: d2b3d4f4cf598bf42a212ed7944be7a0, type: 3}
