@@ -1,84 +1,99 @@
 using UnityEngine;
+using UnityEngine.UI; // Necessário para o Slider
 using System.Collections;
 
 public class DummyHealth : MonoBehaviour
 {
     [Header("Vida")]
     public int maxHealth = 100;
-    // --- MUDANÇA 1: Propriedade para a Vida Atual ---
-    // Outros scripts (como o TotemSpawner) podem LER a vida, mas apenas este script pode MODIFICÁ-LA.
     public int CurrentHealth { get; private set; }
 
+    [Header("Referências UI")]
+    [Tooltip("Arraste o Slider da barra de vida aqui.")]
+    public Slider healthBarSlider;
+    
     [Header("Feedback de Dano")]
     public GameObject floatingDamageTextPrefab;
     public Vector3 textOffset = new Vector3(0, 2f, 0);
     public Color hitColor = Color.red;
     public float hitFlashTime = 0.2f;
     
+    [HideInInspector] public bool isInvulnerable = false; 
+
     private Color originalColor;
     private Renderer dummyRenderer;
 
     private void Start()
     {
-        // --- MUDANÇA 2: Inicializar a Vida ---
         CurrentHealth = maxHealth;
 
-        dummyRenderer = GetComponent<Renderer>();
+        // Procura o renderizador nos filhos (para funcionar com a estrutura Pai/Filho)
+        dummyRenderer = GetComponentInChildren<Renderer>();
+        
         if (dummyRenderer != null)
         {
             originalColor = dummyRenderer.material.color;
         }
+
+        UpdateHealthBar();
     }
 
     public void TakeDamage(int damage)
     {
-        // Se já estiver com vida zero ou menos, não faz nada.
+        if (isInvulnerable) return;
+
         if (CurrentHealth <= 0) return;
 
-        // --- MUDANÇA 3: Subtrair o Dano da Vida ---
         CurrentHealth -= damage;
 
-        Debug.Log(gameObject.name + " recebeu " + damage + " de dano. Vida restante: " + CurrentHealth);
+        UpdateHealthBar();
 
-        // Instancia o texto flutuante de dano
+        // Texto Flutuante
         if (floatingDamageTextPrefab != null)
         {
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
-            textObject.GetComponent<FloatingDamageText>().SetText(damage.ToString());
+            // Tenta pegar o script do texto (seja qual for o nome que você usou: FloatingDamageText)
+            FloatingDamageText dmgScript = textObject.GetComponent<FloatingDamageText>();
+            if(dmgScript != null) dmgScript.SetText(damage.ToString());
         }
 
-        // Feedback visual de flash vermelho
+        // Flash Vermelho
         if (dummyRenderer != null)
         {
-            dummyRenderer.material.color = hitColor;
-            Invoke("ResetColor", hitFlashTime);
+            StopAllCoroutines(); 
+            StartCoroutine(FlashRed());
         }
 
-        // --- MUDANÇA 4: Checar se Morreu ---
         if (CurrentHealth <= 0)
         {
-            CurrentHealth = 0; // Garante que a vida não fique negativa
+            CurrentHealth = 0;
             Die();
         }
     }
 
-    private void ResetColor()
+    void UpdateHealthBar()
     {
-        if (dummyRenderer != null)
+        if (healthBarSlider != null)
         {
-            dummyRenderer.material.color = originalColor;
+            float healthPercent = (float)CurrentHealth / maxHealth;
+            healthBarSlider.value = healthPercent;
+            
+            if (CurrentHealth <= 0) healthBarSlider.gameObject.SetActive(false);
         }
     }
 
-    // --- MUDANÇA 5: Função de Morte ---
+    IEnumerator FlashRed()
+    {
+        dummyRenderer.material.color = hitColor;
+        yield return new WaitForSeconds(hitFlashTime);
+        dummyRenderer.material.color = originalColor;
+    }
+
     private void Die()
     {
-        Debug.Log(gameObject.name + " foi destruído.");
+        // --- REMOVIDO O BLOCO DO KAMIKAZE QUE CAUSAVA O ERRO ---
         
-        // Opcional: Adicionar um efeito de explosão/morte aqui antes de destruir.
-        // Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
-
-        // Remove o objeto do jogo.
+        Debug.Log(gameObject.name + " foi destruído.");
         Destroy(gameObject);
     }
 }

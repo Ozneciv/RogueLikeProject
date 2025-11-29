@@ -11,8 +11,8 @@ public class GameManager : MonoBehaviour
     public GameObject loadingScreenCanvas;
     public Slider loadingBar;
     
-    // O jogador que está vivo e viajando entre cenas
-    [HideInInspector] public GameObject currentPlayer;
+    [HideInInspector]
+    public GameObject currentPlayer;
 
     private void Awake()
     {
@@ -30,15 +30,56 @@ public class GameManager : MonoBehaviour
         if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(false);
     }
 
-    // Chamado pelo PlayerPersistence
+    // --- NOVA LÓGICA DE CENA ---
+    // Inscreve-se no evento para saber quando uma cena carregou
+    void OnEnable() { SceneManager.sceneLoaded += OnSceneLoaded; }
+    void OnDisable() { SceneManager.sceneLoaded -= OnSceneLoaded; }
+
+    // Chamado automaticamente toda vez que uma cena termina de carregar
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Se chegamos na Base...
+        if (scene.name == "BaseLab")
+        {
+            if (currentPlayer != null)
+            {
+                // 1. Encontra o Ponto de Spawn da Base
+                GameObject baseSpawn = GameObject.Find("Base_SpawnPoint");
+                if (baseSpawn != null)
+                {
+                    currentPlayer.transform.position = baseSpawn.transform.position;
+                    currentPlayer.transform.rotation = baseSpawn.transform.rotation;
+                }
+                else
+                {
+                    Debug.LogWarning("GameManager: 'Base_SpawnPoint' não encontrado na BaseLab!");
+                }
+
+                // 2. Manda o jogador tocar a animação de acordar
+                PlayerHealth pHealth = currentPlayer.GetComponent<PlayerHealth>();
+                if (pHealth != null)
+                {
+                    pHealth.TriggerBaseRespawn();
+                }
+            }
+
+            // Esconde a tela de loading (caso esteja ativa)
+            if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(false);
+            
+            // Fade In da tela (se o jogador tiver ScreenFader)
+            if (currentPlayer != null)
+            {
+                ScreenFader fader = currentPlayer.GetComponentInChildren<ScreenFader>();
+                if (fader != null) StartCoroutine(fader.FadeIn());
+            }
+        }
+    }
+    // ---------------------------
+
     public void RegisterPlayer(GameObject player)
     {
-        // Só aceita o registro se não tivermos um jogador, ou se for o mesmo
-        if (currentPlayer == null)
-        {
-            currentPlayer = player;
-            Debug.Log("GameManager: Jogador registrado/reencontrado.");
-        }
+        if (currentPlayer == null) currentPlayer = player;
+        else if (currentPlayer != player) Destroy(player);
     }
 
     public void LoadGameLevel()
@@ -46,61 +87,23 @@ public class GameManager : MonoBehaviour
         StartCoroutine(LoadLevelAsync("GameScene"));
     }
 
-    // Chamada pelo PlayerHealth ao morrer para voltar
-// ... (dentro do GameManager.cs)
-
     public void ReturnToBase()
     {
-        StartCoroutine(LoadBaseRoutine());
-    }
-
-    private IEnumerator LoadBaseRoutine()
-    {
-        // 1. Carrega a cena da Base
-        AsyncOperation operation = SceneManager.LoadSceneAsync("BaseLab");
-        while (!operation.isDone) yield return null;
-
-        // 2. Encontra o ponto de spawn da base (se você criou um)
-        // Se não tiver um "Base_SpawnPoint", ele vai ficar onde a cena carregar, o que pode ser ok.
-        GameObject baseSpawn = GameObject.Find("Base_SpawnPoint"); 
-        Vector3 spawnPos = Vector3.zero; // Posição padrão se não achar o ponto
-        Quaternion spawnRot = Quaternion.identity;
-
-        if (baseSpawn != null)
-        {
-            spawnPos = baseSpawn.transform.position;
-            spawnRot = baseSpawn.transform.rotation;
-        }
-
-        // 3. Reseta o Jogador
-        if (currentPlayer != null)
-        {
-            // Move para a posição inicial da base
-            currentPlayer.transform.position = spawnPos;
-            currentPlayer.transform.rotation = spawnRot;
-
-            // Chama a função que criamos para reativar os controles e vida
-            PlayerHealth pHealth = currentPlayer.GetComponent<PlayerHealth>();
-            if (pHealth != null)
-            {
-                pHealth.ResetPlayerState();
-            }
-        }
+        if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(true);
+        SceneManager.LoadScene("BaseLab");
     }
 
     private IEnumerator LoadLevelAsync(string sceneName)
     {
         if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(true);
 
-        // Pausa o jogador durante o loading
         if (currentPlayer != null)
         {
-            PlayerM pm = currentPlayer.GetComponent<PlayerM>();
-            if (pm != null) pm.enabled = false;
+            PlayerM playerMovement = currentPlayer.GetComponent<PlayerM>();
+            if (playerMovement != null) playerMovement.enabled = false;
         }
 
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);
-
         while (!operation.isDone)
         {
             float progress = Mathf.Clamp01(operation.progress / 0.9f);
@@ -109,20 +112,11 @@ public class GameManager : MonoBehaviour
         }
 
         LevelGenerator levelGen = FindObjectOfType<LevelGenerator>();
-        if (levelGen != null)
-        {
-            levelGen.GenerateLevel();
-        }
-        else
-        {
-            // Se não houver gerador (ex: voltando pra base), libera o jogador direto
-            OnLevelReady(null); 
-        }
+        if (levelGen != null) levelGen.GenerateLevel();
     }
 
-        public void OnLevelReady(Transform spawnPoint)
+    public void OnLevelReady(Transform spawnPoint)
     {
-        // 1. Move o jogador
         if (currentPlayer != null && spawnPoint != null)
         {
             currentPlayer.transform.position = spawnPoint.position;
@@ -130,33 +124,18 @@ public class GameManager : MonoBehaviour
             
             PlayerM playerMovement = currentPlayer.GetComponent<PlayerM>();
             if (playerMovement != null) playerMovement.enabled = true;
-
-            // --- A MÁGICA ACONTECE AQUI ---
-            // Manda o jogador procurar a nova UI da GameScene
+            
+            // Conecta Mercador e UI da fase
             PlayerHealth pHealth = currentPlayer.GetComponent<PlayerHealth>();
             if (pHealth != null) pHealth.FindUIReferences();
-
+            
             DashM pDash = currentPlayer.GetComponent<DashM>();
             if (pDash != null) pDash.FindUIReferences();
-            // -----------------------------
-        }
-        
-        // 2. Conecta a câmera (se estiver usando MoveCam separado)
-        MoveCam mainCamera = FindObjectOfType<MoveCam>();
-        if (mainCamera != null && currentPlayer != null)
-        {
-            mainCamera.playerTransform = currentPlayer.transform;
-        }
 
-        // 3. Conecta o Mercador
-        MerchantUIController merchantUI = FindObjectOfType<MerchantUIController>(true);
-        if (merchantUI != null && currentPlayer != null)
-        {
-            merchantUI.ConnectPlayer(currentPlayer.GetComponent<PlayerHealth>());
+            MerchantUIController merchantUI = FindObjectOfType<MerchantUIController>(true);
+            if (merchantUI != null) merchantUI.ConnectPlayer(pHealth);
         }
         
-        // 4. Tira o loading
-        if (loadingScreenCanvas != null)
-            loadingScreenCanvas.SetActive(false);
+        if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(false);
     }
 }

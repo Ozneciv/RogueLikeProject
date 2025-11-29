@@ -7,19 +7,26 @@ public class EventSystemPersistence : MonoBehaviour
 
     void Awake()
     {
+        // Referência ao componente EventSystem neste objeto
+        EventSystem myEventSystem = GetComponent<EventSystem>();
+
         if (instance == null)
         {
+            // Se eu sou o primeiro, eu assumo o controle
             instance = this;
             DontDestroyOnLoad(this.gameObject);
+            
+            // LIGA o EventSystem (caso esteja desligado no Inspector)
+            if (myEventSystem != null) myEventSystem.enabled = true;
         }
         else
         {
-            // --- CORREÇÃO DO ERRO ---
-            // Desativa o componente EventSystem IMEDIATAMENTE para a Unity não reclamar
-            // que existem dois ativos ao mesmo tempo.
-            var system = GetComponent<EventSystem>();
-            if (system != null) system.enabled = false;
+            // Se já existe um chefe (instance), eu sou uma cópia desnecessária.
             
+            // GARANTE que eu fique desligado para não dar erro
+            if (myEventSystem != null) myEventSystem.enabled = false;
+            
+            // Me destruo
             Destroy(this.gameObject);
         }
     }
