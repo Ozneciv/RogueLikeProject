@@ -95,7 +95,7 @@ IEnumerator PlaySpawnAnimation()
             // --- A CORREÇÃO: ESPERA INTELIGENTE ---
 
             // Passo A: Espera o Animator sair do estado atual e começar a transição
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.15f);
 
             // Passo B: Espera até que o estado ATUAL seja realmente um dos Revives.
             // Isso garante que não pegaremos a duração do "Idle" por engano.
@@ -152,7 +152,6 @@ IEnumerator PlaySpawnAnimation()
         UnlockPlayer();
     }
 
-    // ... (O RESTO DAS FUNÇÕES CONTINUA IGUAL: FindUIReferences, ResetPlayerState, etc.) ...
     
     public void FindUIReferences()
     {

@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.UI; // Necessário para o Slider
+using UnityEngine.UI;
 using System.Collections;
 
 public class DummyHealth : MonoBehaviour
@@ -9,9 +9,15 @@ public class DummyHealth : MonoBehaviour
     public int CurrentHealth { get; private set; }
 
     [Header("Referências UI")]
-    [Tooltip("Arraste o Slider da barra de vida aqui.")]
     public Slider healthBarSlider;
-    
+    // A imagem que realmente tem a cor (dentro do Slider)
+    private Image healthBarFill; 
+
+    [Header("Cores da Barra")]
+    public Color normalColor = Color.red;
+    [Tooltip("Cor da barra quando está sendo protegido pelo Sintonizador.")]
+    public Color buffedColor = Color.cyan;
+
     [Header("Feedback de Dano")]
     public GameObject floatingDamageTextPrefab;
     public Vector3 textOffset = new Vector3(0, 2f, 0);
@@ -19,45 +25,66 @@ public class DummyHealth : MonoBehaviour
     public float hitFlashTime = 0.2f;
     
     [HideInInspector] public bool isInvulnerable = false; 
+    [HideInInspector] public bool isBuffed = false;
 
-    private Color originalColor;
+    private Color originalRenderColor;
     private Renderer dummyRenderer;
 
     private void Start()
     {
         CurrentHealth = maxHealth;
 
-        // Procura o renderizador nos filhos (para funcionar com a estrutura Pai/Filho)
         dummyRenderer = GetComponentInChildren<Renderer>();
-        
         if (dummyRenderer != null)
         {
-            originalColor = dummyRenderer.material.color;
+            originalRenderColor = dummyRenderer.material.color;
+        }
+
+        // Tenta encontrar a imagem de preenchimento dentro do Slider automaticamente
+        if (healthBarSlider != null)
+        {
+            if (healthBarSlider.fillRect != null)
+            {
+                healthBarFill = healthBarSlider.fillRect.GetComponent<Image>();
+            }
+            // Garante a cor inicial
+            if (healthBarFill != null) healthBarFill.color = normalColor;
         }
 
         UpdateHealthBar();
     }
 
+    // --- NOVA FUNÇÃO CHAMADA PELO SINTONIZADOR ---
+    public void SetBuffedStatus(bool buffed)
+    {
+        isBuffed = buffed;
+        
+        // Muda a cor da barra
+        if (healthBarFill != null)
+        {
+            healthBarFill.color = buffed ? buffedColor : normalColor;
+        }
+    }
+
     public void TakeDamage(int damage)
     {
         if (isInvulnerable) return;
-
         if (CurrentHealth <= 0) return;
+
+        // Se estiver buffado, recebe dano reduzido (ex: metade)
+        if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
 
         CurrentHealth -= damage;
 
         UpdateHealthBar();
 
-        // Texto Flutuante
         if (floatingDamageTextPrefab != null)
         {
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
-            // Tenta pegar o script do texto (seja qual for o nome que você usou: FloatingDamageText)
             FloatingDamageText dmgScript = textObject.GetComponent<FloatingDamageText>();
             if(dmgScript != null) dmgScript.SetText(damage.ToString());
         }
 
-        // Flash Vermelho
         if (dummyRenderer != null)
         {
             StopAllCoroutines(); 
@@ -77,7 +104,6 @@ public class DummyHealth : MonoBehaviour
         {
             float healthPercent = (float)CurrentHealth / maxHealth;
             healthBarSlider.value = healthPercent;
-            
             if (CurrentHealth <= 0) healthBarSlider.gameObject.SetActive(false);
         }
     }
@@ -86,13 +112,11 @@ public class DummyHealth : MonoBehaviour
     {
         dummyRenderer.material.color = hitColor;
         yield return new WaitForSeconds(hitFlashTime);
-        dummyRenderer.material.color = originalColor;
+        dummyRenderer.material.color = originalRenderColor;
     }
 
     private void Die()
     {
-        // --- REMOVIDO O BLOCO DO KAMIKAZE QUE CAUSAVA O ERRO ---
-        
         Debug.Log(gameObject.name + " foi destruído.");
         Destroy(gameObject);
     }

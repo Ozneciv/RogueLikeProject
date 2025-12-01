@@ -1105,7 +1105,7 @@ MonoBehaviour:
   dashScript: {fileID: 9188255382873321215}
   attackScript: {fileID: 399265535294509767}
   walkSpeed: 4
-  sprintSpeed: 10
+  sprintSpeed: 8
   rotationSpeed: 10
   groundCheck: {fileID: 9042672255904056496}
   whatIsGround:
@@ -2265,6 +2265,7 @@ MonoBehaviour:
   defaultRange: 2
   daggerRange: 6
   swordRange: 7
+  attackAnimationSpeed: 1
   defaultDamages: 0a0000000f0000001e000000
   daggerDamages: 19000000230000003c000000
   swordDamages: 1e000000280000004b000000
@@ -2288,7 +2289,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bcf01c8d01f386439b2b922f0f8b9a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationEvents
-  playerHealth: {fileID: 6793213990562782912}
 --- !u!1 &6320494353973819877
 GameObject:
   m_ObjectHideFlags: 0

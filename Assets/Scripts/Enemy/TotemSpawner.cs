@@ -16,6 +16,8 @@ public class TotemSpawner : MonoBehaviour
     [Header("Ativação")]
     public float activationDistance = 20f;
 
+    private float originalSpawnInterval;
+    private bool isBuffed = false;
     private int skullsSpawned = 0;
     private float spawnTimer;
     private bool isActivated = false;
@@ -30,6 +32,24 @@ public class TotemSpawner : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null) playerTransform = player.transform;
         spawnTimer = spawnInterval;
+    }
+    // --- LÓGICA DE BUFF DO SINTONIZADOR ---
+
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            originalSpawnInterval = spawnInterval;
+            spawnInterval /= 2f; // Spawna 2x mais rápido!
+            // totalSkullsToSpawn += 5; // Opcional: Aumenta o limite total
+            Debug.Log(gameObject.name + " foi BUFFADO pelo Sintonizador!");
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            spawnInterval = originalSpawnInterval; // Volta ao normal
+        }
     }
 
     void Update()

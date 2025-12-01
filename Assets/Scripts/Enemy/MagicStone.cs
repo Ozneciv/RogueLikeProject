@@ -37,6 +37,9 @@ public class MagicStone_AI : MonoBehaviour
     public float minTeleportDistance = 15f;
     public float maxTeleportDistance = 20f;
 
+    private float originalAttackInterval;
+    private float originalMoveSpeed;
+    private bool isBuffed = false;
     private float teleportTimer;
     private float attackTimer;
     private Rigidbody rb;
@@ -90,7 +93,29 @@ public class MagicStone_AI : MonoBehaviour
     {
         roomBounds = bounds;
     }
-    
+
+
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            originalAttackInterval = attackInterval;
+            originalMoveSpeed = moveSpeed;
+            
+            attackInterval /= 2f; // Ataca 2x mais rápido
+            moveSpeed *= 1.5f;    // Move 50% mais rápido
+            
+            // Se quiser aumentar o dano do raio, precisaria passar isso para o prefab do raio,
+            // mas a velocidade de ataque já aumenta o DPS drasticamente.
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            attackInterval = originalAttackInterval;
+            moveSpeed = originalMoveSpeed;
+        }
+    }
     void WakeUp()
     {
         isAwake = true;

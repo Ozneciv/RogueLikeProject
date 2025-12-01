@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3035752867005567637}
   - component: {fileID: 1884827477303362434}
   - component: {fileID: 1502931603156991328}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: MagicStoneEnemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -35,6 +35,7 @@ Transform:
   m_Children:
   - {fileID: 4972022904728643905}
   - {fileID: 5599421250419480520}
+  - {fileID: 1563061855494443302}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1539692062314136984
@@ -51,11 +52,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 100
   healthBarSlider: {fileID: 6981643806915397011}
+  normalColor: {r: 0.27056146, g: 1, b: 0, a: 1}
+  buffedColor: {r: 0, g: 1, b: 1, a: 1}
   floatingDamageTextPrefab: {fileID: 7217528928149285678, guid: d0cfc8be9256baf4d853d1a092c24d9d, type: 3}
   textOffset: {x: 0, y: 2, z: 0}
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   hitFlashTime: 0.2
   isInvulnerable: 0
+  isBuffed: 0
 --- !u!114 &3035752867005567637
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,6 +137,37 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!1 &6766732950098128462
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1563061855494443302}
+  m_Layer: 0
+  m_Name: CenterTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1563061855494443302
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6766732950098128462}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 2.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3399108781096955651}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1463107904879705362
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -185,6 +220,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: rune_stone_low
       objectReference: {fileID: 0}
+    - target: {fileID: 6486868132319137513, guid: 793c009fa75cca1479d75745e47b3cd3, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 935053299672912435, guid: 793c009fa75cca1479d75745e47b3cd3, type: 3}
     - {fileID: 1800321652334330979, guid: 793c009fa75cca1479d75745e47b3cd3, type: 3}
@@ -207,9 +246,29 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 3399108781096955651}
     m_Modifications:
+    - target: {fileID: 2368838548382590658, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 4911626264200761076, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_Name
       value: HealthBar_Canvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 4911626264200761076, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6707596665340170635, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7320609327938609050, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8618185519011272073, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+      propertyPath: m_Layer
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_Pivot.x

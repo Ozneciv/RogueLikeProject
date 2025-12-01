@@ -860,6 +860,7 @@ MonoBehaviour:
   - {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
   - {fileID: 1086662407212499298, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
   - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
+  - {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
   minEnemyTypes: 3
   maxEnemyTypes: 5
   minWaves: 1
