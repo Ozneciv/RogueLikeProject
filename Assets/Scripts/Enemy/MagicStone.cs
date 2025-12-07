@@ -8,6 +8,10 @@ public class MagicStone_AI : MonoBehaviour
     public GameObject attackMarkerPrefab;
     public GameObject attackBeamPrefab;
 
+    // --- NOVA VARIÁVEL ---
+    [HideInInspector]
+    public BoxCollider roomBounds; // A sala vai preencher isso automaticamente
+
     [Header("Ativação")]
     public float activationDistance = 25f;
     private bool isAwake = false;
@@ -30,14 +34,12 @@ public class MagicStone_AI : MonoBehaviour
     [Header("Teleporte")]
     public float teleportCooldown = 30f;
     public float teleportRange = 4f;
-    // --- NOVAS VARIÁVEIS AQUI ---
-    [Tooltip("A distância MÍNIMA para a qual a pedra vai se teleportar, a partir do jogador.")]
     public float minTeleportDistance = 15f;
-    [Tooltip("A distância MÁXIMA para a qual a pedra vai se teleportar, a partir do jogador.")]
     public float maxTeleportDistance = 20f;
-    
-    // A variável 'teleportDistanceFactor' foi removida por ser obsoleta.
 
+    private float originalAttackInterval;
+    private float originalMoveSpeed;
+    private bool isBuffed = false;
     private float teleportTimer;
     private float attackTimer;
     private Rigidbody rb;
@@ -45,18 +47,26 @@ public class MagicStone_AI : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+        // Tenta achar o player se não foi atribuído
+        if(playerTransform == null)
+        {
+             GameObject p = GameObject.FindGameObjectWithTag("Player");
+             if(p != null) playerTransform = p.transform;
+        }
+        
         startY = transform.position.y;
 
-        if (Random.value > 0.5f)
-        {
-            orbitDirection = -1;
-        }
+        if (Random.value > 0.5f) orbitDirection = -1;
     }
 
     void Update()
     {
         if (playerTransform == null) return;
+
+        // Trava de rotação visual (olha sempre para o player, mas em pé)
+        Vector3 lookPos = playerTransform.position;
+        lookPos.y = transform.position.y;
+        transform.LookAt(lookPos);
 
         HandleFloating();
 
@@ -78,16 +88,44 @@ public class MagicStone_AI : MonoBehaviour
         }
     }
     
+    // Função chamada pelo RoomController para definir os limites
+    public void SetRoomBounds(BoxCollider bounds)
+    {
+        roomBounds = bounds;
+    }
+
+
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            originalAttackInterval = attackInterval;
+            originalMoveSpeed = moveSpeed;
+            
+            attackInterval /= 2f; // Ataca 2x mais rápido
+            moveSpeed *= 1.5f;    // Move 50% mais rápido
+            
+            // Se quiser aumentar o dano do raio, precisaria passar isso para o prefab do raio,
+            // mas a velocidade de ataque já aumenta o DPS drasticamente.
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            attackInterval = originalAttackInterval;
+            moveSpeed = originalMoveSpeed;
+        }
+    }
     void WakeUp()
     {
         isAwake = true;
-        Debug.Log(gameObject.name + " foi ativado!");
         teleportTimer = 0;
         attackTimer = attackInterval / 2;
     }
 
     void HandleMovement()
     {
+        // (Lógica de movimento orbital continua igual...)
         Vector3 playerPositionOnPlane = new Vector3(playerTransform.position.x, transform.position.y, playerTransform.position.z);
         Vector3 directionToPlayer = (playerPositionOnPlane - transform.position).normalized;
         float distance = Vector3.Distance(playerPositionOnPlane, transform.position);
@@ -96,17 +134,11 @@ public class MagicStone_AI : MonoBehaviour
         Vector3 finalMoveDirection = Vector3.zero;
 
         if (distance < minOrbitDistance)
-        {
             finalMoveDirection = (-directionToPlayer + orbitDirectionVector).normalized;
-        }
         else if (distance > maxOrbitDistance)
-        {
             finalMoveDirection = (directionToPlayer + orbitDirectionVector).normalized;
-        }
         else
-        {
             finalMoveDirection = orbitDirectionVector;
-        }
         
         rb.linearVelocity = new Vector3(finalMoveDirection.x * moveSpeed, rb.linearVelocity.y, finalMoveDirection.z * moveSpeed);
     }
@@ -135,25 +167,35 @@ public class MagicStone_AI : MonoBehaviour
         }
     }
 
-    // --- LÓGICA DO TELEPORTE MODIFICADA ---
     void Teleport()
     {
-        Debug.Log("MagicStone teleportou!");
-
-        // 1. Pega uma direção 2D aleatória (um ponto na borda de um círculo).
+        // 1. Calcula a posição de destino desejada (como antes)
         Vector2 randomDirection = Random.insideUnitCircle.normalized;
-        // 2. Pega uma distância aleatória entre o mínimo e o máximo definidos.
         float randomDistance = Random.Range(minTeleportDistance, maxTeleportDistance);
-
-        // 3. Calcula o "deslocamento" a partir da posição do jogador.
         Vector3 offset = new Vector3(randomDirection.x, 0, randomDirection.y) * randomDistance;
-        
-        // 4. A nova posição é a posição ATUAL do jogador + o deslocamento.
-        Vector3 newPosition = playerTransform.position + offset;
-        newPosition.y = transform.position.y; // Mantém a mesma altura.
+        Vector3 targetPosition = playerTransform.position + offset;
+        targetPosition.y = transform.position.y; // Mantém altura
 
-        transform.position = newPosition;
+        // --- CORREÇÃO DE LIMITES (CLAMP) ---
+        // Se a sala definiu limites, usamos eles para impedir que a pedra saia
+        if (roomBounds != null)
+        {
+            // ClosestPoint retorna o ponto dentro do collider mais próximo do alvo.
+            // Se o alvo já estiver dentro, retorna o alvo. Se estiver fora, retorna a borda.
+            targetPosition = roomBounds.ClosestPoint(targetPosition);
+            
+            // Pequeno ajuste para não ficar literalmente dentro da parede
+            Vector3 directionToCenter = (roomBounds.bounds.center - targetPosition).normalized;
+            targetPosition += directionToCenter * 1.0f; 
+            
+            // Garante a altura correta novamente após o Clamp
+            targetPosition.y = transform.position.y; 
+        }
+
+        transform.position = targetPosition;
         teleportTimer = teleportCooldown;
+        
+        Debug.Log("MagicStone teleportou (dentro dos limites)!");
     }
 
     IEnumerator SkybeamAttack()

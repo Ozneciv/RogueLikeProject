@@ -993,7 +993,7 @@ GameObject:
   - component: {fileID: 9188255382873321215}
   - component: {fileID: 5799582598024903971}
   - component: {fileID: 6793213990562782912}
-  - component: {fileID: 7365720533913535403}
+  - component: {fileID: 2877796600527432851}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1035,7 +1035,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3017463410146802124}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: bf79628e794911146a2101ab5608af4b, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -1105,7 +1105,7 @@ MonoBehaviour:
   dashScript: {fileID: 9188255382873321215}
   attackScript: {fileID: 399265535294509767}
   walkSpeed: 4
-  sprintSpeed: 10
+  sprintSpeed: 8
   rotationSpeed: 10
   groundCheck: {fileID: 9042672255904056496}
   whatIsGround:
@@ -1181,14 +1181,14 @@ MonoBehaviour:
   playerAttack: {fileID: 399265535294509767}
   playerAnimator: {fileID: 3618305479678570340}
   screenFader: {fileID: 0}
-  initialSpawnPoint: {fileID: 0}
-  healthBarSlider: {fileID: 0}
+  healthFillImage: {fileID: 0}
   gooBarImage: {fileID: 0}
   armorBarImage: {fileID: 0}
   armorText: {fileID: 0}
+  percentageText: {fileID: 0}
   damageMultiplier: 1
   damageTakenMultiplier: 1
---- !u!114 &7365720533913535403
+--- !u!114 &2877796600527432851
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2266,6 +2266,7 @@ MonoBehaviour:
   defaultRange: 2
   daggerRange: 6
   swordRange: 7
+  attackAnimationSpeed: 1
   defaultDamages: 0a0000000f0000001e000000
   daggerDamages: 19000000230000003c000000
   swordDamages: 1e000000280000004b000000
@@ -2289,7 +2290,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bcf01c8d01f386439b2b922f0f8b9a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationEvents
-  playerHealth: {fileID: 6793213990562782912}
 --- !u!1 &6320494353973819877
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,13 +1,22 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class DummyHealth : MonoBehaviour
 {
     [Header("Vida")]
     public int maxHealth = 100;
-    // --- MUDANÇA 1: Propriedade para a Vida Atual ---
-    // Outros scripts (como o TotemSpawner) podem LER a vida, mas apenas este script pode MODIFICÁ-LA.
     public int CurrentHealth { get; private set; }
+
+    [Header("Referências UI")]
+    public Slider healthBarSlider;
+    // A imagem que realmente tem a cor (dentro do Slider)
+    private Image healthBarFill; 
+
+    [Header("Cores da Barra")]
+    public Color normalColor = Color.red;
+    [Tooltip("Cor da barra quando está sendo protegido pelo Sintonizador.")]
+    public Color buffedColor = Color.cyan;
 
     [Header("Feedback de Dano")]
     public GameObject floatingDamageTextPrefab;
@@ -15,70 +24,100 @@ public class DummyHealth : MonoBehaviour
     public Color hitColor = Color.red;
     public float hitFlashTime = 0.2f;
     
-    private Color originalColor;
+    [HideInInspector] public bool isInvulnerable = false; 
+    [HideInInspector] public bool isBuffed = false;
+
+    private Color originalRenderColor;
     private Renderer dummyRenderer;
 
     private void Start()
     {
-        // --- MUDANÇA 2: Inicializar a Vida ---
         CurrentHealth = maxHealth;
 
-        dummyRenderer = GetComponent<Renderer>();
+        dummyRenderer = GetComponentInChildren<Renderer>();
         if (dummyRenderer != null)
         {
-            originalColor = dummyRenderer.material.color;
+            originalRenderColor = dummyRenderer.material.color;
+        }
+
+        // Tenta encontrar a imagem de preenchimento dentro do Slider automaticamente
+        if (healthBarSlider != null)
+        {
+            if (healthBarSlider.fillRect != null)
+            {
+                healthBarFill = healthBarSlider.fillRect.GetComponent<Image>();
+            }
+            // Garante a cor inicial
+            if (healthBarFill != null) healthBarFill.color = normalColor;
+        }
+
+        UpdateHealthBar();
+    }
+
+    // --- NOVA FUNÇÃO CHAMADA PELO SINTONIZADOR ---
+    public void SetBuffedStatus(bool buffed)
+    {
+        isBuffed = buffed;
+        
+        // Muda a cor da barra
+        if (healthBarFill != null)
+        {
+            healthBarFill.color = buffed ? buffedColor : normalColor;
         }
     }
 
     public void TakeDamage(int damage)
     {
-        // Se já estiver com vida zero ou menos, não faz nada.
+        if (isInvulnerable) return;
         if (CurrentHealth <= 0) return;
 
-        // --- MUDANÇA 3: Subtrair o Dano da Vida ---
+        // Se estiver buffado, recebe dano reduzido (ex: metade)
+        if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
+
         CurrentHealth -= damage;
 
-        Debug.Log(gameObject.name + " recebeu " + damage + " de dano. Vida restante: " + CurrentHealth);
+        UpdateHealthBar();
 
-        // Instancia o texto flutuante de dano
         if (floatingDamageTextPrefab != null)
         {
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
-            textObject.GetComponent<FloatingDamageText>().SetText(damage.ToString());
+            FloatingDamageText dmgScript = textObject.GetComponent<FloatingDamageText>();
+            if(dmgScript != null) dmgScript.SetText(damage.ToString());
         }
 
-        // Feedback visual de flash vermelho
         if (dummyRenderer != null)
         {
-            dummyRenderer.material.color = hitColor;
-            Invoke("ResetColor", hitFlashTime);
+            StopAllCoroutines(); 
+            StartCoroutine(FlashRed());
         }
 
-        // --- MUDANÇA 4: Checar se Morreu ---
         if (CurrentHealth <= 0)
         {
-            CurrentHealth = 0; // Garante que a vida não fique negativa
+            CurrentHealth = 0;
             Die();
         }
     }
 
-    private void ResetColor()
+    void UpdateHealthBar()
     {
-        if (dummyRenderer != null)
+        if (healthBarSlider != null)
         {
-            dummyRenderer.material.color = originalColor;
+            float healthPercent = (float)CurrentHealth / maxHealth;
+            healthBarSlider.value = healthPercent;
+            if (CurrentHealth <= 0) healthBarSlider.gameObject.SetActive(false);
         }
     }
 
-    // --- MUDANÇA 5: Função de Morte ---
+    IEnumerator FlashRed()
+    {
+        dummyRenderer.material.color = hitColor;
+        yield return new WaitForSeconds(hitFlashTime);
+        dummyRenderer.material.color = originalRenderColor;
+    }
+
     private void Die()
     {
         Debug.Log(gameObject.name + " foi destruído.");
-        
-        // Opcional: Adicionar um efeito de explosão/morte aqui antes de destruir.
-        // Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
-
-        // Remove o objeto do jogo.
         Destroy(gameObject);
     }
 }

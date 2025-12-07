@@ -92,7 +92,7 @@ public class PlayerM : MonoBehaviour
             if (attackScript != null && attackScript.isAttacking)
             {
                 // Garante que a velocidade da animação de ataque não seja alterada
-                animator.speed = 1f;
+                animator.speed = attackScript.attackAnimationSpeed;
             }
             else
             {

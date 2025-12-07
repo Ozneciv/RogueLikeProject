@@ -18,10 +18,16 @@ public class PrimaryAttackKnife : MonoBehaviour
     private Collider currentHitbox;
 
     [Header("Attack Stats")]
+
+    
     public float currentRange;
     public float defaultRange = 2f;
     public float daggerRange = 5f;
     public float swordRange = 7f;
+
+    [Header("Animation Settings")]
+    [Tooltip("Multiplicador de velocidade da animação de ataque. 1 = Normal, 2 = Dobro da velocidade.")]
+    public float attackAnimationSpeed = 1.0f; // <-- NOVA VARIÁVEL
 
     [Header("Weapon Damages")]
     public int[] defaultDamages = { 10, 15, 30 };
