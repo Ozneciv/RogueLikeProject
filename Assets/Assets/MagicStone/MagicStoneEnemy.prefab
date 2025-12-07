@@ -84,7 +84,7 @@ MonoBehaviour:
   floatHeight: 0.25
   floatSpeed: 1
   attackInterval: 1.5
-  attackTelegraphTime: 1
+  attackTelegraphTime: 0.5
   teleportCooldown: 30
   teleportRange: 4
   minTeleportDistance: 15

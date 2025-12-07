@@ -20,11 +20,13 @@ public class PlayerHealth : MonoBehaviour
     public ScreenFader screenFader;
     private Rigidbody rb;
 
-    [Header("UI")]
-    public Slider healthBarSlider;
-    public Image gooBarImage;
-    public Image armorBarImage;
+    [Header("UI (Interface)")]
+    public Image healthFillImage; // A barra verde (Filled)
+    public Image gooBarImage;     // A barra de gosma (Filled)
+    public Image armorBarImage;   // A barra de armadura (Filled)
+    
     public TextMeshProUGUI armorText;
+    public TextMeshProUGUI percentageText; // O texto de %
 
     [Header("Pactos")]
     [HideInInspector] public float damageMultiplier = 1.0f;
@@ -55,31 +57,37 @@ public class PlayerHealth : MonoBehaviour
         isDead = false;
         gameObject.layer = playerLayer;
 
-        // --- CORREÇÃO AQUI ---
-        // TRAVA a física enquanto a animação de levantar acontece.
-        // Isso impede que a gravidade brigue com o Root Motion (o bug de orbitar).
+        // Trava a física para a animação
         if (rb != null)
         {
-            rb.isKinematic = true; 
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true;
         }
 
         StartCoroutine(PlaySpawnAnimation());
     }
 
-IEnumerator PlaySpawnAnimation()
+    IEnumerator PlaySpawnAnimation()
     {
-        // 1. Trava tudo
         if (playerMovement != null) playerMovement.enabled = false;
         if (playerAttack != null) playerAttack.enabled = false;
-        if (rb != null) { rb.isKinematic = true; rb.linearVelocity = Vector3.zero; }
+        
+        // Reforça a trava física
+        if (rb != null) 
+        { 
+            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true; 
+        }
 
         if (playerAnimator != null)
         {
             playerAnimator.applyRootMotion = true;
-            
-            // Escolhe a animação
+            yield return new WaitForEndOfFrame();
+
+            // --- LÓGICA FORÇADA PARA REVIVE 2 (Seguro) ---
+            string triggerName = "Revive2";
+
+            /* LÓGICA ORIGINAL (Comentada para uso futuro)
             string triggerName = "Revive1";
             if (Time.time < 1f) 
             {
@@ -89,88 +97,72 @@ IEnumerator PlaySpawnAnimation()
             {
                 if (!diedFallingForward) triggerName = "Revive2";
             }
+            */
 
             playerAnimator.SetTrigger(triggerName);
 
-            // --- A CORREÇÃO: ESPERA INTELIGENTE ---
-
-            // Passo A: Espera o Animator sair do estado atual e começar a transição
-            yield return new WaitForSeconds(0.15f);
-
-            // Passo B: Espera até que o estado ATUAL seja realmente um dos Revives.
-            // Isso garante que não pegaremos a duração do "Idle" por engano.
+            // --- ESPERA INTELIGENTE ---
+            yield return new WaitForSeconds(0.1f);
             float timeout = 0f;
-            while (!playerAnimator.GetCurrentAnimatorStateInfo(0).IsName("Revive1") && 
-                   !playerAnimator.GetCurrentAnimatorStateInfo(0).IsName("Revive2"))
+            
+            // Espera até que o Animator esteja tocando o Revive2
+            while (!playerAnimator.GetCurrentAnimatorStateInfo(0).IsName("Revive2"))
             {
-                yield return null; // Espera mais um frame
+                yield return null;
                 timeout += Time.deltaTime;
-                if (timeout > 2f) break; // Segurança para não travar o jogo se os nomes estiverem errados
+                if (timeout > 2f) break;
             }
 
-            // Passo C: Agora que estamos na animação certa, pegamos a duração dela
             float animationLength = playerAnimator.GetCurrentAnimatorStateInfo(0).length;
-            
-            Debug.Log("Animação detectada. Duração exata: " + animationLength);
-
-            // Passo D: Espera a duração real da animação
             yield return new WaitForSeconds(animationLength);
         }
         
-        // 3. DESTRAVA O JOGADOR
+        // Destrava o jogador
         UnlockPlayer();
     }
-    // Renomeei para ficar mais claro, mas a função é a mesma
+
     public void UnlockPlayer()
     {
-        Debug.Log("Spawn finalizado. Destravando jogador.");
-
         if (playerAnimator != null) playerAnimator.applyRootMotion = false;
-        
         isDead = false;
-        
-        // Reativa scripts
         if (playerMovement != null) playerMovement.enabled = true;
         if (playerAttack != null) playerAttack.enabled = true;
-        
-        // Restaura camada física
         gameObject.layer = playerLayer; 
-
-        // --- DESTRAVA A FÍSICA (CRUCIAL) ---
+        
+        // Destrava a física para o jogo
         if (rb != null) 
-        {
-            rb.isKinematic = false;
-            rb.detectCollisions = true;
-            // Força a gravidade a agir imediatamente para evitar flutuar
+        { 
+            rb.isKinematic = false; 
+            rb.detectCollisions = true; 
             rb.WakeUp(); 
         }
     }
 
-    // Mantemos esta função pública caso algum evento antigo ainda tente chamá-la
-    public void HandleReviveCompletion()
-    {
-        UnlockPlayer();
-    }
-
-    
     public void FindUIReferences()
     {
         try
         {
-            GameObject healthObj = GameObject.Find("HealthBar_Slider");
-            if (healthObj != null) healthBarSlider = healthObj.GetComponent<Slider>();
+            GameObject healthObj = GameObject.Find("Health_Fill");
+            if (healthObj != null) healthFillImage = healthObj.GetComponent<Image>();
+            
             GameObject gooObj = GameObject.Find("Goo_Fill");
             if (gooObj != null) gooBarImage = gooObj.GetComponent<Image>();
-            GameObject armorObj = GameObject.Find("ArmorBar_Fill");
+
+            GameObject armorObj = GameObject.Find("ArmorBar_Fill"); 
             if (armorObj != null) armorBarImage = armorObj.GetComponent<Image>();
-            GameObject textObj = GameObject.Find("ArmorText");
-            if (textObj != null) armorText = textObj.GetComponent<TextMeshProUGUI>();
+
+            GameObject textArmor = GameObject.Find("ArmorText");
+            if (textArmor != null) armorText = textArmor.GetComponent<TextMeshProUGUI>();
+            
+            GameObject textPercent = GameObject.Find("Text_Percentage");
+            if (textPercent != null) percentageText = textPercent.GetComponent<TextMeshProUGUI>();
 
             if (playerMovement == null) playerMovement = GetComponent<PlayerM>();
             if (playerAnimator == null) playerAnimator = GetComponentInChildren<Animator>();
             if (playerAttack == null) playerAttack = GetComponent<PrimaryAttackKnife>();
         }
         catch (System.Exception) { }
+        
         UpdateHealthBar();
         UpdateArmorBar();
     }
@@ -182,16 +174,9 @@ IEnumerator PlaySpawnAnimation()
         if (playerMovement != null) playerMovement.enabled = true;
         if (playerAttack != null) playerAttack.enabled = true;
         gameObject.layer = playerLayer; 
-        if (rb != null)
-        {
-            rb.isKinematic = false;
-            rb.linearVelocity = Vector3.zero;
-        }
-        if (playerAnimator != null)
-        {
-            playerAnimator.Rebind();
-            playerAnimator.Update(0f);
-        }
+        
+        if (rb != null) { rb.isKinematic = false; rb.linearVelocity = Vector3.zero; }
+        if (playerAnimator != null) { playerAnimator.Rebind(); playerAnimator.Update(0f); }
     }
 
     public void TakeDamage(int damage)
@@ -232,10 +217,10 @@ IEnumerator PlaySpawnAnimation()
         if (playerAttack != null) playerAttack.enabled = false;
         gameObject.layer = LayerMask.NameToLayer("DeadBody");
         
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+        // Trava física ao morrer também
+        if (rb != null) 
+        { 
+            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
             rb.isKinematic = true; 
         }
         
@@ -251,9 +236,12 @@ IEnumerator PlaySpawnAnimation()
     {
         yield return new WaitForSeconds(2.0f);
         if (screenFader != null) yield return StartCoroutine(screenFader.FadeOut());
+        
         if (GameManager.instance != null) GameManager.instance.ReturnToBase();
         else SceneManager.LoadScene("BaseLab");
     }
+
+    public void HandleReviveCompletion() { UnlockPlayer(); }
 
     void FullHeal()
     {
@@ -274,11 +262,28 @@ IEnumerator PlaySpawnAnimation()
 
     private void UpdateHealthBar()
     {
-        if (healthBarSlider != null) healthBarSlider.value = (float)currentHealth / maxHealth;
+        if (healthFillImage != null)
+        {
+            healthFillImage.fillAmount = (float)currentHealth / maxHealth;
+        }
+
+        if (percentageText != null)
+        {
+            int percent = Mathf.RoundToInt(((float)currentHealth / maxHealth) * 100);
+            percentageText.text = percent + "%";
+        }
+
         if (gooBarImage != null)
         {
-            if (cursedHealthLost > 0) { gooBarImage.enabled = true; gooBarImage.fillAmount = (float)(currentHealth + cursedHealthLost) / maxHealth; }
-            else { gooBarImage.enabled = false; }
+            if (cursedHealthLost > 0)
+            {
+                gooBarImage.enabled = true;
+                gooBarImage.fillAmount = (float)(currentHealth + cursedHealthLost) / maxHealth;
+            }
+            else
+            {
+                gooBarImage.enabled = false;
+            }
         }
     }
 
