@@ -6,11 +6,14 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/BaseLab.unity
-    guid: 5ec7c7631f602f24eb90da648bdbd327
+    path: Assets/Scenes/Base.unity
+    guid: 50d6c0a8a3923674e810b27c60684012
   - enabled: 1
     path: Assets/Scenes/GameScene.unity
     guid: 5c14982fded0e5e468d95cf5d62c846b
+  - enabled: 0
+    path: Assets/Scenes/BaseLab.unity
+    guid: 5ec7c7631f602f24eb90da648bdbd327
   - enabled: 0
     path: Assets/Scenes/Testing.unity
     guid: 99c9720ab356a0642a771bea13969a05
