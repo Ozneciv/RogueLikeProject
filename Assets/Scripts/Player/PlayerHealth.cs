@@ -44,7 +44,7 @@ public class PlayerHealth : MonoBehaviour
         FindUIReferences();
         FullHeal();
 
-        if (SceneManager.GetActiveScene().name == "BaseLab")
+        if (SceneManager.GetActiveScene().name == "Base")
         {
             TriggerBaseRespawn();
         }
