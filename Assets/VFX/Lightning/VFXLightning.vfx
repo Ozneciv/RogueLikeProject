@@ -19,7 +19,7 @@ MonoBehaviour:
       x: 240
       y: -1482
       width: 1856
-      height: 1564
+      height: 1857
     contents:
     - model: {fileID: 8926484042661614853}
       id: 0
@@ -39,9 +39,6 @@ MonoBehaviour:
     - model: {fileID: 8926484042661615066}
       id: 0
       isStickyNote: 0
-    - model: {fileID: 8926484042661615026}
-      id: 0
-      isStickyNote: 0
     - model: {fileID: 8926484042661615069}
       id: 0
       isStickyNote: 0
@@ -57,9 +54,6 @@ MonoBehaviour:
     - model: {fileID: 8926484042661614955}
       id: 0
       isStickyNote: 0
-    - model: {fileID: 8926484042661614960}
-      id: 0
-      isStickyNote: 0
     - model: {fileID: 8926484042661615050}
       id: 0
       isStickyNote: 0
@@ -73,7 +67,7 @@ MonoBehaviour:
     x: 240
     y: -1482
     width: 1856
-    height: 1564
+    height: 1854
 --- !u!114 &114350483966674976
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -153,7 +147,7 @@ MonoBehaviour:
   m_Children:
   - {fileID: 8926484042661614628}
   - {fileID: 8926484042661614911}
-  m_UIPosition: {x: 877, y: -996}
+  m_UIPosition: {x: 877, y: -997}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots:
@@ -277,7 +271,7 @@ MonoBehaviour:
   m_UIIgnoredErrors: []
   m_Parent: {fileID: 114350483966674976}
   m_Children: []
-  m_UIPosition: {x: 886, y: -569}
+  m_UIPosition: {x: 886, y: -397}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots: []
@@ -1174,7 +1168,7 @@ MonoBehaviour:
   m_Parent: {fileID: 114350483966674976}
   m_Children:
   - {fileID: 8926484042661614960}
-  m_UIPosition: {x: 741, y: -384}
+  m_UIPosition: {x: 741, y: -247}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots:
@@ -1777,7 +1771,7 @@ MonoBehaviour:
   m_Parent: {fileID: 114350483966674976}
   m_Children:
   - {fileID: 8926484042661615026}
-  m_UIPosition: {x: 1647, y: -422}
+  m_UIPosition: {x: 1647, y: -419}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots:
@@ -3753,7 +3747,7 @@ MonoBehaviour:
   m_UIIgnoredErrors: []
   m_Parent: {fileID: 114350483966674976}
   m_Children: []
-  m_UIPosition: {x: 1525, y: -576}
+  m_UIPosition: {x: 1525, y: -569}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots: []

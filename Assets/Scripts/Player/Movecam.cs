@@ -2,9 +2,19 @@ using UnityEngine;
 
 public class MoveCam : MonoBehaviour
 {
+    // Singleton (Mantive caso precise no futuro para outras coisas)
+    public static MoveCam Instance;
+
+    [Header("Target Settings")]
     public Transform playerTransform;
     public float followSpeed = 5f;
     public Vector3 offset;
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
 
     private void LateUpdate()
     {
