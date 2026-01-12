@@ -5,7 +5,7 @@ public class CatalogoManager : MonoBehaviour
 {
     public static CatalogoManager instancia;
 
-    public List<Interactable> itensCatalogados = new List<Interactable>();
+    public List<Interactable> itensCatalogados = new ();
 
     void Awake()
     {

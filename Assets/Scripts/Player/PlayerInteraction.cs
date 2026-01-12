@@ -2,27 +2,23 @@ using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    public GameObject popupUI; // Pop-up do Eptinho
-    public EptinhoController eptinhoController;
+    public GameObject pressFUI;
 
-    private Interactable objetoAtual;
+    private Interactable itemAtual;
 
     void Start()
     {
-        popupUI.SetActive(false);
+        pressFUI.SetActive(false);
     }
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("ENTROU NO TRIGGER COM: " + other.name);
-        Interactable interactable = other.GetComponent<Interactable>();
+        Interactable item = other.GetComponent<Interactable>();
 
-        if (interactable != null)
+        if (item != null && !item.foiCatalogado)
         {
-            objetoAtual = interactable;
-            popupUI.SetActive(true);
-            Debug.Log("Tentou ativar popup. popupUI ativo? " + popupUI.activeSelf);
-
+            itemAtual = item;
+            pressFUI.SetActive(true);
         }
     }
 
@@ -30,18 +26,67 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (other.GetComponent<Interactable>())
         {
-            popupUI.SetActive(false);
-            objetoAtual = null;
+            itemAtual = null;
+            pressFUI.SetActive(false);
         }
     }
 
-    // Chamada pelo botão do pop up (no UI Button)
-    public void AbrirMenu()
+    void Update()
     {
-        if (objetoAtual != null)
+        if (itemAtual != null && Input.GetKeyDown(KeyCode.F))
         {
-            eptinhoController.AbrirMenuDoObjeto(objetoAtual);
-            popupUI.SetActive(false);
+            CatalogoManager.instancia.Catalogar(itemAtual);
+            pressFUI.SetActive(false);
+            itemAtual = null;
         }
     }
 }
+
+
+//using UnityEngine;
+
+//public class PlayerInteraction : MonoBehaviour
+//{
+//    public GameObject popupUI; // Pop-up do Eptinho
+//    public EptinhoController eptinhoController;
+
+//    private Interactable objetoAtual;
+
+//    void Start()
+//    {   
+//        popupUI.SetActive(false);
+//    }
+
+//    void OnTriggerEnter(Collider other)
+//    {
+//        Debug.Log("ENTROU NO TRIGGER COM: " + other.name);
+//        Interactable interactable = other.GetComponent<Interactable>();
+
+//        if (interactable != null)
+//        {
+//            objetoAtual = interactable;
+//            popupUI.SetActive(true);
+//            Debug.Log("Tentou ativar popup. popupUI ativo? " + popupUI.activeSelf);
+
+//        }
+//    }
+
+//    void OnTriggerExit(Collider other)
+//    {
+//        if (other.GetComponent<Interactable>())
+//        {
+//            popupUI.SetActive(false);
+//            objetoAtual = null;
+//        }
+//    }
+
+//    // Chamada pelo botão do pop up (no UI Button)
+//    public void AbrirMenu()
+//    {
+//        if (objetoAtual != null)
+//        {
+//            eptinhoController.AbrirMenuDoObjeto(objetoAtual);
+//            popupUI.SetActive(false);
+//        }
+//    }
+//}
