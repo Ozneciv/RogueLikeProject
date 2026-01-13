@@ -249,7 +249,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   beamColor: {r: 1, g: 0, b: 1, a: 1}
-  moveSpeed: 4.5
+  moveSpeed: 4
   idealDistToTarget: 5
   fleeDistFromPlayer: 8
   flyHeight: 1

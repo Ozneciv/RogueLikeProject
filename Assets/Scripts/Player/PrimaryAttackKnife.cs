@@ -4,13 +4,19 @@ using System.Collections.Generic;
 
 public class PrimaryAttackKnife : MonoBehaviour
 {
-    // Variável para que outros scripts saibam se um ataque está em andamento
-    public bool isAttacking { get; private set; }
+    // --- MUDANÇA 1: Variável que indica se a janela de dano está aberta ---
+    public bool isHitboxActive { get; private set; } = false;
+
+    // Mantemos isAttacking apenas para lógica de Combo, não mais para travar movimento
+    public bool isAttacking { get; private set; } 
+
+    [Header("Estado da Arma")]
+    public bool hasWeapon = false; 
 
     [Header("Required Components")]
     public Animator animator;
     public Rigidbody playerRb;
-    public PlayerHealth playerHealth; // Referência ao script de vida para pegar o multiplicador de dano
+    public PlayerHealth playerHealth;
 
     [Header("Weapon Hitbox")]
     public Collider handHitbox;
@@ -23,22 +29,19 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float daggerRange = 5f;
     public float swordRange = 7f;
 
-    [Header("VFX (Efeitos Visuais)")]
-    public GameObject hitImpactPrefab; // Mantemos o efeito de partícula!
+    [Header("VFX")]
+    public GameObject hitImpactPrefab; 
 
-    [Header("Animation Settings")]
-    [Tooltip("Multiplicador de velocidade da animação de ataque. 1 = Normal, 2 = Dobro da velocidade.")]
+    [Header("Settings")]
     public float attackAnimationSpeed = 1.0f;
+    
+    // REMOVIDO: public float movementLockDuration; -> Não usaremos mais tempo fixo
 
     [Header("Weapon Damages")]
     public int[] defaultDamages = { 10, 15, 30 };
     public int[] daggerDamages = { 25, 35, 60 };
     public int[] swordDamages = { 30, 40, 75 };
     private int[] currentDamages;
-
-    [Header("Attack Settings")]
-    public LayerMask enemyLayer;
-    public float[] attackLungeForces = { 2f, 2f, 8f };
 
     [Header("Combo Settings")]
     public float comboResetTime = 1.2f;
@@ -51,13 +54,14 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         enemiesHitInThisAttack = new List<Collider>();
         EquipDefaultWeapon();
+        hasWeapon = false; 
         isAttacking = false;
+        isHitboxActive = false;
     }
 
     private void Update()
     {
-        // Inicia o combo com a tecla 'Q' OU o botão esquerdo do mouse
-        if ((Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0)) && canAttack)
+        if ((Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0)) && canAttack && hasWeapon)
         {
             if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
             PerformNextAttack();
@@ -66,17 +70,18 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     private void PerformNextAttack()
     {
-        isAttacking = true; // Avisa outros scripts que um ataque começou
+        // --- MUDANÇA 2: Não chamamos mais a rotina de travar movimento aqui ---
+        // O travamento será controlado EXCLUSIVAMENTE pelos Animation Events
+        
+        isAttacking = true; // Apenas para saber que estamos num combo
         canAttack = false;
         comboStep++;
+        
         animator.SetInteger("ComboStep", comboStep);
         animator.SetTrigger("Attack");
 
-        if (playerRb != null && comboStep <= attackLungeForces.Length)
-        {
-            float forceToApply = attackLungeForces[comboStep - 1];
-            playerRb.AddForce(transform.forward * forceToApply, ForceMode.Impulse);
-        }
+        // (Sem AddForce para não deslizar)
+
         comboResetCoroutine = StartCoroutine(ResetComboAfterTime());
     }
 
@@ -90,62 +95,35 @@ public class PrimaryAttackKnife : MonoBehaviour
             int baseDamage = currentDamages[comboStep - 1];
             int finalDamage = baseDamage;
 
-            // Aplica o multiplicador de dano dos pactos do Mercador
             if (playerHealth != null)
-            {
                 finalDamage = Mathf.RoundToInt(baseDamage * playerHealth.damageMultiplier);
-            }
             
-            // Causa o dano
-            enemyCollider.GetComponent<DummyHealth>().TakeDamage(finalDamage);
+            DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>();
+            if (enemy != null) enemy.TakeDamage(finalDamage);
 
-            // --- HIT IMPACT (Visual) ---
             if (hitImpactPrefab != null)
             {
-                // Calcula o ponto no colisor do inimigo mais próximo do jogador
                 Vector3 hitPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up);
-
-                // Instancia o efeito visual
                 GameObject hitVFX = Instantiate(hitImpactPrefab, hitPoint, Quaternion.identity);
-
-                // Destroi o efeito após 2 segundos
                 Destroy(hitVFX, 2f);
             }
-            // ---------------------------
-
-
-            Debug.Log("ACERTOU com " + currentHitbox.name + "! Dano final: " + finalDamage);
         }
     }
     
-    public void ResetCombo()
-    {
-        isAttacking = false; // Avisa outros scripts que o ataque terminou
-        comboStep = 0;
-        animator.SetInteger("ComboStep", 0);
-        canAttack = true;
-        if (comboResetCoroutine != null)
-        {
-            StopCoroutine(comboResetCoroutine);
-            comboResetCoroutine = null;
-        }
-    }
-    
-    private IEnumerator ResetComboAfterTime()
-    {
-        yield return new WaitForSeconds(comboResetTime);
-        ResetCombo();
-    }
-    
-    // --- Funções chamadas por Animation Events ---
+    // --- EVENTOS DE ANIMAÇÃO (A Mágica acontece aqui) ---
+
+    // Chamado na Animation quando o golpe começa a valer (janela de dano)
     public void EnableHitbox()
     {
+        isHitboxActive = true; // <--- AGORA O PLAYER VAI DESACELERAR
         enemiesHitInThisAttack.Clear();
         if (currentHitbox != null) currentHitbox.enabled = true;
     }
 
+    // Chamado na Animation quando o golpe termina
     public void DisableHitbox()
     {
+        isHitboxActive = false; // <--- AGORA O PLAYER VOLTA A CORRER
         if (currentHitbox != null) currentHitbox.enabled = false;
     }
 
@@ -154,30 +132,25 @@ public class PrimaryAttackKnife : MonoBehaviour
         canAttack = true;
     }
     
-    // --- Funções para Trocar de Arma ---
-    public void EquipDefaultWeapon()
+    // Reset Combo
+    public void ResetCombo()
     {
-        currentDamages = defaultDamages;
-        currentRange = defaultRange;
-        currentHitbox = handHitbox;
-        if (equippedWeaponHitbox != null) equippedWeaponHitbox.enabled = false;
+        isAttacking = false;
+        isHitboxActive = false; // Segurança
+        comboStep = 0;
+        animator.SetInteger("ComboStep", 0);
+        canAttack = true;
+        if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+    }
+    
+    private IEnumerator ResetComboAfterTime()
+    {
+        yield return new WaitForSeconds(comboResetTime);
+        ResetCombo();
     }
 
-    public void EquipDaggerWeapon(Collider daggerHitbox)
-    {
-        currentDamages = daggerDamages;
-        currentRange = daggerRange;
-        equippedWeaponHitbox = daggerHitbox;
-        currentHitbox = equippedWeaponHitbox;
-        if (handHitbox != null) handHitbox.enabled = false;
-    }
-
-    public void EquipSwordWeapon(Collider swordHitbox)
-    {
-        currentDamages = swordDamages;
-        currentRange = swordRange;
-        equippedWeaponHitbox = swordHitbox;
-        currentHitbox = equippedWeaponHitbox;
-        if (handHitbox != null) handHitbox.enabled = false;
-    }
+    // Equip Logic (Mantido igual)
+    public void EquipDefaultWeapon() { currentDamages = defaultDamages; currentRange = defaultRange; currentHitbox = handHitbox; if (equippedWeaponHitbox != null) equippedWeaponHitbox.enabled = false; }
+    public void EquipDaggerWeapon(Collider daggerHitbox) { currentDamages = daggerDamages; currentRange = daggerRange; equippedWeaponHitbox = daggerHitbox; currentHitbox = equippedWeaponHitbox; if (handHitbox != null) handHitbox.enabled = false; hasWeapon = true; }
+    public void EquipSwordWeapon(Collider swordHitbox) { currentDamages = swordDamages; currentRange = swordRange; equippedWeaponHitbox = swordHitbox; currentHitbox = equippedWeaponHitbox; if (handHitbox != null) handHitbox.enabled = false; hasWeapon = true; }
 }
