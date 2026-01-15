@@ -988,12 +988,11 @@ GameObject:
   - component: {fileID: 8971367577999715950}
   - component: {fileID: 3397804959345520971}
   - component: {fileID: 5240561299179774875}
-  - component: {fileID: 8186085197561034124}
-  - component: {fileID: 1487240456893238692}
   - component: {fileID: 9188255382873321215}
   - component: {fileID: 5799582598024903971}
   - component: {fileID: 6793213990562782912}
   - component: {fileID: 2877796600527432851}
+  - component: {fileID: 8232472868694630810}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1090,44 +1089,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &8186085197561034124
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017463410146802124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cd1f33b8ade70b54894e447d63f4b0c7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dashScript: {fileID: 9188255382873321215}
-  attackScript: {fileID: 399265535294509767}
-  walkSpeed: 4
-  sprintSpeed: 8
-  rotationSpeed: 10
-  groundCheck: {fileID: 9042672255904056496}
-  whatIsGround:
-    serializedVersion: 2
-    m_Bits: 0
-  animator: {fileID: 3618305479678570340}
-  sprintAnimationSpeedMultiplier: 0.7
---- !u!114 &1487240456893238692
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017463410146802124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d5097992aa9c8c468c9b3bf97515795, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerTransform: {fileID: 1830613685876521810}
-  followSpeed: 5
-  offset: {x: 0, y: 0, z: 0}
 --- !u!114 &9188255382873321215
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1177,7 +1138,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
   maxArmor: 300
-  playerMovement: {fileID: 8186085197561034124}
+  playerMovement: {fileID: 0}
   playerAttack: {fileID: 399265535294509767}
   playerAnimator: {fileID: 3618305479678570340}
   screenFader: {fileID: 0}
@@ -1200,6 +1161,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9345bc87add8404f8dadb4f87274472, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPersistence
+--- !u!114 &8232472868694630810
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd1f33b8ade70b54894e447d63f4b0c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerM
+  dashScript: {fileID: 0}
+  attackScript: {fileID: 0}
+  walkSpeed: 5
+  sprintSpeed: 10
+  rotationSpeed: 10
+  groundCheck: {fileID: 9042672255904056496}
+  whatIsGround:
+    serializedVersion: 2
+    m_Bits: 8
+  animator: {fileID: 3618305479678570340}
+  sprintAnimationSpeedMultiplier: 0.8
 --- !u!1 &3037435734811326214
 GameObject:
   m_ObjectHideFlags: 0
@@ -2258,6 +2242,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d885b6f971474394b86e9c0df6231369, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PrimaryAttackKnife
+  hasWeapon: 0
   animator: {fileID: 3618305479678570340}
   playerRb: {fileID: 5240561299179774875}
   playerHealth: {fileID: 6793213990562782912}
@@ -2266,6 +2251,7 @@ MonoBehaviour:
   defaultRange: 2
   daggerRange: 6
   swordRange: 7
+  hitImpactPrefab: {fileID: 0}
   attackAnimationSpeed: 1
   defaultDamages: 0a0000000f0000001e000000
   daggerDamages: 19000000230000003c000000

@@ -490,7 +490,7 @@ MonoBehaviour:
   exitRoomPrefab: {fileID: 340013495099815400, guid: 81e897d1678caa14cb9deaf088d7165b, type: 3}
   maxMainRooms: 6
   roomLimitPerType: 6
-  merchantRoomChance: 0.5
+  merchantRoomChance: 0.1
   extraLoadDelay: 0
 --- !u!4 &1112906433
 Transform:
