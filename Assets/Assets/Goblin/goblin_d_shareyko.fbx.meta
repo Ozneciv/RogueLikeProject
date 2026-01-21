@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: c0c65d5866a5c8547adde151ba97005e
+guid: 11d00224e6263d04ca38f8bf5db30190
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -13,7 +13,7 @@ ModelImporter:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
     resampleCurves: 1
-    optimizeGameObjects: 1
+    optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
@@ -27,9 +27,7 @@ ModelImporter:
     animationPositionError: 0.5
     animationScaleError: 0.5
     animationWrapMode: 0
-    extraExposedTransformPaths:
-    - goblin lp
-    - goblin lp.001
+    extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
     isReadable: 0
@@ -85,22 +83,7 @@ ModelImporter:
   humanDescription:
     serializedVersion: 3
     human: []
-    skeleton:
-    - name: Goblin(Clone)
-      parentName: 
-      position: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-    - name: goblin lp
-      parentName: Goblin(Clone)
-      position: {x: 6.638011e-16, y: 2.9894943, z: 0.9495943}
-      rotation: {x: -0.18013194, y: 8.920759e-17, z: -8.920762e-17, w: 0.98364246}
-      scale: {x: 100, y: 100, z: 100}
-    - name: goblin lp.001
-      parentName: Goblin(Clone)
-      position: {x: 6.638011e-16, y: 2.9894943, z: 0.9495943}
-      rotation: {x: -0.18013194, y: 8.920759e-17, z: -8.920762e-17, w: 0.98364246}
-      scale: {x: 100, y: 100, z: 100}
+    skeleton: []
     armTwist: 0.5
     foreArmTwist: 0.5
     upperLegTwist: 0.5

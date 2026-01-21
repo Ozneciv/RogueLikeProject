@@ -78,7 +78,7 @@ public class GoblinAI_Transform : MonoBehaviour
         {
             // ESTADO 4: OCIOSO/PARAR (Jogador muito longe)
             PararMovimento();
-            anim.SetBool("IsFleeing", false);
+            anim.SetBool("Running", false);
             estaFugindo = false;
         }
     }
@@ -90,7 +90,7 @@ public class GoblinAI_Transform : MonoBehaviour
     {
         // Se estava fugindo, para.
         estaFugindo = false;
-        anim.SetBool("IsFleeing", true); // Reusa a animação de correr (ou crie uma 'IsRunning' no Animator)
+        anim.SetBool("Running", true); // Reusa a animação de correr (ou crie uma 'IsRunning' no Animator)
 
         // 1. Calcula a direção *para* o jogador
         Vector3 direcaoPerseguicao = jogador.position - transform.position;
@@ -123,7 +123,7 @@ public class GoblinAI_Transform : MonoBehaviour
     void FugirDoJogador()
     {
         estaFugindo = true;
-        anim.SetBool("IsFleeing", true);
+        anim.SetBool("Running", true);
         
         Vector3 direcaoFuga = transform.position - jogador.position;
         direcaoFuga.y = 0; 
@@ -139,49 +139,52 @@ public class GoblinAI_Transform : MonoBehaviour
     }
 
     void Atacar()
-    {
-        PararMovimento(); 
-        anim.SetBool("IsFleeing", false);
-        
-        Vector3 direcaoAlvo = jogador.position - transform.position;
-        direcaoAlvo.y = 0;
-        Quaternion lookRotation = Quaternion.LookRotation(direcaoAlvo);
-        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
-
-
-        if (Time.time >= tempoUltimoAtaque + intervaloAtaque)
-        {
-            ArremessarBomba();
-            tempoUltimoAtaque = Time.time;
-        }
-    }
+{
+    PararMovimento(); 
+    anim.SetBool("Running", false);
     
-    void ArremessarBomba()
+    // Rotação: Olha para o alvo
+    Vector3 direcaoAlvo = jogador.position - transform.position;
+    direcaoAlvo.y = 0;
+    Quaternion lookRotation = Quaternion.LookRotation(direcaoAlvo);
+    transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
+
+    if (Time.time >= tempoUltimoAtaque + intervaloAtaque)
     {
-        anim.SetTrigger("ThrowBomb");
+        // 1. APENAS dispara a animação
+        anim.SetTrigger("Attacking");
+        
+        // Reinicia o tempo aqui para ele não disparar a animação de novo antes da hora
+        tempoUltimoAtaque = Time.time;
+    }
+}
 
-        if (prefabBomba == null || pontoDeArremesso == null) return;
+// 2. Esta função será chamada pela própria ANIMAÇÃO através de um Evento
+public void EventoDispararBomba()
+{
+    if (prefabBomba == null || pontoDeArremesso == null) return;
 
-        GameObject bomba = Instantiate(prefabBomba, pontoDeArremesso.position, pontoDeArremesso.rotation);
-        Rigidbody rbBomba = bomba.GetComponent<Rigidbody>();
+    // 1. Cria a bomba
+    GameObject bomba = Instantiate(prefabBomba, pontoDeArremesso.position, pontoDeArremesso.rotation);
+    
+    // 2. PEGA OS COLIDORES (Obrigatório para a física funcionar)
+    Collider colisorBomba = bomba.GetComponent<Collider>();
+    Collider colisorGoblin = GetComponent<Collider>();
 
-        if (rbBomba != null)
-        {
-            Vector3 direcaoArremesso = transform.forward * forcaArremesso + Vector3.up * forcaArco;
-            rbBomba.AddForce(direcaoArremesso, ForceMode.Impulse);
-        }
+    // 3. IGNORA A COLISÃO (Isso evita que a bomba bata no Capsule Collider do Goblin)
+    if (colisorBomba != null && colisorGoblin != null)
+    {
+        Physics.IgnoreCollision(colisorBomba, colisorGoblin);
     }
 
-    // Ferramenta visual para ver o raio de visão na Scene da Unity
-    void OnDrawGizmosSelected()
+    // 4. APLICA A FORÇA
+    Rigidbody rbBomba = bomba.GetComponent<Rigidbody>();
+    if (rbBomba != null)
     {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, distanciaMaximaBusca); // Novo: Raio de busca
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, distanciaSegura); // Raio de ataque/parada
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, distanciaParaFugir); // Raio de pânico
+        // Garante que a bomba não comece dormindo
+        rbBomba.WakeUp(); 
+        Vector3 forcaFinal = (transform.forward * forcaArremesso) + (Vector3.up * forcaArco);
+        rbBomba.AddForce(forcaFinal, ForceMode.Impulse);
     }
+}
 }
