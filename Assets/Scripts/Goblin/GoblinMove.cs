@@ -41,6 +41,10 @@ public class GoblinAI_Transform : MonoBehaviour
             Debug.LogError("O Rigidbody é necessário para o movimento de IA e para o arremesso da bomba.");
             return;
         }
+        if (anim == null)
+        {
+            Debug.LogError("O Script não encontrou o Animator no objeto: " + gameObject.name);
+        }
         
         rb.freezeRotation = true; 
 
