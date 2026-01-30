@@ -1,0 +1,317 @@
+using UnityEngine;
+using System.Collections;
+
+/// <summary>
+/// IA do Golem - Inimigo lento com ataques fortes e habilidade de stun
+/// Usa DummyHealth para sistema de vida
+/// </summary>
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(DummyHealth))]
+public class Golem_AI : MonoBehaviour
+{
+    [Header("Referências")]
+    private Transform playerTransform;
+    private DummyHealth health;
+    private Rigidbody rb;
+
+    [Header("VFX Prefabs (Placeholders ok)")]
+    [Tooltip("Prefab do círculo de aviso no chão antes do stun. Se null, usa um placeholder.")]
+    public GameObject stunMarkerPrefab;
+    [Tooltip("Prefab do raio/efeito de stun. Se null, usa lógica interna.")]
+    public GameObject stunBeamPrefab;
+
+    [Header("Ativação")]
+    public float activationDistance = 25f;
+    private bool isActivated = false;
+
+    [Header("Movimento")]
+    [Tooltip("Velocidade de movimento (lento)")]
+    public float moveSpeed = 2f;
+    [Tooltip("Velocidade de rotação")]
+    public float rotationSpeed = 5f;
+
+    [Header("Ataque Melee")]
+    [Tooltip("Distância para atacar corpo a corpo")]
+    public float meleeRange = 3f;
+    [Tooltip("Cooldown entre ataques melee")]
+    public float meleeCooldown = 3f;
+    [Tooltip("Dano do ataque melee")]
+    public int meleeDamage = 35;
+    [Tooltip("Raio da hitbox do melee")]
+    public float meleeHitRadius = 2f;
+
+    [Header("Habilidade de Stun")]
+    [Tooltip("Distância mínima para usar stun (usa quando longe)")]
+    public float stunMinDistance = 8f;
+    [Tooltip("Cooldown do stun")]
+    public float stunCooldown = 12f;
+    [Tooltip("Duração do stun no jogador")]
+    public float stunDuration = 1.5f;
+    [Tooltip("Tempo de telegrafagem antes do stun")]
+    public float stunTelegraphTime = 1.5f;
+    [Tooltip("Raio da área de stun")]
+    public float stunRadius = 4f;
+
+    [Header("Estados")]
+    private bool isAttacking = false;
+    private bool isCastingStun = false;
+    private float meleeTimer = 0f;
+    private float stunTimer = 0f;
+    private int meleeCombo = 0; // Para usar stun em combos
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        health = GetComponent<DummyHealth>();
+
+        // Configura Rigidbody
+        rb.freezeRotation = true;
+
+        // Encontra o player
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            playerTransform = player.transform;
+        }
+        else
+        {
+            Debug.LogError("Golem_AI: Player não encontrado! Verifique a tag 'Player'.");
+        }
+    }
+
+    void Update()
+    {
+        if (playerTransform == null) return;
+        if (health != null && health.CurrentHealth <= 0) return;
+
+        // Timers
+        if (meleeTimer > 0) meleeTimer -= Time.deltaTime;
+        if (stunTimer > 0) stunTimer -= Time.deltaTime;
+
+        // Ativação por proximidade
+        if (!isActivated)
+        {
+            float dist = Vector3.Distance(transform.position, playerTransform.position);
+            if (dist < activationDistance)
+            {
+                isActivated = true;
+            }
+            return;
+        }
+
+        // Não faz nada enquanto ataca ou usa stun
+        if (isAttacking || isCastingStun) return;
+
+        HandleRotation();
+        HandleCombat();
+    }
+
+    void FixedUpdate()
+    {
+        if (!isActivated || isAttacking || isCastingStun) return;
+        if (health != null && health.CurrentHealth <= 0) return;
+
+        HandleMovement();
+    }
+
+    void HandleRotation()
+    {
+        Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
+        directionToPlayer.y = 0;
+
+        if (directionToPlayer != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+    }
+
+    void HandleMovement()
+    {
+        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+        // Move em direção ao player se não está no range de melee
+        if (distToPlayer > meleeRange)
+        {
+            Vector3 direction = (playerTransform.position - transform.position).normalized;
+            direction.y = 0;
+
+            Vector3 targetVelocity = direction * moveSpeed;
+            rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+        }
+        else
+        {
+            // Para perto do player
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+        }
+    }
+
+    void HandleCombat()
+    {
+        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+        // Prioridade 1: Se longe e stun disponível, usa stun
+        if (distToPlayer > stunMinDistance && stunTimer <= 0)
+        {
+            StartCoroutine(CastStun());
+            return;
+        }
+
+        // Prioridade 2: Se perto, ataca melee
+        if (distToPlayer <= meleeRange && meleeTimer <= 0)
+        {
+            StartCoroutine(PerformMeleeAttack());
+            return;
+        }
+
+        // Prioridade 3: Após 2 melee hits seguidos, usa stun se disponível
+        if (meleeCombo >= 2 && stunTimer <= 0)
+        {
+            StartCoroutine(CastStun());
+            meleeCombo = 0;
+        }
+    }
+
+    IEnumerator PerformMeleeAttack()
+    {
+        isAttacking = true;
+        meleeTimer = meleeCooldown;
+
+        // Animação de vento (wind-up)
+        Debug.Log("Golem preparando ataque melee...");
+        yield return new WaitForSeconds(0.5f);
+
+        // Verifica hit
+        Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward * 1.5f, meleeHitRadius);
+        foreach (Collider hit in hits)
+        {
+            if (hit.CompareTag("Player"))
+            {
+                PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(meleeDamage);
+                    Debug.Log("Golem acertou melee! Dano: " + meleeDamage);
+                    meleeCombo++;
+                }
+            }
+        }
+
+        // Recovery
+        yield return new WaitForSeconds(0.5f);
+
+        isAttacking = false;
+    }
+
+    IEnumerator CastStun()
+    {
+        isCastingStun = true;
+        stunTimer = stunCooldown;
+        meleeCombo = 0;
+
+        // Para de se mover
+        rb.linearVelocity = Vector3.zero;
+
+        // Posição alvo = posição atual do player
+        Vector3 targetPosition = new Vector3(playerTransform.position.x, 0.05f, playerTransform.position.z);
+
+        // Spawn do marcador de aviso (telegrafagem)
+        GameObject marker = null;
+        if (stunMarkerPrefab != null)
+        {
+            marker = Instantiate(stunMarkerPrefab, targetPosition, Quaternion.Euler(90, 0, 0));
+            // Escala para mostrar o raio
+            marker.transform.localScale = new Vector3(stunRadius * 2, stunRadius * 2, 1);
+        }
+        else
+        {
+            // Placeholder: Debug visual
+            Debug.Log("Golem marcando área de stun em: " + targetPosition);
+            Debug.DrawLine(targetPosition, targetPosition + Vector3.up * 5f, Color.cyan, stunTelegraphTime);
+        }
+
+        Debug.Log("Golem carregando STUN! Fique fora da área!");
+
+        // Espera o tempo de telegrafagem
+        yield return new WaitForSeconds(stunTelegraphTime);
+
+        // Destrói o marcador
+        if (marker != null) Destroy(marker);
+
+        // Dispara o stun
+        if (stunBeamPrefab != null)
+        {
+            GameObject beam = Instantiate(stunBeamPrefab, targetPosition, Quaternion.identity);
+            StunBeam stunScript = beam.GetComponent<StunBeam>();
+            if (stunScript != null)
+            {
+                stunScript.Initialize(stunRadius, stunDuration);
+            }
+            Destroy(beam, 1f);
+        }
+        else
+        {
+            // Fallback: verifica diretamente
+            Collider[] hits = Physics.OverlapSphere(targetPosition, stunRadius);
+            foreach (Collider hit in hits)
+            {
+                if (hit.CompareTag("Player"))
+                {
+                    PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        playerHealth.ApplyStun(stunDuration);
+                        Debug.Log("Golem acertou STUN no player!");
+                    }
+                }
+            }
+        }
+
+        // Recovery do cast
+        yield return new WaitForSeconds(0.5f);
+
+        isCastingStun = false;
+    }
+
+    /// <summary>
+    /// Pode ser buffado pelo CrystalTuner
+    /// </summary>
+    public void SetBuff(bool active)
+    {
+        if (active)
+        {
+            moveSpeed *= 1.3f;
+            stunCooldown *= 0.7f;
+            Debug.Log(gameObject.name + " foi BUFFADO!");
+        }
+        else
+        {
+            moveSpeed /= 1.3f;
+            stunCooldown /= 0.7f;
+        }
+    }
+
+    // Visualização no Editor
+    void OnDrawGizmosSelected()
+    {
+        // Ativação
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, activationDistance);
+
+        // Range melee
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, meleeRange);
+
+        // Hitbox melee
+        Gizmos.color = new Color(1, 0, 0, 0.3f);
+        Gizmos.DrawSphere(transform.position + transform.forward * 1.5f, meleeHitRadius);
+
+        // Distância mínima para stun
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, stunMinDistance);
+
+        // Raio do stun
+        Gizmos.color = new Color(0, 1, 1, 0.2f);
+        Gizmos.DrawSphere(transform.position + transform.forward * 5f, stunRadius);
+    }
+}

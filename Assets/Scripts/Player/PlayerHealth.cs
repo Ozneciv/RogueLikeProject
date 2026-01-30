@@ -32,6 +32,11 @@ public class PlayerHealth : MonoBehaviour
     [HideInInspector] public float damageMultiplier = 1.0f;
     [HideInInspector] public float damageTakenMultiplier = 1.0f;
 
+    [Header("Stun")]
+    public bool isStunned { get; private set; } = false;
+    private float stunImmunityTimer = 0f;
+    private float stunImmunityDuration = 2f; // Imunidade após stun
+
     private bool isDead = false;
     private int playerLayer;
     private bool diedFallingForward = false;
@@ -294,4 +299,66 @@ public class PlayerHealth : MonoBehaviour
     }
     
     public void SetCurrentSpawnPoint(Transform newSpawnPoint) { }
+
+    // ========== SISTEMA DE STUN ==========
+    
+    void Update()
+    {
+        // Gerencia o timer de imunidade a stun
+        if (stunImmunityTimer > 0)
+        {
+            stunImmunityTimer -= Time.deltaTime;
+        }
+    }
+
+    /// <summary>
+    /// Aplica stun ao jogador por uma duração específica.
+    /// Chamado por inimigos como o Golem.
+    /// </summary>
+    public void ApplyStun(float duration)
+    {
+        // Não pode ser stunado se: já está stunado, morto, ou imune
+        if (isStunned || isDead || stunImmunityTimer > 0) return;
+
+        // Verifica se está em dash (não pode ser stunado durante dash)
+        DashM dashScript = GetComponent<DashM>();
+        if (dashScript != null && dashScript.isDashing) return;
+
+        StartCoroutine(StunCoroutine(duration));
+    }
+
+    private IEnumerator StunCoroutine(float duration)
+    {
+        isStunned = true;
+
+        // Desabilita controles
+        if (playerMovement != null) playerMovement.enabled = false;
+        if (playerAttack != null) playerAttack.enabled = false;
+
+        // Para o movimento
+        if (rb != null && !rb.isKinematic)
+        {
+            rb.linearVelocity = Vector3.zero;
+        }
+
+        // Animação de stun (opcional - usa o mesmo sistema de idle)
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetFloat("Speed", 0f);
+        }
+
+        Debug.Log("Player STUNADO por " + duration + " segundos!");
+
+        yield return new WaitForSeconds(duration);
+
+        // Restaura controles
+        isStunned = false;
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerAttack != null) playerAttack.enabled = true;
+
+        // Ativa imunidade temporária
+        stunImmunityTimer = stunImmunityDuration;
+
+        Debug.Log("Player recuperou do stun. Imunidade por " + stunImmunityDuration + "s");
+    }
 }
