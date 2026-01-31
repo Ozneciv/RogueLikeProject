@@ -14,6 +14,7 @@ public class Spider_AI : MonoBehaviour
     private DummyHealth health;
     private Rigidbody rb;
     private Collider spiderCollider;
+    private SpiderDashVFX dashVFX;
 
     [Header("Ativação")]
     public float activationDistance = 20f;
@@ -63,6 +64,13 @@ public class Spider_AI : MonoBehaviour
 
         // Configura Rigidbody
         rb.freezeRotation = true;
+
+        // Configura VFX de Dash (adiciona se não existir)
+        dashVFX = GetComponent<SpiderDashVFX>();
+        if (dashVFX == null)
+        {
+            dashVFX = gameObject.AddComponent<SpiderDashVFX>();
+        }
 
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -166,6 +174,13 @@ public class Spider_AI : MonoBehaviour
         // Calcula direção do pulo
         Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
         
+        // Ativa VFX de dash
+        if (dashVFX != null)
+        {
+            dashVFX.StartDashEffect();
+            dashVFX.SpawnAfterImage();
+        }
+        
         // Aplica força do pulo
         rb.linearVelocity = Vector3.zero;
         Vector3 leapVelocity = directionToPlayer * leapForce + Vector3.up * leapUpForce;
@@ -203,10 +218,17 @@ public class Spider_AI : MonoBehaviour
                 }
             }
 
+            // Spawn after-image durante o pulo
+            if (dashVFX != null && ((int)(elapsed * 10) % 2 == 0))
+            {
+                dashVFX.SpawnAfterImage();
+            }
+
             yield return null;
         }
 
-        // Espera tocar o chão
+        // Para VFX e espera tocar o chão
+        if (dashVFX != null) dashVFX.StopDashEffect();
         yield return new WaitForSeconds(0.3f);
 
         isLeaping = false;
@@ -223,6 +245,13 @@ public class Spider_AI : MonoBehaviour
         isRetreating = true;
         retreatTimer = retreatCooldown;
 
+        // Ativa VFX de retreat
+        if (dashVFX != null)
+        {
+            dashVFX.StartDashEffect();
+            dashVFX.SpawnAfterImage();
+        }
+
         // Pula para trás
         Vector3 retreatDirection = (transform.position - playerTransform.position).normalized;
         retreatDirection.y = 0;
@@ -233,7 +262,12 @@ public class Spider_AI : MonoBehaviour
 
         Debug.Log("[SPIDER] RETREAT! Recuando do player após acertar o ataque.");
 
-        yield return new WaitForSeconds(0.6f);
+        yield return new WaitForSeconds(0.4f);
+        
+        // Para VFX
+        if (dashVFX != null) dashVFX.StopDashEffect();
+        
+        yield return new WaitForSeconds(0.2f);
 
         isRetreating = false;
     }

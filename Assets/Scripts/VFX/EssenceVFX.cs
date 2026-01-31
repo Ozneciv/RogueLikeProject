@@ -1,195 +1,159 @@
 using UnityEngine;
 
 /// <summary>
-/// Efeito visual para a Essência
-/// Cria partículas brilhantes e glow automaticamente via código
+/// VFX para a Essência - Orbe Ethereal de Alma
+/// Glow suave pulsante ao redor da esfera
 /// </summary>
 public class EssenceVFX : MonoBehaviour
 {
-    [Header("Cores")]
-    public Color essenceColor = new Color(0.5f, 0.8f, 1f, 1f); // Azul claro
-    public Color glowColor = new Color(0.3f, 0.6f, 1f, 0.5f);
-
-    [Header("Partículas")]
-    public int particleCount = 15;
-    public float particleSpeed = 0.5f;
-    public float particleSize = 0.1f;
+    [Header("Cores da Alma")]
+    public Color coreColor = new Color(0.4f, 0.9f, 1f, 1f); // Cyan claro
+    public Color glowColor = new Color(0.2f, 0.6f, 0.9f, 0.6f); // Azul suave
 
     [Header("Glow")]
     public float glowIntensity = 2f;
-    public float pulseSpeed = 2f;
-    public float pulseAmount = 0.3f;
+    public float pulseSpeed = 1.5f;
+    public float pulseAmount = 0.4f;
+    public float glowRadius = 1.5f;
 
-    private ParticleSystem particles;
     private Light glowLight;
-    private Material essenceMaterial;
+    private Material coreMaterial;
+    private Material glowMaterial;
+    private GameObject glowSphere;
     private float baseIntensity;
+    private float baseScale;
 
     void Start()
     {
-        SetupMaterial();
-        SetupParticles();
-        SetupGlow();
+        SetupCoreMaterial();
+        SetupGlowSphere();
+        SetupGlowLight();
+        baseScale = transform.localScale.x;
     }
 
     void Update()
     {
-        // Efeito de pulso no glow
+        float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
+        float fastPulse = 1f + Mathf.Sin(Time.time * pulseSpeed * 2f) * (pulseAmount * 0.3f);
+
+        // Pulso na luz
         if (glowLight != null)
         {
-            float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
             glowLight.intensity = baseIntensity * pulse;
+            glowLight.range = glowRadius * pulse;
         }
 
-        // Pulso no material também
-        if (essenceMaterial != null)
+        // Pulso no glow sphere
+        if (glowSphere != null)
         {
-            float emission = 0.5f + Mathf.Sin(Time.time * pulseSpeed) * 0.3f;
-            essenceMaterial.SetColor("_EmissionColor", essenceColor * emission * glowIntensity);
+            float glowScale = glowRadius * pulse;
+            glowSphere.transform.localScale = new Vector3(glowScale, glowScale, glowScale);
+
+            // Fade do glow baseado no pulso
+            if (glowMaterial != null)
+            {
+                float alpha = 0.15f + (pulse - 1f) * 0.3f;
+                Color c = glowColor;
+                glowMaterial.color = new Color(c.r, c.g, c.b, alpha);
+            }
+        }
+
+        // Pulso na emissão do core
+        if (coreMaterial != null)
+        {
+            float emission = 0.5f + fastPulse * 0.5f;
+            coreMaterial.SetColor("_EmissionColor", coreColor * emission * glowIntensity);
         }
     }
 
-    void SetupMaterial()
+    void SetupCoreMaterial()
     {
         Renderer rend = GetComponent<Renderer>();
         if (rend != null)
         {
-            // Cria material brilhante
-            essenceMaterial = new Material(Shader.Find("Standard"));
-            essenceMaterial.color = essenceColor;
-            essenceMaterial.EnableKeyword("_EMISSION");
-            essenceMaterial.SetColor("_EmissionColor", essenceColor * glowIntensity);
+            // Material brilhante para o core
+            coreMaterial = new Material(Shader.Find("Standard"));
+            coreMaterial.color = coreColor;
+            coreMaterial.EnableKeyword("_EMISSION");
+            coreMaterial.SetColor("_EmissionColor", coreColor * glowIntensity);
             
-            // Transparência
-            essenceMaterial.SetFloat("_Mode", 3); // Transparent
-            essenceMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            essenceMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            essenceMaterial.SetInt("_ZWrite", 0);
-            essenceMaterial.DisableKeyword("_ALPHATEST_ON");
-            essenceMaterial.EnableKeyword("_ALPHABLEND_ON");
-            essenceMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            essenceMaterial.renderQueue = 3000;
+            // Leve transparência
+            coreMaterial.SetFloat("_Mode", 3);
+            coreMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            coreMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            coreMaterial.SetInt("_ZWrite", 1);
+            coreMaterial.EnableKeyword("_ALPHABLEND_ON");
+            coreMaterial.renderQueue = 3000;
+            coreMaterial.color = new Color(coreColor.r, coreColor.g, coreColor.b, 0.9f);
 
-            rend.material = essenceMaterial;
+            rend.material = coreMaterial;
         }
     }
 
-    void SetupParticles()
+    void SetupGlowSphere()
     {
-        // Cria GameObject para partículas
-        GameObject particleObj = new GameObject("EssenceParticles");
-        particleObj.transform.SetParent(transform);
-        particleObj.transform.localPosition = Vector3.zero;
+        // Esfera maior e translúcida ao redor
+        glowSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        glowSphere.name = "EssenceGlow";
+        glowSphere.transform.SetParent(transform);
+        glowSphere.transform.localPosition = Vector3.zero;
+        glowSphere.transform.localScale = new Vector3(glowRadius, glowRadius, glowRadius);
 
-        particles = particleObj.AddComponent<ParticleSystem>();
+        // Remove collider
+        Collider col = glowSphere.GetComponent<Collider>();
+        if (col != null) Destroy(col);
 
-        // Configuração principal
-        var main = particles.main;
-        main.startColor = essenceColor;
-        main.startSize = particleSize;
-        main.startSpeed = particleSpeed;
-        main.startLifetime = 1.5f;
-        main.maxParticles = particleCount * 2;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.loop = true;
-
-        // Emissão
-        var emission = particles.emission;
-        emission.rateOverTime = particleCount;
-
-        // Forma (esfera ao redor)
-        var shape = particles.shape;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 0.2f;
-
-        // Cor ao longo do tempo (fade out)
-        var colorOverLifetime = particles.colorOverLifetime;
-        colorOverLifetime.enabled = true;
-        
-        Gradient gradient = new Gradient();
-        gradient.SetKeys(
-            new GradientColorKey[] {
-                new GradientColorKey(essenceColor, 0f),
-                new GradientColorKey(essenceColor, 0.5f),
-                new GradientColorKey(Color.white, 1f)
-            },
-            new GradientAlphaKey[] {
-                new GradientAlphaKey(1f, 0f),
-                new GradientAlphaKey(0.8f, 0.5f),
-                new GradientAlphaKey(0f, 1f)
-            }
-        );
-        colorOverLifetime.color = gradient;
-
-        // Tamanho ao longo do tempo (diminui)
-        var sizeOverLifetime = particles.sizeOverLifetime;
-        sizeOverLifetime.enabled = true;
-        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, 0f);
-
-        // Velocidade (sobe)
-        var velocityOverLifetime = particles.velocityOverLifetime;
-        velocityOverLifetime.enabled = true;
-        velocityOverLifetime.y = 0.5f;
-
-        // Renderer das partículas
-        var particleRenderer = particleObj.GetComponent<ParticleSystemRenderer>();
-        particleRenderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
-        particleRenderer.material.color = essenceColor;
+        // Material translúcido ethereal
+        Renderer rend = glowSphere.GetComponent<Renderer>();
+        if (rend != null)
+        {
+            glowMaterial = new Material(Shader.Find("Sprites/Default"));
+            glowMaterial.color = new Color(glowColor.r, glowColor.g, glowColor.b, 0.2f);
+            rend.material = glowMaterial;
+        }
     }
 
-    void SetupGlow()
+    void SetupGlowLight()
     {
-        // Adiciona luz pontual para glow
-        GameObject lightObj = new GameObject("EssenceGlow");
+        GameObject lightObj = new GameObject("EssenceLight");
         lightObj.transform.SetParent(transform);
         lightObj.transform.localPosition = Vector3.zero;
 
         glowLight = lightObj.AddComponent<Light>();
         glowLight.type = LightType.Point;
-        glowLight.color = glowColor;
-        glowLight.range = 2f;
+        glowLight.color = coreColor;
         glowLight.intensity = glowIntensity;
+        glowLight.range = glowRadius;
         glowLight.shadows = LightShadows.None;
 
         baseIntensity = glowIntensity;
     }
 
     /// <summary>
-    /// Efeito de coleta (chame antes de destruir)
+    /// Efeito de coleta - flash e desaparece
     /// </summary>
     public void PlayCollectEffect()
     {
-        if (particles != null)
-        {
-            // Burst final de partículas
-            var emission = particles.emission;
-            emission.rateOverTime = 0;
-            particles.Emit(30);
-
-            // Desanexa para não ser destruído com o pai
-            particles.transform.SetParent(null);
-            
-            // Destroi após as partículas terminarem
-            var main = particles.main;
-            main.loop = false;
-            Destroy(particles.gameObject, main.startLifetime.constant + 0.5f);
-        }
-
-        // Flash de luz
+        // Flash de luz no momento da coleta
         if (glowLight != null)
         {
-            glowLight.intensity = glowIntensity * 3f;
+            glowLight.intensity = glowIntensity * 4f;
             glowLight.transform.SetParent(null);
-            Destroy(glowLight.gameObject, 0.3f);
+            Destroy(glowLight.gameObject, 0.2f);
+        }
+
+        // Expande e desaparece o glow
+        if (glowSphere != null)
+        {
+            glowSphere.transform.SetParent(null);
+            glowSphere.transform.localScale *= 2f;
+            Destroy(glowSphere, 0.15f);
         }
     }
 
     void OnDestroy()
     {
-        // Limpa materiais criados
-        if (essenceMaterial != null)
-        {
-            Destroy(essenceMaterial);
-        }
+        if (coreMaterial != null) Destroy(coreMaterial);
+        if (glowMaterial != null) Destroy(glowMaterial);
     }
 }
