@@ -59,27 +59,16 @@ public class StunBeam : MonoBehaviour
 
     void CreatePlaceholderVisual()
     {
-        // Cria um cilindro visual como placeholder
-        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        visual.transform.SetParent(transform);
-        visual.transform.localPosition = Vector3.up * 2.5f;
-        visual.transform.localScale = new Vector3(radius * 2, 5f, radius * 2);
-
-        // Remove o collider do visual (apenas visual)
-        Collider visualCollider = visual.GetComponent<Collider>();
-        if (visualCollider != null) Destroy(visualCollider);
-
-        // Configura material translúcido
-        Renderer rend = visual.GetComponent<Renderer>();
-        if (rend != null)
-        {
-            Material mat = new Material(Shader.Find("Sprites/Default"));
-            mat.color = new Color(beamColor.r, beamColor.g, beamColor.b, 0.4f);
-            rend.material = mat;
-        }
-
-        // Autodestruction
-        Destroy(visual, 0.5f);
+        // Cria o VFX elaborado do stun
+        GameObject vfxObj = new GameObject("GolemStunVFX");
+        vfxObj.transform.position = transform.position;
+        
+        GolemStunVFX vfx = vfxObj.AddComponent<GolemStunVFX>();
+        vfx.SetRadius(radius);
+        vfx.stunColor = beamColor;
+        
+        // Autodestruction do StunBeam (VFX se destrói sozinho)
+        Destroy(gameObject, 0.1f);
     }
 
     void OnDrawGizmosSelected()

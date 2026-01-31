@@ -103,13 +103,17 @@ public class EnemyDrops : MonoBehaviour
     {
         GameObject drop = Instantiate(prefab, position, Quaternion.identity);
 
-        // Aplica impulso para cima para efeito visual
+        // Configura rigidbody para não ter drift
         Rigidbody rb = drop.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            Vector3 randomDir = Random.insideUnitSphere;
-            randomDir.y = Mathf.Abs(randomDir.y); // Sempre para cima
-            rb.AddForce(randomDir * launchForce, ForceMode.Impulse);
+            // Alto drag para parar rápido quando atingir o chão
+            rb.linearDamping = 5f;
+            rb.angularDamping = 5f;
+            
+            // Apenas impulso vertical (sem movimento lateral)
+            Vector3 upForce = Vector3.up * launchForce;
+            rb.AddForce(upForce, ForceMode.Impulse);
         }
 
         return drop;

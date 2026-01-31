@@ -177,7 +177,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Golem_AI
   stunMarkerPrefab: {fileID: 0}
-  stunBeamPrefab: {fileID: 0}
+  stunBeamPrefab: {fileID: 3156189663886257779, guid: 7eb942f03da6e7241af7035e7d2a0fa9, type: 3}
   activationDistance: 12
   moveSpeed: 2
   rotationSpeed: 5
