@@ -183,6 +183,8 @@ public class CrystalTuner : MonoBehaviour
         if (totem != null) totem.SetBuff(true);
         var stone = target.GetComponent<MagicStone_AI>();
         if (stone != null) stone.SetBuff(true);
+        var swarm = target.GetComponent<ShardSwarm_AI>();
+        if (swarm != null) swarm.SetBuff(true);
         var health = target.GetComponent<DummyHealth>();
         if (health != null) health.SetBuffedStatus(true);
     }
@@ -194,6 +196,8 @@ public class CrystalTuner : MonoBehaviour
         if (totem != null) totem.SetBuff(false);
         var stone = target.GetComponent<MagicStone_AI>();
         if (stone != null) stone.SetBuff(false);
+        var swarm = target.GetComponent<ShardSwarm_AI>();
+        if (swarm != null) swarm.SetBuff(false);
         var health = target.GetComponent<DummyHealth>();
         if (health != null) health.SetBuffedStatus(false);
     }
