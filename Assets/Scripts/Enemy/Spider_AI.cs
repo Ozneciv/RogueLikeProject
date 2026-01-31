@@ -92,6 +92,7 @@ public class Spider_AI : MonoBehaviour
             if (distToPlayer < activationDistance)
             {
                 isActivated = true;
+                Debug.Log("[SPIDER] Ativada! Player detectado a " + distToPlayer.ToString("F1") + "m");
             }
             return;
         }
@@ -169,6 +170,8 @@ public class Spider_AI : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         Vector3 leapVelocity = directionToPlayer * leapForce + Vector3.up * leapUpForce;
         rb.AddForce(leapVelocity, ForceMode.VelocityChange);
+        
+        Debug.Log("[SPIDER] LEAP ATTACK! Pulando em direção ao player.");
 
         // Espera estar no ar
         yield return new WaitForSeconds(0.1f);
@@ -228,7 +231,7 @@ public class Spider_AI : MonoBehaviour
         Vector3 retreatVelocity = retreatDirection * retreatForce + Vector3.up * (leapUpForce * 0.7f);
         rb.AddForce(retreatVelocity, ForceMode.VelocityChange);
 
-        Debug.Log("Spider recuando!");
+        Debug.Log("[SPIDER] RETREAT! Recuando do player após acertar o ataque.");
 
         yield return new WaitForSeconds(0.6f);
 

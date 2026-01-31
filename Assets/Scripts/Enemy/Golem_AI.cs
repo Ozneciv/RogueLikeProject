@@ -41,16 +41,18 @@ public class Golem_AI : MonoBehaviour
     public float meleeHitRadius = 2f;
 
     [Header("Habilidade de Stun")]
-    [Tooltip("Distância mínima para usar stun (usa quando longe)")]
-    public float stunMinDistance = 8f;
+    [Tooltip("Distância MÁXIMA para usar stun (não funciona se player estiver mais longe)")]
+    public float stunMaxRange = 10f;
     [Tooltip("Cooldown do stun")]
     public float stunCooldown = 12f;
     [Tooltip("Duração do stun no jogador")]
     public float stunDuration = 1.5f;
-    [Tooltip("Tempo de telegrafagem antes do stun")]
-    public float stunTelegraphTime = 1.5f;
+    [Tooltip("Tempo de telegrafagem antes do stun (quase instantâneo)")]
+    public float stunTelegraphTime = 0.3f;
     [Tooltip("Raio da área de stun")]
     public float stunRadius = 4f;
+    [Tooltip("Quantidade de melee hits para ativar stun no combo")]
+    public int comboHitsForStun = 2;
 
     [Header("Estados")]
     private bool isAttacking = false;
@@ -95,6 +97,7 @@ public class Golem_AI : MonoBehaviour
             if (dist < activationDistance)
             {
                 isActivated = true;
+                Debug.Log("[GOLEM] Ativado! Player detectado a " + dist.ToString("F1") + "m");
             }
             return;
         }
@@ -150,10 +153,12 @@ public class Golem_AI : MonoBehaviour
     {
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        // Prioridade 1: Se longe e stun disponível, usa stun
-        if (distToPlayer > stunMinDistance && stunTimer <= 0)
+        // Prioridade 1: Após X melee hits seguidos, usa stun INSTANTÂNEO (combo breaker)
+        if (meleeCombo >= comboHitsForStun && stunTimer <= 0 && distToPlayer <= stunMaxRange)
         {
+            Debug.Log("[GOLEM] COMBO STUN! Ativando stun após " + meleeCombo + " hits!");
             StartCoroutine(CastStun());
+            meleeCombo = 0;
             return;
         }
 
@@ -164,11 +169,11 @@ public class Golem_AI : MonoBehaviour
             return;
         }
 
-        // Prioridade 3: Após 2 melee hits seguidos, usa stun se disponível
-        if (meleeCombo >= 2 && stunTimer <= 0)
+        // Prioridade 3: Se player está no range do stun e cooldown pronto, usa stun
+        if (distToPlayer <= stunMaxRange && stunTimer <= 0 && meleeTimer > 0)
         {
             StartCoroutine(CastStun());
-            meleeCombo = 0;
+            return;
         }
     }
 
@@ -178,7 +183,7 @@ public class Golem_AI : MonoBehaviour
         meleeTimer = meleeCooldown;
 
         // Animação de vento (wind-up)
-        Debug.Log("Golem preparando ataque melee...");
+        Debug.Log("[GOLEM] MELEE ATTACK! Preparando golpe...");
         yield return new WaitForSeconds(0.5f);
 
         // Verifica hit
@@ -191,7 +196,7 @@ public class Golem_AI : MonoBehaviour
                 if (playerHealth != null)
                 {
                     playerHealth.TakeDamage(meleeDamage);
-                    Debug.Log("Golem acertou melee! Dano: " + meleeDamage);
+                    Debug.Log("[GOLEM] HIT! Melee acertou o player! Dano: " + meleeDamage + " | Combo: " + (meleeCombo + 1));
                     meleeCombo++;
                 }
             }
@@ -230,7 +235,7 @@ public class Golem_AI : MonoBehaviour
             Debug.DrawLine(targetPosition, targetPosition + Vector3.up * 5f, Color.cyan, stunTelegraphTime);
         }
 
-        Debug.Log("Golem carregando STUN! Fique fora da área!");
+        Debug.Log("[GOLEM] STUN CAST! Carregando ataque de área em " + targetPosition + " (raio: " + stunRadius + "m)");
 
         // Espera o tempo de telegrafagem
         yield return new WaitForSeconds(stunTelegraphTime);
@@ -261,7 +266,7 @@ public class Golem_AI : MonoBehaviour
                     if (playerHealth != null)
                     {
                         playerHealth.ApplyStun(stunDuration);
-                        Debug.Log("Golem acertou STUN no player!");
+                        Debug.Log("[GOLEM] STUN HIT! Player atordoado por " + stunDuration + " segundos!");
                     }
                 }
             }
@@ -282,7 +287,7 @@ public class Golem_AI : MonoBehaviour
         {
             moveSpeed *= 1.3f;
             stunCooldown *= 0.7f;
-            Debug.Log(gameObject.name + " foi BUFFADO!");
+            Debug.Log("[GOLEM] BUFFED! Velocidade +30%, Cooldown do Stun -30%");
         }
         else
         {
@@ -306,9 +311,9 @@ public class Golem_AI : MonoBehaviour
         Gizmos.color = new Color(1, 0, 0, 0.3f);
         Gizmos.DrawSphere(transform.position + transform.forward * 1.5f, meleeHitRadius);
 
-        // Distância mínima para stun
+        // Range máximo do stun
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, stunMinDistance);
+        Gizmos.DrawWireSphere(transform.position, stunMaxRange);
 
         // Raio do stun
         Gizmos.color = new Color(0, 1, 1, 0.2f);
