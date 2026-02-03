@@ -19,6 +19,22 @@ public class RoomController : MonoBehaviour
 
     private bool hasBeenTriggered = false; // Garante que a sala só ative uma vez
 
+    //Lógica de coleta de itens 
+
+    private ItemCollectable[] itensDaSala;
+    private int inimigosVivos;
+
+    bool PortasEstaoAbertas()
+    {
+        foreach (var door in doors)
+        {
+            if (door.activeSelf)
+                return false;
+        }
+        return true;
+    }
+
+
     // Esta é a função que "começa o processo"
     private void OnTriggerEnter(Collider other)
     {
@@ -33,6 +49,16 @@ public class RoomController : MonoBehaviour
 
             // 2. Instancia os inimigos
             SpawnEnemies();
+
+            //3. Habilita a coleta dos itens na sala
+
+            itensDaSala = GetComponentsInChildren<ItemCollectable>();
+
+            foreach (var item in itensDaSala)
+            {
+                item.DisableCollection();
+            }
+
         }
     }
 
@@ -59,6 +85,19 @@ public class RoomController : MonoBehaviour
             
             // Instancia o inimigo
             Instantiate(enemyPrefab, randomSpawnPoint.position, randomSpawnPoint.rotation);
+        }
+    }
+    //verifica o estado das portas para liberar os itens
+    void Update()
+    {
+        if (!hasBeenTriggered) return;
+
+        if (PortasEstaoAbertas())
+        {
+            foreach (var item in itensDaSala)
+            {
+                item.EnableCollection();
+            }
         }
     }
 }
