@@ -118,6 +118,19 @@ public class DummyHealth : MonoBehaviour
     private void Die()
     {
         Debug.Log(gameObject.name + " foi destruído.");
+        
+        // Chama o sistema de drops se existir
+        EnemyDrops drops = GetComponent<EnemyDrops>();
+        if (drops != null)
+        {
+            Debug.Log("[DROPS] EnemyDrops encontrado, chamando OnDeath()...");
+            drops.OnDeath();
+        }
+        else
+        {
+            Debug.LogWarning("[DROPS] EnemyDrops NÃO encontrado em " + gameObject.name + "! Adicione o componente EnemyDrops.");
+        }
+        
         Destroy(gameObject);
     }
 }
