@@ -13,12 +13,19 @@ public class PlayerHealth : MonoBehaviour
     private int currentArmor;
     private int cursedHealthLost = 0;
 
+    [Header("Armor Regen")]
+    public float armorRegenRate = 5f;
+    
+    [Header("Invulnerability")]
+    public bool isInvulnerable = false;
+    
     [Header("Componentes")]
     public PlayerM playerMovement;
     public PrimaryAttackKnife playerAttack;
     public Animator playerAnimator;
     public ScreenFader screenFader;
     private Rigidbody rb;
+    private PlayerAttributesDefensive playerAttributes;
 
     [Header("UI (Interface)")]
     public Image healthFillImage; // A barra verde (Filled)
@@ -48,6 +55,13 @@ public class PlayerHealth : MonoBehaviour
 
         FindUIReferences();
         FullHeal();
+        
+        // Buscar PlayerAttributesDefensive
+        playerAttributes = GetComponent<PlayerAttributesDefensive>();
+        if (playerAttributes == null)
+        {
+            Debug.LogWarning("PlayerHealth: PlayerAttributesDefensive não encontrado! Atributos defensivos não funcionarão.");
+        }
 
         if (SceneManager.GetActiveScene().name == "Base")
         {
@@ -184,26 +198,6 @@ public class PlayerHealth : MonoBehaviour
         if (playerAnimator != null) { playerAnimator.Rebind(); playerAnimator.Update(0f); }
     }
 
-    public void TakeDamage(int damage)
-    {
-        if (isDead) return;
-        int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
-        if (currentArmor > 0)
-        {
-            int damageToArmor = Mathf.Min(finalDamage, currentArmor);
-            currentArmor -= damageToArmor;
-            finalDamage -= damageToArmor;
-            UpdateArmorBar();
-        }
-        if (finalDamage > 0)
-        {
-            int damageableHealth = currentHealth - cursedHealthLost;
-            int damageToHealth = Mathf.Min(finalDamage, damageableHealth);
-            currentHealth -= damageToHealth;
-            UpdateHealthBar();
-        }
-        if (currentHealth <= 0 && !isDead) Die();
-    }
 
     public void TakeCursedDamage(int amount)
     {
@@ -302,15 +296,6 @@ public class PlayerHealth : MonoBehaviour
 
     // ========== SISTEMA DE STUN ==========
     
-    void Update()
-    {
-        // Gerencia o timer de imunidade a stun
-        if (stunImmunityTimer > 0)
-        {
-            stunImmunityTimer -= Time.deltaTime;
-        }
-    }
-
     /// <summary>
     /// Aplica stun ao jogador por uma duração específica.
     /// Chamado por inimigos como o Golem.
@@ -360,5 +345,99 @@ public class PlayerHealth : MonoBehaviour
         stunImmunityTimer = stunImmunityDuration;
 
         Debug.Log("Player recuperou do stun. Imunidade por " + stunImmunityDuration + "s");
+    }
+    
+    // ========== SISTEMA DE ATRIBUTOS DEFENSIVOS ==========
+    
+    void Update()
+    {
+        // Gerenciar timer de imunidade a stun
+        if (stunImmunityTimer > 0)
+        {
+            stunImmunityTimer -= Time.deltaTime;
+        }
+        
+        // === REGENERAÇÃO DE ARMADURA ===
+        if (!isDead && currentArmor < maxArmor && playerAttributes != null)
+        {
+            float regenAmount = armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
+            int previousArmor = currentArmor;
+            currentArmor += Mathf.RoundToInt(regenAmount);
+            
+            if (currentArmor > maxArmor)
+                currentArmor = maxArmor;
+            
+            // Log a cada segundo (aproximadamente)
+            if (Time.frameCount % 60 == 0 && currentArmor != previousArmor)
+            {
+                float regenPerSecond = armorRegenRate * playerAttributes.armorRegen;
+                Debug.Log($"🛡️ ARMOR REGEN! {previousArmor} → {currentArmor} | Taxa: {regenPerSecond:F1} pts/s");
+            }
+                
+            UpdateArmorBar();
+        }
+    }
+    
+    /// <summary>
+    /// Aplica dano ao jogador com todos os atributos defensivos.
+    /// </summary>
+    public void TakeDamage(int damage, GameObject attacker = null)
+    {
+        if (isDead || isInvulnerable) return;
+        
+        int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
+        
+        // === DODGE (Esquiva) ===
+        if (playerAttributes != null && playerAttributes.dodgeChance > 0)
+        {
+            float dodgeRoll = Random.Range(0f, 100f);
+            if (dodgeRoll < playerAttributes.dodgeChance)
+            {
+                Debug.Log($"✨ ESQUIVOU! Dano anulado | Roll: {dodgeRoll:F1} < {playerAttributes.dodgeChance}% chance");
+                return; // Anula completamente o dano
+            }
+        }
+        
+        // === DAMAGE NEGATION (Mitigação) ===
+        if (playerAttributes != null && playerAttributes.damageNegation > 0)
+        {
+            int damageBeforeNegation = finalDamage;
+            float reductionPercent = playerAttributes.damageNegation / 100f;
+            finalDamage = Mathf.RoundToInt(finalDamage * (1f - reductionPercent));
+            Debug.Log($"🛡️ DAMAGE NEGATION! Dano: {damageBeforeNegation} → {finalDamage} (-{playerAttributes.damageNegation}%)");
+        }
+        
+        // Aplicar dano em armor primeiro, depois health
+        if (currentArmor > 0)
+        {
+            int damageToArmor = Mathf.Min(finalDamage, currentArmor);
+            currentArmor -= damageToArmor;
+            finalDamage -= damageToArmor;
+            UpdateArmorBar();
+        }
+        
+        if (finalDamage > 0)
+        {
+            currentHealth -= finalDamage;
+            UpdateHealthBar();
+            
+            Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");
+            
+            if (currentHealth <= 0)
+            {
+                Die();
+            }
+        }
+        
+        // === THORNS (Dano Refletido) ===
+        if (attacker != null && playerAttributes != null && playerAttributes.thorns > 0)
+        {
+            DummyHealth enemyHealth = attacker.GetComponent<DummyHealth>();
+            if (enemyHealth != null)
+            {
+                enemyHealth.TakeDamage(playerAttributes.thorns);
+                Debug.Log($"🌵 THORNS! Refletido {playerAttributes.thorns} de dano para {attacker.name}");
+            }
+        }
     }
 }

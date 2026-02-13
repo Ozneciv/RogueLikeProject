@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3035752867005567637}
   - component: {fileID: 1884827477303362434}
   - component: {fileID: 1502931603156991328}
+  - component: {fileID: -3599917312821646614}
   m_Layer: 6
   m_Name: MagicStoneEnemy
   m_TagString: Untagged
@@ -137,6 +138,27 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &-3599917312821646614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4138484601771036003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
+  essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
+  essenceAmount: 10
+  essenceVariation: 3
+  characteristicItemPrefab: {fileID: 0}
+  itemDropChance: 0.3
+  itemAmount: 1
+  spawnHeight: 0.5
+  spawnRadius: 0.5
+  launchForce: 3
 --- !u!1 &6766732950098128462
 GameObject:
   m_ObjectHideFlags: 0

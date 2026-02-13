@@ -12,9 +12,22 @@ public class FloatingDamageText : MonoBehaviour
     [Header("Animação")]
     public float lifetime = 1f;
     public float floatSpeed = 1.5f;
+    
+    [Header("Critical Hit Settings")]
+    [Tooltip("Cor do texto para dano crítico")]
+    public Color criticalColor = Color.red;
+    
+    [Tooltip("Multiplicador de tamanho para críticos")]
+    [Range(1f, 3f)]
+    public float criticalSizeMultiplier = 1.5f;
+    
+    [Tooltip("Multiplicador de duração para críticos")]
+    [Range(1f, 3f)]
+    public float criticalLifetimeMultiplier = 1.5f;
 
     private float timer;
     private Color startColor;
+    private float baseFontSize;
 
     void Awake()
     {
@@ -26,6 +39,7 @@ public class FloatingDamageText : MonoBehaviour
         }
         
         startColor = textMesh.color;
+        baseFontSize = textMesh.fontSize;
         timer = lifetime;
     }
 
@@ -56,4 +70,27 @@ public class FloatingDamageText : MonoBehaviour
         }
         textMesh.text = text;
     }
+    
+    /// <summary>
+    /// Configura o texto como dano crítico com visual aprimorado.
+    /// </summary>
+    public void SetCritical(bool isCritical)
+    {
+        if (textMesh == null) return;
+        
+        if (isCritical)
+        {
+            // Aplicar cor vermelha
+            textMesh.color = criticalColor;
+            startColor = criticalColor;
+            
+            // Aumentar tamanho da fonte
+            textMesh.fontSize = baseFontSize * criticalSizeMultiplier;
+            
+            // Aumentar duração
+            lifetime *= criticalLifetimeMultiplier;
+            timer = lifetime;
+        }
+    }
+
 }

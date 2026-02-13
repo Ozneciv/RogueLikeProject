@@ -66,7 +66,7 @@ public class DummyHealth : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, bool isCritical = false)
     {
         if (isInvulnerable) return;
         if (CurrentHealth <= 0) return;
@@ -82,7 +82,11 @@ public class DummyHealth : MonoBehaviour
         {
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
             FloatingDamageText dmgScript = textObject.GetComponent<FloatingDamageText>();
-            if(dmgScript != null) dmgScript.SetText(damage.ToString());
+            if(dmgScript != null)
+            {
+                dmgScript.SetText(damage.ToString());
+                dmgScript.SetCritical(isCritical);
+            }
         }
 
         if (dummyRenderer != null)

@@ -204,6 +204,12 @@ public class MagicStone_AI : MonoBehaviour
         GameObject marker = Instantiate(attackMarkerPrefab, targetPosition, Quaternion.Euler(90, 0, 0));
         yield return new WaitForSeconds(attackTelegraphTime);
         Destroy(marker);
-        Instantiate(attackBeamPrefab, targetPosition, Quaternion.identity);
+        // Criar o raio e definir o owner para thorns
+        GameObject beam = Instantiate(attackBeamPrefab, targetPosition, Quaternion.identity);
+        AttackBeam beamScript = beam.GetComponent<AttackBeam>();
+        if (beamScript != null)
+        {
+            beamScript.owner = gameObject; // Define a Magic Stone como dona do raio
+        }
     }
 }
