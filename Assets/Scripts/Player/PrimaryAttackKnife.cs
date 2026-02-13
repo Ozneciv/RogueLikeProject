@@ -23,9 +23,9 @@ public class PrimaryAttackKnife : MonoBehaviour
     private Collider currentHitbox;
     
     // Armazenar tamanhos originais para escalar com weaponRangeMelee
-    private float originalHandHitboxRadius;
-    private float originalWeaponHitboxRadius;
-    private float currentOriginalRadius;
+    private Vector3 originalHandHitboxSize;
+    private Vector3 originalWeaponHitboxSize;
+    private Vector3 currentOriginalSize;
     private float lastAppliedWeaponRange = 1f;
 
     [Header("Attack Stats")]
@@ -163,7 +163,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 {
                     Vector3 knockbackDirection = (enemyCollider.transform.position - transform.position).normalized;
                     knockbackDirection.y = 0;
-                    float knockbackForce = playerAttributes.knockback * 100f;
+                    float knockbackForce = playerAttributes.knockback * 10f;  // Reduzido de 100 para 10
                     enemyRb.AddForce(knockbackDirection * knockbackForce, ForceMode.Impulse);
                     Debug.Log($"🔨 KNOCKBACK! Força: {knockbackForce}");
                 }
@@ -226,12 +226,17 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         if (currentHitbox == null || playerAttributes == null) return;
         
-        SphereCollider sphereCollider = currentHitbox as SphereCollider;
-        if (sphereCollider != null)
+        BoxCollider boxCollider = currentHitbox as BoxCollider;
+        if (boxCollider != null)
         {
-            float newRadius = currentOriginalRadius * playerAttributes.weaponRangeMelee;
-            sphereCollider.radius = newRadius;
-            Debug.Log($"🎯 Weapon Range aplicado! Raio: {currentOriginalRadius:F2} → {newRadius:F2} ({playerAttributes.weaponRangeMelee}x)");
+            // Escalar apenas o eixo Y (para frente da arma) - como alongar uma adaga em espada
+            Vector3 newSize = new Vector3(
+                currentOriginalSize.x,  // Largura: mantém original
+                currentOriginalSize.y * playerAttributes.weaponRangeMelee,  // Comprimento: escala
+                currentOriginalSize.z   // Profundidade: mantém original
+            );
+            boxCollider.size = newSize;
+            Debug.Log($"🎯 Weapon Range aplicado! Size Y: {currentOriginalSize.y:F2} → {newSize.y:F2} ({playerAttributes.weaponRangeMelee}x)");
         }
     }
 
@@ -244,11 +249,11 @@ public class PrimaryAttackKnife : MonoBehaviour
         
         if (handHitbox != null)
         {
-            SphereCollider sphereCollider = handHitbox as SphereCollider;
-            if (sphereCollider != null)
+            BoxCollider boxCollider = handHitbox as BoxCollider;
+            if (boxCollider != null)
             {
-                originalHandHitboxRadius = sphereCollider.radius;
-                currentOriginalRadius = originalHandHitboxRadius;
+                originalHandHitboxSize = boxCollider.size;
+                currentOriginalSize = originalHandHitboxSize;
             }
         }
         
@@ -264,11 +269,11 @@ public class PrimaryAttackKnife : MonoBehaviour
         
         if (equippedWeaponHitbox != null)
         {
-            SphereCollider sphereCollider = equippedWeaponHitbox as SphereCollider;
-            if (sphereCollider != null)
+            BoxCollider boxCollider = equippedWeaponHitbox as BoxCollider;
+            if (boxCollider != null)
             {
-                originalWeaponHitboxRadius = sphereCollider.radius;
-                currentOriginalRadius = originalWeaponHitboxRadius;
+                originalWeaponHitboxSize = boxCollider.size;
+                currentOriginalSize = originalWeaponHitboxSize;
             }
         }
         
@@ -287,11 +292,11 @@ public class PrimaryAttackKnife : MonoBehaviour
         
         if (equippedWeaponHitbox != null)
         {
-            SphereCollider sphereCollider = equippedWeaponHitbox as SphereCollider;
-            if (sphereCollider != null)
+            BoxCollider boxCollider = equippedWeaponHitbox as BoxCollider;
+            if (boxCollider != null)
             {
-                originalWeaponHitboxRadius = sphereCollider.radius;
-                currentOriginalRadius = originalWeaponHitboxRadius;
+                originalWeaponHitboxSize = boxCollider.size;
+                currentOriginalSize = originalWeaponHitboxSize;
             }
         }
         

@@ -8,6 +8,9 @@ public class AttackBeam : MonoBehaviour
     
     [Tooltip("Tempo em segundos que o efeito visual do raio fica na tela antes de desaparecer.")]
     public float lifetime = 0.5f;
+    
+    [HideInInspector]
+    public GameObject owner; // O inimigo que criou este raio (para thorns)
 
     void Start()
     {
@@ -19,7 +22,7 @@ public class AttackBeam : MonoBehaviour
             // Se encontrar o jogador, aplica o dano
             if (hit.CompareTag("Player"))
             {
-                hit.GetComponent<PlayerHealth>().TakeDamage(damage);
+                hit.GetComponent<PlayerHealth>().TakeDamage(damage, owner); // Passa o owner para thorns
             }
         }
         

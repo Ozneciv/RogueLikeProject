@@ -118,6 +118,7 @@ public class AttributeDisplayOnScreenSplit : MonoBehaviour
     {
         // SEMPRE criar um Canvas dedicado para o display de atributos
         GameObject canvasObj = new GameObject("AttributeDisplayCanvas");
+        DontDestroyOnLoad(canvasObj); // Persistir entre cenas (como o Player)
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100; // Garantir que fique na frente

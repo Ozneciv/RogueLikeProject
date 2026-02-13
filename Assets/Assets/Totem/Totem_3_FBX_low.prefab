@@ -240,6 +240,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8342968827306300709}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8734038540588351377}
   m_SourcePrefab: {fileID: 100100000, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
 --- !u!4 &45341532090424219 stripped
 Transform:
@@ -312,6 +315,27 @@ MonoBehaviour:
   spawnRadius: 7
   spawnHeightOffset: 1.5
   activationDistance: 20
+--- !u!114 &8734038540588351377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 858715619969859873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
+  essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
+  essenceAmount: 10
+  essenceVariation: 3
+  characteristicItemPrefab: {fileID: 0}
+  itemDropChance: 0.3
+  itemAmount: 1
+  spawnHeight: 0.5
+  spawnRadius: 0.5
+  launchForce: 3
 --- !u!1001 &5318070895698127864
 PrefabInstance:
   m_ObjectHideFlags: 0
