@@ -290,12 +290,15 @@ MonoBehaviour:
   - {fileID: 1086662407212499298, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
   - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
   - {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
+  - {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
+  - {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
+  - {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
   minEnemyTypes: 3
   maxEnemyTypes: 5
   minWaves: 1
   maxWaves: 3
-  minEnemiesPerWave: 3
-  maxEnemiesPerWave: 5
+  minEnemiesPerWave: 6
+  maxEnemiesPerWave: 10
   spawnArea: {fileID: 7536777513122493299}
   spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
   spawnDelay: 1.5

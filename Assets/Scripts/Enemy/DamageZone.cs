@@ -23,7 +23,7 @@ public class DamageZone : MonoBehaviour
             if (playerHealth != null)
             {
                 // Causa o dano imediatamente
-                playerHealth.TakeDamage(damageAmount);
+                playerHealth.TakeDamage(damageAmount, gameObject);
 
                 // Ativa o visual do pulso/explosão
                 if (pulseVisualizer != null)
@@ -68,7 +68,7 @@ public class DamageZone : MonoBehaviour
 
         while (player != null && player.gameObject.activeSelf)
         {
-            player.TakeDamage(damageAmount);
+            player.TakeDamage(damageAmount, gameObject);
             
             if (pulseVisualizer != null)
             {

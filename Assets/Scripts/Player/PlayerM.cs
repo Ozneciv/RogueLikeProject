@@ -33,6 +33,7 @@ public class PlayerM : MonoBehaviour
     public Animator animator;
 
     private Rigidbody rb;
+    private PlayerAttributesDefensive playerAttributes;
     private Vector3 moveDirection;
     private float targetSpeed;
     private float currentRotationSpeed;
@@ -42,6 +43,13 @@ public class PlayerM : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         if (attackScript == null) attackScript = GetComponent<PrimaryAttackKnife>();
+        
+        // Buscar PlayerAttributesDefensive
+        playerAttributes = GetComponent<PlayerAttributesDefensive>();
+        if (playerAttributes == null)
+        {
+            Debug.LogWarning("PlayerM: PlayerAttributesDefensive não encontrado! Speed multiplier não será aplicado.");
+        }
     }
 
     private void Update()
@@ -77,7 +85,15 @@ public class PlayerM : MonoBehaviour
         else
         {
             // Fora do impacto, usa a velocidade normal de corrida
-            targetSpeed = sprintSpeed;
+            // Aplicar Speed Multiplier do PlayerAttributesDefensive
+            if (playerAttributes != null)
+            {
+                targetSpeed = sprintSpeed * playerAttributes.speedMultiplier;
+            }
+            else
+            {
+                targetSpeed = sprintSpeed;
+            }
             currentRotationSpeed = rotationSpeed;
         }
     }

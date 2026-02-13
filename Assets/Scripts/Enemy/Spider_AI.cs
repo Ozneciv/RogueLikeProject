@@ -210,7 +210,7 @@ public class Spider_AI : MonoBehaviour
                         PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
                         if (playerHealth != null)
                         {
-                            playerHealth.TakeDamage(leapDamage);
+                            playerHealth.TakeDamage(leapDamage, gameObject);
                             hasHitThisLeap = true;
                             Debug.Log("Spider acertou o player! Dano: " + leapDamage);
                         }
