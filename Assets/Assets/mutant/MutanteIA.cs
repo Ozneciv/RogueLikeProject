@@ -21,7 +21,9 @@ public class MutanteIA : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        rb.mass = 2.0f;
         anim = GetComponent<Animator>();
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         rb.freezeRotation = true; // Impede o mutante de cair
 
         if (jogador == null)
