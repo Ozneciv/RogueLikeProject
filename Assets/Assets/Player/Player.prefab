@@ -993,6 +993,9 @@ GameObject:
   - component: {fileID: 6793213990562782912}
   - component: {fileID: 2877796600527432851}
   - component: {fileID: 8232472868694630810}
+  - component: {fileID: 5745442842706831329}
+  - component: {fileID: 3072499769774279680}
+  - component: {fileID: 1565009776104248224}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1138,6 +1141,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
   maxArmor: 300
+  armorRegenRate: 5
+  isInvulnerable: 0
   playerMovement: {fileID: 0}
   playerAttack: {fileID: 399265535294509767}
   playerAnimator: {fileID: 3618305479678570340}
@@ -1173,17 +1178,92 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd1f33b8ade70b54894e447d63f4b0c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerM
-  dashScript: {fileID: 0}
-  attackScript: {fileID: 0}
+  dashScript: {fileID: 9188255382873321215}
+  attackScript: {fileID: 399265535294509767}
   walkSpeed: 5
   sprintSpeed: 10
   rotationSpeed: 10
+  acceleration: 15
+  hitboxMoveSpeed: 5
+  hitboxRotationSpeed: 3
+  hitboxAnimSpeed: 1
   groundCheck: {fileID: 9042672255904056496}
   whatIsGround:
     serializedVersion: 2
     m_Bits: 8
+  groundRadius: 0.2
   animator: {fileID: 3618305479678570340}
-  sprintAnimationSpeedMultiplier: 0.8
+--- !u!114 &5745442842706831329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41afc02c7fb742448a433b43e808e43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesDefensive
+  armorRegen: 1
+  dodgeChance: 0
+  damageNegation: 0
+  thorns: 0
+  dashCooldownMultiplier: 1
+  dashCounts: 1
+  dashInvulnerability: 0.2
+  speedMultiplier: 1
+--- !u!114 &3072499769774279680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5a80fc9d899c5f43a5e68f7089cfe31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerUltimate
+  ultimateCooldown: 30
+  ultimateDuration: 5
+  damageMultiplier: 2
+  speedMultiplier: 1.5
+  grantInvulnerability: 1
+  vfxPrimaryColor: {r: 0.2, g: 0.8, b: 1, a: 1}
+  vfxSecondaryColor: {r: 1, g: 0.4, b: 0, a: 1}
+  vfxAccentColor: {r: 1, g: 1, b: 0.3, a: 1}
+  vfxGlowIntensity: 5
+  vfxParticleScale: 1
+  vfxEnableScreenShake: 1
+  vfxShakeIntensity: 0.3
+  ultimateVFX: {fileID: 0}
+  isUltimateReady: 1
+  isUltimateActive: 0
+  currentCooldown: 0
+--- !u!114 &1565009776104248224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44120928851c8884b97bf79005e3c755, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AttributeDisplayOnScreenSplit
+  offensiveAttributes: {fileID: 5301761075157900069}
+  defensiveAttributes: {fileID: 5745442842706831329}
+  showDisplay: 1
+  toggleKey: 286
+  panelWidth: 500
+  panelHeight: 700
+  fontSize: 25
+  backgroundOpacity: 0.3
+  offsetX: 10
+  offsetY: -10
+  updateInterval: 0.5
 --- !u!1 &3037435734811326214
 GameObject:
   m_ObjectHideFlags: 0
@@ -2184,6 +2264,7 @@ GameObject:
   - component: {fileID: 3618305479678570340}
   - component: {fileID: 399265535294509767}
   - component: {fileID: 1627733104494296859}
+  - component: {fileID: 5301761075157900069}
   m_Layer: 8
   m_Name: astronaut
   m_TagString: Untagged
@@ -2251,18 +2332,11 @@ MonoBehaviour:
   defaultRange: 2
   daggerRange: 6
   swordRange: 7
-  hitImpactPrefab: {fileID: 0}
+  hitImpactPrefab: {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
   attackAnimationSpeed: 1
   defaultDamages: 0a0000000f0000001e000000
   daggerDamages: 19000000230000003c000000
   swordDamages: 1e000000280000004b000000
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  attackLungeForces:
-  - 2
-  - 2
-  - 8
   comboResetTime: 1.2
 --- !u!114 &1627733104494296859
 MonoBehaviour:
@@ -2276,6 +2350,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bcf01c8d01f386439b2b922f0f8b9a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationEvents
+--- !u!114 &5301761075157900069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6284554266325809849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 135dcf644ad32864e87e1a0d9e5a7198, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesOffensive
+  baseDamageMultiplier: 1
+  attackSpeedMelee: 1
+  critChance: 5
+  critMultiplier: 1.5
+  weaponRangeMelee: 1
+  weaponRangeProjectile: 10
+  knockback: 1
+  piercing: 0
+  bounceChance: 0
+  bounceCount: 0
+  multiShotChance: 0
+  spread: 0
 --- !u!1 &6320494353973819877
 GameObject:
   m_ObjectHideFlags: 0

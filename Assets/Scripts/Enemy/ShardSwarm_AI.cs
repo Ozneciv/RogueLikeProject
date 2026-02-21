@@ -361,7 +361,7 @@ public class ShardSwarm_AI : MonoBehaviour
             if (playerHealth != null)
             {
                 int damage = isSplit ? damagePerShard * activeShards : combinedDamage;
-                playerHealth.TakeDamage(damage);
+                playerHealth.TakeDamage(damage, gameObject);
                 Debug.Log("[SHARD SWARM] HIT! Dano causado: " + damage);
             }
         }
@@ -430,7 +430,7 @@ public class ShardSwarm_AI : MonoBehaviour
                 PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
-                    playerHealth.TakeDamage(deathExplosionDamage);
+                    playerHealth.TakeDamage(deathExplosionDamage, gameObject);
                     Debug.Log("[SHARD SWARM] Explosão acertou o player! Dano: " + deathExplosionDamage);
                 }
             }

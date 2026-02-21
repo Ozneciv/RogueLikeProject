@@ -40,7 +40,18 @@ public class DummyHealth : MonoBehaviour
             originalRenderColor = dummyRenderer.material.color;
         }
 
-        // Tenta encontrar a imagem de preenchimento dentro do Slider automaticamente
+        // Auto-busca o Slider nos filhos se não foi atribuído no Inspector
+        if (healthBarSlider == null)
+        {
+            healthBarSlider = GetComponentInChildren<Slider>(true); // true = inclui desativados
+
+            if (healthBarSlider == null)
+                Debug.LogWarning("[" + gameObject.name + "] Slider de vida não encontrado! Crie um Canvas (World Space) com um Slider filho.");
+            else
+                Debug.Log("[" + gameObject.name + "] Slider encontrado automaticamente: " + healthBarSlider.gameObject.name);
+        }
+
+        // Busca a imagem Fill dentro do Slider para controlar a cor
         if (healthBarSlider != null)
         {
             if (healthBarSlider.fillRect != null)
@@ -49,6 +60,9 @@ public class DummyHealth : MonoBehaviour
             }
             // Garante a cor inicial
             if (healthBarFill != null) healthBarFill.color = normalColor;
+
+            // Começa escondida — só aparece após o primeiro hit
+            healthBarSlider.gameObject.SetActive(false);
         }
 
         UpdateHealthBar();
@@ -66,7 +80,7 @@ public class DummyHealth : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, bool isCritical = false)
     {
         if (isInvulnerable) return;
         if (CurrentHealth <= 0) return;
@@ -77,17 +91,21 @@ public class DummyHealth : MonoBehaviour
         CurrentHealth -= damage;
 
         UpdateHealthBar();
+        ShowHealthBar();
 
         if (floatingDamageTextPrefab != null)
         {
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
             FloatingDamageText dmgScript = textObject.GetComponent<FloatingDamageText>();
-            if(dmgScript != null) dmgScript.SetText(damage.ToString());
+            if(dmgScript != null)
+            {
+                dmgScript.SetText(damage.ToString());
+                dmgScript.SetCritical(isCritical);
+            }
         }
 
         if (dummyRenderer != null)
         {
-            StopAllCoroutines(); 
             StartCoroutine(FlashRed());
         }
 
@@ -96,6 +114,12 @@ public class DummyHealth : MonoBehaviour
             CurrentHealth = 0;
             Die();
         }
+    }
+
+    void ShowHealthBar()
+    {
+        if (healthBarSlider == null) return;
+        healthBarSlider.gameObject.SetActive(true);
     }
 
     void UpdateHealthBar()

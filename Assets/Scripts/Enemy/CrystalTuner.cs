@@ -1,50 +1,63 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody))]
 public class CrystalTuner : MonoBehaviour
 {
     [Header("Sintonia")]
-    public float connectRange = 20f;
+    public float connectRange    = 20f;
     public float disconnectRange = 30f;
     public LayerMask enemyLayer;
     public Color beamColor = Color.magenta;
 
+    [Header("Múltiplos Alvos")]
+    [Tooltip("Máximo de inimigos buffados simultaneamente")]
+    public int maxTargets = 3;
+
     [Header("Movimento Inteligente")]
-    public float moveSpeed = 4.5f;
-    public float idealDistToTarget = 5f;
+    public float moveSpeed          = 4.5f;
+    public float idealDistToTarget  = 5f;
     public float fleeDistFromPlayer = 8f;
-    
-    [Header("Voo (Ajustado)")]
-    [Tooltip("Altura fixa do chão. 1.5f é ideal para ser acertado por ataques melee.")]
-    public float flyHeight = 1.5f; // BAIXAMOS O VALOR PADRÃO
-    public float heightCorrectionSpeed = 5.0f; // Aumentamos a velocidade de correção para ele não "quicar"
 
+    [Header("Voo")]
+    [Tooltip("Altura fixa do chão.")]
+    public float flyHeight            = 1.5f;
+    public float heightCorrectionSpeed = 5.0f;
+
+    // --- Privados ---
     private Transform playerTransform;
-    private GameObject currentTargetObj;
-    private Transform currentTargetCenter;
-    private LineRenderer lineRenderer;
+    private Transform beamOrigin;
     private Rigidbody rb;
+    private float beamPulseTimer = 0f;
+    private const int BEAM_SEGMENTS = 8;
 
+    // Lista de alvos ativos
+    private List<TargetData> targets = new List<TargetData>();
+
+    private struct TargetData
+    {
+        public GameObject obj;
+        public Transform  center;
+        public LineRenderer beam;
+    }
+
+    // ──────────────────────────────────────────────
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.useGravity = false; 
+        rb.useGravity  = false;
         rb.constraints = RigidbodyConstraints.FreezeRotation;
 
-        lineRenderer = gameObject.AddComponent<LineRenderer>();
-        lineRenderer.startWidth = 0.15f;
-        lineRenderer.endWidth = 0.05f;
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.startColor = beamColor;
-        lineRenderer.endColor = Color.white;
-        lineRenderer.positionCount = 2;
-        lineRenderer.enabled = false;
+        Transform center = transform.Find("Center");
+        beamOrigin = (center != null) ? center : transform;
+        if (center == null)
+            Debug.LogWarning("[CrystalTuner] Filho 'Center' não encontrado. Usando o pivô.");
     }
 
     void Update()
     {
         HandleBuffs();
-        UpdateBeamVisuals();
+        UpdateAllBeams();
     }
 
     void FixedUpdate()
@@ -52,6 +65,7 @@ public class CrystalTuner : MonoBehaviour
         HandleMovement();
     }
 
+    // ──────────────────────────────────────────────
     void HandleMovement()
     {
         if (playerTransform == null)
@@ -63,40 +77,28 @@ public class CrystalTuner : MonoBehaviour
         Vector3 finalDirection = Vector3.zero;
         Vector3 myPosFlat = new Vector3(transform.position.x, 0, transform.position.z);
 
-        // 1. FORÇA DE PROTEÇÃO (Fica perto do amigo)
-        if (currentTargetObj != null)
+        // Força de proteção: fica perto do primeiro alvo
+        if (targets.Count > 0 && targets[0].obj != null)
         {
-            Vector3 targetPosFlat = new Vector3(currentTargetObj.transform.position.x, 0, currentTargetObj.transform.position.z);
-            float distToFriend = Vector3.Distance(myPosFlat, targetPosFlat);
-
-            if (distToFriend > idealDistToTarget)
-            {
-                Vector3 dirToFriend = (targetPosFlat - myPosFlat).normalized;
-                finalDirection += dirToFriend * 1.5f; 
-            }
+            Vector3 targetPosFlat = new Vector3(targets[0].obj.transform.position.x, 0, targets[0].obj.transform.position.z);
+            if (Vector3.Distance(myPosFlat, targetPosFlat) > idealDistToTarget)
+                finalDirection += (targetPosFlat - myPosFlat).normalized * 1.5f;
         }
 
-        // 2. FORÇA DE MEDO (Foge do Player)
+        // Força de medo: foge do player
         if (playerTransform != null)
         {
             Vector3 playerPosFlat = new Vector3(playerTransform.position.x, 0, playerTransform.position.z);
-            float distToPlayer = Vector3.Distance(myPosFlat, playerPosFlat);
-
-            if (distToPlayer < fleeDistFromPlayer)
-            {
-                Vector3 dirAway = (myPosFlat - playerPosFlat).normalized;
-                finalDirection += dirAway * 3.0f; 
-            }
+            if (Vector3.Distance(myPosFlat, playerPosFlat) < fleeDistFromPlayer)
+                finalDirection += (myPosFlat - playerPosFlat).normalized * 3.0f;
         }
 
-        // Aplica o movimento Horizontal
         Vector3 targetPos = transform.position;
         if (finalDirection != Vector3.zero)
         {
             finalDirection.Normalize();
             targetPos += finalDirection * moveSpeed * Time.fixedDeltaTime;
-            
-            // Rotação suave
+
             if (finalDirection.sqrMagnitude > 0.1f)
             {
                 Quaternion targetRot = Quaternion.LookRotation(finalDirection);
@@ -104,106 +106,178 @@ public class CrystalTuner : MonoBehaviour
             }
         }
 
-        // 3. CORREÇÃO DE ALTURA (Trava no eixo Y)
-        // Ignora a altura atual e força suavemente para a flyHeight
-        // Se o chão for plano (Y=0), ele vai para Y=1.5.
-        // Se o chão tiver elevação, você precisaria de um Raycast aqui, mas para chãos planos isso basta.
         float newY = Mathf.Lerp(transform.position.y, flyHeight, heightCorrectionSpeed * Time.fixedDeltaTime);
         targetPos.y = newY;
-
         rb.MovePosition(targetPos);
     }
 
-    // ... (O RESTO DO SCRIPT: HandleBuffs, FindNewTarget, ConnectToTarget, etc. continua IGUAL) ...
-    
+    // ──────────────────────────────────────────────
     void HandleBuffs()
     {
-        if (currentTargetObj != null)
+        // 1. Remove alvos inválidos (mortos ou fora de range)
+        for (int i = targets.Count - 1; i >= 0; i--)
         {
-            float dist = Vector3.Distance(transform.position, currentTargetObj.transform.position);
-            if (!currentTargetObj.activeSelf || dist > disconnectRange)
+            var td = targets[i];
+            if (td.obj == null || !td.obj.activeSelf ||
+                Vector3.Distance(transform.position, td.obj.transform.position) > disconnectRange)
             {
-                RemoveBuffs(currentTargetObj);
-                currentTargetObj = null;
-                currentTargetCenter = null;
-                lineRenderer.enabled = false;
+                RemoveBuffs(td.obj);
+                if (td.beam != null) Destroy(td.beam.gameObject);
+                targets.RemoveAt(i);
             }
         }
-        else
-        {
-            FindNewTarget();
-        }
+
+        // 2. Tenta preencher slots vazios
+        if (targets.Count < maxTargets)
+            FindNewTargets();
     }
 
-    void FindNewTarget()
+    void FindNewTargets()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, connectRange, enemyLayer);
-        float closestDist = Mathf.Infinity;
-        GameObject bestCandidate = null;
+
+        // Ordena por distância
+        System.Array.Sort(hits, (a, b) =>
+            Vector3.Distance(transform.position, a.transform.position)
+            .CompareTo(Vector3.Distance(transform.position, b.transform.position)));
+
         foreach (Collider hit in hits)
         {
-            GameObject candidate = hit.gameObject;
-            if (candidate == gameObject) continue; 
-            if (candidate.GetComponent<CrystalTuner>() != null) continue; 
-            if (candidate.GetComponent<HomingHazard>() != null) continue;
-            if (candidate.GetComponent<DummyHealth>() == null) continue;
+            if (targets.Count >= maxTargets) break;
 
-            float d = Vector3.Distance(transform.position, candidate.transform.position);
-            if (d < closestDist)
-            {
-                closestDist = d;
-                bestCandidate = candidate;
-            }
+            GameObject candidate = hit.gameObject;
+            if (candidate == gameObject) continue;
+            if (candidate.GetComponent<CrystalTuner>()  != null) continue;
+            if (candidate.GetComponent<HomingHazard>()   != null) continue;
+            if (candidate.GetComponent<DummyHealth>()    == null) continue;
+
+            // Já é alvo?
+            bool alreadyTargeted = false;
+            foreach (var td in targets)
+                if (td.obj == candidate) { alreadyTargeted = true; break; }
+            if (alreadyTargeted) continue;
+
+            ConnectToTarget(candidate);
         }
-        if (bestCandidate != null) ConnectToTarget(bestCandidate);
     }
 
     void ConnectToTarget(GameObject target)
     {
-        currentTargetObj = target;
         Transform centerPoint = target.transform.Find("CenterTarget");
-        if (centerPoint != null) currentTargetCenter = centerPoint;
-        else currentTargetCenter = target.transform;
-        ApplyBuffs(currentTargetObj);
-        lineRenderer.enabled = true;
+        Transform center = (centerPoint != null) ? centerPoint : target.transform;
+
+        LineRenderer beam = CreateBeam();
+        targets.Add(new TargetData { obj = target, center = center, beam = beam });
+        ApplyBuffs(target);
     }
 
-    void UpdateBeamVisuals()
+    LineRenderer CreateBeam()
     {
-        if (lineRenderer.enabled && currentTargetCenter != null)
+        GameObject beamObj = new GameObject("Beam");
+        beamObj.transform.SetParent(transform);
+
+        LineRenderer lr = beamObj.AddComponent<LineRenderer>();
+        lr.positionCount    = BEAM_SEGMENTS + 2;
+        lr.startWidth       = 0.12f;
+        lr.endWidth         = 0.04f;
+        lr.numCapVertices   = 4;
+        lr.useWorldSpace    = true;
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lr.receiveShadows   = false;
+
+        Shader sh = Shader.Find("Sprites/Default") ?? Shader.Find("UI/Default");
+        Material mat = new Material(sh);
+        mat.color = Color.white;
+        lr.material = mat;
+
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(beamColor,   0.0f),
+                new GradientColorKey(Color.white,  0.5f),
+                new GradientColorKey(beamColor,   1.0f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(0.0f, 0.0f),
+                new GradientAlphaKey(1.0f, 0.1f),
+                new GradientAlphaKey(1.0f, 0.9f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        lr.colorGradient = grad;
+        return lr;
+    }
+
+    // ──────────────────────────────────────────────
+    void UpdateAllBeams()
+    {
+        beamPulseTimer += Time.deltaTime * 10f;
+        Vector3 origin = (beamOrigin != null) ? beamOrigin.position : transform.position;
+
+        for (int i = 0; i < targets.Count; i++)
         {
-            lineRenderer.SetPosition(0, transform.position);
-            lineRenderer.SetPosition(1, currentTargetCenter.position); 
+            var td = targets[i];
+            if (td.beam == null || td.center == null) continue;
+            UpdateBeam(td.beam, origin, td.center.position, i);
         }
     }
 
+    void UpdateBeam(LineRenderer lr, Vector3 origin, Vector3 targetPos, int index)
+    {
+        float totalDist = Vector3.Distance(origin, targetPos);
+
+        float pulse = 0.06f + Mathf.Abs(Mathf.Sin(beamPulseTimer + index * 1.2f)) * 0.06f;
+        lr.startWidth = pulse;
+        lr.endWidth   = pulse * 0.4f;
+
+        Vector3 dir  = targetPos - origin;
+        Vector3 perp = (dir.sqrMagnitude > 0.001f)
+            ? Vector3.Cross(dir.normalized, Vector3.up)
+            : Vector3.right;
+
+        int total = BEAM_SEGMENTS + 2;
+        for (int i = 0; i < total; i++)
+        {
+            float t     = (float)i / (total - 1);
+            Vector3 pt  = Vector3.Lerp(origin, targetPos, t);
+
+            if (i > 0 && i < total - 1)
+            {
+                float amp    = Mathf.Sin(t * Mathf.PI) * totalDist * 0.07f;
+                float noiseX = (Mathf.PerlinNoise(t * 4f + beamPulseTimer + index * 3f, 0.5f) - 0.5f) * 2f;
+                float noiseY = (Mathf.PerlinNoise(0.5f, t * 4f + beamPulseTimer + index * 5f + 7f) - 0.5f) * 2f;
+                pt += perp       * noiseX * amp;
+                pt += Vector3.up * noiseY * amp * 0.4f;
+            }
+
+            lr.SetPosition(i, pt);
+        }
+    }
+
+    // ──────────────────────────────────────────────
     void ApplyBuffs(GameObject target)
     {
-        var totem = target.GetComponent<TotemSpawner>();
-        if (totem != null) totem.SetBuff(true);
-        var stone = target.GetComponent<MagicStone_AI>();
-        if (stone != null) stone.SetBuff(true);
-        var swarm = target.GetComponent<ShardSwarm_AI>();
-        if (swarm != null) swarm.SetBuff(true);
-        var health = target.GetComponent<DummyHealth>();
-        if (health != null) health.SetBuffedStatus(true);
+        if (target == null) return;
+        target.GetComponent<TotemSpawner>()    ?.SetBuff(true);
+        target.GetComponent<MagicStone_AI>()   ?.SetBuff(true);
+        target.GetComponent<ShardSwarm_AI>()   ?.SetBuff(true);
+        target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
+        target.GetComponent<DummyHealth>()     ?.SetBuffedStatus(true);
     }
 
     void RemoveBuffs(GameObject target)
     {
         if (target == null) return;
-        var totem = target.GetComponent<TotemSpawner>();
-        if (totem != null) totem.SetBuff(false);
-        var stone = target.GetComponent<MagicStone_AI>();
-        if (stone != null) stone.SetBuff(false);
-        var swarm = target.GetComponent<ShardSwarm_AI>();
-        if (swarm != null) swarm.SetBuff(false);
-        var health = target.GetComponent<DummyHealth>();
-        if (health != null) health.SetBuffedStatus(false);
+        target.GetComponent<TotemSpawner>()    ?.SetBuff(false);
+        target.GetComponent<MagicStone_AI>()   ?.SetBuff(false);
+        target.GetComponent<ShardSwarm_AI>()   ?.SetBuff(false);
+        target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
+        target.GetComponent<DummyHealth>()     ?.SetBuffedStatus(false);
     }
 
     void OnDestroy()
     {
-        if (currentTargetObj != null) RemoveBuffs(currentTargetObj);
+        foreach (var td in targets)
+            RemoveBuffs(td.obj);
     }
 }

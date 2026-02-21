@@ -195,7 +195,7 @@ public class Golem_AI : MonoBehaviour
                 PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
-                    playerHealth.TakeDamage(meleeDamage);
+                    playerHealth.TakeDamage(meleeDamage, gameObject);
                     Debug.Log("[GOLEM] HIT! Melee acertou o player! Dano: " + meleeDamage + " | Combo: " + (meleeCombo + 1));
                     meleeCombo++;
                 }
