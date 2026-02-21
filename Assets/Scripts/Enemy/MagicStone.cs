@@ -29,7 +29,7 @@ public class MagicStone_AI : MonoBehaviour
 
     [Header("Ataque")]
     public float attackInterval = 5f;
-    public float attackTelegraphTime = 1.5f;
+    public float attackTelegraphTime = 2.5f;
 
     [Header("Teleporte")]
     public float teleportCooldown = 30f;
@@ -202,14 +202,21 @@ public class MagicStone_AI : MonoBehaviour
     {
         Vector3 targetPosition = new Vector3(playerTransform.position.x, 0.01f, playerTransform.position.z);
         GameObject marker = Instantiate(attackMarkerPrefab, targetPosition, Quaternion.Euler(90, 0, 0));
+
+        // Sincroniza a duração do efeito visual com o tempo de telegrafagem
+        AttackMarkerEffect effect = marker.GetComponent<AttackMarkerEffect>();
+        if (effect != null)
+            effect.duration = attackTelegraphTime;
+
         yield return new WaitForSeconds(attackTelegraphTime);
-        Destroy(marker);
+        Destroy(marker); // Garante destruição mesmo se o efeito falhar
+
         // Criar o raio e definir o owner para thorns
         GameObject beam = Instantiate(attackBeamPrefab, targetPosition, Quaternion.identity);
         AttackBeam beamScript = beam.GetComponent<AttackBeam>();
         if (beamScript != null)
         {
-            beamScript.owner = gameObject; // Define a Magic Stone como dona do raio
+            beamScript.owner = gameObject;
         }
     }
 }
