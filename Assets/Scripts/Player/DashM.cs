@@ -5,6 +5,8 @@ using TMPro;
 public class DashM : MonoBehaviour
 {
     private Rigidbody rb;
+    private PlayerAttributesDefensive playerAttributes;
+    private PlayerHealth playerHealth;
     public bool isDashing = false;
 
     [Header("Dash Settings")]
@@ -27,31 +29,35 @@ public class DashM : MonoBehaviour
     public KeyCode dashKey = KeyCode.E;
 
     private void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-        if (rb == null)
         {
-            Debug.LogError("Rigidbody não encontrado. Adicione um Rigidbody ao jogador.");
-        }
+           rb = GetComponent<Rigidbody>();
+          dashesLeft = maxDashes;
         
-        // Começa o jogo com o máximo de dashes
-        dashesLeft = maxDashes;
-        if (dashCountText == null)
-        {
-        // Certifique-se de que o seu objeto de texto do dash se chama "DashText"
-            GameObject textObj = GameObject.Find("DashText");
-            if (textObj != null)
-        {
-            dashCountText = textObj.GetComponent<TextMeshProUGUI>();
+         // Buscar PlayerAttributesDefensive
+         playerAttributes = GetComponent<PlayerAttributesDefensive>();
+         if (playerAttributes == null)
+         {
+             Debug.LogWarning("DashM: PlayerAttributesDefensive não encontrado! Atributos de dash não serão aplicados.");
+         }
+         
+         // Buscar PlayerHealth para invulnerabilidade
+         playerHealth = GetComponent<PlayerHealth>();
+         
+         // Tenta encontrar UI no inicio
+         FindUIReferences();
         }
-            else
-        {
-            Debug.LogWarning("DashM: Objeto 'DashText' não encontrado.");
-        }
-        }
-        if (dashCountText != null) dashCountText.enabled = true;
-    }
 
+        // --- NOVA FUNÇÃO PÚBLICA ---
+        public void FindUIReferences()
+        {
+            GameObject textObj = GameObject.Find("DashText"); //
+            if (textObj != null)
+            {
+             dashCountText = textObj.GetComponent<TextMeshProUGUI>();
+             dashCountText.enabled = true;
+            HandleDashUI(); // Atualiza o texto imediatamente
+            }
+        }
     private void Update()
     {
         // Lógica para iniciar o dash
@@ -69,7 +75,17 @@ public class DashM : MonoBehaviour
             {
                 // Quando o timer acaba, reseta os dashes e para a recarga
                 isRecharging = false;
-                dashesLeft = maxDashes;
+                
+                // Aplicar Dash Counts do PlayerAttributesDefensive
+                if (playerAttributes != null)
+                {
+                    dashesLeft = playerAttributes.dashCounts;
+                    maxDashes = playerAttributes.dashCounts;
+                }
+                else
+                {
+                    dashesLeft = maxDashes;
+                }
             }
         }
 
@@ -90,17 +106,41 @@ public class DashM : MonoBehaviour
 
         rb.linearVelocity = Vector3.zero; // Usar 'velocity' em vez de 'linearVelocity' e AddForce
         rb.linearVelocity = dashDirection * dashSpeed;
+        
+        // Ativar invulnerabilidade durante o dash
+        if (playerHealth != null && playerAttributes != null && playerAttributes.dashInvulnerability > 0)
+        {
+            playerHealth.isInvulnerable = true;
+            Debug.Log($"🛡️ Dash Invulnerability ativada por {playerAttributes.dashInvulnerability}s");
+        }
 
         yield return new WaitForSeconds(dashDuration);
 
         rb.linearVelocity = Vector3.zero; // Para o movimento bruscamente no final do dash
+        
+        // Desativar invulnerabilidade se estava ativa
+        if (playerHealth != null && playerAttributes != null && playerAttributes.dashInvulnerability > 0)
+        {
+            playerHealth.isInvulnerable = false;
+        }
+        
         isDashing = false;
 
         // Se acabaram os dashes, inicia o cooldown
         if (dashesLeft <= 0)
         {
             isRecharging = true;
-            cooldownTimer = dashCooldown;
+            
+            // Aplicar Dash Cooldown Multiplier
+            if (playerAttributes != null)
+            {
+                cooldownTimer = dashCooldown * playerAttributes.dashCooldownMultiplier;
+                Debug.Log($"⏱️ Dash Cooldown: {dashCooldown}s × {playerAttributes.dashCooldownMultiplier} = {cooldownTimer:F2}s");
+            }
+            else
+            {
+                cooldownTimer = dashCooldown;
+            }
         }
     }
 

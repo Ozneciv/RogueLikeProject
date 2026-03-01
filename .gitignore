@@ -100,3 +100,11 @@ InitTestScene*.unity*
 
 # Configurações locais
 .vsconfig
+
+# Plastic SCM
+.plastic/
+.plasticrc
+ignore.conf
+
+# Recovery files
+/[Aa]ssets/_Recovery/

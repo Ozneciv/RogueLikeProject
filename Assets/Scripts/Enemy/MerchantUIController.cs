@@ -5,13 +5,10 @@ using TMPro;
 public class MerchantUIController : MonoBehaviour
 {
     [Header("Referências da UI")]
-    public GameObject interactionPrompt;
+    public GameObject interactionPrompt; 
     public Button[] pactButtons;
     public Button closeButton;
 
-    // --- A CORREÇÃO ESTÁ AQUI ---
-    // A variável precisa ser 'public' para que o GameManager a possa preencher.
-    // [HideInInspector] esconde-a do Inspector para não nos confundir.
     [HideInInspector]
     public PlayerHealth playerHealth;
 
@@ -19,9 +16,6 @@ public class MerchantUIController : MonoBehaviour
     
     void Awake()
     {
-        // REMOVEMOS a lógica 'FindObjectOfType' daqui.
-        // O GameManager vai preencher a variável 'playerHealth'.
-        
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(ClosePanel);
@@ -31,6 +25,22 @@ public class MerchantUIController : MonoBehaviour
         gameObject.SetActive(false); 
     }
 
+    // --- A FUNÇÃO QUE ESTAVA FALTANDO ---
+    // O GameManager chama esta função para entregar o jogador à UI
+    public void ConnectPlayer(PlayerHealth player)
+    {
+        playerHealth = player;
+        if (playerHealth == null)
+        {
+            Debug.LogError("MerchantUIController: Recebi um jogador nulo do GameManager!");
+        }
+        else
+        {
+            Debug.Log("MerchantUIController: Jogador conectado com sucesso!");
+        }
+    }
+    // ------------------------------------
+
     void Update()
     {
         if (gameObject.activeSelf && Input.GetKeyDown(KeyCode.Escape))
@@ -38,9 +48,6 @@ public class MerchantUIController : MonoBehaviour
             ClosePanel();
         }
     }
-    
-    // (O resto do seu script: ShowPrompt, IsUiOpen, OpenPanel, ClosePanel...
-    // ...continuam exatamente iguais, pois já usam a variável 'playerHealth')
 
     public void ShowPrompt(bool show)
     {
@@ -49,7 +56,7 @@ public class MerchantUIController : MonoBehaviour
             interactionPrompt.SetActive(show);
         }
     }
-    
+
     public bool IsUiOpen()
     {
         return gameObject.activeSelf;
@@ -67,17 +74,12 @@ public class MerchantUIController : MonoBehaviour
     {
         gameObject.SetActive(false);
         Time.timeScale = 1f;
-        // (A lógica do Merchant.cs vai re-mostrar o prompt se necessário)
+        ShowPrompt(true);
     }
 
     public void ApplyPactOfFury()
     {
-        if (playerHealth == null) 
-        {
-            Debug.LogError("ApplyPactOfFury falhou: 'playerHealth' é nulo!");
-            return;
-        }
-        
+        if (playerHealth == null) return;
         int healthCost = Mathf.RoundToInt(playerHealth.maxHealth * 0.3f);
         if (playerHealth.currentHealth > healthCost)
         {
@@ -90,12 +92,7 @@ public class MerchantUIController : MonoBehaviour
 
     public void ApplyPactOfGreed()
     {
-        if (playerHealth == null) 
-        {
-            Debug.LogError("ApplyPactOfGreed falhou: 'playerHealth' é nulo!");
-            return;
-        }
-
+        if (playerHealth == null) return;
         int healthCost = Mathf.RoundToInt(playerHealth.maxHealth * 0.25f);
         if (playerHealth.currentHealth > healthCost)
         {

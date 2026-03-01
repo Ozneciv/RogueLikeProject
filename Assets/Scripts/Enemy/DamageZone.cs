@@ -4,58 +4,77 @@ using System.Collections;
 public class DamageZone : MonoBehaviour
 {
     [Header("Configurações de Dano")]
-    [Tooltip("A quantidade de dano que o jogador recebe a cada intervalo.")]
     public int damageAmount = 20;
-    [Tooltip("O intervalo de tempo (em segundos) entre cada aplicação de dano.")]
     public float damageInterval = 1.0f;
 
-    // --- NOVA REFERÊNCIA AQUI ---
-    [Header("Referências Visuais")]
-    [Tooltip("Arraste o objeto 'AreaVisualizer' que tem o script PulseVisualizer aqui.")]
-    public PulseVisualizer pulseVisualizer;
+    // --- NOVA OPÇÃO ---
+    [Tooltip("Se marcado, o objeto se destrói assim que encostar no jogador (estilo Kamikaze).")]
+    public bool destroyOnImpact = false; 
 
-    private PlayerHealth playerHealth;
-    private Coroutine damageCoroutine;
+    [Header("Referências Visuais")]
+    public PulseVisualizer pulseVisualizer;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            playerHealth = other.GetComponent<PlayerHealth>();
+            PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
+            
             if (playerHealth != null)
             {
-                damageCoroutine = StartCoroutine(DealDamageOverTime());
+                // Causa o dano imediatamente
+                playerHealth.TakeDamage(damageAmount, gameObject);
+
+                // Ativa o visual do pulso/explosão
+                if (pulseVisualizer != null)
+                {
+                    pulseVisualizer.TriggerPulse();
+                    // Se for destruir, precisamos desanexar o visual para ele não sumir junto instantaneamente
+                    if (destroyOnImpact)
+                    {
+                        pulseVisualizer.transform.SetParent(null); 
+                        Destroy(pulseVisualizer.gameObject, 1f); // Destrói o visual depois de 1s
+                    }
+                }
+
+                // --- LÓGICA DE KAMIKAZE ---
+                if (destroyOnImpact)
+                {
+                    Debug.Log(gameObject.name + " explodiu no jogador!");
+                    Destroy(gameObject); // Destrói a caveira
+                }
+                else
+                {
+                    // Se não for kamikaze, inicia o dano contínuo (comportamento antigo)
+                    StartCoroutine(DealDamageOverTime(playerHealth));
+                }
             }
         }
     }
 
+    // O OnTriggerExit não é mais tão necessário se for destroyOnImpact, mas mantemos para compatibilidade
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (!destroyOnImpact && other.CompareTag("Player"))
         {
-            if (damageCoroutine != null)
-            {
-                StopCoroutine(damageCoroutine);
-            }
-            playerHealth = null;
+            StopAllCoroutines();
         }
     }
 
-    private IEnumerator DealDamageOverTime()
+    private IEnumerator DealDamageOverTime(PlayerHealth player)
     {
-        Debug.Log("Jogador entrou na zona de dano.");
-        while (true)
+        // Espera o intervalo, pois o primeiro dano já foi dado no Enter
+        yield return new WaitForSeconds(damageInterval);
+
+        while (player != null && player.gameObject.activeSelf)
         {
-            // Causa o dano no jogador
-            playerHealth.TakeDamage(damageAmount);
+            player.TakeDamage(damageAmount, gameObject);
             
-            // --- ATIVA O PULSO VISUAL ---
             if (pulseVisualizer != null)
             {
                 pulseVisualizer.TriggerPulse();
             }
             
-            // Espera pelo intervalo de tempo definido antes de continuar o loop
             yield return new WaitForSeconds(damageInterval);
         }
     }

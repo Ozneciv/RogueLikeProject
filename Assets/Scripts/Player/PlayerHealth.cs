@@ -1,159 +1,232 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
-using TMPro; // Necessário para o texto da armadura
+using TMPro;
+using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
-    [Header("Configurações de Vida e Armadura")]
+    [Header("Configurações")]
     public int maxHealth = 100;
     public int maxArmor = 200;
-    public int currentHealth { get; private set; } // Deixei público para o Mercador checar
+    public int currentHealth { get; private set; }
     private int currentArmor;
-    private int cursedHealthLost = 0; // "Memória" da vida amaldiçoada
+    private int cursedHealthLost = 0;
 
-    [Header("Componentes e Referências")]
+    [Header("Armor Regen")]
+    public float armorRegenRate = 5f;
+    
+    [Header("Invulnerability")]
+    public bool isInvulnerable = false;
+    
+    [Header("Componentes")]
     public PlayerM playerMovement;
     public PrimaryAttackKnife playerAttack;
     public Animator playerAnimator;
     public ScreenFader screenFader;
-    public Transform initialSpawnPoint;
-    private Transform currentSpawnPoint;
+    private Rigidbody rb;
+    private PlayerAttributesDefensive playerAttributes;
 
     [Header("UI (Interface)")]
-    public Slider healthBarSlider; // A barra de vida verde
-    public Image gooBarImage; // A barra de "gosma" que fica por baixo
-    public Image armorBarImage;
+    public Image healthFillImage; // A barra verde (Filled)
+    public Image gooBarImage;     // A barra de gosma (Filled)
+    public Image armorBarImage;   // A barra de armadura (Filled)
+    
     public TextMeshProUGUI armorText;
+    public TextMeshProUGUI percentageText; // O texto de %
 
-    [Header("Modificadores de Pacto")]
-    [HideInInspector] public float damageMultiplier = 1.0f; // Multiplicador de dano causado
-    [HideInInspector] public float damageTakenMultiplier = 1.0f; // Multiplicador de dano recebido
+    [Header("Pactos")]
+    [HideInInspector] public float damageMultiplier = 1.0f;
+    [HideInInspector] public float damageTakenMultiplier = 1.0f;
+
+    [Header("Stun")]
+    public bool isStunned { get; private set; } = false;
+    private float stunImmunityTimer = 0f;
+    private float stunImmunityDuration = 2f; // Imunidade após stun
 
     private bool isDead = false;
     private int playerLayer;
-    private bool diedFallingForward;
+    private bool diedFallingForward = false;
 
     void Start()
     {
+        playerLayer = gameObject.layer;
+        rb = GetComponent<Rigidbody>();
+
+        FindUIReferences();
+        FullHeal();
+        
+        // Buscar PlayerAttributesDefensive
+        playerAttributes = GetComponent<PlayerAttributesDefensive>();
+        if (playerAttributes == null)
+        {
+            Debug.LogWarning("PlayerHealth: PlayerAttributesDefensive não encontrado! Atributos defensivos não funcionarão.");
+        }
+
+        if (SceneManager.GetActiveScene().name == "Base")
+        {
+            TriggerBaseRespawn();
+        }
+    }
+
+    public void TriggerBaseRespawn()
+    {
+        FindUIReferences();
+        FullHeal();
+        isDead = false;
+        gameObject.layer = playerLayer;
+
+        // Trava a física para a animação
+        if (rb != null)
+        {
+            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
+
+        StartCoroutine(PlaySpawnAnimation());
+    }
+
+    IEnumerator PlaySpawnAnimation()
+    {
+        if (playerMovement != null) playerMovement.enabled = false;
+        if (playerAttack != null) playerAttack.enabled = false;
+        
+        // Reforça a trava física
+        if (rb != null) 
+        { 
+            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true; 
+        }
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.applyRootMotion = true;
+            yield return new WaitForEndOfFrame();
+
+            // --- LÓGICA FORÇADA PARA REVIVE 2 (Seguro) ---
+            string triggerName = "Revive2";
+
+            /* LÓGICA ORIGINAL (Comentada para uso futuro)
+            string triggerName = "Revive1";
+            if (Time.time < 1f) 
+            {
+                if (Random.value > 0.5f) triggerName = "Revive2";
+            }
+            else
+            {
+                if (!diedFallingForward) triggerName = "Revive2";
+            }
+            */
+
+            playerAnimator.SetTrigger(triggerName);
+
+            // --- ESPERA INTELIGENTE ---
+            yield return new WaitForSeconds(0.1f);
+            float timeout = 0f;
+            
+            // Espera até que o Animator esteja tocando o Revive2
+            while (!playerAnimator.GetCurrentAnimatorStateInfo(0).IsName("Revive2"))
+            {
+                yield return null;
+                timeout += Time.deltaTime;
+                if (timeout > 2f) break;
+            }
+
+            float animationLength = playerAnimator.GetCurrentAnimatorStateInfo(0).length;
+            yield return new WaitForSeconds(animationLength);
+        }
+        
+        // Destrava o jogador
+        UnlockPlayer();
+    }
+
+    public void UnlockPlayer()
+    {
+        if (playerAnimator != null) playerAnimator.applyRootMotion = false;
+        isDead = false;
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerAttack != null) playerAttack.enabled = true;
+        gameObject.layer = playerLayer; 
+        
+        // Destrava a física para o jogo
+        if (rb != null) 
+        { 
+            rb.isKinematic = false; 
+            rb.detectCollisions = true; 
+            rb.WakeUp(); 
+        }
+    }
+
+    public void FindUIReferences()
+    {
         try
         {
-            healthBarSlider = GameObject.Find("HealthBar_Slider").GetComponent<Slider>();
-            gooBarImage = GameObject.Find("Goo_Fill").GetComponent<Image>();
-            armorBarImage = GameObject.Find("ArmorBar_Fill").GetComponent<Image>();
-            armorText = GameObject.Find("ArmorText").GetComponent<TextMeshProUGUI>();
-        
-         // (Encontra os outros componentes do jogador)
-            playerMovement = GetComponent<PlayerM>();
-            playerAnimator = GetComponentInChildren<Animator>();
-        }
-        catch (System.Exception e)
-    {
-        Debug.LogError("PlayerHealth: Falha ao encontrar componentes da UI! Verifique os NOMES dos objetos no Canvas. Erro: " + e.Message);
-    }
-        playerLayer = gameObject.layer;
-        if (healthBarSlider == null)
-        {
-        healthBarSlider = GameObject.Find("HealthBar_Slider").GetComponent<Slider>();
-        }
-        if (gooBarImage == null)
-        {
-        gooBarImage = GameObject.Find("Goo_Fill").GetComponent<Image>();
-        }
-        if (armorBarImage == null)
-        {
-        armorBarImage = GameObject.Find("ArmorBar_Fill").GetComponent<Image>();
-        }
-        if (armorText == null)
-        {
-        armorText = GameObject.Find("ArmorText").GetComponent<TextMeshProUGUI>();
-        }
-
-        if (currentSpawnPoint == null)
-        {
-            currentSpawnPoint = initialSpawnPoint;
-        }
-        if (currentSpawnPoint != null)
-        {
-            transform.position = currentSpawnPoint.position;
-            transform.rotation = currentSpawnPoint.rotation;
-        }
-        
-        FullHeal();
-    }
-
-    public void TakeDamage(int damage)
-    {
-        if (isDead) return;
-
-        int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
-
-        // Dano é aplicado primeiro à armadura
-        if (currentArmor > 0)
-        {
-            int damageToArmor = Mathf.Min(finalDamage, currentArmor);
-            currentArmor -= damageToArmor;
-            finalDamage -= damageToArmor;
-            UpdateArmorBar();
-        }
-
-        // Dano restante vai para a vida "normal" (não a amaldiçoada)
-        if (finalDamage > 0)
-        {
-            int damageableHealth = currentHealth - cursedHealthLost;
-            int damageToHealth = Mathf.Min(finalDamage, damageableHealth);
+            GameObject healthObj = GameObject.Find("Health_Fill");
+            if (healthObj != null) healthFillImage = healthObj.GetComponent<Image>();
             
-            currentHealth -= damageToHealth;
-            UpdateHealthBar();
-        }
+            GameObject gooObj = GameObject.Find("Goo_Fill");
+            if (gooObj != null) gooBarImage = gooObj.GetComponent<Image>();
 
-        if (currentHealth <= 0 && !isDead)
-        {
-            Die();
+            GameObject armorObj = GameObject.Find("ArmorBar_Fill"); 
+            if (armorObj != null) armorBarImage = armorObj.GetComponent<Image>();
+
+            GameObject textArmor = GameObject.Find("ArmorText");
+            if (textArmor != null) armorText = textArmor.GetComponent<TextMeshProUGUI>();
+            
+            GameObject textPercent = GameObject.Find("Text_Percentage");
+            if (textPercent != null) percentageText = textPercent.GetComponent<TextMeshProUGUI>();
+
+            if (playerMovement == null) playerMovement = GetComponent<PlayerM>();
+            if (playerAnimator == null) playerAnimator = GetComponentInChildren<Animator>();
+            if (playerAttack == null) playerAttack = GetComponent<PrimaryAttackKnife>();
         }
+        catch (System.Exception) { }
+        
+        UpdateHealthBar();
+        UpdateArmorBar();
     }
 
-    // Função para o Mercador usar (dano amaldiçoado)
+    public void ResetPlayerState()
+    {
+        isDead = false;
+        FullHeal(); 
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerAttack != null) playerAttack.enabled = true;
+        gameObject.layer = playerLayer; 
+        
+        if (rb != null) { rb.isKinematic = false; rb.linearVelocity = Vector3.zero; }
+        if (playerAnimator != null) { playerAnimator.Rebind(); playerAnimator.Update(0f); }
+    }
+
+
     public void TakeCursedDamage(int amount)
     {
         if (isDead) return;
-
-        // Garante que o dano não seja maior que a vida disponível
         int actualCost = Mathf.Min(amount, currentHealth);
-
         currentHealth -= actualCost;
-        cursedHealthLost += actualCost; // A "gosma" aumenta
-        
-        if (currentHealth <= 0)
-        {
-            Die();
-        }
+        cursedHealthLost += actualCost;
+        if (currentHealth <= 0) Die();
         UpdateHealthBar();
     }
     
     void Die()
     {
         isDead = true;
-        Debug.Log("O jogador morreu! Iniciando sequência de respawn.");
-
-        // Desativa os controles e muda a camada de física
-        playerMovement.enabled = false;
+        if (playerMovement != null) playerMovement.enabled = false;
         if (playerAttack != null) playerAttack.enabled = false;
         gameObject.layer = LayerMask.NameToLayer("DeadBody");
         
-        // Escolhe e dispara uma animação de morte aleatória
+        // Trava física ao morrer também
+        if (rb != null) 
+        { 
+            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true; 
+        }
+        
         if (playerAnimator != null)
         {
-            if (Random.value > 0.5f)
-            {
-                diedFallingForward = true;
-                playerAnimator.SetTrigger("DeathForward");
-            }
-            else
-            {
-                diedFallingForward = false;
-                playerAnimator.SetTrigger("DeathBackward");
-            }
+            if (Random.value > 0.5f) { diedFallingForward = true; playerAnimator.SetTrigger("DeathForward"); }
+            else { diedFallingForward = false; playerAnimator.SetTrigger("DeathBackward"); }
         }
         StartCoroutine(RespawnSequence());
     }
@@ -161,53 +234,14 @@ public class PlayerHealth : MonoBehaviour
     IEnumerator RespawnSequence()
     {
         yield return new WaitForSeconds(2.0f);
-
-        if (screenFader != null)
-        {
-            yield return StartCoroutine(screenFader.FadeOut());
-        }
+        if (screenFader != null) yield return StartCoroutine(screenFader.FadeOut());
         
-        // Ação ocorre com a tela preta
-        transform.position = currentSpawnPoint.position;
-        transform.rotation = currentSpawnPoint.rotation;
-        FullHeal();
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.applyRootMotion = true;
-            if (diedFallingForward)
-            {
-                playerAnimator.SetTrigger("Revive1");
-            }
-            else
-            {
-                playerAnimator.SetTrigger("Revive2");
-            }
-        }
-        
-        if (screenFader != null)
-        {
-            yield return StartCoroutine(screenFader.FadeIn());
-        }
+        if (GameManager.instance != null) GameManager.instance.ReturnToBase();
+        else SceneManager.LoadScene("BaseLab");
     }
 
-    // Função pública chamada pelo PlayerAnimationEvents
-    public void HandleReviveCompletion()
-    {
-        Debug.Log("Animação de reviver completa. Devolvendo controle ao jogador.");
+    public void HandleReviveCompletion() { UnlockPlayer(); }
 
-        if (playerAnimator != null)
-        {
-            playerAnimator.applyRootMotion = false;
-        }
-        
-        isDead = false;
-        playerMovement.enabled = true;
-        if (playerAttack != null) playerAttack.enabled = true;
-        gameObject.layer = playerLayer; 
-    }
-
-    // Reseta vida, armadura e a "gosma"
     void FullHeal()
     {
         cursedHealthLost = 0;
@@ -221,28 +255,28 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isDead) return;
         currentArmor += amount;
-        if (currentArmor > maxArmor)
-        {
-            currentArmor = maxArmor;
-        }
+        if (currentArmor > maxArmor) currentArmor = maxArmor;
         UpdateArmorBar();
     }
 
     private void UpdateHealthBar()
     {
-        if (healthBarSlider != null)
+        if (healthFillImage != null)
         {
-            // A barra verde mostra a vida atual
-            healthBarSlider.value = (float)currentHealth / maxHealth;
+            healthFillImage.fillAmount = (float)currentHealth / maxHealth;
+        }
+
+        if (percentageText != null)
+        {
+            int percent = Mathf.RoundToInt(((float)currentHealth / maxHealth) * 100);
+            percentageText.text = percent + "%";
         }
 
         if (gooBarImage != null)
         {
-            // Controla a visibilidade e o preenchimento da gosma
             if (cursedHealthLost > 0)
             {
                 gooBarImage.enabled = true;
-                // A gosma preenche a barra de "vida perdida"
                 gooBarImage.fillAmount = (float)(currentHealth + cursedHealthLost) / maxHealth;
             }
             else
@@ -254,24 +288,156 @@ public class PlayerHealth : MonoBehaviour
 
     private void UpdateArmorBar()
     {
-        if (armorBarImage != null)
-        {
-            armorBarImage.fillAmount = (float)currentArmor / maxArmor;
-        }
-        if (armorText != null)
-        {
-            armorText.text = currentArmor + "/" + maxArmor;
-        }
+        if (armorBarImage != null) armorBarImage.fillAmount = (float)currentArmor / maxArmor;
+        if (armorText != null) armorText.text = currentArmor + "/" + maxArmor;
+    }
+    
+    public void SetCurrentSpawnPoint(Transform newSpawnPoint) { }
+
+    // ========== SISTEMA DE STUN ==========
+    
+    /// <summary>
+    /// Aplica stun ao jogador por uma duração específica.
+    /// Chamado por inimigos como o Golem.
+    /// </summary>
+    public void ApplyStun(float duration)
+    {
+        // Não pode ser stunado se: já está stunado, morto, ou imune
+        if (isStunned || isDead || stunImmunityTimer > 0) return;
+
+        // Verifica se está em dash (não pode ser stunado durante dash)
+        DashM dashScript = GetComponent<DashM>();
+        if (dashScript != null && dashScript.isDashing) return;
+
+        StartCoroutine(StunCoroutine(duration));
     }
 
-    // Função para a AnaLu usar
-    public void SetCurrentSpawnPoint(Transform newSpawnPoint)
+    private IEnumerator StunCoroutine(float duration)
     {
-        currentSpawnPoint = newSpawnPoint;
-        if (newSpawnPoint != null)
+        isStunned = true;
+
+        // Desabilita controles
+        if (playerMovement != null) playerMovement.enabled = false;
+        if (playerAttack != null) playerAttack.enabled = false;
+
+        // Para o movimento
+        if (rb != null && !rb.isKinematic)
         {
-            transform.position = newSpawnPoint.position;
-            transform.rotation = newSpawnPoint.rotation;
+            rb.linearVelocity = Vector3.zero;
+        }
+
+        // Animação de stun (opcional - usa o mesmo sistema de idle)
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetFloat("Speed", 0f);
+        }
+
+        Debug.Log("Player STUNADO por " + duration + " segundos!");
+
+        yield return new WaitForSeconds(duration);
+
+        // Restaura controles
+        isStunned = false;
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerAttack != null) playerAttack.enabled = true;
+
+        // Ativa imunidade temporária
+        stunImmunityTimer = stunImmunityDuration;
+
+        Debug.Log("Player recuperou do stun. Imunidade por " + stunImmunityDuration + "s");
+    }
+    
+    // ========== SISTEMA DE ATRIBUTOS DEFENSIVOS ==========
+    
+    void Update()
+    {
+        // Gerenciar timer de imunidade a stun
+        if (stunImmunityTimer > 0)
+        {
+            stunImmunityTimer -= Time.deltaTime;
+        }
+        
+        // === REGENERAÇÃO DE ARMADURA ===
+        if (!isDead && currentArmor < maxArmor && playerAttributes != null)
+        {
+            float regenAmount = armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
+            int previousArmor = currentArmor;
+            currentArmor += Mathf.RoundToInt(regenAmount);
+            
+            if (currentArmor > maxArmor)
+                currentArmor = maxArmor;
+            
+            // Log a cada segundo (aproximadamente)
+            if (Time.frameCount % 60 == 0 && currentArmor != previousArmor)
+            {
+                float regenPerSecond = armorRegenRate * playerAttributes.armorRegen;
+                Debug.Log($"🛡️ ARMOR REGEN! {previousArmor} → {currentArmor} | Taxa: {regenPerSecond:F1} pts/s");
+            }
+                
+            UpdateArmorBar();
+        }
+    }
+    
+    /// <summary>
+    /// Aplica dano ao jogador com todos os atributos defensivos.
+    /// </summary>
+    public void TakeDamage(int damage, GameObject attacker = null)
+    {
+        if (isDead || isInvulnerable) return;
+        
+        int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
+        
+        // === DODGE (Esquiva) ===
+        if (playerAttributes != null && playerAttributes.dodgeChance > 0)
+        {
+            float dodgeRoll = Random.Range(0f, 100f);
+            if (dodgeRoll < playerAttributes.dodgeChance)
+            {
+                Debug.Log($"✨ ESQUIVOU! Dano anulado | Roll: {dodgeRoll:F1} < {playerAttributes.dodgeChance}% chance");
+                return; // Anula completamente o dano
+            }
+        }
+        
+        // === DAMAGE NEGATION (Mitigação) ===
+        if (playerAttributes != null && playerAttributes.damageNegation > 0)
+        {
+            int damageBeforeNegation = finalDamage;
+            float reductionPercent = playerAttributes.damageNegation / 100f;
+            finalDamage = Mathf.RoundToInt(finalDamage * (1f - reductionPercent));
+            Debug.Log($"🛡️ DAMAGE NEGATION! Dano: {damageBeforeNegation} → {finalDamage} (-{playerAttributes.damageNegation}%)");
+        }
+        
+        // Aplicar dano em armor primeiro, depois health
+        if (currentArmor > 0)
+        {
+            int damageToArmor = Mathf.Min(finalDamage, currentArmor);
+            currentArmor -= damageToArmor;
+            finalDamage -= damageToArmor;
+            UpdateArmorBar();
+        }
+        
+        if (finalDamage > 0)
+        {
+            currentHealth -= finalDamage;
+            UpdateHealthBar();
+            
+            Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");
+            
+            if (currentHealth <= 0)
+            {
+                Die();
+            }
+        }
+        
+        // === THORNS (Dano Refletido) ===
+        if (attacker != null && playerAttributes != null && playerAttributes.thorns > 0)
+        {
+            DummyHealth enemyHealth = attacker.GetComponent<DummyHealth>();
+            if (enemyHealth != null)
+            {
+                enemyHealth.TakeDamage(playerAttributes.thorns);
+                Debug.Log($"🌵 THORNS! Refletido {playerAttributes.thorns} de dano para {attacker.name}");
+            }
         }
     }
 }
