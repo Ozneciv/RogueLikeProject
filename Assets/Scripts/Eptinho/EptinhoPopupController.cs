@@ -21,7 +21,7 @@ public class EptinhoPopupController : MonoBehaviour
         textoDoItem.text = "Eptinho analisou: " + item.objetoNome;
 
         CancelInvoke();
-        Invoke("EsconderPopup", 3f);
+        Invoke(nameof(EsconderPopup), 3f);
     }
 
     void EsconderPopup()

@@ -1,34 +1,67 @@
-using UnityEngine;
+    using UnityEngine;
 
-public class DetectorDoItem : MonoBehaviour
-{
-    public Interactable item;
+    public class DetectorDoItem : MonoBehaviour
+    {
+        public ItemCollectable collectable;
+        public GameObject glowObject;
+
+
+    //public Interactable item;
     private bool playerPerto = false;
 
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
+        void Awake()
         {
+            if (collectable == null)
+                collectable = GetComponentInParent<ItemCollectable>();
+
+            if (glowObject != null)
+                glowObject.SetActive(false);
+    }
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (!other.CompareTag("Player")) return;
+
             playerPerto = true;
-            Debug.Log("Pressione 'F' para catalogar o item.");
-            // Ativa brilho, highlight, etc
-        }
+
+            if (glowObject != null)
+                glowObject.SetActive(true);
+
+
+        if (collectable.PodeColetar())
+                Debug.Log("Pressione F para coletar");
+                //ativar press F
+            else
+                Debug.Log("Item trancado. Limpe a sala.");
+                //stivar ui de item trancado
     }
 
     void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
         {
-            playerPerto = false;
-        }
-    }
+            if (other.CompareTag("Player"))
+            {
+                playerPerto = false;
+            }
 
-    void Update()
-    {
-        if (playerPerto && Input.GetKeyDown(KeyCode.F))
+            if (glowObject != null)
+                glowObject.SetActive(false);
+        }
+
+        void Update()
         {
-            CatalogoManager.instancia.Catalogar(item);
-            Debug.Log("Item catalogado: " + item.objetoNome);
+            if (playerPerto && Input.GetKeyDown(KeyCode.F))
+            {
+                if (!collectable.PodeColetar())
+                {
+                    Debug.Log("Ainda não pode coletar.");
+                    return;
+                }
+
+                CatalogoManager.instancia.Catalogar(collectable.interactable);
+                Destroy(gameObject);
+
+                //CatalogoManager.instancia.Catalogar(item);
+                Debug.Log("Item catalogado: " + collectable.interactable.objetoNome);
+            }
         }
     }
-}

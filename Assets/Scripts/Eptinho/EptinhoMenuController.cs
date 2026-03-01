@@ -5,6 +5,8 @@ using UnityEngine.UI;
 public class EptinhoMenuController : MonoBehaviour
 {
     public GameObject menuUI;
+    public GameObject HUDCanvas;
+
 
     [Header("Configuração da Lista")]
     public Transform gridContent;   // O objeto onde colocamos o Grid Layout Group
@@ -25,6 +27,8 @@ public class EptinhoMenuController : MonoBehaviour
     public void AbrirMenu()
     {
         menuUI.SetActive(true);
+        HUDCanvas.SetActive(false);
+
         AtualizarListaVisual();
 
         // aqui você deve atualizar a UI listando:
@@ -36,6 +40,7 @@ public class EptinhoMenuController : MonoBehaviour
         // Se apertar ESC e o menu estiver aberto (activeSelf), fecha ele
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            HUDCanvas.SetActive(true);
             if (menuUI.activeSelf)
             {
                 FecharMenu();
