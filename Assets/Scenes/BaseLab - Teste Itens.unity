@@ -1098,8 +1098,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  collectable: {fileID: 0}
-  glowObject: {fileID: 0}
+  collectable: {fileID: 1760005565079757659}
+  glowObject: {fileID: 1873576721}
 --- !u!114 &439088416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1247,7 +1247,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00008168384}
+  m_AnchoredPosition: {x: 0, y: -0.000062163665}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &494046970
@@ -1617,6 +1617,19 @@ MonoBehaviour:
   popupUI: {fileID: 445688615}
   imagemDoItem: {fileID: 0}
   textoDoItem: {fileID: 0}
+--- !u!114 &630199959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 630199949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4a951f861218d24d9b9d5dde3041a7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BestiarioManager
+  inimigosEncontrados: []
 --- !u!1 &667467583
 GameObject:
   m_ObjectHideFlags: 0
@@ -1699,7 +1712,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2026875972}
   m_HandleRect: {fileID: 2026875971}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -2832,6 +2845,11 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1212571256 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: bb346a9205aac144c85db3b23651985e, type: 3}
+  m_PrefabInstance: {fileID: 1374178185}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1214970836
 GameObject:
   m_ObjectHideFlags: 0
@@ -2982,6 +3000,95 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1241239985}
   m_CullTransparentMesh: 1
+--- !u!1001 &1282830336
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1086662407212499298, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_Name
+      value: Dummy
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.791767
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 8.81751
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3990409537760767098, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316766906335434291, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316766906335434291, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1086662407212499298, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1282830338}
+  m_SourcePrefab: {fileID: 100100000, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+--- !u!1 &1282830337 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1086662407212499298, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+  m_PrefabInstance: {fileID: 1282830336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1282830338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1282830337}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  nomeInimigo: Inimigo teste
+  icon: {fileID: 21300000, guid: 7a3e6d993dcaec940ade772dcd40c66c, type: 3}
+  descricao: teste teste
+  foiEncontrado: 0
 --- !u!1 &1291371951
 GameObject:
   m_ObjectHideFlags: 0
@@ -3527,7 +3634,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: bb346a9205aac144c85db3b23651985e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1760005565079757657}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bb346a9205aac144c85db3b23651985e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1988539797}
   m_SourcePrefab: {fileID: 100100000, guid: bb346a9205aac144c85db3b23651985e, type: 3}
 --- !u!1001 &1436129097
 PrefabInstance:
@@ -4601,6 +4711,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1838961966}
   m_CullTransparentMesh: 1
+--- !u!1 &1873576721 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5058601871957140912, guid: 3b378ad3f7fc85a47840e18b5cb5e07c, type: 3}
+  m_PrefabInstance: {fileID: 1760005565079757656}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1879280209
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4678,6 +4793,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 630199956}
+    - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 630199959}
   m_SourcePrefab: {fileID: 100100000, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
 --- !u!1 &1936037157
 GameObject:
@@ -4777,6 +4895,22 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: bb346a9205aac144c85db3b23651985e, type: 3}
   m_PrefabInstance: {fileID: 1374178185}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1988539797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1212571256}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  nomeInimigo: Sabo Inimigo
+  icon: {fileID: 21300000, guid: da2114079bb15664280cdecc470edc18, type: 3}
+  descricao: "isso \xE9 um inimigo"
+  foiEncontrado: 0
 --- !u!1 &2026875970
 GameObject:
   m_ObjectHideFlags: 0
@@ -5458,6 +5592,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1448761888207339218, guid: 3b378ad3f7fc85a47840e18b5cb5e07c, type: 3}
   m_PrefabInstance: {fileID: 1760005565079757656}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1760005565079757659 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: -2390880463283880904, guid: 3b378ad3f7fc85a47840e18b5cb5e07c, type: 3}
+  m_PrefabInstance: {fileID: 1760005565079757656}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe37b7db57670ce4e8be66679dea8dd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemCollectable
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -5481,3 +5626,4 @@ SceneRoots:
   - {fileID: 2106569842}
   - {fileID: 1504700900}
   - {fileID: 1374178185}
+  - {fileID: 1282830336}
