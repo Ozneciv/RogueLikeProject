@@ -5,11 +5,20 @@ public class CatalogoManager : MonoBehaviour
 {
     public static CatalogoManager instancia;
 
-    public List<Interactable> itensCatalogados = new ();
+    public List<Interactable> itensCatalogados = new();
 
     void Awake()
     {
-        instancia = this;
+        if (instancia == null)
+        {
+            instancia = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
     public void Catalogar(Interactable item)

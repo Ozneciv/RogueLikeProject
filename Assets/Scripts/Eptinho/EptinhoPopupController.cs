@@ -14,7 +14,16 @@ public class EptinhoPopupController : MonoBehaviour
 
     void Awake()
     {
-        instancia = this;
+        if (instancia == null)
+        {
+            instancia = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
     public void MostrarPopup(Interactable item)

@@ -4,9 +4,8 @@ public class DetectorDoItem : MonoBehaviour
 {
     public ItemCollectable collectable;
     public GameObject glowObject;
+    public GameObject pressFUI;
 
-
-    //public Interactable item;
     private bool playerPerto = false;
 
     void Awake()
@@ -16,6 +15,9 @@ public class DetectorDoItem : MonoBehaviour
 
         if (glowObject != null)
             glowObject.SetActive(false);
+
+        if (pressFUI != null)
+            pressFUI.SetActive(false);
     }
 
     void OnTriggerEnter(Collider other)
@@ -27,13 +29,13 @@ public class DetectorDoItem : MonoBehaviour
         if (glowObject != null)
             glowObject.SetActive(true);
 
-
         if (collectable.PodeColetar())
-            Debug.Log("Pressione F para coletar");
-        //ativar press F
+        {
+            if (pressFUI != null)
+                pressFUI.SetActive(true);
+        }
         else
             Debug.Log("Item trancado. Limpe a sala.");
-        //stivar ui de item trancado
     }
 
     void OnTriggerExit(Collider other)
@@ -44,6 +46,9 @@ public class DetectorDoItem : MonoBehaviour
 
         if (glowObject != null)
             glowObject.SetActive(false);
+
+        if (pressFUI != null)
+            pressFUI.SetActive(false);
     }
 
     void Update()
@@ -57,6 +62,10 @@ public class DetectorDoItem : MonoBehaviour
             }
 
             CatalogoManager.instancia.Catalogar(collectable.interactable);
+
+            if (pressFUI != null)
+                pressFUI.SetActive(false);
+
             Destroy(gameObject);
 
             //CatalogoManager.instancia.Catalogar(item);
