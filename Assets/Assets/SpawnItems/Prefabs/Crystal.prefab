@@ -63,6 +63,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
       insertIndex: -1
       addedObject: {fileID: -957607922312913045}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7166344457765460968}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3134599547636450703}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 970907107233608823}
   m_SourcePrefab: {fileID: 100100000, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
 --- !u!1 &5792087848057019593 stripped
 GameObject:
@@ -91,3 +100,46 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4702925393065980420, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
+--- !u!114 &7166344457765460968
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5792087848057019593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  objetoNome: Cristal
+  icon: {fileID: 0}
+  descricao: "Descri\xE7\xE3o aqui"
+  foiCatalogado: 0
+--- !u!114 &3134599547636450703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5792087848057019593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe37b7db57670ce4e8be66679dea8dd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemCollectable
+  interactable: {fileID: 0}
+--- !u!114 &970907107233608823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5792087848057019593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
+  collectable: {fileID: 0}
+  glowObject: {fileID: 126837094896723819, guid: 795b1be3f3407e0409cc5fb534211a57, type: 3}
