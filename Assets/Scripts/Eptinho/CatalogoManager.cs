@@ -1,11 +1,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public struct ItemCatalogado
+{
+    public string nome;
+    public Sprite icon;
+    public string descricao;
+}
+
 public class CatalogoManager : MonoBehaviour
 {
     public static CatalogoManager instancia;
 
-    public List<Interactable> itensCatalogados = new();
+    public List<ItemCatalogado> itensCatalogados = new();
+    private HashSet<string> nomesCatalogados = new();
 
     void Awake()
     {
@@ -24,10 +33,19 @@ public class CatalogoManager : MonoBehaviour
     public void Catalogar(Interactable item)
     {
         if (item.foiCatalogado) return;
+        if (nomesCatalogados.Contains(item.objetoNome)) return;
 
         item.foiCatalogado = true;
-        itensCatalogados.Add(item);
 
-        EptinhoPopupController.instancia.MostrarPopup(item);
+        ItemCatalogado dados = new ItemCatalogado
+        {
+            nome = item.objetoNome,
+            icon = item.icon,
+            descricao = item.descricao
+        };
+        itensCatalogados.Add(dados);
+        nomesCatalogados.Add(item.objetoNome);
+
+        EptinhoPopupController.instancia.MostrarPopup(dados);
     }
 }

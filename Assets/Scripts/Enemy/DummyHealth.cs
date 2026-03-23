@@ -11,7 +11,7 @@ public class DummyHealth : MonoBehaviour
     [Header("Referências UI")]
     public Slider healthBarSlider;
     // A imagem que realmente tem a cor (dentro do Slider)
-    private Image healthBarFill; 
+    private Image healthBarFill;
 
     [Header("Cores da Barra")]
     public Color normalColor = Color.red;
@@ -23,8 +23,8 @@ public class DummyHealth : MonoBehaviour
     public Vector3 textOffset = new Vector3(0, 2f, 0);
     public Color hitColor = Color.red;
     public float hitFlashTime = 0.2f;
-    
-    [HideInInspector] public bool isInvulnerable = false; 
+
+    [HideInInspector] public bool isInvulnerable = false;
     [HideInInspector] public bool isBuffed = false;
 
     private Color originalRenderColor;
@@ -72,7 +72,7 @@ public class DummyHealth : MonoBehaviour
     public void SetBuffedStatus(bool buffed)
     {
         isBuffed = buffed;
-        
+
         // Muda a cor da barra
         if (healthBarFill != null)
         {
@@ -97,7 +97,7 @@ public class DummyHealth : MonoBehaviour
         {
             GameObject textObject = Instantiate(floatingDamageTextPrefab, transform.position + textOffset, Quaternion.identity);
             FloatingDamageText dmgScript = textObject.GetComponent<FloatingDamageText>();
-            if(dmgScript != null)
+            if (dmgScript != null)
             {
                 dmgScript.SetText(damage.ToString());
                 dmgScript.SetCritical(isCritical);
@@ -142,7 +142,7 @@ public class DummyHealth : MonoBehaviour
     private void Die()
     {
         Debug.Log(gameObject.name + " foi destruído.");
-        
+
         // Chama o sistema de drops se existir
         EnemyDrops drops = GetComponent<EnemyDrops>();
         if (drops != null)
@@ -154,7 +154,7 @@ public class DummyHealth : MonoBehaviour
         {
             Debug.LogWarning("[DROPS] EnemyDrops NÃO encontrado em " + gameObject.name + "! Adicione o componente EnemyDrops.");
         }
-        
+
         Destroy(gameObject);
     }
 }

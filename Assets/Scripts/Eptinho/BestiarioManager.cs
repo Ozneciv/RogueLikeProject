@@ -1,46 +1,52 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Gerencia o bestiário de inimigos encontrados.
-/// Quando um inimigo é visto pela primeira vez, registra e mostra popup.
-/// Singleton — coloque em um GameObject persistente na cena.
-/// </summary>
+[System.Serializable]
+public struct InimigoCatalogado
+{
+    public string nome;
+    public Sprite icon;
+    public string descricao;
+}
+
 public class BestiarioManager : MonoBehaviour
 {
     public static BestiarioManager instancia;
 
-    public List<EnemyIdentity> inimigosEncontrados = new();
+    public List<InimigoCatalogado> inimigosEncontrados = new();
+    private HashSet<string> nomesCatalogados = new();
 
     void Awake()
     {
-        instancia = this;
-        Debug.Log("[BESTIÁRIO] Bestiário Manager iniciado.");
-
+        if (instancia == null)
+        {
+            instancia = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
-    /// <summary>
-    /// Registra um inimigo no bestiário. Se já foi encontrado, ignora.
-    /// Chamado automaticamente quando o inimigo é ativado (player se aproxima).
-    /// </summary>
     public void Registrar(EnemyIdentity inimigo)
     {
         if (inimigo == null || inimigo.foiEncontrado) return;
-
-        // Verifica se já existe um inimigo com o mesmo nome (evita duplicatas de instâncias diferentes)
-        foreach (EnemyIdentity registrado in inimigosEncontrados)
-        {
-            if (registrado.nomeInimigo == inimigo.nomeInimigo)
-            {
-                inimigo.foiEncontrado = true;
-                return;
-            }
-        }
+        if (nomesCatalogados.Contains(inimigo.nomeInimigo)) return;
 
         inimigo.foiEncontrado = true;
-        inimigosEncontrados.Add(inimigo);
 
-        EptinhoPopupController.instancia.MostrarPopupInimigo(inimigo);
+        InimigoCatalogado dados = new InimigoCatalogado
+        {
+            nome = inimigo.nomeInimigo,
+            icon = inimigo.icon,
+            descricao = inimigo.descricao
+        };
+        inimigosEncontrados.Add(dados);
+        nomesCatalogados.Add(inimigo.nomeInimigo);
+
+        EptinhoPopupController.instancia.MostrarPopupInimigo(dados);
 
         Debug.Log("[BESTIÁRIO] Novo inimigo encontrado: " + inimigo.nomeInimigo);
     }

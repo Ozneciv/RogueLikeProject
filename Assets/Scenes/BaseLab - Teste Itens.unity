@@ -1156,7 +1156,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &445688616
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1675,7 +1675,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EptinhoPopupController
   popupUI: {fileID: 445688615}
   imagemDoItem: {fileID: 0}
-  textoDoItem: {fileID: 0}
+  textoDoItem: {fileID: 282050862}
 --- !u!114 &630199959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1704,9 +1704,11 @@ MonoBehaviour:
   spawnChancePerPoint: 0.5
   collectableItems:
   - prefab: {fileID: 8360225513443378965, guid: 6d2be51ebf2fc814bb8d174183ea372c, type: 3}
-    chance: 0.228
+    chance: 0.646
   - prefab: {fileID: 5792087848057019593, guid: f71c469ff2c4188418907fc54073f410, type: 3}
-    chance: 0.573
+    chance: 0.709
+  - prefab: {fileID: 5885036765850599179, guid: 74fef28396fe839478bee29058630684, type: 3}
+    chance: 0.617
   decorationItems:
   - prefab: {fileID: 357083722210168524, guid: dbd92d4394e90254c94cb9f2494dc80b, type: 3}
     chance: 0.447
@@ -1715,6 +1717,11 @@ MonoBehaviour:
     chance: 0.422
   - prefab: {fileID: 460438119971976252, guid: 37d360e783e617f45b71f958f265f42e, type: 3}
     chance: 0.422
+--- !u!4 &630199962 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1987765269138243887, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
+  m_PrefabInstance: {fileID: 1879280209}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &667467583
 GameObject:
   m_ObjectHideFlags: 0
@@ -3093,7 +3100,7 @@ GameObject:
   - component: {fileID: 1291371953}
   - component: {fileID: 1291371952}
   m_Layer: 5
-  m_Name: PopupUI
+  m_Name: PopupUI - Eptinho
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3175,7 +3182,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 445688616}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 630199962}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -4989,7 +4996,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1987765269138243887, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1291371955}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
       insertIndex: -1
@@ -5315,7 +5325,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 310594208}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.99999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -5794,7 +5804,6 @@ SceneRoots:
   - {fileID: 1319534712}
   - {fileID: 1765408496}
   - {fileID: 728756833}
-  - {fileID: 1291371955}
   - {fileID: 1787602365}
   - {fileID: 2106569842}
   - {fileID: 1504700900}

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 
 public class EptinhoPopupController : MonoBehaviour
@@ -8,7 +9,7 @@ public class EptinhoPopupController : MonoBehaviour
 
     public GameObject popupUI;
     public Image imagemDoItem;
-    public Text textoDoItem;
+    public TextMeshProUGUI textoDoItem;
 
     private Coroutine esconderCoroutine;
 
@@ -26,14 +27,14 @@ public class EptinhoPopupController : MonoBehaviour
         }
     }
 
-    public void MostrarPopup(Interactable item)
+    public void MostrarPopup(ItemCatalogado item)
     {
-        MostrarPopupGenerico(item.icon, "Eptinho analisou: " + item.objetoNome);
+        MostrarPopupGenerico(item.icon, "Eptinho analisou: " + item.nome);
     }
 
-    public void MostrarPopupInimigo(EnemyIdentity inimigo)
+    public void MostrarPopupInimigo(InimigoCatalogado inimigo)
     {
-        MostrarPopupGenerico(inimigo.icon, "Novo inimigo encontrado: " + inimigo.nomeInimigo);
+        MostrarPopupGenerico(inimigo.icon, "Novo inimigo encontrado: " + inimigo.nome);
     }
 
     void MostrarPopupGenerico(Sprite icone, string mensagem)
