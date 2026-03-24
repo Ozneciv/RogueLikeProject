@@ -10,8 +10,9 @@ public class EptinhoMenuController : MonoBehaviour
     public GameObject HUDCanvas;
 
 
-    [Header("Configura��o da Lista")]
-    public Transform gridContent;   // O objeto onde colocamos o Grid Layout Group
+    [Header("Configuração da Lista")]
+    public Transform gridContentItens;      // Grid dos itens catalogados
+    public Transform gridContentInimigos;   // Grid do bestiário
     public GameObject itemPrefab;
 
     void Awake()
@@ -66,15 +67,21 @@ public class EptinhoMenuController : MonoBehaviour
 
     void AtualizarListaVisual()
     {
-        foreach (Transform child in gridContent)
-        {
+        // Limpa grid de itens
+        foreach (Transform child in gridContentItens)
             Destroy(child.gameObject);
+
+        // Limpa grid de inimigos
+        if (gridContentInimigos != null)
+        {
+            foreach (Transform child in gridContentInimigos)
+                Destroy(child.gameObject);
         }
 
         // Itens catalogados
         foreach (ItemCatalogado item in CatalogoManager.instancia.itensCatalogados)
         {
-            GameObject novoItemUI = Instantiate(itemPrefab, gridContent);
+            GameObject novoItemUI = Instantiate(itemPrefab, gridContentItens);
 
             Image imgComp = novoItemUI.transform.Find("IconeItem").GetComponent<Image>();
             if (imgComp != null) imgComp.sprite = item.icon;
@@ -84,11 +91,11 @@ public class EptinhoMenuController : MonoBehaviour
         }
 
         // Inimigos catalogados
-        if (BestiarioManager.instancia != null)
+        if (BestiarioManager.instancia != null && gridContentInimigos != null)
         {
             foreach (InimigoCatalogado inimigo in BestiarioManager.instancia.inimigosEncontrados)
             {
-                GameObject novoItemUI = Instantiate(itemPrefab, gridContent);
+                GameObject novoItemUI = Instantiate(itemPrefab, gridContentInimigos);
 
                 Image imgComp = novoItemUI.transform.Find("IconeItem").GetComponent<Image>();
                 if (imgComp != null) imgComp.sprite = inimigo.icon;
