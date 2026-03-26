@@ -1,67 +1,75 @@
-    using UnityEngine;
+using UnityEngine;
 
-    public class DetectorDoItem : MonoBehaviour
-    {
-        public ItemCollectable collectable;
-        public GameObject glowObject;
+public class DetectorDoItem : MonoBehaviour
+{
+    public ItemCollectable collectable;
+    public GameObject glowObject;
+    public GameObject pressFUI;
 
-
-    //public Interactable item;
     private bool playerPerto = false;
 
-        void Awake()
-        {
-            if (collectable == null)
-                collectable = GetComponentInParent<ItemCollectable>();
+    void Awake()
+    {
+        if (collectable == null)
+            collectable = GetComponentInParent<ItemCollectable>();
 
-            if (glowObject != null)
-                glowObject.SetActive(false);
+        if (glowObject != null)
+            glowObject.SetActive(false);
+
+        if (pressFUI != null)
+            pressFUI.SetActive(false);
     }
 
-        void OnTriggerEnter(Collider other)
-        {
-            if (!other.CompareTag("Player")) return;
+    void OnTriggerEnter(Collider other)
+    {
+        if (!other.CompareTag("Player")) return;
 
-            playerPerto = true;
+        playerPerto = true;
 
-            if (glowObject != null)
-                glowObject.SetActive(true);
-
+        if (glowObject != null)
+            glowObject.SetActive(true);
 
         if (collectable.PodeColetar())
-                Debug.Log("Pressione F para coletar");
-                //ativar press F
-            else
-                Debug.Log("Item trancado. Limpe a sala.");
-                //stivar ui de item trancado
+        {
+            if (pressFUI != null)
+                pressFUI.SetActive(true);
+        }
+        else
+            Debug.Log("Item trancado. Limpe a sala.");
     }
 
     void OnTriggerExit(Collider other)
+    {
+        if (!other.CompareTag("Player")) return;
+
+        playerPerto = false;
+
+        if (glowObject != null)
+            glowObject.SetActive(false);
+
+        if (pressFUI != null)
+            pressFUI.SetActive(false);
+    }
+
+    void Update()
+    {
+        if (playerPerto && Input.GetKeyDown(KeyCode.F))
         {
-            if (other.CompareTag("Player"))
+            if (!collectable.PodeColetar())
             {
-                playerPerto = false;
+                Debug.Log("Ainda nï¿½o pode coletar.");
+                return;
             }
 
-            if (glowObject != null)
-                glowObject.SetActive(false);
-        }
+            CatalogoManager.instancia.Catalogar(collectable.interactable);
 
-        void Update()
-        {
-            if (playerPerto && Input.GetKeyDown(KeyCode.F))
-            {
-                if (!collectable.PodeColetar())
-                {
-                    Debug.Log("Ainda não pode coletar.");
-                    return;
-                }
+            if (pressFUI != null)
+                pressFUI.SetActive(false);
 
-                CatalogoManager.instancia.Catalogar(collectable.interactable);
-                Destroy(gameObject);
+            Destroy(gameObject);
 
-                //CatalogoManager.instancia.Catalogar(item);
-                Debug.Log("Item catalogado: " + collectable.interactable.objetoNome);
-            }
+            //CatalogoManager.instancia.Catalogar(item);
+            Debug.Log("Item catalogado: " + collectable.interactable.objetoNome);
         }
     }
+}

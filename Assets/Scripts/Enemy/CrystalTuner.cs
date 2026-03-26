@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class CrystalTuner : MonoBehaviour
 {
     [Header("Sintonia")]
-    public float connectRange    = 20f;
+    public float connectRange = 20f;
     public float disconnectRange = 30f;
     public LayerMask enemyLayer;
     public Color beamColor = Color.magenta;
@@ -15,13 +15,13 @@ public class CrystalTuner : MonoBehaviour
     public int maxTargets = 3;
 
     [Header("Movimento Inteligente")]
-    public float moveSpeed          = 4.5f;
-    public float idealDistToTarget  = 5f;
+    public float moveSpeed = 4.5f;
+    public float idealDistToTarget = 5f;
     public float fleeDistFromPlayer = 8f;
 
     [Header("Voo")]
     [Tooltip("Altura fixa do chão.")]
-    public float flyHeight            = 1.5f;
+    public float flyHeight = 1.5f;
     public float heightCorrectionSpeed = 5.0f;
 
     // --- Privados ---
@@ -37,15 +37,17 @@ public class CrystalTuner : MonoBehaviour
     private struct TargetData
     {
         public GameObject obj;
-        public Transform  center;
+        public Transform center;
         public LineRenderer beam;
     }
+
+    private bool registradoNoBestiario = false;
 
     // ──────────────────────────────────────────────
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.useGravity  = false;
+        rb.useGravity = false;
         rb.constraints = RigidbodyConstraints.FreezeRotation;
 
         Transform center = transform.Find("Center");
@@ -58,6 +60,19 @@ public class CrystalTuner : MonoBehaviour
     {
         HandleBuffs();
         UpdateAllBeams();
+
+        // Registro no bestiário por proximidade
+        if (!registradoNoBestiario && playerTransform != null)
+        {
+            if (Vector3.Distance(transform.position, playerTransform.position) < fleeDistFromPlayer * 2f)
+            {
+                registradoNoBestiario = true;
+                EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+                Debug.Log("[CRYSTAL] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+                if (id != null && BestiarioManager.instancia != null)
+                    BestiarioManager.instancia.Registrar(id);
+            }
+        }
     }
 
     void FixedUpdate()
@@ -147,9 +162,9 @@ public class CrystalTuner : MonoBehaviour
 
             GameObject candidate = hit.gameObject;
             if (candidate == gameObject) continue;
-            if (candidate.GetComponent<CrystalTuner>()  != null) continue;
-            if (candidate.GetComponent<HomingHazard>()   != null) continue;
-            if (candidate.GetComponent<DummyHealth>()    == null) continue;
+            if (candidate.GetComponent<CrystalTuner>() != null) continue;
+            if (candidate.GetComponent<HomingHazard>() != null) continue;
+            if (candidate.GetComponent<DummyHealth>() == null) continue;
 
             // Já é alvo?
             bool alreadyTargeted = false;
@@ -177,13 +192,13 @@ public class CrystalTuner : MonoBehaviour
         beamObj.transform.SetParent(transform);
 
         LineRenderer lr = beamObj.AddComponent<LineRenderer>();
-        lr.positionCount    = BEAM_SEGMENTS + 2;
-        lr.startWidth       = 0.12f;
-        lr.endWidth         = 0.04f;
-        lr.numCapVertices   = 4;
-        lr.useWorldSpace    = true;
+        lr.positionCount = BEAM_SEGMENTS + 2;
+        lr.startWidth = 0.12f;
+        lr.endWidth = 0.04f;
+        lr.numCapVertices = 4;
+        lr.useWorldSpace = true;
         lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        lr.receiveShadows   = false;
+        lr.receiveShadows = false;
 
         Shader sh = Shader.Find("Sprites/Default") ?? Shader.Find("UI/Default");
         Material mat = new Material(sh);
@@ -228,9 +243,9 @@ public class CrystalTuner : MonoBehaviour
 
         float pulse = 0.06f + Mathf.Abs(Mathf.Sin(beamPulseTimer + index * 1.2f)) * 0.06f;
         lr.startWidth = pulse;
-        lr.endWidth   = pulse * 0.4f;
+        lr.endWidth = pulse * 0.4f;
 
-        Vector3 dir  = targetPos - origin;
+        Vector3 dir = targetPos - origin;
         Vector3 perp = (dir.sqrMagnitude > 0.001f)
             ? Vector3.Cross(dir.normalized, Vector3.up)
             : Vector3.right;
@@ -238,15 +253,15 @@ public class CrystalTuner : MonoBehaviour
         int total = BEAM_SEGMENTS + 2;
         for (int i = 0; i < total; i++)
         {
-            float t     = (float)i / (total - 1);
-            Vector3 pt  = Vector3.Lerp(origin, targetPos, t);
+            float t = (float)i / (total - 1);
+            Vector3 pt = Vector3.Lerp(origin, targetPos, t);
 
             if (i > 0 && i < total - 1)
             {
-                float amp    = Mathf.Sin(t * Mathf.PI) * totalDist * 0.07f;
+                float amp = Mathf.Sin(t * Mathf.PI) * totalDist * 0.07f;
                 float noiseX = (Mathf.PerlinNoise(t * 4f + beamPulseTimer + index * 3f, 0.5f) - 0.5f) * 2f;
                 float noiseY = (Mathf.PerlinNoise(0.5f, t * 4f + beamPulseTimer + index * 5f + 7f) - 0.5f) * 2f;
-                pt += perp       * noiseX * amp;
+                pt += perp * noiseX * amp;
                 pt += Vector3.up * noiseY * amp * 0.4f;
             }
 
@@ -258,21 +273,21 @@ public class CrystalTuner : MonoBehaviour
     void ApplyBuffs(GameObject target)
     {
         if (target == null) return;
-        target.GetComponent<TotemSpawner>()    ?.SetBuff(true);
-        target.GetComponent<MagicStone_AI>()   ?.SetBuff(true);
-        target.GetComponent<ShardSwarm_AI>()   ?.SetBuff(true);
+        target.GetComponent<TotemSpawner>()?.SetBuff(true);
+        target.GetComponent<MagicStone_AI>()?.SetBuff(true);
+        target.GetComponent<ShardSwarm_AI>()?.SetBuff(true);
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
-        target.GetComponent<DummyHealth>()     ?.SetBuffedStatus(true);
+        target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
     }
 
     void RemoveBuffs(GameObject target)
     {
         if (target == null) return;
-        target.GetComponent<TotemSpawner>()    ?.SetBuff(false);
-        target.GetComponent<MagicStone_AI>()   ?.SetBuff(false);
-        target.GetComponent<ShardSwarm_AI>()   ?.SetBuff(false);
+        target.GetComponent<TotemSpawner>()?.SetBuff(false);
+        target.GetComponent<MagicStone_AI>()?.SetBuff(false);
+        target.GetComponent<ShardSwarm_AI>()?.SetBuff(false);
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
-        target.GetComponent<DummyHealth>()     ?.SetBuffedStatus(false);
+        target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
     }
 
     void OnDestroy()

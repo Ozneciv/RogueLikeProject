@@ -2,10 +2,9 @@ using UnityEngine;
 
 public class ItemCollectable : MonoBehaviour
 {
-    private bool canCollect = false;
+    private bool canCollect = true;
     public Interactable interactable;
-
-    void Awake()
+     void Awake()
     {
         if (interactable == null)
             interactable = GetComponent<Interactable>();
