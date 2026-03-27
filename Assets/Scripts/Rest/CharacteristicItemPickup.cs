@@ -74,7 +74,15 @@ public class CharacteristicItemPickup : MonoBehaviour
         
         if (inventory != null)
         {
-            inventory.AddItem(itemId, 1);
+            bool added = inventory.AddItem(itemId, 1);
+            
+            if (!added)
+            {
+                // Inventário cheio — item permanece no chão
+                Debug.Log("[ITEM] Inventário cheio! Não coletou: " + itemName);
+                return; // NÃO destrói o item
+            }
+            
             Debug.Log("[ITEM] Coletou: " + itemName + " (ID: " + itemId + ")");
         }
         else
