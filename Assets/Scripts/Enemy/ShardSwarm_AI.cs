@@ -365,15 +365,39 @@ public class ShardSwarm_AI : MonoBehaviour
         Vector3 cloneOffset = transform.right * splitSpawnOffset;
         GameObject clone = Instantiate(gameObject, transform.position + cloneOffset, transform.rotation);
 
-        ShardSwarm_AI cloneAI = clone.GetComponent<ShardSwarm_AI>();
-        DummyHealth cloneHealth = clone.GetComponent<DummyHealth>();
+        // --- Reset do clone para evitar AABB inválido ---
+        // O Rigidbody herda a velocidade do original — zerar para evitar NaN/Infinity
+        Rigidbody cloneRb = clone.GetComponent<Rigidbody>();
+        if (cloneRb != null)
+        {
+            cloneRb.linearVelocity = Vector3.zero;
+            cloneRb.angularVelocity = Vector3.zero;
+        }
 
-        // Configura o clone: não pode se dividir novamente
+        // Reposicionar fragmentos filhos do clone para posições orbitais simples e válidas
+        ShardSwarm_AI cloneAI = clone.GetComponent<ShardSwarm_AI>();
         if (cloneAI != null)
         {
             cloneAI.canSplit = false;
             cloneAI.hasSplit = true;
+
+            // Reseta posições dos fragmentos para evitar localPositions herdadas em órbita aleatória
+            int count = cloneAI.shards.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (cloneAI.shards[i] != null)
+                {
+                    float angle = (360f / Mathf.Max(1, count)) * i * Mathf.Deg2Rad;
+                    cloneAI.shards[i].transform.localPosition = new Vector3(
+                        Mathf.Cos(angle) * cloneAI.orbitRadius,
+                        0f,
+                        Mathf.Sin(angle) * cloneAI.orbitRadius
+                    );
+                }
+            }
         }
+
+        DummyHealth cloneHealth = clone.GetComponent<DummyHealth>();
 
         // Reduz HP de ambos para metade do HP atual do original
         int halfHP = Mathf.Max(1, health.CurrentHealth / 2);
@@ -398,6 +422,7 @@ public class ShardSwarm_AI : MonoBehaviour
 
         Debug.Log("[SHARD SWARM] Clone criado! HP original: " + health.CurrentHealth + " | HP clone: " + halfHP);
     }
+
 
     void Die()
     {
