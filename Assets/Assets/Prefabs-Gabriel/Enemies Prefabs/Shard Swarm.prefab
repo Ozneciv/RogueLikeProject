@@ -399,6 +399,7 @@ GameObject:
   - component: {fileID: 4193827049541508755}
   - component: {fileID: 8677628382724602797}
   - component: {fileID: 2021144116388504265}
+  - component: {fileID: 684567685902536809}
   m_Layer: 6
   m_Name: Shard Swarm
   m_TagString: Untagged
@@ -506,6 +507,22 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+--- !u!114 &684567685902536809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6240220712296181312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  nomeInimigo: ShardSwarm
+  icon: {fileID: 0}
+  descricao: "Descri\xE7\xE2o teste"
+  foiEncontrado: 0
 --- !u!1 &8664405017096199446
 GameObject:
   m_ObjectHideFlags: 0

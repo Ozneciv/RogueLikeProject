@@ -101,6 +101,11 @@ public class Spider_AI : MonoBehaviour
             {
                 isActivated = true;
                 Debug.Log("[SPIDER] Ativada! Player detectado a " + distToPlayer.ToString("F1") + "m");
+
+                EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+                Debug.Log("[SPIDER] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+                if (id != null && BestiarioManager.instancia != null)
+                    BestiarioManager.instancia.Registrar(id);
             }
             return;
         }
@@ -143,7 +148,7 @@ public class Spider_AI : MonoBehaviour
         {
             Vector3 direction = (playerTransform.position - transform.position).normalized;
             direction.y = 0;
-            
+
             Vector3 targetVelocity = direction * moveSpeed;
             rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
         }
@@ -173,19 +178,19 @@ public class Spider_AI : MonoBehaviour
 
         // Calcula direção do pulo
         Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
-        
+
         // Ativa VFX de dash
         if (dashVFX != null)
         {
             dashVFX.StartDashEffect();
             dashVFX.SpawnAfterImage();
         }
-        
+
         // Aplica força do pulo
         rb.linearVelocity = Vector3.zero;
         Vector3 leapVelocity = directionToPlayer * leapForce + Vector3.up * leapUpForce;
         rb.AddForce(leapVelocity, ForceMode.VelocityChange);
-        
+
         Debug.Log("[SPIDER] LEAP ATTACK! Pulando em direção ao player.");
 
         // Espera estar no ar
@@ -263,10 +268,10 @@ public class Spider_AI : MonoBehaviour
         Debug.Log("[SPIDER] RETREAT! Recuando do player após acertar o ataque.");
 
         yield return new WaitForSeconds(0.4f);
-        
+
         // Para VFX
         if (dashVFX != null) dashVFX.StopDashEffect();
-        
+
         yield return new WaitForSeconds(0.2f);
 
         isRetreating = false;

@@ -66,10 +66,15 @@ public class TotemSpawner : MonoBehaviour
             if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) < activationDistance)
             {
                 isActivated = true;
+
+                EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+                Debug.Log("[TOTEM] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+                if (id != null && BestiarioManager.instancia != null)
+                    BestiarioManager.instancia.Registrar(id);
             }
             return;
         }
-        
+
         if (skullsSpawned < totalSkullsToSpawn)
         {
             spawnTimer -= Time.deltaTime;
@@ -84,7 +89,7 @@ public class TotemSpawner : MonoBehaviour
     void SpawnSkull()
     {
         skullsSpawned++;
-        
+
         Vector2 randomCirclePoint = Random.insideUnitCircle.normalized * spawnRadius;
         Vector3 spawnPosition = transform.position + new Vector3(randomCirclePoint.x, 0, randomCirclePoint.y);
         spawnPosition.y = transform.position.y + spawnHeightOffset;

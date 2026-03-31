@@ -18,24 +18,24 @@ public class GoblinAI_Transform : MonoBehaviour
     // ── Distâncias ───────────────────────────────────────────────────
     [Header("Distâncias")]
     [Tooltip("Distância mínima para o Goblin manter do jogador (gatilho de fuga).")]
-    public float distanciaFuga       = 6f;
+    public float distanciaFuga = 6f;
     [Tooltip("Distância ideal para arremessar. O Goblin tenta ficar aqui.")]
-    public float distanciaAtaque     = 12f;
+    public float distanciaAtaque = 12f;
     [Tooltip("Distância máxima para o Goblin começar a perseguir.")]
-    public float distanciaMaxBusca   = 28f;
+    public float distanciaMaxBusca = 28f;
 
     // ── Velocidades ──────────────────────────────────────────────────
     [Header("Velocidades")]
     public float velocidadePerseguicao = 7f;
-    public float velocidadeFuga        = 11f;
-    public float velocidadeStrafe      = 4f;
+    public float velocidadeFuga = 11f;
+    public float velocidadeStrafe = 4f;
     [Tooltip("Aceleração do movimento (mais alto = mais responsivo, mas pode parecer 'travado').")]
-    public float aceleracao            = 12f;
+    public float aceleracao = 12f;
 
     // ── Ataque ───────────────────────────────────────────────────────
     [Header("Arremesso")]
-    public float forcaArremesso  = 12f;
-    public float forcaArco       = 6f;
+    public float forcaArremesso = 12f;
+    public float forcaArco = 6f;
     public float intervaloAtaque = 2.8f;
 
     // ── Strafe ───────────────────────────────────────────────────────
@@ -44,15 +44,15 @@ public class GoblinAI_Transform : MonoBehaviour
     public float strafeChangeDuration = 1.2f;
 
     // ── Privados ─────────────────────────────────────────────────────    // Privados
-    private Rigidbody   rb;
-    private Animator    anim;
-    private float       tempoUltimoAtaque;
-    private float       strafeTimer;
-    private int         strafeDir   = 1;
-    private Vector3     velocidadeAtual = Vector3.zero;
+    private Rigidbody rb;
+    private Animator anim;
+    private float tempoUltimoAtaque;
+    private float strafeTimer;
+    private int strafeDir = 1;
+    private Vector3 velocidadeAtual = Vector3.zero;
 
     // Buff (Crystal Tuner)
-    private bool  isBuffed = false;
+    private bool isBuffed = false;
     private float velPerseguicaoOriginal;
     private float velFugaOriginal;
     private float intervaloOriginal;
@@ -60,17 +60,18 @@ public class GoblinAI_Transform : MonoBehaviour
     // Estado simples
     private enum Estado { Idle, Perseguir, Atacar, Fugir }
     private Estado estadoAtual = Estado.Idle;
+    private bool registradoNoBestiario = false;
 
     // ─────────────────────────────────────────────────────────────────
     void Start()
     {
-        rb  = GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
         rb.freezeRotation = true;
 
         velPerseguicaoOriginal = velocidadePerseguicao;
-        velFugaOriginal        = velocidadeFuga;
-        intervaloOriginal      = intervaloAtaque;
+        velFugaOriginal = velocidadeFuga;
+        intervaloOriginal = intervaloAtaque;
 
         if (jogador == null)
         {
@@ -88,15 +89,15 @@ public class GoblinAI_Transform : MonoBehaviour
         {
             isBuffed = true;
             velocidadePerseguicao *= 1.15f;
-            velocidadeFuga        *= 1.15f;
-            intervaloAtaque       /= 2f;
+            velocidadeFuga *= 1.15f;
+            intervaloAtaque /= 2f;
         }
         else if (!active && isBuffed)
         {
             isBuffed = false;
             velocidadePerseguicao = velPerseguicaoOriginal;
-            velocidadeFuga        = velFugaOriginal;
-            intervaloAtaque       = intervaloOriginal;
+            velocidadeFuga = velFugaOriginal;
+            intervaloAtaque = intervaloOriginal;
         }
     }
 
@@ -122,10 +123,10 @@ public class GoblinAI_Transform : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────
     void AtualizarEstado(float dist)
     {
-        if      (dist < distanciaFuga)                              MudarEstado(Estado.Fugir);
-        else if (dist <= distanciaAtaque)                           MudarEstado(Estado.Atacar);
-        else if (dist <= distanciaMaxBusca)                         MudarEstado(Estado.Perseguir);
-        else                                                        MudarEstado(Estado.Idle);
+        if (dist < distanciaFuga) MudarEstado(Estado.Fugir);
+        else if (dist <= distanciaAtaque) MudarEstado(Estado.Atacar);
+        else if (dist <= distanciaMaxBusca) MudarEstado(Estado.Perseguir);
+        else MudarEstado(Estado.Idle);
 
         // Lógica do estado atual
         switch (estadoAtual)
@@ -140,6 +141,17 @@ public class GoblinAI_Transform : MonoBehaviour
     void MudarEstado(Estado novo)
     {
         if (estadoAtual == novo) return;
+
+        // Registra no bestiário na primeira vez que sai do Idle
+        if (!registradoNoBestiario && estadoAtual == Estado.Idle && novo != Estado.Idle)
+        {
+            registradoNoBestiario = true;
+            EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+            Debug.Log("[GOBLIN] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+            if (id != null && BestiarioManager.instancia != null)
+                BestiarioManager.instancia.Registrar(id);
+        }
+
         estadoAtual = novo;
         anim.SetBool("Running", novo == Estado.Perseguir || novo == Estado.Fugir);
     }
@@ -188,7 +200,7 @@ public class GoblinAI_Transform : MonoBehaviour
         strafeTimer -= Time.deltaTime;
         if (strafeTimer <= 0f)
         {
-            strafeDir   = (Random.value > 0.5f) ? 1 : -1;
+            strafeDir = (Random.value > 0.5f) ? 1 : -1;
             strafeTimer = strafeChangeDuration + Random.Range(-0.3f, 0.5f);
         }
     }
@@ -211,8 +223,8 @@ public class GoblinAI_Transform : MonoBehaviour
         GameObject bomba = Instantiate(prefabBomba, pontoDeArremesso.position, Quaternion.identity);
 
         // Ignore colisão com o próprio Goblin
-        Collider cBomba   = bomba.GetComponent<Collider>();
-        Collider cGoblin  = GetComponent<Collider>();
+        Collider cBomba = bomba.GetComponent<Collider>();
+        Collider cGoblin = GetComponent<Collider>();
         if (cBomba != null && cGoblin != null)
             Physics.IgnoreCollision(cBomba, cGoblin);
 
@@ -220,7 +232,7 @@ public class GoblinAI_Transform : MonoBehaviour
         BombaExplosiva script = bomba.GetComponent<BombaExplosiva>();
         if (script != null)
         {
-            script.owner        = gameObject;
+            script.owner = gameObject;
             script.raioExplosao = isBuffed ? 4f : 2f; // buffado = raio maior
         }
 

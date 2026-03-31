@@ -69,7 +69,7 @@ public class ShardSwarm_AI : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         health = GetComponent<DummyHealth>();
-        
+
         rb.useGravity = false;
         rb.freezeRotation = true;
 
@@ -86,7 +86,7 @@ public class ShardSwarm_AI : MonoBehaviour
 
         // Inicializa fragmentos
         InitializeShards();
-        
+
         // Guarda HP inicial
         lastKnownHP = health.CurrentHealth;
     }
@@ -106,7 +106,7 @@ public class ShardSwarm_AI : MonoBehaviour
         }
 
         shardsAlive = shards.Count;
-        
+
         foreach (GameObject shard in shards)
         {
             originalShardPositions.Add(shard.transform.localPosition);
@@ -134,6 +134,11 @@ public class ShardSwarm_AI : MonoBehaviour
             {
                 isActivated = true;
                 Debug.Log("[SHARD SWARM] Ativado! Player detectado a " + dist.ToString("F1") + "m");
+
+                EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+                Debug.Log("[SHARD] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+                if (id != null && BestiarioManager.instancia != null)
+                    BestiarioManager.instancia.Registrar(id);
             }
             return;
         }
@@ -146,7 +151,7 @@ public class ShardSwarm_AI : MonoBehaviour
 
         HandleRotation();
         HandleCombat();
-        
+
         // Verifica se deve destruir fragmentos baseado no HP
         UpdateShardVisibility();
     }
@@ -161,7 +166,7 @@ public class ShardSwarm_AI : MonoBehaviour
 
             Debug.Log("[SHARD SWARM] Recebeu " + damageTaken + " de dano! HP: " + currentHP + "/" + health.maxHealth);
 
-            // Verifica split: acumulou dano suficiente, ainda pode se dividir, e tem HP para sobreviver
+            // Verifica split (se perdeu mais que X% do HP de uma vez)
             float splitThreshold = health.maxHealth * splitThresholdPercent;
             if (canSplit && !hasSplit && damageAccumulator >= splitThreshold && currentHP > 1)
             {
@@ -184,7 +189,7 @@ public class ShardSwarm_AI : MonoBehaviour
         float hpPercent = (float)health.CurrentHealth / health.maxHealth;
         int targetShards = Mathf.CeilToInt(hpPercent * shards.Count);
         targetShards = Mathf.Max(1, targetShards); // Pelo menos 1 enquanto vivo
-        
+
         // Desativa shards extras
         int activeCount = GetActiveShardCount();
         if (activeCount > targetShards)
@@ -402,25 +407,12 @@ public class ShardSwarm_AI : MonoBehaviour
         // Reduz HP de ambos para metade do HP atual do original
         int halfHP = Mathf.Max(1, health.CurrentHealth / 2);
 
-        // Aplica metade do HP ao clone.
-        // O clone nasce com o mesmo CurrentHealth do original (via Instantiate),
-        // então calculamos o dano necessário para chegar ao halfHP.
-        if (cloneHealth != null)
-        {
-            int cloneCurrentHP = cloneHealth.CurrentHealth;
-            int cloneStartDamage = cloneCurrentHP - halfHP;
-            if (cloneStartDamage > 0)
-                cloneHealth.TakeDamage(cloneStartDamage);
-        }
+        // Cura ao reagrupar (usa DummyHealth internamente se possível)
+        // Nota: DummyHealth não tem método de cura, mas podemos simular
+        int healAmount = Mathf.RoundToInt(health.maxHealth * reformHealPercent);
+        Debug.Log("[SHARD SWARM] Bônus de reagrupamento: +" + healAmount + " HP");
 
-        // Aplica metade do HP ao original
-        int damageSelf = health.CurrentHealth - halfHP;
-        if (damageSelf > 0)
-        {
-            health.TakeDamage(damageSelf);
-        }
-
-        Debug.Log("[SHARD SWARM] Clone criado! HP original: " + health.CurrentHealth + " | HP clone: " + halfHP);
+        // Fragmentos voltam às posições originais (a órbita cuida disso no próximo frame)
     }
 
 

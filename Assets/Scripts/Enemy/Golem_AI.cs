@@ -98,6 +98,11 @@ public class Golem_AI : MonoBehaviour
             {
                 isActivated = true;
                 Debug.Log("[GOLEM] Ativado! Player detectado a " + dist.ToString("F1") + "m");
+
+                EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+                Debug.Log("[GOLEM] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+                if (id != null && BestiarioManager.instancia != null)
+                    BestiarioManager.instancia.Registrar(id);
             }
             return;
         }
