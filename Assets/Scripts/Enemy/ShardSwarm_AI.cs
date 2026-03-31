@@ -48,6 +48,9 @@ public class ShardSwarm_AI : MonoBehaviour
     public float splitSpawnOffset = 3f;
     [Tooltip("Se false, este enxame é um clone e não pode se dividir novamente")]
     public bool canSplit = true;
+    [Tooltip("% do HP máximo curado ao reagrupar após split")]
+    [Range(0f, 0.5f)]
+    public float reformHealPercent = 0.1f;
 
     [Header("Morte")]
     public float deathExplosionRadius = 3f;
