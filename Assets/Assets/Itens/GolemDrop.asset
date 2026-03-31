@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f50c879d2315cfe4fa88c7211306d9c7, type: 3}
   m_Name: GolemDrop
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemId: 
-  itemName: 
-  description: 
+  itemId: 01go
+  itemName: Golem Drop
+  description: O drop do Golem
   icon: {fileID: 0}
-  tier: 0
-  enemySource: 
+  tier: 2
+  enemySource: Golem
