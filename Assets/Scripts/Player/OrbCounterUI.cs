@@ -115,7 +115,7 @@ public class OrbCounterUI : MonoBehaviour
         bgImage.color = panelColor;
         bgImage.raycastTarget = false;
         // Usa o mesmo sprite de fundo arredondado usado pelas barras do HUD
-        bgImage.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+        bgImage.sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4, 0, SpriteMeshType.FullRect, new Vector4(1, 1, 1, 1));
         bgImage.type = Image.Type.Sliced;
 
         // === Borda (outline sutil) ===
@@ -133,7 +133,7 @@ public class OrbCounterUI : MonoBehaviour
         Image borderImage = borderObj.AddComponent<Image>();
         borderImage.color = borderColor;
         borderImage.raycastTarget = false;
-        borderImage.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+        borderImage.sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4, 0, SpriteMeshType.FullRect, new Vector4(1, 1, 1, 1));
         borderImage.type = Image.Type.Sliced;
 
         // Move a borda para trás do fundo

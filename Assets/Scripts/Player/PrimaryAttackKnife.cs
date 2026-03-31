@@ -123,8 +123,18 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void RegisterHit(Collider enemyCollider)
     {
-        if (enemiesHitInThisAttack.Contains(enemyCollider)) return;
-        enemiesHitInThisAttack.Add(enemyCollider);
+        // Busca DummyHealth: primeiro no próprio collider, depois no pai
+        // (necessário para fragmentos filhos do ShardSwarm e similares)
+        DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>()
+                         ?? enemyCollider.GetComponentInParent<DummyHealth>();
+
+        if (enemy == null) return;
+
+        // Anti-hit-duplo: usa o Collider do objeto que tem o DummyHealth
+        // para não acertar o mesmo inimigo duas vezes por fragmento diferente
+        Collider rootCollider = enemy.GetComponent<Collider>() ?? enemyCollider;
+        if (enemiesHitInThisAttack.Contains(rootCollider)) return;
+        enemiesHitInThisAttack.Add(rootCollider);
 
         if (comboStep > 0 && comboStep <= currentDamages.Length)
         {
@@ -152,18 +162,18 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
-            DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>();
-            if (enemy != null) enemy.TakeDamage(finalDamage, isCritical);
+            enemy.TakeDamage(finalDamage, isCritical);
 
-            // Aplicar Knockback
+            // Aplicar Knockback — o Rigidbody pode estar no pai (ex: ShardSwarm)
             if (playerAttributes != null)
             {
-                Rigidbody enemyRb = enemyCollider.GetComponent<Rigidbody>();
+                Rigidbody enemyRb = enemyCollider.GetComponent<Rigidbody>()
+                                 ?? enemyCollider.GetComponentInParent<Rigidbody>();
                 if (enemyRb != null)
                 {
                     Vector3 knockbackDirection = (enemyCollider.transform.position - transform.position).normalized;
                     knockbackDirection.y = 0;
-                    float knockbackForce = playerAttributes.knockback * 10f;  // Reduzido de 100 para 10
+                    float knockbackForce = playerAttributes.knockback * 10f;
                     enemyRb.AddForce(knockbackDirection * knockbackForce, ForceMode.Impulse);
                     Debug.Log($"🔨 KNOCKBACK! Força: {knockbackForce}");
                 }

@@ -1,211 +1,159 @@
-# ⚔️ Sistema de Drops & Tiers — Relação Completa (GDD 3.7.2 & 3.8.4)
+# ⚔️ Sistema de Drops & Tiers — Bioma Cristalizado (GDD 3.7.2 & 3.8.4)
 
-## Visão Geral
+## Princípios do GDD
 
-Cada inimigo dropa **Essência da Vida** (moeda, 100% garantido) e tem chance probabilística de dropar **Partes do Corpo** (loot). As Partes do Corpo possuem **Tiers de raridade** que definem a força dos atributos concedidos ao infundir na arma.
-
----
-
-## 📊 Tabela de Tiers de Raridade
-
-| Tier | Nome | Cor | Chance Base | Multiplicador de Atributo | Slots de Atributo |
-|------|------|-----|-------------|---------------------------|-------------------|
-| T1 | Comum | ⬜ Branco | ~60% | x1.0 | 1 |
-| T2 | Incomum | 🟢 Verde | ~25% | x1.5 | 1 |
-| T3 | Raro | 🔵 Azul | ~10% | x2.0 | 1-2 |
-| T4 | Épico | 🟣 Roxo | ~4% | x3.0 | 2 |
-| T5 | Lendário | 🟡 Dourado | ~1% | x4.0+ | 2-3 (+ chance de efeito mecânico) |
-
-> [!NOTE]
-> O atributo **Luck (Drops)** do jogador (GDD 3.4) aumenta a probabilidade global de drops E a chance de virem com Tiers superiores.
+- **Essência da Vida**: Drop **100% garantido**. Quantidade escala com a força do inimigo.
+- **Partes do Corpo**: Drop **probabilístico (RNG)**. São "**Não Identificadas**" — o jogador vê apenas o **Nome** e o **Tier** até gastar Essência para infundir.
+- **4 Tiers de Raridade**. Cada Tier dropa uma **parte diferente** do mesmo inimigo.
+- **Luck (Drops)**: Atributo do jogador que aumenta a chance de drop E a chance de Tiers superiores.
 
 ---
 
-## 🕷️ Drops por Inimigo — Bioma Cristalizado
+## 📊 Tiers de Raridade (GDD 3.7.2)
 
-### 1. Spider (Aranha)
-| Propriedade | Valor |
+| Tier | Nome | Cor | Teto com Amplificação | Natureza |
+|------|------|-----|----------------------|----------|
+| T1 | Comum | ⬜ Branco | +5% máx | Numérica baixa |
+| T2 | Incomum | 🟢 Verde | +8% máx | Numérica robusta |
+| T3 | Raro | 🔵 Azul | +10% máx | Numérica potente (multi-atributo) |
+| T4 | Lendário | 🟡 Dourado | — | **Alteração drástica de gameplay** |
+
+> T4 é **garantido por Guardiões** (chefes). Custo de infusão e amplificação extremamente altos.
+
+---
+
+## 🕷️ Spider (Aranha) — ⭐⭐
+
+| | |
 |---|---|
-| **HP** | 40 |
-| **Dano** | 10 |
-| **Velocidade** | 6 |
-| **Dificuldade** | ⭐⭐ |
-| **Essência** | 6-10 (base 8, variação ±2) |
-| **Chance de Drop** | 25% |
-| **Parte do Corpo** | 🕸️ **Teia de Aranha** (`spider_silk`) |
+| HP: 40 · Dano: 10 · Vel: 6 | Essência: 6-10 · Chance de Drop: 25% |
 
-#### Atributos por Tier — Teia de Aranha
+**Temática do Loot:** Velocidade, agilidade e veneno. Partes cada vez mais vitais da aranha.
 
-| Tier | Atributo Principal | Valor | Atributo Secundário (se houver) |
-|------|-------------------|-------|---------------------------------|
-| T1 | Attack Speed (Melee) | +3% | — |
-| T2 | Attack Speed (Melee) | +5% | — |
-| T3 | Attack Speed (Melee) | +7% | Dodge +2% |
-| T4 | Attack Speed (Melee) | +10% | Dodge +4% |
-| T5 | Attack Speed (Melee) | +14% | Dodge +6% · Efeito: **Fio Infinito** (cada acerto consecutivo +0.1% dano, reseta ao tomar dano) |
+| Tier | Item | ID | Atributo | Valor Base → Amplificado |
+|------|------|----|----------|--------------------------|
+| T1 | 🦵 Pata de Aranha | `spider_leg` | Attack Speed (Melee) | +2% → +5% |
+| T2 | 🕸️ Glândula de Teia | `spider_silk_gland` | Attack Speed (Melee) | +5% → +8% |
+| T3 | 🦷 Presa Venenosa | `spider_fang` | Attack Speed +5% · Dodge +3% | → +7% / +5% |
+| T4 | 👁️ Olho da Matriarca | `spider_queen_eye` | **Predadora**: Após esquivar com Dash, seu próximo ataque causa 2x dano e aplica Lentidão ao alvo por 2s. | — |
 
 ---
 
-### 2. Golem
-| Propriedade | Valor |
+## 🪨 Golem — ⭐⭐⭐
+
+| | |
 |---|---|
-| **HP** | 150 |
-| **Dano** | 35 |
-| **Velocidade** | 2 |
-| **Dificuldade** | ⭐⭐⭐ |
-| **Essência** | 20-30 (base 25, variação ±5) |
-| **Chance de Drop** | 40% |
-| **Parte do Corpo** | 🪨 **Núcleo de Pedra** (`golem_core`) |
+| HP: 150 · Dano: 35 · Vel: 2 | Essência: 20-30 · Chance de Drop: 40% |
 
-#### Atributos por Tier — Núcleo de Pedra
+**Temática do Loot:** Defesa, resistência e retaliação. Fragmentos cada vez mais densos.
 
-| Tier | Atributo Principal | Valor | Atributo Secundário (se houver) |
-|------|-------------------|-------|---------------------------------|
-| T1 | Damage Negation | +3% | — |
-| T2 | Damage Negation | +5% | — |
-| T3 | Damage Negation | +7% | Armor Regen +5% |
-| T4 | Damage Negation | +10% | Armor Regen +8% |
-| T5 | Damage Negation | +14% | Armor Regen +12% · Efeito: **Thorns** (devolve 15% do dano recebido por contato) |
+| Tier | Item | ID | Atributo | Valor Base → Amplificado |
+|------|------|----|----------|--------------------------|
+| T1 | 🪨 Lasca de Pedra | `golem_chip` | Damage Negation | +2% → +5% |
+| T2 | 🧱 Placa de Rocha | `golem_plate` | Damage Negation | +5% → +8% |
+| T3 | 💎 Coração de Granito | `golem_granite_heart` | Damage Negation +5% · Armor Regen +4% | → +7% / +6% |
+| T4 | 🌋 Núcleo Tectônico | `golem_tectonic_core` | **Inabalável**: Ao receber dano, 30% de chance de ignorar completamente o golpe e devolver 200% do dano como onda sísmica em área (3m). Cooldown de 5s. | — |
 
 ---
 
-### 3. Shard Swarm (Enxame de Fragmentos)
-| Propriedade | Valor |
+## 💎 Shard Swarm (Enxame de Fragmentos) — ⭐⭐⭐
+
+| | |
 |---|---|
-| **HP** | 60 (dividido em 4 fragmentos) |
-| **Dano** | 8-20 (por fragmento / combinado) |
-| **Velocidade** | 5 |
-| **Dificuldade** | ⭐⭐⭐ |
-| **Essência** | 12-18 (base 15, variação ±3) |
-| **Chance de Drop** | 30% |
-| **Parte do Corpo** | 💎 **Fragmento Cristalino** (`crystal_shard`) |
+| HP: 60 · Dano: 8-20 · Vel: 5 | Essência: 12-18 · Chance de Drop: 30% |
 
-#### Atributos por Tier — Fragmento Cristalino
+**Temática do Loot:** Precisão, corte e fragmentação. Cristais cada vez mais puros.
 
-| Tier | Atributo Principal | Valor | Atributo Secundário (se houver) |
-|------|-------------------|-------|---------------------------------|
-| T1 | Crit Chance | +2% | — |
-| T2 | Crit Chance | +4% | — |
-| T3 | Crit Chance | +6% | Crit Multiplier +0.10x |
-| T4 | Crit Chance | +8% | Crit Multiplier +0.18x |
-| T5 | Crit Chance | +12% | Crit Multiplier +0.25x · Efeito: **Vampirismo de Essência** (chance de dropar Essência extra ao matar com Crítico) |
+| Tier | Item | ID | Atributo | Valor Base → Amplificado |
+|------|------|----|----------|--------------------------|
+| T1 | 🔹 Estilhaço Cristalino | `shard_splinter` | Crit Chance | +2% → +5% |
+| T2 | 💠 Fragmento Ressonante | `shard_resonant` | Crit Chance | +5% → +8% |
+| T3 | 🔷 Prisma Harmônico | `shard_prism` | Crit Chance +5% · Crit Multiplier +0.15x | → +7% / +0.20x |
+| T4 | ⚡ Nexus do Enxame | `shard_nexus` | **Enxame Parasita**: Ao acertar um Crítico, 3 fragmentos cristalinos orbitam sua arma por 8s. Cada fragmento dispara automaticamente no inimigo mais próximo (50% do dano base). | — |
 
 ---
 
-### 4. MagicStone (Pedra Mágica)
-| Propriedade | Valor |
+## ✨ MagicStone (Pedra Mágica) — ⭐⭐⭐
+
+| | |
 |---|---|
-| **HP** | 80 |
-| **Dano** | 25 |
-| **Velocidade** | 4 |
-| **Dificuldade** | ⭐⭐⭐ |
-| **Essência** | 15-25 (base 20, variação ±5) |
-| **Chance de Drop** | 35% |
-| **Parte do Corpo** | ✨ **Essência Mágica** (`magic_essence`) |
+| HP: 80 · Dano: 25 · Vel: 4 | Essência: 15-25 · Chance de Drop: 35% |
 
-#### Atributos por Tier — Essência Mágica
+**Temática do Loot:** Energia, ULT e regeneração. Runas cada vez mais instáveis.
 
-| Tier | Atributo Principal | Valor | Atributo Secundário (se houver) |
-|------|-------------------|-------|---------------------------------|
-| T1 | Ult Charge with Kills | +3% redução CD | — |
-| T2 | Ult Charge with Kills | +5% redução CD | — |
-| T3 | Ult Charge with Kills | +7% redução CD | Ult Damage +5% |
-| T4 | Ult Charge with Kills | +10% redução CD | Ult Damage +8% |
-| T5 | Ult Charge with Kills | +14% redução CD | Ult Damage +12% · Efeito: **Toxina Viral** (acertos aplicam veneno que se espalha se o alvo morrer infectado) |
+| Tier | Item | ID | Atributo | Valor Base → Amplificado |
+|------|------|----|----------|--------------------------|
+| T1 | ✳️ Pó Arcano | `magic_dust` | Ult Charge with Kills | +2% redução CD → +5% |
+| T2 | 🔮 Runa Instável | `magic_rune` | Ult Charge with Kills | +5% redução CD → +8% |
+| T3 | 💜 Cristal Canalizado | `magic_crystal` | Ult Charge +5% · Ult Damage +4% | → +7% / +6% |
+| T4 | 🌀 Essência Primordial | `magic_primordial` | **Sobrecarga Arcana**: Sua ULT não tem mais cooldown fixo. Em vez disso, cada inimigo morto carrega 10% da barra. Ao ativar, a ULT consome TODA a sua Armadura atual, adicionando o valor consumido como dano extra à habilidade. | — |
 
 ---
 
-### 5. Crystal Tuner (Sintonizador Cristalino)
-| Propriedade | Valor |
+## 🔮 Crystal Tuner (Sintonizador Cristalino) — ⭐⭐⭐⭐
+
+| | |
 |---|---|
-| **HP** | ~100 (estimado — líder local) |
-| **Dano** | ~20 |
-| **Velocidade** | 3 |
-| **Dificuldade** | ⭐⭐⭐⭐ (buffa aliados) |
-| **Essência** | 25-35 (base 30, variação ±5) |
-| **Chance de Drop** | 45% |
-| **Parte do Corpo** | 🔮 **Fragmento Sintonizador** (`tuner_fragment`) |
+| HP: ~100 · Dano: ~20 · Vel: 3 | Essência: 25-35 · Chance de Drop: 45% |
 
-#### Atributos por Tier — Fragmento Sintonizador
+**Temática do Loot:** Alcance, ressonância e amplificação. Componentes do sistema nervoso cristalino.
 
-| Tier | Atributo Principal | Valor | Atributo Secundário (se houver) |
-|------|-------------------|-------|---------------------------------|
-| T1 | Weapon Range | +5% | — |
-| T2 | Weapon Range | +8% | — |
-| T3 | Weapon Range | +12% | Magnet +10% |
-| T4 | Weapon Range | +16% | Magnet +15% |
-| T5 | Weapon Range | +20% | Magnet +20% · Efeito: **Bounce** (+1 ricochete em projéteis / +1 Piercing em melee) |
+| Tier | Item | ID | Atributo | Valor Base → Amplificado |
+|------|------|----|----------|--------------------------|
+| T1 | 📡 Estilha Sintonizada | `tuner_shard` | Weapon Range | +2% → +5% |
+| T2 | 🔊 Lente Ressonante | `tuner_lens` | Weapon Range | +5% → +8% |
+| T3 | 📢 Amplificador Cristalino | `tuner_amplifier` | Weapon Range +5% · Magnet +4% | → +7% / +6% |
+| T4 | 🌐 Rede Neural Cristalina | `tuner_neural_net` | **Frequência Dominante**: Seus ataques emitem um pulso sônico que marca inimigos atingidos por 4s. Inimigos marcados recebem +25% de dano de todas as fontes e, ao morrer, transferem a marca para o inimigo mais próximo (em 5m). | — |
 
 ---
 
-## 🔄 Relação: Dificuldade do Inimigo → Qualidade do Drop
+## 🔄 Relação: Dificuldade → Recompensa
 
 ```
-Dificuldade do Inimigo     Essência     Chance Drop     Chance Tier Alto
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Spider (⭐⭐)                Baixa        25%             Baixa
-Shard Swarm (⭐⭐⭐)          Média        30%             Média
-MagicStone (⭐⭐⭐)           Média-Alta   35%             Média
-Golem (⭐⭐⭐)                Alta         40%             Média-Alta
-Crystal Tuner (⭐⭐⭐⭐)       Muito Alta   45%             Alta
+Inimigo              Essência   Chance Drop   Tiers Possíveis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Spider     ⭐⭐        6-10       25%          T1 (60%) T2 (30%) T3 (9%) T4 (1%)
+Shard Swarm ⭐⭐⭐      12-18      30%          T1 (50%) T2 (30%) T3 (15%) T4 (5%)
+MagicStone ⭐⭐⭐       15-25      35%          T1 (50%) T2 (30%) T3 (15%) T4 (5%)
+Golem      ⭐⭐⭐       20-30      40%          T1 (45%) T2 (30%) T3 (18%) T4 (7%)
+Crystal Tuner ⭐⭐⭐⭐   25-35      45%          T1 (40%) T2 (30%) T3 (20%) T4 (10%)
+Guardião   🏆         50-100     100%         T4 garantido
 ```
-
-> [!IMPORTANT]
-> Quanto mais difícil o inimigo, **mais Essência** ele dropa E **maior a chance** de dropar uma Parte do Corpo de **Tier superior**. Isso incentiva o jogador a enfrentar inimigos mais perigosos ao invés de farmar Spiders.
 
 ---
 
-## 🧬 Tipos de Melhorias nas Infusões (GDD 3.8.4)
+## 🧬 Tipos de Melhorias (GDD 3.8.4)
 
-### Numéricas (Stat Boost Direto)
+### Numéricas (T1 a T3)
 
-| Categoria | Atributos Possíveis |
-|-----------|-------------------|
-| **Ofensivo** | Attack Speed, Crit Chance, Crit Multiplier, Weapon Range, Knockback, Piercing, MultiShot Chance, Spread |
+| Categoria | Atributos |
+|-----------|-----------|
+| **Ofensivo** | Attack Speed, Crit Chance, Crit Multiplier, Weapon Range, Knockback, Piercing, MultiShot, Spread |
 | **Defensivo** | Damage Negation, Dodge, Armor Regen, Thorns |
 | **Mobilidade** | Speed, Dash Cooldown, Dash Counts, Dash Invulnerability |
 | **Economia** | Luck (Essence), Luck (Drops), Magnet |
-| **ULT** | Cooldown Reduction, Ult Charge with Kills, Ult Radius, Ult Damage, Ult Effect Duration, Ult Buff Potency |
+| **ULT** | CD Reduction, Charge with Kills, Radius, Damage, Duration, Buff Potency |
 
-### Mecânicas (Efeitos Especiais — T4/T5)
+### Mecânicas — T4 Lendário (Altera Gameplay)
 
-| Efeito | Descrição | Melhor com |
-|--------|-----------|------------|
-| **Fio Infinito** | Cada acerto consecutivo +0.1% dano (acumula ∞, reseta ao tomar dano). HUD mostra stacks. | Alta Attack Speed (Spider) |
-| **Toxina Viral** | Acertos aplicam veneno que se espalha para inimigos próximos se o alvo morrer infectado. | Dano em área / DoT builds |
-| **Vampirismo de Essência** | Chance de dropar Essência extra ao matar com Crítico. | Alta Crit Chance (Shard Swarm) |
-| **Thorns** | Dano devolvido ao atacante ao ser atingido por contato. | Alta Armor / Tanque (Golem) |
-| **Bounce/Piercing** | Projéteis ricocheteiam ou golpes atravessam inimigos. | Longo alcance / Crowd control (Crystal Tuner) |
-
----
-
-## 💰 Custo de Infusão por Tier
-
-| Infusão # | Custo Base | Com Item T1 | Com Item T3 | Com Item T5 |
-|-----------|-----------|-------------|-------------|-------------|
-| 1ª | 50 | Vale a pena | Ótimo | Excelente |
-| 2ª | 100 | Aceitável | Ótimo | Excelente |
-| 3ª | 200 | Cuidado | Bom | Excelente |
-| 5ª | 400 | ❌ Evitar | Aceitável | Excelente |
-| 10ª | 1000 | ❌ Nunca | ❌ Evitar | Vale considerar |
-
-> [!TIP]
-> **Estratégia ideal:** Nas primeiras infusões (baratas), aceite T1/T2. Nas tardias (caras), espere T3+ ou compre do Mercador.
+| Inimigo | Efeito T4 | Estilo de Build |
+|---------|-----------|-----------------|
+| Spider | **Predadora** — Dash → 2x dano + Lentidão | Hit & Run agressivo |
+| Golem | **Inabalável** — Chance de negar golpe + retaliação AoE | Tanque retaliador |
+| Shard Swarm | **Enxame Parasita** — Crits geram fragmentos autônomos | DPS por Crítico |
+| MagicStone | **Sobrecarga Arcana** — ULT sem CD fixo, consome Armadura | ULT-spam / Glass Cannon |
+| Crystal Tuner | **Frequência Dominante** — Marca inimigos (+25% dano, propaga) | Controle / Suporte |
 
 ---
 
-## ✅ Resumo da Decisão Estratégica do Jogador
+## 💰 Decisão Estratégica: Infundir ou Esperar?
 
-```
-Matar Inimigo → Coleta Essência (sempre)
-                    ↓
-              Drop de Parte? (RNG)
-                    ↓
-              Qual o Tier? (T1-T5)
-                    ↓
-        ┌─── Infundir agora? (gasta Essência, ganha poder)
-        │         ↓
-        │    Overcharge? (gasta MUITO mais, buff +40%)
-        │
-        └─── Guardar/Descartar? (economizar para Tier melhor ou Mercador)
-```
+| Infusão # | Custo | T1 vale? | T2 vale? | T3 vale? | T4 vale? |
+|-----------|-------|----------|----------|----------|----------|
+| 1ª | 50 | ✅ Sim | ✅ Sim | ✅ Ótimo | ✅ Perfeito |
+| 2ª | 100 | ⚠️ Talvez | ✅ Sim | ✅ Ótimo | ✅ Perfeito |
+| 3ª | 200 | ❌ Evitar | ⚠️ Talvez | ✅ Sim | ✅ Perfeito |
+| 5ª | 400 | ❌ Nunca | ❌ Evitar | ⚠️ Talvez | ✅ Sim |
+| 10ª | 1000 | ❌ | ❌ | ❌ Evitar | ✅ Único caso |
+
+> A **Amplificação (Overcharge)** do GDD 3.8.3 permite gastar Essência extra imediatamente após uma infusão para elevar o atributo até o teto do Tier.
