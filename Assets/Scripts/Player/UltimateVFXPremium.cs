@@ -166,6 +166,7 @@ public class UltimateVFXPremium : MonoBehaviour
         obj.transform.localPosition = Vector3.zero;
         
         spiralParticles = obj.AddComponent<ParticleSystem>();
+        spiralParticles.Stop(true); // Para antes de configurar para evitar erro de duration
         var main = spiralParticles.main;
         main.duration = duration;
         main.loop = true;
@@ -226,6 +227,7 @@ public class UltimateVFXPremium : MonoBehaviour
         obj.transform.localPosition = Vector3.zero;
         
         energyRings = obj.AddComponent<ParticleSystem>();
+        energyRings.Stop(true);
         var main = energyRings.main;
         main.duration = 1f;
         main.loop = true;
@@ -281,6 +283,7 @@ public class UltimateVFXPremium : MonoBehaviour
         obj.transform.localPosition = Vector3.zero;
         
         burstExplosion = obj.AddComponent<ParticleSystem>();
+        burstExplosion.Stop(true);
         var main = burstExplosion.main;
         main.duration = 1f;
         main.loop = false;
@@ -332,6 +335,7 @@ public class UltimateVFXPremium : MonoBehaviour
         obj.transform.localPosition = new Vector3(0, -0.5f, 0);
         
         groundImpact = obj.AddComponent<ParticleSystem>();
+        groundImpact.Stop(true);
         var main = groundImpact.main;
         main.duration = 1f;
         main.loop = false;
@@ -379,6 +383,7 @@ public class UltimateVFXPremium : MonoBehaviour
         obj.transform.localPosition = Vector3.up * 2f;
         
         lightningBolts = obj.AddComponent<ParticleSystem>();
+        lightningBolts.Stop(true);
         var main = lightningBolts.main;
         main.duration = duration;
         main.loop = true;
@@ -421,6 +426,7 @@ public class UltimateVFXPremium : MonoBehaviour
         obj.transform.localPosition = Vector3.zero;
         
         floatingOrbs = obj.AddComponent<ParticleSystem>();
+        floatingOrbs.Stop(true);
         var main = floatingOrbs.main;
         main.duration = duration;
         main.loop = true;

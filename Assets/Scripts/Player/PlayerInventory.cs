@@ -4,6 +4,11 @@ using System.Collections.Generic;
 /// <summary>
 /// Inventário do Player para itens característicos
 /// Armazena materiais dropados por inimigos para crafting/buffs futuros
+/// 
+/// SISTEMA DE SLOTS:
+/// - Cada tipo de item ocupa 1 slot (quantidade ilimitada por slot)
+/// - maxSlots define o limite total de tipos diferentes de itens
+/// - Use IncreaseMaxSlots() para expandir a capacidade (ex: upgrade na base)
 /// </summary>
 public class PlayerInventory : MonoBehaviour
 {
@@ -11,26 +16,52 @@ public class PlayerInventory : MonoBehaviour
     [Tooltip("Dicionário de itens coletados (ID -> Quantidade)")]
     private Dictionary<string, int> items = new Dictionary<string, int>();
 
+    [Header("Capacidade")]
+    [Tooltip("Número máximo de slots (tipos diferentes de itens)")]
+    [SerializeField] private int maxSlots = 10;
+
+    /// <summary>Número máximo de slots disponíveis</summary>
+    public int MaxSlots => maxSlots;
+
+    /// <summary>Número de slots atualmente ocupados</summary>
+    public int OccupiedSlots => items.Count;
+
+    /// <summary>Verifica se o inventário está cheio</summary>
+    public bool IsFull => items.Count >= maxSlots;
+
     [Header("Eventos")]
     public UnityEngine.Events.UnityEvent<string, int> onItemAdded;
     public UnityEngine.Events.UnityEvent<string, int> onItemRemoved;
 
+    [Tooltip("Disparado quando qualquer mudança ocorre no inventário (add, remove, resize)")]
+    public UnityEngine.Events.UnityEvent onInventoryChanged;
+
     /// <summary>
-    /// Adiciona um item ao inventário
+    /// Adiciona um item ao inventário.
+    /// Retorna true se adicionado com sucesso, false se o inventário estiver cheio.
     /// </summary>
-    public void AddItem(string itemId, int amount = 1)
+    public bool AddItem(string itemId, int amount = 1)
     {
+        // Se o item já existe no inventário, apenas incrementa a quantidade (não gasta slot)
         if (items.ContainsKey(itemId))
         {
             items[itemId] += amount;
         }
-        else
+        // Se é um item novo, verifica se há slot disponível
+        else if (items.Count < maxSlots)
         {
             items[itemId] = amount;
         }
+        else
+        {
+            Debug.Log("[INVENTORY] Inventário cheio! (" + items.Count + "/" + maxSlots + " slots) - Não foi possível adicionar: " + itemId);
+            return false;
+        }
 
-        Debug.Log("[INVENTORY] +" + amount + " " + itemId + " | Total: " + items[itemId]);
+        Debug.Log("[INVENTORY] +" + amount + " " + itemId + " | Total: " + items[itemId] + " | Slots: " + items.Count + "/" + maxSlots);
         onItemAdded?.Invoke(itemId, items[itemId]);
+        onInventoryChanged?.Invoke();
+        return true;
     }
 
     /// <summary>
@@ -53,6 +84,7 @@ public class PlayerInventory : MonoBehaviour
 
         Debug.Log("[INVENTORY] -" + amount + " " + itemId);
         onItemRemoved?.Invoke(itemId, GetItemCount(itemId));
+        onInventoryChanged?.Invoke();
         return true;
     }
 
@@ -81,11 +113,49 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
+    /// Aumenta a capacidade máxima de slots do inventário.
+    /// Use para upgrades na base, compras de expansão, etc.
+    /// 
+    /// Exemplo de uso:
+    ///   playerInventory.IncreaseMaxSlots(5); // Agora tem 15 slots
+    /// </summary>
+    public void IncreaseMaxSlots(int amount)
+    {
+        if (amount <= 0)
+        {
+            Debug.LogWarning("[INVENTORY] IncreaseMaxSlots recebeu valor inválido: " + amount);
+            return;
+        }
+
+        int oldMax = maxSlots;
+        maxSlots += amount;
+        Debug.Log("[INVENTORY] Capacidade aumentada! " + oldMax + " -> " + maxSlots + " slots");
+        onInventoryChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Define diretamente o número máximo de slots.
+    /// Use com cuidado — IncreaseMaxSlots() é preferível.
+    /// </summary>
+    public void SetMaxSlots(int newMax)
+    {
+        if (newMax < 1)
+        {
+            Debug.LogWarning("[INVENTORY] SetMaxSlots recebeu valor inválido: " + newMax);
+            return;
+        }
+
+        maxSlots = newMax;
+        Debug.Log("[INVENTORY] Capacidade definida para " + maxSlots + " slots");
+        onInventoryChanged?.Invoke();
+    }
+
+    /// <summary>
     /// Debug: Lista todos os itens no console
     /// </summary>
     public void DebugListItems()
     {
-        Debug.Log("=== INVENTÁRIO ===");
+        Debug.Log("=== INVENTÁRIO (" + items.Count + "/" + maxSlots + " slots) ===");
         foreach (var item in items)
         {
             Debug.Log(item.Key + ": " + item.Value);

@@ -146,6 +146,17 @@ public class LevelGenerator : MonoBehaviour
         Debug.Log("Geração de Nível Completa (com Salas Especiais)!");
         
         yield return new WaitForSeconds(extraLoadDelay);
+
+        // SPAWN DE ITENS (nível já está pronto)
+        ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
+        if (itemSpawner != null)
+        {
+            itemSpawner.SpawnItems();
+        }
+        else
+        {
+            Debug.LogWarning("ItemSpawner não encontrado na cena!");
+        }
         
         if (GameManager.instance != null)
         {
@@ -282,4 +293,6 @@ public class LevelGenerator : MonoBehaviour
     {
         return room.GetComponentsInChildren<Transform>().FirstOrDefault(t => t.name == socketName);
     }
+
+
 }

@@ -17,15 +17,18 @@ public class WeaponHitbox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Ao colidir com algo, primeiro verificamos se é um inimigo
-        DummyHealth enemyHealth = other.GetComponent<DummyHealth>();
-        
+        // Ao colidir com algo, primeiro verificamos se é um inimigo.
+        // Busca no próprio collider primeiro; se não achar, busca no pai
+        // (necessário para inimigos com fragmentos filhos, como o ShardSwarm).
+        DummyHealth enemyHealth = other.GetComponent<DummyHealth>()
+                                ?? other.GetComponentInParent<DummyHealth>();
+
         if (enemyHealth != null)
         {
-            // --- PROTEÇÃO CONTRA O ERRO ---
-            // Só tentamos registrar o hit se o script principal foi encontrado
             if (primaryAttackScript != null)
             {
+                // Passa o collider original (do fragmento ou do inimigo) — RegisterHit
+                // também faz o fallback GetComponentInParent para DummyHealth e Rigidbody.
                 primaryAttackScript.RegisterHit(other);
             }
             else

@@ -77,6 +77,7 @@ GameObject:
   - component: {fileID: 3371660881217200706}
   - component: {fileID: 2242724033947634081}
   - component: {fileID: 2757248205110417946}
+  - component: {fileID: 1280176204716401466}
   m_Layer: 0
   m_Name: SkullController 1
   m_TagString: Untagged
@@ -163,6 +164,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HomingHazard
   moveSpeed: 2.5
+  maxFlyHeight: 1.5
+  bobAmplitude: 0.15
+  bobSpeed: 2.2
 --- !u!114 &2242724033947634081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -201,6 +205,22 @@ MonoBehaviour:
   damageInterval: 1
   destroyOnImpact: 0
   pulseVisualizer: {fileID: 7408488882371780389}
+--- !u!114 &1280176204716401466
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1155010451884850368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  nomeInimigo: Skull
+  icon: {fileID: 0}
+  descricao: "Descri\xE7\xE2o do skull"
+  foiEncontrado: 0
 --- !u!1 &4107422237573638928
 GameObject:
   m_ObjectHideFlags: 0

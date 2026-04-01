@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3422473624328442719}
   - component: {fileID: 4728308152487144125}
   - component: {fileID: 343962479280987070}
+  - component: {fileID: 9160692238743494521}
   m_Layer: 0
   m_Name: Golem
   m_TagString: Untagged
@@ -213,6 +214,22 @@ MonoBehaviour:
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
+--- !u!114 &9160692238743494521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748345383327806496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  nomeInimigo: Golem
+  icon: {fileID: 21300000, guid: ed0bc8cd41f91174fb5eff00e69d5caf, type: 3}
+  descricao: "Golem descr\xE7\xE3o teste"
+  foiEncontrado: 0
 --- !u!1001 &6338938540938558875
 PrefabInstance:
   m_ObjectHideFlags: 0

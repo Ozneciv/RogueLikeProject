@@ -21,7 +21,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     public Collider handHitbox;
     private Collider equippedWeaponHitbox;
     private Collider currentHitbox;
-    
+
     // Armazenar tamanhos originais para escalar com weaponRangeMelee
     private Vector3 originalHandHitboxSize;
     private Vector3 originalWeaponHitboxSize;
@@ -60,7 +60,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         hasWeapon = false;
         isAttacking = false;
         isHitboxActive = false;
-        
+
         // Buscar PlayerAttributesOffensive
         playerAttributes = GetComponent<PlayerAttributesOffensive>();
         if (playerAttributes == null)
@@ -85,7 +85,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 lastAppliedWeaponRange = playerAttributes.weaponRangeMelee;
             }
         }
-        
+
         // Manter attack speed durante combo
         if (isAttacking && playerAttributes != null && animator != null)
         {
@@ -95,7 +95,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 animator.speed = targetSpeed;
             }
         }
-        
+
         if ((Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0)) && canAttack && hasWeapon)
         {
             if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
@@ -108,10 +108,10 @@ public class PrimaryAttackKnife : MonoBehaviour
         isAttacking = true;
         canAttack = false;
         comboStep++;
-        
+
         animator.SetInteger("ComboStep", comboStep);
         animator.SetTrigger("Attack");
-        
+
         // Aplicar Attack Speed
         if (playerAttributes != null)
         {
@@ -123,15 +123,25 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void RegisterHit(Collider enemyCollider)
     {
-        if (enemiesHitInThisAttack.Contains(enemyCollider)) return;
-        enemiesHitInThisAttack.Add(enemyCollider);
+        // Busca DummyHealth: primeiro no próprio collider, depois no pai
+        // (necessário para fragmentos filhos do ShardSwarm e similares)
+        DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>()
+                         ?? enemyCollider.GetComponentInParent<DummyHealth>();
+
+        if (enemy == null) return;
+
+        // Anti-hit-duplo: usa o Collider do objeto que tem o DummyHealth
+        // para não acertar o mesmo inimigo duas vezes por fragmento diferente
+        Collider rootCollider = enemy.GetComponent<Collider>() ?? enemyCollider;
+        if (enemiesHitInThisAttack.Contains(rootCollider)) return;
+        enemiesHitInThisAttack.Add(rootCollider);
 
         if (comboStep > 0 && comboStep <= currentDamages.Length)
         {
             int baseDamage = currentDamages[comboStep - 1];
             int finalDamage = baseDamage;
             bool isCritical = false;
-            
+
             // Aplicar multiplicador de dano BASE (afeta críticos)
             if (playerAttributes != null)
                 finalDamage = Mathf.RoundToInt(baseDamage * playerAttributes.baseDamageMultiplier);
@@ -139,7 +149,7 @@ public class PrimaryAttackKnife : MonoBehaviour
             // Aplicar multiplicador de dano do PlayerHealth
             if (playerHealth != null)
                 finalDamage = Mathf.RoundToInt(finalDamage * playerHealth.damageMultiplier);
-            
+
             // Calcular crítico
             if (playerAttributes != null)
             {
@@ -152,18 +162,18 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
-            DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>();
-            if (enemy != null) enemy.TakeDamage(finalDamage, isCritical);
+            enemy.TakeDamage(finalDamage, isCritical);
 
-            // Aplicar Knockback
+            // Aplicar Knockback — o Rigidbody pode estar no pai (ex: ShardSwarm)
             if (playerAttributes != null)
             {
-                Rigidbody enemyRb = enemyCollider.GetComponent<Rigidbody>();
+                Rigidbody enemyRb = enemyCollider.GetComponent<Rigidbody>()
+                                 ?? enemyCollider.GetComponentInParent<Rigidbody>();
                 if (enemyRb != null)
                 {
                     Vector3 knockbackDirection = (enemyCollider.transform.position - transform.position).normalized;
                     knockbackDirection.y = 0;
-                    float knockbackForce = playerAttributes.knockback * 10f;  // Reduzido de 100 para 10
+                    float knockbackForce = playerAttributes.knockback * 10f;
                     enemyRb.AddForce(knockbackDirection * knockbackForce, ForceMode.Impulse);
                     Debug.Log($"🔨 KNOCKBACK! Força: {knockbackForce}");
                 }
@@ -177,7 +187,7 @@ public class PrimaryAttackKnife : MonoBehaviour
             }
         }
     }
-    
+
     // Eventos de Animação
     public void EnableHitbox()
     {
@@ -196,7 +206,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         canAttack = true;
     }
-    
+
     // Reset Combo
     public void ResetCombo()
     {
@@ -205,16 +215,16 @@ public class PrimaryAttackKnife : MonoBehaviour
         comboStep = 0;
         animator.SetInteger("ComboStep", 0);
         canAttack = true;
-        
+
         // Resetar velocidade da animação
         if (animator != null)
         {
             animator.speed = 1f;
         }
-        
+
         if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
     }
-    
+
     private IEnumerator ResetComboAfterTime()
     {
         yield return new WaitForSeconds(comboResetTime);
@@ -225,7 +235,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     private void ApplyWeaponRangeScale()
     {
         if (currentHitbox == null || playerAttributes == null) return;
-        
+
         BoxCollider boxCollider = currentHitbox as BoxCollider;
         if (boxCollider != null)
         {
@@ -246,7 +256,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         currentDamages = defaultDamages;
         currentRange = defaultRange;
         currentHitbox = handHitbox;
-        
+
         if (handHitbox != null)
         {
             BoxCollider boxCollider = handHitbox as BoxCollider;
@@ -256,7 +266,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 currentOriginalSize = originalHandHitboxSize;
             }
         }
-        
+
         if (equippedWeaponHitbox != null) equippedWeaponHitbox.enabled = false;
     }
 
@@ -266,7 +276,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         currentRange = daggerRange;
         equippedWeaponHitbox = daggerHitbox;
         currentHitbox = equippedWeaponHitbox;
-        
+
         if (equippedWeaponHitbox != null)
         {
             BoxCollider boxCollider = equippedWeaponHitbox as BoxCollider;
@@ -276,10 +286,10 @@ public class PrimaryAttackKnife : MonoBehaviour
                 currentOriginalSize = originalWeaponHitboxSize;
             }
         }
-        
+
         if (handHitbox != null) handHitbox.enabled = false;
         hasWeapon = true;
-        
+
         ApplyWeaponRangeScale();
     }
 
@@ -289,7 +299,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         currentRange = swordRange;
         equippedWeaponHitbox = swordHitbox;
         currentHitbox = equippedWeaponHitbox;
-        
+
         if (equippedWeaponHitbox != null)
         {
             BoxCollider boxCollider = equippedWeaponHitbox as BoxCollider;
@@ -299,10 +309,10 @@ public class PrimaryAttackKnife : MonoBehaviour
                 currentOriginalSize = originalWeaponHitboxSize;
             }
         }
-        
+
         if (handHitbox != null) handHitbox.enabled = false;
         hasWeapon = true;
-        
+
         ApplyWeaponRangeScale();
     }
 }

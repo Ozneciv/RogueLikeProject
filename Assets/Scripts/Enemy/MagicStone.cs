@@ -48,12 +48,12 @@ public class MagicStone_AI : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         // Tenta achar o player se não foi atribuído
-        if(playerTransform == null)
+        if (playerTransform == null)
         {
-             GameObject p = GameObject.FindGameObjectWithTag("Player");
-             if(p != null) playerTransform = p.transform;
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
         }
-        
+
         startY = transform.position.y;
 
         if (Random.value > 0.5f) orbitDirection = -1;
@@ -87,7 +87,7 @@ public class MagicStone_AI : MonoBehaviour
             HandleAttack();
         }
     }
-    
+
     // Função chamada pelo RoomController para definir os limites
     public void SetRoomBounds(BoxCollider bounds)
     {
@@ -102,10 +102,10 @@ public class MagicStone_AI : MonoBehaviour
             isBuffed = true;
             originalAttackInterval = attackInterval;
             originalMoveSpeed = moveSpeed;
-            
+
             attackInterval /= 2f; // Ataca 2x mais rápido
             moveSpeed *= 1.5f;    // Move 50% mais rápido
-            
+
             // Se quiser aumentar o dano do raio, precisaria passar isso para o prefab do raio,
             // mas a velocidade de ataque já aumenta o DPS drasticamente.
         }
@@ -121,6 +121,11 @@ public class MagicStone_AI : MonoBehaviour
         isAwake = true;
         teleportTimer = 0;
         attackTimer = attackInterval / 2;
+
+        EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
+        Debug.Log("[MAGICSTONE] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
+        if (id != null && BestiarioManager.instancia != null)
+            BestiarioManager.instancia.Registrar(id);
     }
 
     void HandleMovement()
@@ -129,7 +134,7 @@ public class MagicStone_AI : MonoBehaviour
         Vector3 playerPositionOnPlane = new Vector3(playerTransform.position.x, transform.position.y, playerTransform.position.z);
         Vector3 directionToPlayer = (playerPositionOnPlane - transform.position).normalized;
         float distance = Vector3.Distance(playerPositionOnPlane, transform.position);
-        
+
         Vector3 orbitDirectionVector = Vector3.Cross(directionToPlayer, Vector3.up) * orbitDirection;
         Vector3 finalMoveDirection = Vector3.zero;
 
@@ -139,10 +144,10 @@ public class MagicStone_AI : MonoBehaviour
             finalMoveDirection = (directionToPlayer + orbitDirectionVector).normalized;
         else
             finalMoveDirection = orbitDirectionVector;
-        
+
         rb.linearVelocity = new Vector3(finalMoveDirection.x * moveSpeed, rb.linearVelocity.y, finalMoveDirection.z * moveSpeed);
     }
-    
+
     void HandleFloating()
     {
         float newY = startY + Mathf.Sin(Time.time * floatSpeed) * floatHeight;
@@ -183,18 +188,18 @@ public class MagicStone_AI : MonoBehaviour
             // ClosestPoint retorna o ponto dentro do collider mais próximo do alvo.
             // Se o alvo já estiver dentro, retorna o alvo. Se estiver fora, retorna a borda.
             targetPosition = roomBounds.ClosestPoint(targetPosition);
-            
+
             // Pequeno ajuste para não ficar literalmente dentro da parede
             Vector3 directionToCenter = (roomBounds.bounds.center - targetPosition).normalized;
-            targetPosition += directionToCenter * 1.0f; 
-            
+            targetPosition += directionToCenter * 1.0f;
+
             // Garante a altura correta novamente após o Clamp
-            targetPosition.y = transform.position.y; 
+            targetPosition.y = transform.position.y;
         }
 
         transform.position = targetPosition;
         teleportTimer = teleportCooldown;
-        
+
         Debug.Log("MagicStone teleportou (dentro dos limites)!");
     }
 

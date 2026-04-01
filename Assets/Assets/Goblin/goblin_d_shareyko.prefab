@@ -549,6 +549,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4443987123214746360}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8570036624589890526}
   m_SourcePrefab: {fileID: 100100000, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
 --- !u!4 &6276990716704702297 stripped
 Transform:
@@ -701,3 +704,19 @@ MonoBehaviour:
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
+--- !u!114 &8570036624589890526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6653938021436220899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  nomeInimigo: Goblin
+  icon: {fileID: 21300000, guid: cf9ed7938edb58945b68023e78f70a86, type: 3}
+  descricao: "Goblin descri\xE7\xE3o teste"
+  foiEncontrado: 0
