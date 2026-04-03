@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 4728308152487144125}
   - component: {fileID: 343962479280987070}
   - component: {fileID: 9160692238743494521}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Golem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -181,7 +181,7 @@ MonoBehaviour:
   stunMarkerPrefab: {fileID: 0}
   stunBeamPrefab: {fileID: 3156189663886257779, guid: 7eb942f03da6e7241af7035e7d2a0fa9, type: 3}
   activationDistance: 12
-  moveSpeed: 2
+  moveSpeed: 5
   rotationSpeed: 5
   meleeRange: 3
   meleeCooldown: 3
@@ -208,12 +208,14 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 1066167381274076914, guid: 294f662b14179e84ea3e72c6956c2460, type: 3}
-  itemDropChance: 0.99
-  itemAmount: 10
+  globalDropChance: 1
+  itemAmount: 1
+  lootPool:
+  - itemPrefab: {fileID: 1066167381274076914, guid: 294f662b14179e84ea3e72c6956c2460, type: 3}
+    weight: 1
   spawnHeight: 0.5
   spawnRadius: 0.5
-  launchForce: 3
+  launchForce: 2
 --- !u!114 &9160692238743494521
 MonoBehaviour:
   m_ObjectHideFlags: 0

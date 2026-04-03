@@ -38,6 +38,7 @@ public class CrystalTuner : MonoBehaviour
     {
         public GameObject obj;
         public Transform center;
+        public Renderer renderer;
         public LineRenderer beam;
     }
 
@@ -179,10 +180,10 @@ public class CrystalTuner : MonoBehaviour
     void ConnectToTarget(GameObject target)
     {
         Transform centerPoint = target.transform.Find("CenterTarget");
-        Transform center = (centerPoint != null) ? centerPoint : target.transform;
+        Renderer rend = target.GetComponentInChildren<Renderer>();
 
         LineRenderer beam = CreateBeam();
-        targets.Add(new TargetData { obj = target, center = center, beam = beam });
+        targets.Add(new TargetData { obj = target, center = centerPoint, renderer = rend, beam = beam });
         ApplyBuffs(target);
     }
 
@@ -232,8 +233,15 @@ public class CrystalTuner : MonoBehaviour
         for (int i = 0; i < targets.Count; i++)
         {
             var td = targets[i];
-            if (td.beam == null || td.center == null) continue;
-            UpdateBeam(td.beam, origin, td.center.position, i);
+            if (td.beam == null || td.obj == null) continue;
+
+            Vector3 targetPos = td.obj.transform.position;
+            if (td.center != null)
+                targetPos = td.center.position;
+            else if (td.renderer != null)
+                targetPos = td.renderer.bounds.center;
+
+            UpdateBeam(td.beam, origin, targetPos, i);
         }
     }
 
@@ -278,6 +286,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<ShardSwarm_AI>()?.SetBuff(true);
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
+        target.GetComponent<CrystalWatcher_AI>()?.SetBuff(true);
     }
 
     void RemoveBuffs(GameObject target)
@@ -288,6 +297,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<ShardSwarm_AI>()?.SetBuff(false);
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
+        target.GetComponent<CrystalWatcher_AI>()?.SetBuff(false);
     }
 
     void OnDestroy()

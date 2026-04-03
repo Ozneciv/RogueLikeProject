@@ -8,7 +8,7 @@ using TMPro;
 /// Exibe ícone do item, quantidade e borda colorida por tier.
 /// Detecta hover do mouse para exibir tooltip.
 /// </summary>
-public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     // Referências internas (criadas por código)
     private Image backgroundImage;
@@ -209,6 +209,29 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         if (tooltip != null)
         {
             tooltip.Hide();
+        }
+    }
+
+    // === Click Event para enviar o item para o Upgrade (Infusão) ===
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        // Só faz algo se fomos clicados e se tem um item aqui dentro
+        if (isOccupied && !string.IsNullOrEmpty(currentItemId))
+        {
+            // Tenta procurar na cena atual se existe a Tela de Infusão (Upgrades)
+            // (Isso permite que o código nunca quebre mesmo se vc não tiver a tela instalada)
+            InfusionUI telaDeUpgrades = Object.FindFirstObjectByType<InfusionUI>(FindObjectsInactive.Include);
+            
+            if (telaDeUpgrades != null)
+            {
+                // Manda abrir o painel imediatamente (já que você achou o outro botão inútil!)
+                telaDeUpgrades.OpenPanel();
+                
+                // Manda o item pra lá
+                telaDeUpgrades.SelectItem(currentItemId);
+                Debug.Log($"[SLOT CLICADO] Item de ID: {currentItemId} mandou abrir a janela de Upgrades e foi pra Bigorna central.");
+            }
         }
     }
 }

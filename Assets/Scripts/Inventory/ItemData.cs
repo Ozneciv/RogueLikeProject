@@ -1,4 +1,49 @@
 using UnityEngine;
+using System.Collections.Generic;
+
+/// <summary>
+/// Todos os atributos possíveis no jogo.
+/// </summary>
+public enum AttributeType
+{
+    // === OFENSIVOS ===
+    BaseDamageMultiplier, 
+    AttackSpeedMelee, 
+    CritChance, 
+    CritMultiplier, 
+    Knockback, 
+    WeaponRangeMelee, 
+    WeaponRangeProjectile, 
+    Piercing, 
+    BounceChance, 
+    BounceCount, 
+    MultiShotChance, 
+    Spread,
+    
+    // === DEFENSIVOS E VIDA ===
+    MaxHealth, 
+    MaxArmor, 
+    ArmorRegen, 
+    DodgeChance, 
+    DamageNegation, 
+    Thorns,
+    
+    // === MOBILIDADE ===
+    SpeedMultiplier, 
+    DashCooldownMultiplier, 
+    DashCounts, 
+    DashInvulnerability
+}
+
+[System.Serializable]
+public class ItemAttributeParam
+{
+    public AttributeType attributeType;
+    [Tooltip("O valor do buff (ex: 0.2 para +20% ou 50 para +50 vida)")]
+    public float value;
+    [Tooltip("Esse valor deve multiplicar o atributo atual ou ser somado?")]
+    public bool isMultiplier = false;
+}
 
 /// <summary>
 /// ScriptableObject que define os dados visuais e de classificação de um item.
@@ -29,6 +74,16 @@ public class ItemData : ScriptableObject
 
     [Tooltip("Nome do inimigo de origem (ex: Spider, Golem)")]
     public string enemySource;
+
+    [Header("Upgrades e Infusão")]
+    [Tooltip("Essência gerada se o item for reciclado (descartado).")]
+    public int recycleEssenceValue = 10;
+    
+    [Tooltip("Custo de essência cobrado do jogador para autorizar a Infusão deste item.")]
+    public int infusionEssenceCost = 50;
+
+    [Tooltip("Use o '+' para adicionar quantos buffs o item der!")]
+    public List<ItemAttributeParam> itemAttributes = new List<ItemAttributeParam>();
 
     /// <summary>
     /// Retorna a cor associada ao Tier do item

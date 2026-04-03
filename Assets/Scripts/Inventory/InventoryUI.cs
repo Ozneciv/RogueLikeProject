@@ -132,6 +132,13 @@ public class InventoryUI : MonoBehaviour
         if (tooltip != null)
             tooltip.Hide();
 
+        // Segue o líder: Se o fechar sumiu o inventário, esconde a tela de Fusão junto.
+        InfusionUI telaDeUpgrades = Object.FindFirstObjectByType<InfusionUI>(FindObjectsInactive.Include);
+        if (telaDeUpgrades != null) 
+        {
+            telaDeUpgrades.ClosePanel();
+        }
+
         Debug.Log("[INVENTORY UI] Inventário fechado");
     }
 

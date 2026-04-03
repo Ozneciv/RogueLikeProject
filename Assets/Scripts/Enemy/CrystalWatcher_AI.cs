@@ -3,44 +3,40 @@ using System.Collections;
 
 /// <summary>
 /// IA do Crystal Watcher (Vigia de Cristal) — Inimigo estático que dispara um laser giratório
-/// Inspirado no Brimstone do Hades.
-/// 
 /// COMO FUNCIONA:
-/// 1. O inimigo fica parado no chão (estático)
-/// 2. Quando o player se aproxima, ele começa a "carregar" (efeito visual)
+/// 1. O inimigo fica parado no chão
+/// 2. Quando o player se aproxima, ele começa a carregar (efeito visual)
 /// 3. Após o carregamento, um laser sai do cristal e gira seguindo o player
 /// 4. O laser sempre gira pelo caminho mais curto até o player
-/// 5. Se o player dashar pro outro lado, o laser TEM QUE INVERTER a rotação
+/// 5. Se o player dashar pro outro lado, o laser inverte a rotação
 /// 6. O laser causa dano contínuo se tocar no player
 /// 7. Após alguns segundos, o laser desliga e o ciclo recomeça
 /// 
 /// COMPONENTES NECESSÁRIOS no GameObject:
-/// - DummyHealth (vida, barra de HP, morte e drops)
-/// - EnemyDrops (sistema de loot)
-/// - Collider (para o player poder atacar)
-/// - Rigidbody (kinematic, pois é estático)
+/// DummyHealth (vida, barra de HP, morte e drops)
+/// EnemyDrops (sistema de loot)
+/// Collider (para o player poder atacar)
+/// Rigidbody (kinematic)
 /// </summary>
+
 [RequireComponent(typeof(DummyHealth))]
 public class CrystalWatcher_AI : MonoBehaviour
 {
-    // =============================================
-    // REFERÊNCIAS (preenchidas automaticamente)
-    // =============================================
+
     private Transform playerTransform;   // Referência ao player
     private DummyHealth health;          // Componente de vida
-    private CrystalWatcherVFX vfx;       // Efeitos visuais de partículas
+    private CrystalWatcherVFX vfx;       // Efeitos visuais do laser
 
-    // =============================================
-    // ATIVAÇÃO — quando o inimigo "acorda"
-    // =============================================
+    // ATIVAÇÃO
+
     [Header("Ativação")]
     [Tooltip("Distância em que o inimigo detecta o player e começa a atacar")]
     public float activationDistance = 20f;
     private bool isActivated = false;    // Guardamos se já foi ativado
 
-    // =============================================
-    // CICLO DE ATAQUE — tempos do ciclo
-    // =============================================
+
+    // CICLO DE ATAQUE
+    
     [Header("Ciclo de Ataque")]
     [Tooltip("Tempo de carregamento antes do laser disparar (em segundos)")]
     public float chargeTime = 0.5f;
@@ -51,9 +47,8 @@ public class CrystalWatcher_AI : MonoBehaviour
     [Tooltip("Pausa entre ciclos de ataque (em segundos)")]
     public float cooldownTime = 2.0f;
 
-    // =============================================
-    // LASER — configurações do laser
-    // =============================================
+    // LASER
+    
     [Header("Laser")]
     [Tooltip("Dano causado por cada tick do laser")]
     public int laserDamage = 15;
@@ -70,18 +65,16 @@ public class CrystalWatcher_AI : MonoBehaviour
     [Tooltip("Largura do laser para detecção de colisão")]
     public float laserWidth = 0.5f;
 
-    // =============================================
     // BUFF (quando Crystal Tuner está conectado)
-    // =============================================
+    
     [Header("Buff")]
     private bool isBuffed = false;
     private float originalChargeTime;
     private float originalRotationSpeed;
 
-    // =============================================
     // ESTADO INTERNO — controle do ciclo
-    // =============================================
-    // Enum = lista de estados possíveis (como um semáforo: vermelho, amarelo, verde)
+    
+    // Enum = lista de estados possíveis
     private enum State
     {
         Idle,       // Dormindo, esperando o player se aproximar
@@ -89,6 +82,7 @@ public class CrystalWatcher_AI : MonoBehaviour
         Firing,     // Laser ativo, girando e causando dano
         Cooldown    // Descansando entre ataques
     }
+
     private State currentState = State.Idle;
 
     // Controle do laser visual
@@ -97,16 +91,14 @@ public class CrystalWatcher_AI : MonoBehaviour
     private float damageTimer = 0f;           // Timer para controlar ticks de dano
     private Renderer modelRenderer;            // Renderer do modelo 3D (para achar o centro)
 
-    // =============================================
     // START — Inicialização (roda uma vez quando o jogo começa)
-    // =============================================
+    
     void Start()
     {
         // Pega o componente de vida que está no mesmo GameObject
         health = GetComponent<DummyHealth>();
 
         // Encontra o player na cena pela tag "Player"
-        // IMPORTANTE: o player precisa ter a tag "Player" no Unity!
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
@@ -123,7 +115,7 @@ public class CrystalWatcher_AI : MonoBehaviour
         // Busca o Renderer do modelo 3D filho para encontrar o centro exato
         modelRenderer = GetComponentInChildren<Renderer>();
 
-        // Configura VFX de partículas (adiciona se não existir)
+        // Configura VFX de partículas 
         vfx = GetComponent<CrystalWatcherVFX>();
         if (vfx == null)
         {
@@ -131,9 +123,8 @@ public class CrystalWatcher_AI : MonoBehaviour
         }
     }
 
-    // =============================================
-    // UPDATE — Roda TODO FRAME (60x por segundo)
-    // =============================================
+    // UPDATE — Roda todo frame
+    
     void Update()
     {
         // Se não achou o player, não faz nada
@@ -147,7 +138,7 @@ public class CrystalWatcher_AI : MonoBehaviour
             return;
         }
 
-        // -------- MÁQUINA DE ESTADOS --------
+        // MÁQUINA DE ESTADOS 
         // Dependendo do estado atual, executa uma lógica diferente
         switch (currentState)
         {
@@ -169,15 +160,15 @@ public class CrystalWatcher_AI : MonoBehaviour
         }
     }
 
-    // =============================================
-    // ESTADO: IDLE (dormindo)
-    // =============================================
+
+    // ESTADO: IDLE
+
     void HandleIdle()
     {
         // Calcula a distância entre o inimigo e o player
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        // Se o player está perto o suficiente, ATIVA!
+        // Se o player está perto o suficiente, ativa
         if (distToPlayer < activationDistance)
         {
             isActivated = true;
@@ -188,18 +179,15 @@ public class CrystalWatcher_AI : MonoBehaviour
         }
     }
 
-    // =============================================
     // CICLO DE ATAQUE (Coroutine)
-    // =============================================
-    // Coroutine é como uma receita de bolo:
     // "Faça X, espere 2 segundos, faça Y, espere mais 3 segundos..."
-    // Sem coroutine, tudo rodaria instantaneamente sem esperas.
+
     IEnumerator AttackCycle()
     {
         // Loop infinito — o ciclo repete até o inimigo morrer
         while (health != null && health.CurrentHealth > 0)
         {
-            // --- FASE 1: CARREGAMENTO ---
+            // FASE 1: CARREGAMENTO 
             currentState = State.Charging;
             Debug.Log("[WATCHER] Carregando laser...");
 
@@ -211,7 +199,7 @@ public class CrystalWatcher_AI : MonoBehaviour
             // Gira o modelo para encarar o player durante o carregamento
             transform.rotation = Quaternion.Euler(0, currentLaserAngle, 0);
 
-            // Mostra o laser fraquinho durante o carregamento (feedback visual)
+            // Mostra o laser fraquinho durante o carregamento 
             ShowLaserCharging(true);
 
             // Ativa partículas de carregamento
@@ -224,7 +212,7 @@ public class CrystalWatcher_AI : MonoBehaviour
             // Espera o tempo de carregamento
             yield return new WaitForSeconds(chargeTime);
 
-            // --- FASE 2: DISPARANDO ---
+            // FASE 2: DISPARANDO 
             currentState = State.Firing;
             damageTimer = 0f;
             Debug.Log("[WATCHER] LASER ATIVO!");
@@ -244,7 +232,7 @@ public class CrystalWatcher_AI : MonoBehaviour
             // A lógica de rotação e dano roda no Update() > HandleFiring()
             yield return new WaitForSeconds(fireDuration);
 
-            // --- FASE 3: DESLIGANDO ---
+            // FASE 3: DESLIGANDO 
             ShowLaserFiring(false);
             if (vfx != null)
             {
@@ -253,7 +241,7 @@ public class CrystalWatcher_AI : MonoBehaviour
             }
             Debug.Log("[WATCHER] Laser desligado. Descansando...");
 
-            // --- FASE 4: COOLDOWN ---
+            // FASE 4: COOLDOWN 
             currentState = State.Cooldown;
             yield return new WaitForSeconds(cooldownTime);
 
@@ -270,9 +258,8 @@ public class CrystalWatcher_AI : MonoBehaviour
         }
     }
 
-    // =============================================
     // ESTADO: FIRING (laser ativo)
-    // =============================================
+
     void HandleFiring()
     {
         // 1. CALCULA PARA ONDE O LASER DEVERIA APONTAR (direção do player)
@@ -285,7 +272,7 @@ public class CrystalWatcher_AI : MonoBehaviour
         // 2. CALCULA A DIFERENÇA DE ÂNGULO (caminho mais curto)
         // Mathf.DeltaAngle retorna um valor entre -180 e 180
         // Positivo = girar horário, Negativo = girar anti-horário
-        // ISSO é o que faz o laser inverter quando o player dá dash pro outro lado!
+        // Isso é o que faz o laser inverter quando o player dá dash pro outro lado!
         float angleDifference = Mathf.DeltaAngle(currentLaserAngle, targetAngle);
 
         // 3. GIRA O LASER na velocidade configurada
@@ -318,9 +305,8 @@ public class CrystalWatcher_AI : MonoBehaviour
         CheckLaserHit();
     }
 
-    // =============================================
     // DETECÇÃO DE COLISÃO DO LASER
-    // =============================================
+
     void CheckLaserHit()
     {
         // Timer de dano — só causa dano a cada 'damageTickRate' segundos
@@ -334,31 +320,31 @@ public class CrystalWatcher_AI : MonoBehaviour
         // SphereCast = como um Raycast mas com "espessura"
         // Imagina jogar uma bolinha invisível na direção do laser
         // Se ela bater em algo, retorna true
-        RaycastHit hit;
-        if (Physics.SphereCast(origin, laserWidth, laserDirection, out hit, laserRange))
+        // SphereCastAll: Pega TUDO que estiver no caminho do laser
+        RaycastHit[] hits = Physics.SphereCastAll(origin, laserWidth, laserDirection, laserRange);
+        
+        foreach (RaycastHit h in hits)
         {
-            // Verifica se acertou o player
-            if (hit.collider.CompareTag("Player"))
+            // Se algum desses alvos for o Player, causa dano! (Ignora os inimigos atravessados)
+            if (h.collider.CompareTag("Player"))
             {
-                PlayerHealth playerHealth = hit.collider.GetComponent<PlayerHealth>();
+                PlayerHealth playerHealth = h.collider.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
                     int finalDamage = laserDamage;
                     
-                    // Se está buffado pelo Crystal Tuner, dano aumenta
                     if (isBuffed) finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
                     
                     playerHealth.TakeDamage(finalDamage, gameObject);
-                    damageTimer = 0f; // Reseta o timer
-                    Debug.Log("[WATCHER] Laser acertou o player! Dano: " + finalDamage);
+                    damageTimer = 0f; // Reseta o timer pra não dar multi-hit insano no mesmo frame
+                    Debug.Log("[WATCHER] Laser acertou o player (atravessando obstáculos)! Dano: " + finalDamage);
+                    break; // Já achou o player e deu dano, pode parar de procurar nos hits.
                 }
             }
         }
     }
 
-    // =============================================
     // VISUAL DO LASER (LineRenderer)
-    // =============================================
     
     // Duas camadas de laser: núcleo interno + brilho externo
     private LineRenderer laserGlow;  // Camada externa (brilho roxo suave)
@@ -369,6 +355,7 @@ public class CrystalWatcher_AI : MonoBehaviour
     /// - laserLine = núcleo interno (fino, branco-roxo, brilhante)
     /// - laserGlow = brilho externo (grosso, roxo transparente)
     /// </summary>
+    
     void SetupLaserVisual()
     {
         // === CAMADA 1: BRILHO EXTERNO (glow) ===
@@ -408,7 +395,7 @@ public class CrystalWatcher_AI : MonoBehaviour
         laserGlow.colorGradient = glowGradient;
         laserGlow.enabled = false;
 
-        // === CAMADA 2: NÚCLEO INTERNO (core) ===
+        // CAMADA 2: NÚCLEO INTERNO (core)
         GameObject laserObj = new GameObject("LaserCore");
         laserObj.transform.SetParent(transform);
         laserObj.transform.localPosition = Vector3.zero;
@@ -447,7 +434,7 @@ public class CrystalWatcher_AI : MonoBehaviour
     }
 
     /// <summary>
-    /// Mostra o laser fraquinho durante o carregamento (preview roxo fino)
+    /// Mostra o laser fraquinho durante o carregamento 
     /// </summary>
     void ShowLaserCharging(bool show)
     {
@@ -492,15 +479,26 @@ public class CrystalWatcher_AI : MonoBehaviour
         Vector3 direction = AngleToDirection(currentLaserAngle);
         Vector3 endPoint = origin + direction * laserRange;
 
-        // Se o laser bater em algo (parede, etc.), encurta
-        RaycastHit hit;
-        if (Physics.Raycast(origin, direction, out hit, laserRange))
+        float finalLaserDist = laserRange;
+
+        // Pega TODOS os objetos que o laser cruzar
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, laserRange);
+
+        foreach (RaycastHit h in hits)
         {
-            if (!hit.collider.CompareTag("Player"))
+            // Nós queremos que o laser IGNORE ("atravesse") o Player e outros Inimigos.
+            // Qualquer outra coisa sem essas Tags (como Paredes e Chão) vai parar o laser curto.
+            if (!h.collider.CompareTag("Player") && !h.collider.CompareTag("Enemy") && h.collider.GetComponent<DummyHealth>() == null)
             {
-                endPoint = hit.point;
+                // Se a parede estiver mais perto que o alcance máximo, o laser para nela.
+                if (h.distance < finalLaserDist)
+                {
+                    finalLaserDist = h.distance;
+                }
             }
         }
+        
+        endPoint = origin + direction * finalLaserDist;
 
         // Posiciona ambas as linhas
         laserLine.SetPosition(0, origin);
@@ -521,9 +519,7 @@ public class CrystalWatcher_AI : MonoBehaviour
         }
     }
 
-    // =============================================
     // FUNÇÕES AUXILIARES
-    // =============================================
 
     /// <summary>
     /// Retorna o centro exato do modelo 3D.
@@ -577,9 +573,8 @@ public class CrystalWatcher_AI : MonoBehaviour
         }
     }
 
-    // =============================================
     // GIZMOS — Visualização no Editor (só aparece no Scene view, não no jogo)
-    // =============================================
+    
     void OnDrawGizmosSelected()
     {
         // Círculo amarelo = range de ativação
