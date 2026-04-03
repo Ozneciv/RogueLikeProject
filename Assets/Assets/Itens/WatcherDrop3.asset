@@ -10,20 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f50c879d2315cfe4fa88c7211306d9c7, type: 3}
-  m_Name: GolemDrop
+  m_Name: WatcherDrop3
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemId: 01go
-  itemName: Golem Drop
-  description: O drop do Golem
-  icon: {fileID: 0}
-  tier: 1
-  enemySource: Golem
+  itemId: 03cw
+  itemName: Olho do Vigia
+  description: O olho do Vigia.
+  icon: {fileID: 21300000, guid: 2e5428247abf67c4ab479d0567340465, type: 3}
+  tier: 3
+  enemySource: Crystal Watcher
   recycleEssenceValue: 50
   infusionEssenceCost: 50
   itemAttributes:
-  - attributeType: 13
-    value: 50
-    isMultiplier: 0
-  - attributeType: 14
-    value: 1.15
+  - attributeType: 0
+    value: 3
+    isMultiplier: 1
+  - attributeType: 1
+    value: 3
+    isMultiplier: 1
+  - attributeType: 18
+    value: 3
     isMultiplier: 1
