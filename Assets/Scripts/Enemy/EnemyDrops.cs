@@ -67,10 +67,17 @@ public class EnemyDrops : MonoBehaviour
         
         Vector3 basePosition = transform.position + Vector3.up * spawnHeight;
 
-        // 1. Sempre spawna essência
+        // 1. Sempre spawna essência com inflação por sala
+        // Fórmula GDD §1.1: E(n) = d × (1 + α × n)  onde α = 0,05
         if (essencePrefab != null)
         {
-            int finalEssence = essenceAmount + Random.Range(-essenceVariation, essenceVariation + 1);
+            // Aplica o multiplicador de sala (d é o essenceAmount base)
+            float roomMultiplier = RunManager.instance != null
+                ? RunManager.instance.GetEssenceMultiplier()
+                : 1f;
+
+            int scaledBase  = Mathf.RoundToInt(essenceAmount * roomMultiplier);
+            int finalEssence = scaledBase + Random.Range(-essenceVariation, essenceVariation + 1);
             finalEssence = Mathf.Max(1, finalEssence);
 
             GameObject essence = SpawnDrop(essencePrefab, basePosition);
@@ -82,7 +89,7 @@ public class EnemyDrops : MonoBehaviour
                 essenceScript.essenceValue = finalEssence;
             }
 
-            Debug.Log("[ENEMY DROPS] Dropou " + finalEssence + " de essência!");
+            Debug.Log($"[ENEMY DROPS] Dropou {finalEssence} de essência! (base:{essenceAmount} × mult:{roomMultiplier:F2} | sala {RunManager.instance?.currentRoomNumber})");
         }
         else
         {

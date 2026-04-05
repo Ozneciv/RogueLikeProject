@@ -33,6 +33,9 @@ public class LevelGenerator : MonoBehaviour
     // --- MUDANÇA 2: Trava para a Saída ---
     private bool exitRoomSpawned = false;
 
+    // --- ECONOMIA: rastreia sequência de salas para inicializar RoomControllers ---
+    private int roomSequenceCounter = 0;
+
     // Classe auxiliar (sem mudanças)
     private class Socket
     {
@@ -50,7 +53,8 @@ public class LevelGenerator : MonoBehaviour
         roomCounts.Clear();
         openSockets.Clear();
         merchantRoomSpawned = false;
-        exitRoomSpawned = false; // Reseta a trava da saída
+        exitRoomSpawned = false;
+        roomSequenceCounter = 0;
 
         GameObject startRoom = Instantiate(startRoomPrefab, Vector3.zero, Quaternion.identity);
         int currentRoomCount = 1;
@@ -98,9 +102,15 @@ public class LevelGenerator : MonoBehaviour
                 AlignRooms(transitionSaida, mainEntrada);
 
                 roomCount++;
+                roomSequenceCounter++;
                 string roomName = roomPrefabToSpawn.name;
                 if (!roomCounts.ContainsKey(roomName)) roomCounts[roomName] = 0;
                 roomCounts[roomName]++;
+
+                // --- ECONOMIA: Inicializa o RoomController com o índice da sala ---
+                RoomController roomCtrl = newMainRoom.GetComponentInChildren<RoomController>();
+                if (roomCtrl != null)
+                    roomCtrl.Initialize(roomSequenceCounter);
 
                 AddSocketsToFrontier(newMainRoom.transform, currentSocket.Direction, false);
             }

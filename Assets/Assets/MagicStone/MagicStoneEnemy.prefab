@@ -151,11 +151,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
-  essenceAmount: 10
+  essenceAmount: 15
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 0}
-  itemDropChance: 0.3
+  globalDropChance: 0.3
   itemAmount: 1
+  lootPool: []
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3

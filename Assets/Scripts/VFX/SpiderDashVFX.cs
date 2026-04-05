@@ -29,6 +29,9 @@ public class SpiderDashVFX : MonoBehaviour
     private TrailRenderer trailRenderer;
     private Material trailMaterial;
     private bool isActive = false;
+    // Rastreia todos os ghost objects ativos para limpeza ao morrer
+    private System.Collections.Generic.List<GameObject> activeGhosts
+        = new System.Collections.Generic.List<GameObject>();
 
     void Start()
     {
@@ -93,10 +96,10 @@ public class SpiderDashVFX : MonoBehaviour
     public void StopDashEffect()
     {
         isActive = false;
-        
         if (trailRenderer != null)
         {
             trailRenderer.emitting = false;
+            trailRenderer.Clear();
         }
     }
 
@@ -136,7 +139,10 @@ public class SpiderDashVFX : MonoBehaviour
                 ghostRend.material = ghostMat;
                 
                 // Fade out e destruir
-                StartCoroutine(FadeOutGhost(ghost, ghostMat, afterImageDuration));
+                var coroutine = StartCoroutine(FadeOutGhost(ghost, ghostMat, afterImageDuration));
+                activeGhosts.Add(ghost);
+                // Garante remoção da lista quando terminar
+                StartCoroutine(RemoveGhostWhenDone(ghost, afterImageDuration));
             }
             else
             {
@@ -171,6 +177,12 @@ public class SpiderDashVFX : MonoBehaviour
         Destroy(ghost);
     }
 
+    private System.Collections.IEnumerator RemoveGhostWhenDone(GameObject ghost, float delay)
+    {
+        yield return new WaitForSeconds(delay + 0.05f);
+        activeGhosts.Remove(ghost);
+    }
+
     /// <summary>
     /// Configura cores customizadas para o efeito
     /// </summary>
@@ -203,9 +215,13 @@ public class SpiderDashVFX : MonoBehaviour
 
     void OnDestroy()
     {
-        if (trailMaterial != null)
+        // Destrói todos os ghost objects restantes quando a Spider morre
+        foreach (GameObject ghost in activeGhosts)
         {
-            Destroy(trailMaterial);
+            if (ghost != null) Destroy(ghost);
         }
+        activeGhosts.Clear();
+
+        if (trailMaterial != null) Destroy(trailMaterial);
     }
 }

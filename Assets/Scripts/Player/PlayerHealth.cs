@@ -88,6 +88,11 @@ public class PlayerHealth : MonoBehaviour
 
     IEnumerator PlaySpawnAnimation()
     {
+        // Animação de levantar desabilitada temporariamente a pedido do usuário
+        UnlockPlayer();
+        yield break;
+
+#if false
         if (playerMovement != null) playerMovement.enabled = false;
         if (playerAttack != null) playerAttack.enabled = false;
         
@@ -138,6 +143,7 @@ public class PlayerHealth : MonoBehaviour
         
         // Destrava o jogador
         UnlockPlayer();
+#endif
     }
 
     public void UnlockPlayer()
