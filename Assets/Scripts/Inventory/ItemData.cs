@@ -79,8 +79,10 @@ public class ItemData : ScriptableObject
     [Tooltip("Essência gerada se o item for reciclado (descartado).")]
     public int recycleEssenceValue = 10;
     
-    [Tooltip("Custo de essência cobrado do jogador para autorizar a Infusão deste item.")]
-    public int infusionEssenceCost = 50;
+    [Tooltip("Custo BASE de essência para infundir este item (B na fórmula). " +
+             "O custo REAL é inflacionado pelo InfusionManager: C = B × (1 + 0.1 × Ptotal). " +
+             "Valores padrão por tier: T1=60, T2=180, T3=300, T4=420.")]
+    public int infusionEssenceCost = 60;
 
     [Tooltip("Use o '+' para adicionar quantos buffs o item der!")]
     public List<ItemAttributeParam> itemAttributes = new List<ItemAttributeParam>();
@@ -112,6 +114,23 @@ public class ItemData : ScriptableObject
             case ItemTier.Rare:      return "Raro";
             case ItemTier.Legendary: return "Lendário";
             default:                 return "Desconhecido";
+        }
+    }
+
+    /// <summary>
+    /// Peso de inflação deste tier (P na fórmula GDD §1.3).
+    /// Ptotal = soma dos pesos de todos os itens já infundidos na arma.
+    /// T1=1.0 | T2=2.25 | T3=4.0 | T4=6.0
+    /// </summary>
+    public float GetTierWeight()
+    {
+        switch (tier)
+        {
+            case ItemTier.Common:    return 1.00f;
+            case ItemTier.Uncommon:  return 2.25f;
+            case ItemTier.Rare:      return 4.00f;
+            case ItemTier.Legendary: return 6.00f; // Tier 4 definido internamente (GDD não especifica)
+            default:                 return 1.00f;
         }
     }
 }

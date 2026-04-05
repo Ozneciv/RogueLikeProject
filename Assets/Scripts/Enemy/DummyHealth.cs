@@ -28,6 +28,8 @@ public class DummyHealth : MonoBehaviour
     [HideInInspector] public bool isBuffed = false;
 
     private Color originalRenderColor;
+    private Color originalBaseColor;
+    private bool hasBaseColor = false;
     private Renderer dummyRenderer;
 
     private void Start()
@@ -38,6 +40,12 @@ public class DummyHealth : MonoBehaviour
         if (dummyRenderer != null)
         {
             originalRenderColor = dummyRenderer.material.color;
+            // Suporte a shaders URP/HDRP que usam _BaseColor em vez de _Color
+            if (dummyRenderer.material.HasProperty("_BaseColor"))
+            {
+                hasBaseColor = true;
+                originalBaseColor = dummyRenderer.material.GetColor("_BaseColor");
+            }
         }
 
         // Auto-busca o Slider nos filhos se não foi atribuído no Inspector
@@ -135,8 +143,10 @@ public class DummyHealth : MonoBehaviour
     IEnumerator FlashRed()
     {
         dummyRenderer.material.color = hitColor;
+        if (hasBaseColor) dummyRenderer.material.SetColor("_BaseColor", hitColor);
         yield return new WaitForSeconds(hitFlashTime);
         dummyRenderer.material.color = originalRenderColor;
+        if (hasBaseColor) dummyRenderer.material.SetColor("_BaseColor", originalBaseColor);
     }
 
     private void Die()
@@ -144,7 +154,10 @@ public class DummyHealth : MonoBehaviour
         Debug.Log(gameObject.name + " foi destruído.");
 
         // Chama o sistema de drops se existir
-        EnemyDrops drops = GetComponent<EnemyDrops>();
+        // Busca em filhos e pais também — cobre hierarquias mais complexas de prefab
+        EnemyDrops drops = GetComponent<EnemyDrops>()
+                        ?? GetComponentInChildren<EnemyDrops>()
+                        ?? GetComponentInParent<EnemyDrops>();
         if (drops != null)
         {
             Debug.Log("[DROPS] EnemyDrops encontrado, chamando OnDeath()...");
