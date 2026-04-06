@@ -561,6 +561,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2622090170748288850, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: consoleInput
+      value: 
+      objectReference: {fileID: 1455348156}
     - target: {fileID: 3017463410146802124, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_Name
       value: Player
@@ -882,6 +886,10 @@ PrefabInstance:
       propertyPath: infusionManager
       value: 
       objectReference: {fileID: 1006649188}
+    - target: {fileID: 2421859533466585527, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1331199985}
     - target: {fileID: 5058661641114370136, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
       propertyPath: m_Name
       value: Player Canvas Real
@@ -922,6 +930,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1331199985 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2622090170748288850, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+  m_PrefabInstance: {fileID: 670016264}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3281e43cee462ff49a14f5da0aab462a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheatConsole
+--- !u!114 &1455348156 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2421859533466585527, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+  m_PrefabInstance: {fileID: 1119530604}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2da0c512f12947e489f739169773d7ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TMP_InputField
 --- !u!1 &1850662658
 GameObject:
   m_ObjectHideFlags: 0

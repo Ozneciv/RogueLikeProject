@@ -1615,6 +1615,7 @@ GameObject:
   - component: {fileID: 7157822759298222897}
   - component: {fileID: 3355333344693606189}
   - component: {fileID: 2263118546089513548}
+  - component: {fileID: 2622090170748288850}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1970,6 +1971,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InfusionManager
   inflationAlpha: 0.1
+--- !u!114 &2622090170748288850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3281e43cee462ff49a14f5da0aab462a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheatConsole
+  consoleInput: {fileID: 0}
+  playerAnimator: {fileID: 3618305479678570340}
 --- !u!1 &3037435734811326214
 GameObject:
   m_ObjectHideFlags: 0
