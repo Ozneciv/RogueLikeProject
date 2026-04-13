@@ -996,6 +996,9 @@ GameObject:
   - component: {fileID: 5745442842706831329}
   - component: {fileID: 3072499769774279680}
   - component: {fileID: 1565009776104248224}
+  - component: {fileID: 985908914216308068}
+  - component: {fileID: 4680490469016125944}
+  - component: {fileID: 8984564987009240732}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1264,6 +1267,72 @@ MonoBehaviour:
   offsetX: 10
   offsetY: -10
   updateInterval: 0.5
+--- !u!114 &985908914216308068
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c53e7519e486fec47962f3a1501e57c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerEssence
+  currentEssence: 0
+  totalEssenceCollected: 0
+  onEssenceCollected:
+    m_PersistentCalls:
+      m_Calls: []
+  onEssenceChanged:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &4680490469016125944
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7219fff5fdb244441b6e817bb2645e48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
+  maxSlots: 10
+  onItemAdded:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onItemRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+  onInventoryChanged:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &8984564987009240732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 036f87b1c1a9b734cb0bfe625b4e59a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InfusionManager
 --- !u!1 &3037435734811326214
 GameObject:
   m_ObjectHideFlags: 0
