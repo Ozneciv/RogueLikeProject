@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// IA do Goblin. Estados: Idle → Pursue → Strafe/Attack → Flee
+/// IA do Goblin. Estados: Idle → Pursue → Strafe/Attack → Flee → MeleePickaxe
+/// Mineiro subterrâneo: arremessa bombas à distância e ataca com picareta no corpo-a-corpo.
 /// Movimentação suave via MoveTowards no Rigidbody.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
@@ -32,11 +33,22 @@ public class GoblinAI_Transform : MonoBehaviour
     [Tooltip("Aceleração do movimento (mais alto = mais responsivo, mas pode parecer 'travado').")]
     public float aceleracao = 12f;
 
-    // ── Ataque ───────────────────────────────────────────────────────
+    // ── Ataque à Distância (Bomba) ────────────────────────────────────
     [Header("Arremesso")]
     public float forcaArremesso = 12f;
     public float forcaArco = 6f;
     public float intervaloAtaque = 2.8f;
+
+    // ── Ataque Melee (Picareta) ───────────────────────────────────────
+    [Header("Melee - Picareta")]
+    [Tooltip("Distância máxima para o ataque de picareta (tem prioridade sobre a fuga).")]
+    public float distanciaMelee = 2.5f;
+    [Tooltip("Dano causado pelo golpe de picareta.")]
+    public int danoMelee = 20;
+    [Tooltip("Cooldown entre golpes de picareta.")]
+    public float cooldownMelee = 1.5f;
+    [Tooltip("Raio da hitbox do golpe de picareta.")]
+    public float raioHitMelee = 1.8f;
 
     // ── Strafe ───────────────────────────────────────────────────────
     [Header("Strafe (movimento lateral ao atacar)")]
@@ -58,9 +70,13 @@ public class GoblinAI_Transform : MonoBehaviour
     private float intervaloOriginal;
 
     // Estado simples
-    private enum Estado { Idle, Perseguir, Atacar, Fugir }
+    private enum Estado { Idle, Perseguir, Atacar, Fugir, MeleePickaxe }
     private Estado estadoAtual = Estado.Idle;
     private bool registradoNoBestiario = false;
+
+    // Melee picaxe
+    private float timerMelee = 0f;
+    private bool realizandoMelee = false;
 
     // ─────────────────────────────────────────────────────────────────
     void Start()
@@ -106,10 +122,12 @@ public class GoblinAI_Transform : MonoBehaviour
     {
         if (jogador == null) return;
 
+        if (timerMelee > 0f) timerMelee -= Time.deltaTime;
+
         float dist = Vector3.Distance(transform.position, jogador.position);
         AtualizarEstado(dist);
 
-        // Gira suavemente em direção ao player (exceto durante fuga)
+        // Gira em direção ao player (exceto durante fuga pura)
         if (estadoAtual != Estado.Fugir)
             OlharParaJogador();
     }
@@ -123,10 +141,12 @@ public class GoblinAI_Transform : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────
     void AtualizarEstado(float dist)
     {
-        if (dist < distanciaFuga) MudarEstado(Estado.Fugir);
-        else if (dist <= distanciaAtaque) MudarEstado(Estado.Atacar);
+        // Prioridade: Melee > Fuga > Ataque ranged > Perseguição > Idle
+        if (dist <= distanciaMelee)        MudarEstado(Estado.MeleePickaxe);
+        else if (dist < distanciaFuga)     MudarEstado(Estado.Fugir);
+        else if (dist <= distanciaAtaque)  MudarEstado(Estado.Atacar);
         else if (dist <= distanciaMaxBusca) MudarEstado(Estado.Perseguir);
-        else MudarEstado(Estado.Idle);
+        else                               MudarEstado(Estado.Idle);
 
         // Lógica do estado atual
         switch (estadoAtual)
@@ -134,6 +154,9 @@ public class GoblinAI_Transform : MonoBehaviour
             case Estado.Atacar:
                 TentarAtacar();
                 AtualizarStrafe();
+                break;
+            case Estado.MeleePickaxe:
+                TentarAtaqueMelee();
                 break;
         }
     }
@@ -169,7 +192,12 @@ public class GoblinAI_Transform : MonoBehaviour
 
             case Estado.Fugir:
                 alvo = DirecaoFugindo() * velocidadeFuga;
-                OlharParaDirecao(DirecaoFugindo()); // olha na direção que está correndo
+                OlharParaDirecao(DirecaoFugindo());
+                break;
+
+            case Estado.MeleePickaxe:
+                // Para completamente para golpear — o Goblin planta o pé
+                alvo = Vector3.zero;
                 break;
 
             case Estado.Atacar:
@@ -212,6 +240,50 @@ public class GoblinAI_Transform : MonoBehaviour
             anim.SetTrigger("Attacking");
             tempoUltimoAtaque = Time.time;
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// Ataque de picareta corpo-a-corpo. Triggered quando o player entra em distanciaMelee.
+    /// O Goblin para, olha para o player e desfere um golpe com a picareta.
+    /// </summary>
+    void TentarAtaqueMelee()
+    {
+        if (realizandoMelee || timerMelee > 0f) return;
+        StartCoroutine(ExecutarMelee());
+    }
+
+    IEnumerator ExecutarMelee()
+    {
+        realizandoMelee = true;
+        timerMelee = cooldownMelee;
+
+        // Telegrafagem: o Goblin levanta a picareta (wind-up)
+        anim.SetTrigger("MeleeAttack");
+        Debug.Log("[GOBLIN] PICARETA! Wind-up...");
+
+        yield return new WaitForSeconds(0.35f); // timing do swing
+
+        // Hitbox em frente ao Goblin
+        Vector3 centroHit = transform.position + transform.forward * 1.2f + Vector3.up * 0.5f;
+        Collider[] hits = Physics.OverlapSphere(centroHit, raioHitMelee);
+
+        foreach (Collider hit in hits)
+        {
+            if (hit.CompareTag("Player"))
+            {
+                PlayerHealth ph = hit.GetComponent<PlayerHealth>();
+                if (ph != null)
+                {
+                    ph.TakeDamage(danoMelee, gameObject);
+                    Debug.Log("[GOBLIN] Picareta acertou o player! Dano: " + danoMelee);
+                }
+                break;
+            }
+        }
+
+        yield return new WaitForSeconds(0.4f); // recovery
+        realizandoMelee = false;
     }
 
     // ─────────────────────────────────────────────────────────────────

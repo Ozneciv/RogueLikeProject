@@ -898,17 +898,9 @@ PrefabInstance:
       propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1331199985}
-    - target: {fileID: 4978516637699707338, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5058661641114370136, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
       propertyPath: m_Name
       value: Player Canvas Real
-      objectReference: {fileID: 0}
-    - target: {fileID: 5058661641114370136, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
