@@ -182,11 +182,12 @@ public class RoomController : MonoBehaviour
     {
         currentWave++;
 
-        // Cada onda usa o budget COMPLETO de P(n) — não dividido pelo número de ondas.
-        // Isso garante que cada onda seja um encontro completo e progressivo.
-        int waveBudget = RunManager.instance != null
+        // O budget total da sala é dividido igualmente entre as ondas.
+        // Isso garante curva de dificuldade uniforme independente do número de ondas.
+        int totalBudget = RunManager.instance != null
             ? RunManager.instance.GetSpawnBudget(roomIndex)
             : Mathf.RoundToInt(10 + 0.9f * roomIndex);
+        int waveBudget = Mathf.Max(4, Mathf.RoundToInt(totalBudget / (float)totalWavesThisRoom));
 
         if (showSpawnLog)
             Debug.Log($"[ROOM {roomIndex}] ONDA {currentWave}/{totalWavesThisRoom} | Budget: {waveBudget} pts | Mín. inimigos: {minEnemiesPerWave}");
