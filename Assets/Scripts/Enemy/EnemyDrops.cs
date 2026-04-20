@@ -51,7 +51,7 @@ public class EnemyDrops : MonoBehaviour
     void Start()
     {
         health = GetComponent<DummyHealth>();
-        
+
         if (health == null)
         {
             Debug.LogWarning("[ENEMY DROPS] DummyHealth não encontrado! Este script requer DummyHealth.");
@@ -69,7 +69,7 @@ public class EnemyDrops : MonoBehaviour
     void SpawnDrops()
     {
         Debug.Log("[ENEMY DROPS] SpawnDrops chamado para " + gameObject.name);
-        
+
         Vector3 basePosition = transform.position + Vector3.up * spawnHeight;
 
         // 1. Sempre spawna essência
@@ -79,7 +79,7 @@ public class EnemyDrops : MonoBehaviour
             finalEssence = Mathf.Max(1, finalEssence);
 
             GameObject essence = SpawnDrop(essencePrefab, basePosition);
-            
+
             // Configura a quantidade de essência
             EssencePickup essenceScript = essence.GetComponent<EssencePickup>();
             if (essenceScript != null)
@@ -108,7 +108,7 @@ public class EnemyDrops : MonoBehaviour
             {
                 Vector3 offset = Random.insideUnitSphere * spawnRadius;
                 offset.y = 0;
-                
+
                 SpawnDrop(selectedItem, basePosition + offset);
             }
 
@@ -168,7 +168,7 @@ public class EnemyDrops : MonoBehaviour
             // Alto drag para parar rápido quando atingir o chão
             rb.linearDamping = 5f;
             rb.angularDamping = 5f;
-            
+
             // Apenas impulso vertical (sem movimento lateral)
             Vector3 upForce = Vector3.up * launchForce;
             rb.AddForce(upForce, ForceMode.Impulse);
