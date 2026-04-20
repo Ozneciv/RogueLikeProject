@@ -153,9 +153,18 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 0}
-  itemDropChance: 0.3
+  characteristicItemPrefab: {fileID: 7158612879417249299, guid: 263c6514df71129478fd365faec77927, type: 3}
+  itemDropChance: 0.35
   itemAmount: 1
+  lootPool:
+  - itemPrefab: {fileID: 7158612879417249299, guid: 263c6514df71129478fd365faec77927, type: 3}
+    weight: 60
+  - itemPrefab: {fileID: 4004670167205129257, guid: a85fb57f367a6354298f60b38ae2444c, type: 3}
+    weight: 25
+  - itemPrefab: {fileID: 1249224272769253639, guid: 114b648580fa9734d99661a1d5fbb75b, type: 3}
+    weight: 10
+  - itemPrefab: {fileID: 1200163971464992347, guid: aaddb9079fef32d489af014d662efc92, type: 3}
+    weight: 5
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
