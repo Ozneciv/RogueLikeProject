@@ -16,26 +16,21 @@ public class EnemyDrops : MonoBehaviour
     [Tooltip("Variação aleatória (+/-)")]
     public int essenceVariation = 3;
 
-    [Header("Item Característico (Chance)")]
-    [Tooltip("Prefab do item específico deste inimigo")]
-    public GameObject characteristicItemPrefab;
-    [Tooltip("Chance de dropar o item (0-1)")]
-    [Range(0f, 1f)]
-    public float itemDropChance = 0.3f;
-    [Tooltip("Quantidade de itens dropados se der drop")]
-    public int itemAmount = 1;
-
     [System.Serializable]
     public class LootPoolItem
     {
-        [Tooltip("Prefab do item possível")]
         public GameObject itemPrefab;
-        [Tooltip("Peso no sorteio (maior = mais comum)")]
-        public float weight = 1f;
+        [Tooltip("Peso de chance para dropar. Maior = mais comum. Menor = mais raro.")]
+        public float weight = 10f;
     }
 
-    [Header("Loot Pool por Tier (Opcional)")]
-    [Tooltip("Se preencher, usa roleta ponderada entre T1-T4. Se vazio, usa characteristicItemPrefab.")]
+    [Header("Item Característico (Roleta)")]
+    [Tooltip("Chance do inimigo dropar ALGUM item da lista (0-1)")]
+    [Range(0f, 1f)]
+    public float globalDropChance = 0.3f;
+    [Tooltip("Quantidade de itens dropados se der drop (da opção sorteada)")]
+    public int itemAmount = 1;
+    [Tooltip("Lista de possíveis drops (T1, T2, T3...). Apenas 1 será sorteado.")]
     public List<LootPoolItem> lootPool = new List<LootPoolItem>();
 
     [Header("Spawn Settings")]
@@ -51,7 +46,7 @@ public class EnemyDrops : MonoBehaviour
     void Start()
     {
         health = GetComponent<DummyHealth>();
-
+        
         if (health == null)
         {
             Debug.LogWarning("[ENEMY DROPS] DummyHealth não encontrado! Este script requer DummyHealth.");
@@ -69,17 +64,24 @@ public class EnemyDrops : MonoBehaviour
     void SpawnDrops()
     {
         Debug.Log("[ENEMY DROPS] SpawnDrops chamado para " + gameObject.name);
-
+        
         Vector3 basePosition = transform.position + Vector3.up * spawnHeight;
 
-        // 1. Sempre spawna essência
+        // 1. Sempre spawna essência com inflação por sala
+        // Fórmula GDD §1.1: E(n) = d × (1 + α × n)  onde α = 0,05
         if (essencePrefab != null)
         {
-            int finalEssence = essenceAmount + Random.Range(-essenceVariation, essenceVariation + 1);
+            // Aplica o multiplicador de sala (d é o essenceAmount base)
+            float roomMultiplier = RunManager.instance != null
+                ? RunManager.instance.GetEssenceMultiplier()
+                : 1f;
+
+            int scaledBase  = Mathf.RoundToInt(essenceAmount * roomMultiplier);
+            int finalEssence = scaledBase + Random.Range(-essenceVariation, essenceVariation + 1);
             finalEssence = Mathf.Max(1, finalEssence);
 
             GameObject essence = SpawnDrop(essencePrefab, basePosition);
-
+            
             // Configura a quantidade de essência
             EssencePickup essenceScript = essence.GetComponent<EssencePickup>();
             if (essenceScript != null)
@@ -87,74 +89,61 @@ public class EnemyDrops : MonoBehaviour
                 essenceScript.essenceValue = finalEssence;
             }
 
-            Debug.Log("[ENEMY DROPS] Dropou " + finalEssence + " de essência!");
+            Debug.Log($"[ENEMY DROPS] Dropou {finalEssence} de essência! (base:{essenceAmount} × mult:{roomMultiplier:F2} | sala {RunManager.instance?.currentRoomNumber})");
         }
         else
         {
             Debug.LogWarning("[ENEMY DROPS] essencePrefab está NULL! Configure no Inspector.");
         }
 
-        // 2. Chance de dropar item característico
-        if (Random.value <= itemDropChance)
-        {
-            GameObject selectedItem = SelectDropPrefab();
-            if (selectedItem == null)
-            {
-                Debug.LogWarning("[ENEMY DROPS] Nenhum item configurado em lootPool/characteristicItemPrefab.");
-                return;
-            }
-
-            for (int i = 0; i < itemAmount; i++)
-            {
-                Vector3 offset = Random.insideUnitSphere * spawnRadius;
-                offset.y = 0;
-
-                SpawnDrop(selectedItem, basePosition + offset);
-            }
-
-            Debug.Log("[ENEMY DROPS] Dropou item característico: " + selectedItem.name);
-        }
-        else if ((lootPool == null || lootPool.Count == 0) && characteristicItemPrefab == null)
-        {
-            Debug.LogWarning("[ENEMY DROPS] characteristicItemPrefab e lootPool estão vazios! Configure no Inspector.");
-        }
-    }
-
-    GameObject SelectDropPrefab()
-    {
-        // Se houver pool configurado, usa roleta ponderada
-        if (lootPool != null && lootPool.Count > 0)
+        // 2. Chance de dropar ALGUM item característico (Roleta com Pesos)
+        if (lootPool != null && lootPool.Count > 0 && Random.value <= globalDropChance)
         {
             float totalWeight = 0f;
-            for (int i = 0; i < lootPool.Count; i++)
+            foreach (var loot in lootPool)
             {
-                if (lootPool[i] != null && lootPool[i].itemPrefab != null && lootPool[i].weight > 0f)
+                if (loot.itemPrefab != null && loot.weight > 0f)
                 {
-                    totalWeight += lootPool[i].weight;
+                    totalWeight += loot.weight;
                 }
             }
 
             if (totalWeight > 0f)
             {
-                float roll = Random.Range(0f, totalWeight);
-                float acc = 0f;
+                float randomVal = Random.Range(0f, totalWeight);
+                float currentSum = 0f;
+                GameObject selectedPrefab = null;
 
-                for (int i = 0; i < lootPool.Count; i++)
+                foreach (var loot in lootPool)
                 {
-                    var entry = lootPool[i];
-                    if (entry == null || entry.itemPrefab == null || entry.weight <= 0f) continue;
-
-                    acc += entry.weight;
-                    if (roll <= acc)
+                    if (loot.itemPrefab == null || loot.weight <= 0f) continue;
+                    
+                    currentSum += loot.weight;
+                    if (randomVal <= currentSum)
                     {
-                        return entry.itemPrefab;
+                        selectedPrefab = loot.itemPrefab;
+                        break;
                     }
+                }
+
+                if (selectedPrefab != null)
+                {
+                    for (int i = 0; i < itemAmount; i++)
+                    {
+                        Vector3 offset = Random.insideUnitSphere * spawnRadius;
+                        offset.y = 0;
+                        
+                        SpawnDrop(selectedPrefab, basePosition + offset);
+                    }
+
+                    Debug.Log("[ENEMY DROPS] Dropou item da roleta: " + selectedPrefab.name);
                 }
             }
         }
-
-        // Fallback para compatibilidade com configuração antiga
-        return characteristicItemPrefab;
+        else if (lootPool == null || lootPool.Count == 0)
+        {
+            Debug.LogWarning("[ENEMY DROPS] lootPool está vazio! Adicione opções no Inspector.");
+        }
     }
 
     GameObject SpawnDrop(GameObject prefab, Vector3 position)
@@ -168,7 +157,7 @@ public class EnemyDrops : MonoBehaviour
             // Alto drag para parar rápido quando atingir o chão
             rb.linearDamping = 5f;
             rb.angularDamping = 5f;
-
+            
             // Apenas impulso vertical (sem movimento lateral)
             Vector3 upForce = Vector3.up * launchForce;
             rb.AddForce(upForce, ForceMode.Impulse);

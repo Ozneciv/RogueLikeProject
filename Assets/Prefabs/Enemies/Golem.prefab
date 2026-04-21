@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 4728308152487144125}
   - component: {fileID: 343962479280987070}
   - component: {fileID: 9160692238743494521}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Golem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -38,6 +38,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3315837304436746902}
+  - {fileID: 6202917067547179338}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8064610177149032019
@@ -55,7 +56,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 748345383327806496}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -181,7 +182,7 @@ MonoBehaviour:
   stunMarkerPrefab: {fileID: 0}
   stunBeamPrefab: {fileID: 3156189663886257779, guid: 7eb942f03da6e7241af7035e7d2a0fa9, type: 3}
   activationDistance: 12
-  moveSpeed: 2
+  moveSpeed: 5
   rotationSpeed: 5
   meleeRange: 3
   meleeCooldown: 3
@@ -208,21 +209,14 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 4483142858074221592, guid: c92e479881a9a5d4697323958b3595fb, type: 3}
-  itemDropChance: 0.35
+  globalDropChance: 1
   itemAmount: 1
   lootPool:
-  - itemPrefab: {fileID: 4483142858074221592, guid: c92e479881a9a5d4697323958b3595fb, type: 3}
-    weight: 60
-  - itemPrefab: {fileID: 1582116761678166610, guid: f9df4ec66da70494db04e3035831e297, type: 3}
-    weight: 25
-  - itemPrefab: {fileID: 1346386853181149894, guid: 4ab4ccdfba961a14eb47afe0ec707df5, type: 3}
-    weight: 10
-  - itemPrefab: {fileID: 5351024838107336789, guid: aeea4dbbbd52cd048a997a6b83b367ec, type: 3}
-    weight: 5
+  - itemPrefab: {fileID: 1066167381274076914, guid: 294f662b14179e84ea3e72c6956c2460, type: 3}
+    weight: 1
   spawnHeight: 0.5
   spawnRadius: 0.5
-  launchForce: 3
+  launchForce: 2
 --- !u!114 &9160692238743494521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -239,6 +233,88 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: ed0bc8cd41f91174fb5eff00e69d5caf, type: 3}
   descricao: "Golem descr\xE7\xE3o teste"
   foiEncontrado: 0
+--- !u!1001 &5881570581251759777
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7424281444716350953}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 610c4555f1a5e8c4e8a60ac169494eb1, type: 2}
+    - target: {fileID: 919132149155446097, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+      propertyPath: m_Name
+      value: Meshy_AI_Crystal_Golem_0407163454_texture
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+--- !u!4 &6202917067547179338 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 1b9683efcb03c9442b5e796e9a2260f9, type: 3}
+  m_PrefabInstance: {fileID: 5881570581251759777}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6338938540938558875
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -321,7 +397,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1
+      value: 1.42
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

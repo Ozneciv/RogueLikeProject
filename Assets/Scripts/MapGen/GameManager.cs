@@ -84,6 +84,16 @@ public class GameManager : MonoBehaviour
 
     public void LoadGameLevel()
     {
+        // Reseta o estado econômico da Run (sala 1, inflação zerrada)
+        if (RunManager.instance != null)
+            RunManager.instance.StartNewRun();
+
+        if (currentPlayer != null)
+        {
+            InfusionManager im = currentPlayer.GetComponent<InfusionManager>();
+            if (im != null) im.ResetRunInflation();
+        }
+
         StartCoroutine(LoadLevelAsync("GameScene"));
     }
 

@@ -1,0 +1,34 @@
+﻿On branch Isaac
+Your branch is up to date with 'origin/Isaac'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   Assets/Scenes/EnemyTestScene.unity
+	modified:   Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Anton SDF.asset
+	modified:   Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Bangers SDF.asset
+	modified:   Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Electronic Highway Sign SDF.asset
+	modified:   Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/LiberationSans SDF - Metalic Green.mat
+	modified:   Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Oswald Bold SDF.asset
+	modified:   Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Roboto-Bold SDF.asset
+	modified:   Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset
+	modified:   ProjectSettings/Packages/com.unity.probuilder/Settings.json
+	modified:   ProjectSettings/ShaderGraphSettings.asset
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.git_status.txt
+	Assets/Assets/CrystalWatcher.meta
+	Assets/Assets/CrystalWatcher/
+	Assets/Items.meta
+	Assets/Items/
+	Assets/Scripts/Enemy/CrystalWatcher_AI.cs
+	Assets/Scripts/Enemy/CrystalWatcher_AI.cs.meta
+	Assets/Scripts/Inventory.meta
+	Assets/Scripts/Inventory/
+	Assets/Scripts/VFX/CrystalWatcherVFX.cs
+	Assets/Scripts/VFX/CrystalWatcherVFX.cs.meta
+	Assets/UI.meta
+	Assets/UI/
+
+no changes added to commit (use "git add" and/or "git commit -a")

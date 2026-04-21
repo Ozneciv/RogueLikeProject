@@ -169,7 +169,7 @@ GameObject:
   - component: {fileID: 6079377994338442067}
   - component: {fileID: 7654187917618967714}
   - component: {fileID: 2392645962963919257}
-  - component: {fileID: 7817421478143958547}
+  - component: {fileID: 9046059512224515771}
   m_Layer: 0
   m_Name: CrystalTuner_Root
   m_TagString: Untagged
@@ -254,7 +254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 100
+  maxHealth: 10
   healthBarSlider: {fileID: 8496773146762839671}
   normalColor: {r: 0.3763559, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -288,7 +288,7 @@ MonoBehaviour:
   fleeDistFromPlayer: 8
   flyHeight: 1
   heightCorrectionSpeed: 5
---- !u!114 &7817421478143958547
+--- !u!114 &9046059512224515771
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -300,21 +300,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
-  essencePrefab: {fileID: 0}
+  essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 6960160116621737899, guid: f2b303c344e8bec44ac2e86668ccfc40, type: 3}
-  itemDropChance: 0.35
+  globalDropChance: 0.3
   itemAmount: 1
-  lootPool:
-  - itemPrefab: {fileID: 6960160116621737899, guid: f2b303c344e8bec44ac2e86668ccfc40, type: 3}
-    weight: 60
-  - itemPrefab: {fileID: 4668230908208972289, guid: 01fc197010168f04cbccfea8434b9303, type: 3}
-    weight: 25
-  - itemPrefab: {fileID: 7233877436690196936, guid: eb7bf4562a5605a42afb639c96a142cc, type: 3}
-    weight: 10
-  - itemPrefab: {fileID: 2390304552081443037, guid: e4ab8955176a40e43a7d0372e8bdd276, type: 3}
-    weight: 5
+  lootPool: []
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3

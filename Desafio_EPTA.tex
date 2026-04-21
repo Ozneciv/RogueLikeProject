@@ -1,0 +1,279 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Template formal para se utilizar na equipe de propulsão e tecnologia aeroespacial (EPTA)
+% LaTeX Template
+% Version 1.0 (16/07/2019)
+%
+% This template was downloaded from:
+%
+% Original author:
+% Peter Wilson (herries.press@earthlink.net) with modifications by:
+% Vel (vel@latextemplates.com)
+% Vel (feliperibeiro.ufu@gmail.com)
+% Vel (mairaf_miranda@hotmail.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+% Conselhos para se lidar com este template:
+% - Evitar alterar códigos referentes à formatação, com exceção de se copiar e colar
+%          o código para exibição de imagens, tabelas e equações.
+% - Procurar sempre manter as imagens utilizadas no documento em uma pasta dedicada,
+%          de forma que, ao se referenciar a imagem, se referencie o caminho para 
+%          ela, como feito com a "imagem_de_missao".
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	Pacotes utilizados.(evitar mudar, se for necessária alguma mudança, comunicar gerencia)
+%----------------------------------------------------------------------------------------
+
+\documentclass[a4paper, 12pt,  oneside,a4paper,english,french,spanish,brazil]{book}     % Para folha A4, default 11pt tamanho
+\usepackage[utf8]{inputenc}                                               % Acentos
+\usepackage[brazil]{babel}                                                % Biblioteta para português
+\usepackage{amssymb}                                                      % Biblioteta para simbolos
+\usepackage{graphicx}                                                     % Biblioteta para figuras
+\usepackage{tikz}                                                         % Pacote gráfico
+\usepackage{amsmath}                                                      % Biblioteta para simbolos
+\usepackage[T1]{fontenc}                                                  % encode para acentos 
+\usepackage{fouriernc}                                                    % New Century Schoolbook font
+\usepackage{xcolor}                                                       % Controle de cores
+\usepackage[many]{tcolorbox}                                              % Controle de cores
+\usepackage{amsthm}                                                       % Suport matemático ams
+\usepackage{physics}                                                      % Suport em notações
+\usepackage{gensymb}                                                      % Suport em notação
+\usepackage{amsfonts}                                                     % Suport em fontes ams
+\usepackage[left=1.00cm, right=1.00cm, top=3cm, bottom=2.50cm]{geometry}  % Parametragem geométrica
+\usepackage{caption}                                                      % Legenda para imagens
+\usepackage{subcaption}                                                   % Legenda para figuras multiplas
+\usepackage{capt-of}                                                      % Suport com legendas
+\usepackage{float}                                                        % Suport para maiores floats  
+\usepackage[figurename=Fig.]{caption}                                     % Suporte 2 titulos legendas
+\usepackage{tabularx}                                                     % suporte com tabelas
+\usepackage{ragged2e}                                                     % suporte localização texto
+\usepackage{mathrsfs}                                                     % Fontes para equações
+\usepackage{makecell}                                                     % Formatação de tabelas
+\usepackage{textpos}                                                      % Facilita posicionamento de forma absoluta
+\usepackage[hyphens]{url}                                                 % Possibilita uso de hifen em links
+\usepackage[makeroom]{cancel}                                             % Desconsidera limites para retas
+\usepackage{empheq}                                                       % Possibilita emoldurar fórmulas
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,bookmarksopen=true, bookmarksnumbered, pdfencoding=auto]{hyperref}                                               % links clicaveis em PDF
+\usepackage{fancyhdr}                                                     % Ajuda na criação de footers e headers
+\usepackage{siunitx}                                                      % General suport
+\usepackage{enumitem}                                                     % Controle sobre layout
+\usepackage{cancel}                                                       % Riscar coisas
+\usepackage{bookmark}                                                     % Hiperlink em PDF
+\usepackage{versions}                                                     % Devido às verções
+\usepackage[pages=some,scale=1,angle=0,opacity=1]{background}             % Imagem de Background
+\usetikzlibrary{decorations.pathmorphing}                                 % Permite utilização direta fonte abaixo
+\usetikzlibrary{shapes.callouts,positioning}                              % Balões   
+\usetikzlibrary{shapes.geometric,arrows,shadows}                          % flechas
+\usepackage{frcursive}                                                    % Fonte cursiva
+\usepackage{multirow}                                                     % Suporte tabelas
+
+\setlength\parindent{3ex}                                                 % Parametragem geométrica
+\setlength{\parskip}{0.25em}                                              % Parametragem geométrica
+\setlength{\fboxsep}{10pt}                                                % Espaço ao redor dos quadros
+\definecolor{zelena}{RGB}{0,100,0}                                        % Define cores em estruturas
+\tcbuselibrary{theorems}                                                  % Cor nas caixas                           
+\tcbuselibrary{breakable}                                                 % Particioina coisas
+\pagestyle{fancy}  
+\fancyhead[RO , RE]{\footnotesize 
+	\begin{minipage}[b]{0.435\linewidth}\flushright\leftmark\end{minipage}}  % cabeçalho direito ímpar=título do capítulo
+\fancyhead[LO , LE]{\footnotesize 	
+	\begin{minipage}[b]{0.435\linewidth}\flushleft\rightmark\end{minipage}} % cabeçalho esquerdo = nome da seção
+\fancyfoot[CE,CO]{\thepage}                                               % Nota de pé
+\allowdisplaybreaks                                                       % Possibilita alguns comandos de controle
+\setcellgapes{5pt}                                                        % Formtatção de tabelas
+\definecolor{eggshell}{rgb}{0.94, 0.92, 0.84}                             % Definição de cor 
+
+
+
+\setlength\headheight{27.05003pt}
+\renewcommand\headrule{\hrulefill
+	\raisebox{10.1pt}[-10pt][-10pt]{\plogo}\hrulefill}                      % Headers
+\newcommand{\plogo}{\fbox{  $EPTA$   }}                                   % sigla equipe 
+\newcommand\BackImage[2][scale=1]{\BgThispage\backgroundsetup{
+		contents={\includegraphics[#1]{#2}}}}                             % cria a função background
+\newtcbox{\caixaeq}[1][]{nobeforeafter,math upper,tcbox raise base,enhanced,
+	colframe=black!50!black,colback=eggshell!40!white,arc=4pt,	
+	boxrule=1pt,drop fuzzy shadow,#1}                                     % Moldura para fórmulas
+
+\DeclareMathOperator{\tg}{tg}                                             % Declara construção mat. 
+\DeclareMathOperator{\cotg}{cotg}                                         % Declara construção mat.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frontmatter
+\date{}
+%\thispagestyle{empty}
+\date{\today}
+\sloppy
+
+%----------------------------------------------------------------------------------------
+%    INÍCIO DO DOCUMENTO    (a partir daqui pode editar sem grandes complicações)
+%----------------------------------------------------------------------------------------
+\begin{document} 
+
+%----------------------------------------------------------------------------------------
+%	PÁGINA DE TÍTULO
+%----------------------------------------------------------------------------------------
+
+ \begin{titlepage} % Suprime cabeçalhos e notas na base da folha.
+
+		\BackImage[scale = 1]{midia/epta_projeto_template}% imagem de background
+	
+	\begin{minipage}[h!]{0.37\textwidth}
+		.%\textcolor{white}{.}% Para ocupar espaço (some times nothing is everything)
+	\end{minipage}
+	\begin{minipage}[h!]{0.6\textwidth}
+	
+		\centering % centrliza os textos na página
+	
+		\scshape % Usa formatação pequena 
+	
+		%------------------------------------------------
+		%	Título
+		%------------------------------------------------
+	
+		\rule{\textwidth}{1.6pt}\vspace*{-\baselineskip}\vspace*{2pt} % Linha horizontal grossa
+		\rule{\textwidth}{0.4pt} % Linha horizontal fina
+	
+		\vspace{0.75\baselineskip} % espaço sobre o título
+	
+		{\LARGE Desafio Entertainment\\} % Título
+	
+		\vspace{0.75\baselineskip} % espaço abaixo do título
+	
+		\rule{\textwidth}{0.4pt}\vspace*{-\baselineskip}\vspace{3.2pt} % Linha horizontal fina
+		\rule{\textwidth}{1.6pt} % Linha horizontal grossa
+	
+		\vspace{2\baselineskip} %espaço em branco abaixo do título
+	
+		%------------------------------------------------
+		%	Subtítulo
+		%------------------------------------------------
+	
+		DESAFIO PROJETADO PARA FUTURA TRANSIÇÃO INTERNA DA EQUIPE DE PROPULSÃO E TECNOLOGIA AEROESPACIAL % descrição adicional (sub-título)
+	
+		\vspace*{3\baselineskip} % espaço abaixo do subtítulo
+	
+		%------------------------------------------------
+		%	Autores(s)
+		%------------------------------------------------
+	
+		Desenvolvido Por
+	
+		\vspace{0.5\baselineskip} % Espaço antes de autores
+	
+		{\scshape\Large Vicenzo De Marco Olivalves\\} % Lista de autores (ordem alfabética)
+	
+		\vspace{0.5\baselineskip} % Espaço após os autores
+
+
+            \vspace{0.5\baselineskip}
+            
+		\textit{Universidade Federal de \\ Uberlândia} % Entidades envolvidas
+	
+		\vspace{14.8\baselineskip} % Espaço (diminuir se houver mais autores)
+	
+		{\large Equipe de Propulsão e Tecnologia Aeroespacial} % equipe
+		
+		\vspace{0.3\baselineskip} % Espaço embaixo da logo
+		
+		Entertainment  % Núcleo análogo
+		
+		\vspace{0.3\baselineskip} % Espaço embaixo da logo
+		
+		\today % Data de compilação
+		
+	\end{minipage}
+
+\end{titlepage}
+
+%----------------------------------------------------------------------------------------
+%	Desenvolvimento...
+%----------------------------------------------------------------------------------------
+\mainmatter{}
+ % Índice
+\thispagestyle{empty}    % Sem numeração na página do índice
+           % Lista de figuras 
+\thispagestyle{empty}     % Sem numeração na página da lista de imagens
+%  <------------  Esse comando cria um capítulo
+
+\newpage
+
+\setcounter{page}{1}
+
+\section*{Desafio}
+
+O desafio de transição interna para os futuros integrantes da área do Entertainment da Equipe de Propulsão e Tecnologia Aeroespacial (EPTA) é apresentado neste documento.
+
+Esse formato avaliativo foi moldado de acordo com as competências esperadas dos membros e as necessidades reais da área em questão, almejando sempre a criação estruturada de novos projetos para o ano de 2026.
+
+\section*{Primeira Parte: Expandindo o Bestiário}
+
+Neste quesito, o participante deve idealizar dois novos inimigos temáticos, pertencentes ao Bioma Cristalizado do jogo. 
+
+O primeiro inimigo deve atuar na classe de "Suporte (Debuffer)". Ele não deve possuir uma função de hostilidade direta ou causar dano letal imediato ao jogador, mas sim possuir a habilidade tática de roubar, suprimir ou remover temporariamente um dos \textit{upgrades} atrelados à infusão atual do personagem. 
+
+O segundo inimigo deve ser caracterizado como um \textit{mob} "menor" --- embora não obrigatoriamente seja de pequeno porte visual. Em contrapartida, ele exige mecânicas e padrões agressivos mais simples, atuando de maneira que justifique seu aparecimento orgânico logo nas fases iniciais de exploração.
+
+O objetivo deste desafio é exercitar a apresentação de mecânicas inovadoras que consolidam uma identidade balanceada para o jogo. Pede-se veementemente rigoroso foco às regras, interações e concepções já estabelecidos na base do projeto original, não poupando criatividade narrativa para afastar o gameplay de conceitos que seriam comumente repetitivos. 
+
+Deve ser definida uma identidade visual coesa para ambos os inimigos. São cruciais: a apresentação de sketches (ou descrições textuais ricas e detalhadas) e uma paleta de cores consistente de forma que as criaturas pareçam orgânicas na Lore (a história mundial do jogo).
+
+\section*{Segunda Parte: A Sinergia do ''Artesanato" Macabro}
+
+A principal mecânica de progressão e sobrevivência adotada por nossa estrutura de Game Design subverte o tradicional acúmulo de Experiência (XP). Em nosso contexto, o protagonista fortalece o seu arsenal acoplando pedaços corporais dos inimigos caídos à sua arma central de mineração através da conversão de uma energia orgânica denominada \textit{Essência da Vida}.
+
+Isto posto, a partir dos dois inimigos recém-criados na Primeira Parte, pede-se que o participante desenvolva \textbf{três (3) ''Partes do Corpo'' (Upgrades/Loot)} fornecidas como recompensa (drops) ao se abater essas criaturas, destinadas a se integrarem sem conflitos matemáticos ao sistema:
+
+\begin{itemize}
+    \item \textbf{1 Parte de Tier 1 (Natureza Comum):} Orientada a modificações numéricas leves e utilitárias no jogador.
+    \item \textbf{1 Parte de Tier 3 (Natureza Rara):} Abordando elevações robustas de atributos numéricos aliadas a algum tipo de comportamento ou \textit{status mod} exclusivo. 
+    \item \textbf{1 Parte de Tier 4 (Natureza Lendária):} Que, de maneira invasiva nas regras fundamentais, altera de forma ativa a conduta do jogador e o desenrolar das dinâmicas.
+\end{itemize}
+
+Para que seja aprovado com máxima eficácia, ofereça também os seguintes itens narrativos: um batismo adequado condizente com a biologia das criaturas recém-criadas para cada um, origens plausíveis em sua concepção morfológica e, é claro, a especificação das estatísticas exatas modificadas. 
+
+\textbf{Restrição de Game Design:} O item de Tier Lendário (Tier 4) categoricamente é proibido de possuir qualquer tipo de relacionamento com ganhos simples de dano por ataque. Ele precisa influenciar de forma inusitada e sinérgica as mecânicas de movimento evasivo do astronauta (como a esquiva ou um "Dash"), criando novos patamares de gameplay imprevisível, exigindo do candidato criatividade em sua documentação analítica para atestar o quão divertido e inovador isso resultaria na percepção do Operador/Jogador.
+
+\section*{Terceira Parte: Quebrando a Rotina}
+
+Dentre a lista atualizada dos defensores do sistema ecológico base (o Bestiário), há o **Golem** (com o custo gerencial local categorizado como um oponente robusto tipo Tanque). O seu papel primário é ser uma ameaça letal em ataques a curtíssima distância (\textit{Melee}) e de reações propositalmente cadenciadas e lentas.
+
+Em protótipos de combates gerados aleatoriamente em grandes arenas desobstruídas, observou-se uma grave distorção e comodismo comportamental — a falha na dinâmica. O jogador encontrou grande simplicidade e tédio tático ao combater fugindo de costas repetidamente pelas laterais do ambiente e rotacionando a sala aos poucos sem sofrer riscos críveis.
+
+Uma resolução conservadora sugeriria simples mutações no comportamento central, como aumentar passivamente a sua velocidade de locomoção direcional ou anexar ataques remotos por projéteis lineares. Todavia, isso desvirtuaria a natureza intrínseca do oponente estipulada no Game Design inicial.
+
+O participante deve atuar com autoridade resolutiva para recusar essas vertentes conservadoras e implementar soluções inventivas que invalidem esta passividade sistemática de fuga paralela do jogador. Exige-se uma dinâmica que instaure urgência sem ceder mobilidade anormal ao nosso adversário massivo e pesado — preservando uma experiência assustadora. Pede-se ampla descrição e a justificativa técnica das dinâmicas propostas deste obstáculo para o gameplay geral da ''Arena''.
+
+\section*{Bônus: Identidade Nominal}
+
+O projeto atualmente possui um alicerce narrativo estabelecido: trata-se de um universo mecânico e biológico hostil centrado na sobrevivência de um astronauta e o seu cão cibernético (Eptinho) em um exoplaneta alienígena. Contudo, a obra ainda carece de uma de suas características fundamentais: um Título Oficial.
+
+Como diretiva complementar, pede-se que o participante idealize sugestões para a nomenclatura formal do jogo. Procura-se um batismo que encapsule e transmita ao público alvo as temáticas de sobrevivência de forma sintética, profunda e memorável. Será muito valorizada a justificativa do nome escolhido bem como seu impacto interpretativo no mercado focal.
+
+\newpage
+
+\setcounter{page}{2}
+
+\begin{center}
+\fbox{EPTA}
+\end{center}
+
+\vspace{0.5cm}
+
+\section*{Observação}
+
+Tem-se conhecimento de que esse é um desafio de cunho profundo, constituído por um alto volume de requisitos mentais a serem geridos e resolvidos em diferentes âmbitos na engenharia dos sistemas de divertimentos e que isso toma considerável tempo; posto isto, compreendem-se perfeitamente eventuais lacunas no escopo submetido. A análise principal do membro dar-se-á justamente pela perspicácia nas abordagens fragmentadas em sua composição macro; portanto, focar intensivamente nas qualidades intelectuais e na profundidade dos trechos em que houver investimento deliberado resultará em uma ótima avaliação qualitativa.
+
+Ressalta-se fundamentalmente o pressuposto norteador do teste focado inteiramente na idealização imaginativa da jogabilidade e do ecossistema estrutural; desta ótica o perfil humano destacado como preferencial a nossa vertente EPTA Entertainment são as visões singulares pautadas na inconfundível capacidade técnica lúcida e criacional.
+
+Qualquer dúvida cabível em relação aos preceitos listados, não se hesite em firmar diálogos proativos requisitando suportes operacionais ou brainstormings, reportando diretamente ao gerente atual da área:
+
+Vicenzo De Marco Olivalves
+
+(34)991857053
+
+\end{document}

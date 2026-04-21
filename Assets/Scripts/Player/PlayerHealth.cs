@@ -88,6 +88,11 @@ public class PlayerHealth : MonoBehaviour
 
     IEnumerator PlaySpawnAnimation()
     {
+        // Animação de levantar desabilitada temporariamente a pedido do usuário
+        UnlockPlayer();
+        yield break;
+
+#if false
         if (playerMovement != null) playerMovement.enabled = false;
         if (playerAttack != null) playerAttack.enabled = false;
         
@@ -138,6 +143,7 @@ public class PlayerHealth : MonoBehaviour
         
         // Destrava o jogador
         UnlockPlayer();
+#endif
     }
 
     public void UnlockPlayer()
@@ -293,6 +299,42 @@ public class PlayerHealth : MonoBehaviour
     }
     
     public void SetCurrentSpawnPoint(Transform newSpawnPoint) { }
+
+    // ========== UPGRADES (INFUSÃO DE ATRIBUTOS) ==========
+    
+    /// <summary>
+    /// Modifica atributos de Vida e Armadura
+    /// </summary>
+    public void ModifyAttribute(string attributeName, float value, bool isMultiplier = false)
+    {
+        switch (attributeName.ToLower())
+        {
+            case "maxhealth":
+            case "health":
+                int oldHealth = maxHealth;
+                maxHealth = Mathf.Max(1, isMultiplier ? Mathf.RoundToInt(maxHealth * value) : maxHealth + Mathf.RoundToInt(value));
+                
+                // Cura o player com o novo bônus e garante que currentHealth respeita o novo limite
+                currentHealth = Mathf.Clamp(currentHealth + (maxHealth - oldHealth), 1, maxHealth);
+                UpdateHealthBar();
+                Debug.Log($"[PLAYER HEALTH] Vida Maxima aumentada: {oldHealth} -> {maxHealth}");
+                break;
+
+            case "maxarmor":
+            case "armor":
+                int oldArmor = maxArmor;
+                maxArmor = Mathf.Max(0, isMultiplier ? Mathf.RoundToInt(maxArmor * value) : maxArmor + Mathf.RoundToInt(value));
+                
+                currentArmor = Mathf.Clamp(currentArmor + (maxArmor - oldArmor), 0, maxArmor);
+                UpdateArmorBar();
+                Debug.Log($"[PLAYER HEALTH] Armadura Maxima aumentada: {oldArmor} -> {maxArmor}");
+                break;
+
+            default:
+                Debug.LogWarning($"PlayerHealth: Atributo '{attributeName}' não encontrado!");
+                break;
+        }
+    }
 
     // ========== SISTEMA DE STUN ==========
     

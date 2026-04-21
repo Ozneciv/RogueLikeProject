@@ -86,8 +86,14 @@ public class EssencePickup : MonoBehaviour
 
     void CollectEssence(GameObject player)
     {
-        // Tenta encontrar o componente de essência do player
-        PlayerEssence playerEssence = player.GetComponent<PlayerEssence>();
+        // Tenta encontrar o componente de essência do player no objeto e nos pais
+        PlayerEssence playerEssence = player.GetComponentInParent<PlayerEssence>();
+        
+        // Se ainda não achar (ex: o script está num objeto irmão do colisor), procura globalmente
+        if (playerEssence == null)
+        {
+            playerEssence = FindObjectOfType<PlayerEssence>();
+        }
         
         if (playerEssence != null)
         {
