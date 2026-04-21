@@ -1,10 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// Controlador Visual da Interface de Upgrades (Infusão e Reciclagem).
-/// Você desenhará a UI no Editor do Unity e arrastará os botões para estas "garagens" (variáveis).
+/// Adicionada automação visual Premium sem quebrar o Setup da Inspector.
 /// </summary>
 public class InfusionUI : MonoBehaviour
 {
@@ -20,28 +22,29 @@ public class InfusionUI : MonoBehaviour
     public Image itemIcon;
     public TextMeshProUGUI itemTitle;
     public TextMeshProUGUI itemRarity;
-    public TextMeshProUGUI itemStatsDescription; // Onde os Buffs serão escritos (Ex: +20% Dano)
-    public TextMeshProUGUI recycleValueText;     // Onde escreveremos (Ex: +50 Essências)
+    public TextMeshProUGUI itemStatsDescription;
+    public TextMeshProUGUI recycleValueText;
     
     [Header("Botões Interativos")]
     public Button btnInfundir;
     public Button btnReciclar;
     public Button btnFechar;
 
-    // A memória mecânica de qual item o jogador "clicou" por último
     private string selectedItemId = "";
+    private Coroutine openAnimCoroutine;
 
     void Start()
     {
-        // Garante que o painel escute os botões
         if (btnFechar != null) btnFechar.onClick.AddListener(ClosePanel);
         if (btnInfundir != null) btnInfundir.onClick.AddListener(OnBtnInfundirClicked);
         if (btnReciclar != null) btnReciclar.onClick.AddListener(OnBtnReciclarClicked);
+
+        // Prepara elementos para animações dinâmicas
+        SetupPremiumButton(btnInfundir);
+        SetupPremiumButton(btnReciclar);
+        SetupPremiumButton(btnFechar, 1.2f);
     }
 
-    /// <summary>
-    /// Abre o Painel e garante que ele flutue por cima da tela de inventário, além de destravar o mouse.
-    /// </summary>
     public void OpenPanel()
     {
         // Reconexão de Segurança: Se a travessia do portal apagou o fio do Player, nós ligamos de novo!
@@ -54,8 +57,6 @@ public class InfusionUI : MonoBehaviour
         {
             painelUpgrades.SetActive(true);
             
-            // O Inventário roda num canvas que gerou order 100 via código, ele engole tudo e ignora SetAsLastSibling. 
-            // Solução Absoluta: Criar um Canvas na tela roxa e jogar Order pra 999.
             Canvas c = painelUpgrades.GetComponent<Canvas>();
             if (c == null) 
             {
@@ -63,14 +64,41 @@ public class InfusionUI : MonoBehaviour
                 painelUpgrades.AddComponent<GraphicRaycaster>();
             }
             c.overrideSorting = true;
-            c.sortingOrder = 999; // SEMPRE na frente de todas as UIs
+            c.sortingOrder = 999; 
+
+            // Animação Foda de Abertura
+            if(openAnimCoroutine != null) StopCoroutine(openAnimCoroutine);
+            openAnimCoroutine = StartCoroutine(AnimatePanelOpen());
         }
 
-        // Destrava o mouse
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
         ClearSelection();
+    }
+
+    private IEnumerator AnimatePanelOpen()
+    {
+        CanvasGroup cg = painelUpgrades.GetComponent<CanvasGroup>();
+        if (cg == null) cg = painelUpgrades.AddComponent<CanvasGroup>();
+
+        float duration = 0.35f;
+        float time = 0f;
+        
+        RectTransform rt = painelUpgrades.GetComponent<RectTransform>();
+        
+        while (time < duration)
+        {
+            time += Time.unscaledDeltaTime;
+            float t = time / duration;
+            // Efeito Elástico de Curva (Out Back)
+            float easeT = 1f - Mathf.Pow(1f - t, 3f); 
+            
+            cg.alpha = Mathf.Lerp(0f, 1f, easeT);
+            rt.localScale = Vector3.Lerp(new Vector3(0.8f, 0.8f, 0.8f), Vector3.one, easeT);
+            
+            yield return null;
+        }
     }
 
     public void ClosePanel()
@@ -78,126 +106,202 @@ public class InfusionUI : MonoBehaviour
         if (painelUpgrades != null) painelUpgrades.SetActive(false);
     }
 
-    /// <summary>
-    /// Chama esta função passando a "ID" do item (ex: spider_fang) para exibir os dados no centro.
-    /// (Mais pra frente podemos ligar isso nos quadrados esquerdos da interface)
-    /// </summary>
     public void SelectItem(string itemId)
     {
         selectedItemId = itemId;
         
-        // Puxa as infos do item no banco de dados!
         ItemData data = ItemDatabase.Instance.GetItemData(itemId);
         if (data == null) return;
 
-        // Atualiza fotos e cores
-        if (itemIcon != null) itemIcon.sprite = data.icon;
-        if (itemTitle != null) itemTitle.text = data.itemName;
+        if (itemIcon != null) 
+        {
+            itemIcon.sprite = data.icon;
+            // Efeito sutil ao clicar num card
+            StartCoroutine(PulseEffect(itemIcon.transform, 1.3f, 0.2f));
+        }
+
+        if (itemTitle != null) itemTitle.text = $"<spacing=2>{data.itemName.ToUpper()}</spacing>";
+        
         if (itemRarity != null)
         {
-            itemRarity.text = data.GetTierName();
+            itemRarity.text = $"— {data.GetTierName().ToUpper()} —";
             itemRarity.color = data.GetTierColor();
         }
 
         if (recycleValueText != null)
-            recycleValueText.text = $"+{data.recycleEssenceValue} Essência";
+            recycleValueText.text = $"<color=#FFD700>+{data.recycleEssenceValue}</color> <size=60%>ESSÊNCIAS</size>";
 
-        // Monta o texto dos Buffs matemáticos que nós criamos!
         if (itemStatsDescription != null)
         {
             if (data.itemAttributes.Count > 0)
             {
-                string desc = "CONCEDE (Permanente):\n";
+                string desc = "<color=#9999BB>CONCEDE PERMANENTEMENTE</color>\n<size=50%>\n</size>";
                 foreach(var buff in data.itemAttributes)
                 {
                     string signal = buff.value > 0 ? "+" : "";
-                    string tipoMultiplier = buff.isMultiplier ? "x" : "";
+                    string tipoMultiplier = buff.isMultiplier ? "%" : "";
+                    float displayVal = buff.isMultiplier ? (buff.value * 100f) : buff.value;
                     
-                    // Vai aparecer ex: "+1,2x BaseDamageMultiplier"
-                    desc += $"\n<color=green>{signal}{buff.value}{tipoMultiplier}</color> {buff.attributeType}";
+                    // Formatação rica
+                    desc += $"<color=#00FFAA>• {signal}{displayVal}{tipoMultiplier}</color>  <color=#DDDDDD>{FormatterName(buff.attributeType.ToString())}</color>\n";
                 }
                 itemStatsDescription.text = desc;
             }
             else
             {
-                itemStatsDescription.text = "Este item tem valor apenas comercial.\nNão possui atributos mágicos de infusão.";
+                itemStatsDescription.text = "\n<color=#777777><i>Este item é puramente material.\nNão possui energia rúnica extraível.</i></color>";
             }
         }
         
-        // Destrava os botões para o jogador poder clicar neles
         if (btnInfundir != null) 
         {
             btnInfundir.interactable = true;
-            
-            // Procura sozinho o texto que está dentro do Botão e injeta o custo nele!
+            int realCost = infusionManager != null ? infusionManager.GetInflatedCost(data) : data.infusionEssenceCost;
+
             TextMeshProUGUI btnTxt = btnInfundir.GetComponentInChildren<TextMeshProUGUI>();
-            if (btnTxt != null) 
-                btnTxt.text = $"INFUNDIR \n<color=#E28CFF><size=75%>-{data.infusionEssenceCost} Essências</size></color>";
+            if (btnTxt != null)
+            {
+                bool isInflated = realCost > data.infusionEssenceCost;
+                string inflaTag = isInflated 
+                    ? $" <size=50%><color=#FF6666>({data.infusionEssenceCost} base)</color></size>" 
+                    : "";
+                btnTxt.text = $"<b>INFUNDIR</b>\n<color=#E28CFF><size=75%>-{realCost} Essências</size></color>{inflaTag}";
+            }
+
+            UpdateButtonVisuals(btnInfundir);
         }
             
         if (btnReciclar != null) 
         {
             btnReciclar.interactable = true;
-
-            // Procura sozinho o texto do Reciclar e injeta o lucro!
             TextMeshProUGUI recTxt = btnReciclar.GetComponentInChildren<TextMeshProUGUI>();
             if (recTxt != null) 
-                recTxt.text = $"RECICLAR \n<color=#E28CFF><size=75%>+{data.recycleEssenceValue} Essências</size></color>";
+                recTxt.text = $"<b>RECICLAR</b>\n<color=#FFD700><size=75%>+{data.recycleEssenceValue} Essências</size></color>";
+            
+            UpdateButtonVisuals(btnReciclar);
         }
     }
 
-    /// <summary>
-    /// Reseta a tela central quando recicla/infunde ou abre a tela.
-    /// </summary>
+    private string FormatterName(string attribute)
+    {
+         // Exemplo de tradutório rápido
+         if(attribute.ToLower().Contains("health")) return "Vida Máxima";
+         if(attribute.ToLower().Contains("damage")) return "Poder de Dano";
+         if(attribute.ToLower().Contains("speed")) return "Velocidade Mágica";
+         return attribute;
+    }
+
     private void ClearSelection()
     {
         selectedItemId = "";
         
         if (itemIcon != null) itemIcon.sprite = null;
-        if (itemTitle != null) itemTitle.text = "Selecione um Item";
+        if (itemTitle != null) itemTitle.text = "<color=#666688>ANALISADOR</color>";
         if (itemRarity != null) itemRarity.text = "";
         
-        // MENSAGEM PADRÃO DO PAINEL VAZIO!
-        // É exatamente aqui que você pode alterar o texto que aparece quando você 
-        // recicla/infunde um item ou quando abre a tela pela primeira vez:
         if (itemStatsDescription != null) 
-            itemStatsDescription.text = "<b><size=120%>INFUNDIR E RECICLAR</size></b>\n\nClique em um item do inventário para começar.";
+            itemStatsDescription.text = "\n\n<color=#8888AA>ESCOLHA UMA RELÍQUIA PARA CANALIZAR SEUS PODERES OU DESTRUÍ-LA.</color>";
         
         if (recycleValueText != null) recycleValueText.text = "";
 
-        // Trava os botões por segurança
-        if (btnInfundir != null) btnInfundir.interactable = false;
-        if (btnReciclar != null) btnReciclar.interactable = false;
+        if (btnInfundir != null) { btnInfundir.interactable = false; UpdateButtonVisuals(btnInfundir); }
+        if (btnReciclar != null) { btnReciclar.interactable = false; UpdateButtonVisuals(btnReciclar); }
     }
-
-    // ==========================================
-    // REAÇÃO DOS BOTÕES
-    // ==========================================
 
     private void OnBtnInfundirClicked()
     {
-        // Impossivel infundir o vento
         if (string.IsNullOrEmpty(selectedItemId)) return;
-
-        // Grita pro motor rodar a matemática lá atrás
         bool sucesso = infusionManager.InfuseItem(selectedItemId);
         if (sucesso)
         {
+            StartCoroutine(ScreenFlash(new Color(0.6f, 0.2f, 1f, 0.4f))); // Flash Roxo
             ClearSelection(); 
-            // DICA: Tocar Partícula de luz brilhante na tela aqui?
         }
     }
 
     private void OnBtnReciclarClicked()
     {
         if (string.IsNullOrEmpty(selectedItemId)) return;
-
-        // Grita pro motor dar dinheiro e jogar o item no lixo
         bool sucesso = infusionManager.RecycleItem(selectedItemId);
         if (sucesso)
         {
+            StartCoroutine(ScreenFlash(new Color(1f, 0.8f, 0.2f, 0.4f))); // Flash Dourado
             ClearSelection(); 
-            // DICA: Tocar som de vidro quebrando aqui?
         }
+    }
+
+    // ==========================================
+    // SISTEMA DE BOTÕES PREMIUM E ANIMAÇÕES
+    // ==========================================
+
+    private void SetupPremiumButton(Button btn, float hoverScale = 1.05f)
+    {
+        if(btn == null) return;
+        
+        EventTrigger trigger = btn.gameObject.AddComponent<EventTrigger>();
+        
+        EventTrigger.Entry entryEnter = new EventTrigger.Entry();
+        entryEnter.eventID = EventTriggerType.PointerEnter;
+        entryEnter.callback.AddListener((data) => { if(btn.interactable) StartCoroutine(LerpScale(btn.transform, hoverScale)); });
+        trigger.triggers.Add(entryEnter);
+
+        EventTrigger.Entry entryExit = new EventTrigger.Entry();
+        entryExit.eventID = EventTriggerType.PointerExit;
+        entryExit.callback.AddListener((data) => { StartCoroutine(LerpScale(btn.transform, 1.0f)); });
+        trigger.triggers.Add(entryExit);
+    }
+
+    private void UpdateButtonVisuals(Button btn)
+    {
+        CanvasGroup cg = btn.GetComponent<CanvasGroup>();
+        if(cg == null) cg = btn.gameObject.AddComponent<CanvasGroup>();
+        cg.alpha = btn.interactable ? 1f : 0.4f;
+    }
+
+    private IEnumerator LerpScale(Transform t, float targetScale)
+    {
+        Vector3 target = new Vector3(targetScale, targetScale, 1f);
+        float speed = 10f;
+        while(Vector3.Distance(t.localScale, target) > 0.01f)
+        {
+            t.localScale = Vector3.Lerp(t.localScale, target, Time.unscaledDeltaTime * speed);
+            yield return null;
+        }
+        t.localScale = target;
+    }
+    
+    private IEnumerator PulseEffect(Transform t, float peakScale, float duration)
+    {
+        Vector3 orig = t.localScale;
+        yield return LerpScale(t, peakScale);
+        yield return LerpScale(t, orig.x); // volta pro base
+    }
+
+    private IEnumerator ScreenFlash(Color flashColor)
+    {
+        // Cria um overlay rápido
+        GameObject flashObj = new GameObject("FlashOverlay");
+        flashObj.transform.SetParent(painelUpgrades.transform, false);
+        flashObj.transform.SetAsLastSibling();
+        
+        Image img = flashObj.AddComponent<Image>();
+        img.color = flashColor;
+        
+        RectTransform rt = img.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMax = Vector2.zero;
+        rt.offsetMin = Vector2.zero;
+
+        float elapsed = 0f;
+        float dur = 0.4f;
+        while(elapsed < dur)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float alpha = Mathf.Lerp(flashColor.a, 0f, elapsed / dur);
+            img.color = new Color(flashColor.r, flashColor.g, flashColor.b, alpha);
+            yield return null;
+        }
+        Destroy(flashObj);
     }
 }

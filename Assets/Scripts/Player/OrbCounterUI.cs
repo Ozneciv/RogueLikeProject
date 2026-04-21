@@ -79,6 +79,21 @@ public class OrbCounterUI : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        // Tenta achar o PlayerEssence se ele for gerado dinamicamente depois do Start
+        if (playerEssence == null)
+        {
+            playerEssence = FindObjectOfType<PlayerEssence>();
+            if (playerEssence != null)
+            {
+                playerEssence.onEssenceChanged.AddListener(OnEssenceChanged);
+                UpdateCounter(playerEssence.currentEssence);
+                Debug.Log("[ORB COUNTER] Conectado ao PlayerEssence (no Update)!");
+            }
+        }
+    }
+
     /// <summary>
     /// Cria a UI no estilo da HUD existente (similar às barras de vida/armadura)
     /// </summary>

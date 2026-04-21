@@ -13,14 +13,17 @@ public class LevelGenerator : MonoBehaviour
     [Header("Prefabs Especiais")]
     public GameObject merchantRoomPrefab;
     public GameObject merchantPrefab;
-    // --- MUDANÇA 1: A VARIÁVEL QUE FALTAVA ---
     [Tooltip("O prefab da sala final com a porta de 'próximo nível'.")]
-    public GameObject exitRoomPrefab; 
+    public GameObject exitRoomPrefab;
+    [Tooltip("Prefab pequeno para selar becos sem saída (ex: parede/beco curto). Evita que corredores terminem no vazio.")]
+    public GameObject deadEndPrefab;
 
     [Header("Regras de Geração")]
     public int maxMainRooms = 10;
-    public int roomLimitPerType = 2;
+    [Tooltip("Quantas vezes cada prefab de sala principal pode aparecer por run. Aumente se tiver poucos prefabs cadastrados (ex: 2 prefabs → precisa de pelo menos 5 aqui para chegar em maxMainRooms=10).")]
+    public int roomLimitPerType = 5;
     [Range(0, 1)]
+    [Tooltip("Chance de spawnar o mercador em becos sem saída. Se nenhum sortear, o último beco sem saída garante o spawn.")]
     public float merchantRoomChance = 0.25f;
 
     [Header("Configurações")]
@@ -32,6 +35,9 @@ public class LevelGenerator : MonoBehaviour
     private bool merchantRoomSpawned = false;
     // --- MUDANÇA 2: Trava para a Saída ---
     private bool exitRoomSpawned = false;
+
+    // --- ECONOMIA: rastreia sequência de salas para inicializar RoomControllers ---
+    private int roomSequenceCounter = 0;
 
     // Classe auxiliar (sem mudanças)
     private class Socket
@@ -50,7 +56,8 @@ public class LevelGenerator : MonoBehaviour
         roomCounts.Clear();
         openSockets.Clear();
         merchantRoomSpawned = false;
-        exitRoomSpawned = false; // Reseta a trava da saída
+        exitRoomSpawned = false;
+        roomSequenceCounter = 0;
 
         GameObject startRoom = Instantiate(startRoomPrefab, Vector3.zero, Quaternion.identity);
         int currentRoomCount = 1;
@@ -98,9 +105,15 @@ public class LevelGenerator : MonoBehaviour
                 AlignRooms(transitionSaida, mainEntrada);
 
                 roomCount++;
+                roomSequenceCounter++;
                 string roomName = roomPrefabToSpawn.name;
                 if (!roomCounts.ContainsKey(roomName)) roomCounts[roomName] = 0;
                 roomCounts[roomName]++;
+
+                // --- ECONOMIA: Inicializa o RoomController com o índice da sala ---
+                RoomController roomCtrl = newMainRoom.GetComponentInChildren<RoomController>();
+                if (roomCtrl != null)
+                    roomCtrl.Initialize(roomSequenceCounter);
 
                 AddSocketsToFrontier(newMainRoom.transform, currentSocket.Direction, false);
             }
@@ -131,16 +144,25 @@ public class LevelGenerator : MonoBehaviour
             exitRoomSpawned = true;
         }
 
-        // Agora, todos os soquetes restantes são becos sem saída que podem ter o mercador
-        foreach (Socket socket in openSockets)
+        // Todos os soquetes restantes são becos sem saída.
+        // Primeiro tenta sortear o mercador. Caso o sorteio falhe em todos,
+        // garante o spawn no ÚLTIMO beco sem saída (fallback 100%).
+        List<Socket> deadEnds = new List<Socket>(openSockets);
+        for (int i = 0; i < deadEnds.Count; i++)
         {
-            if (!merchantRoomSpawned && Random.value < merchantRoomChance)
+            Socket socket = deadEnds[i];
+            bool isLast = (i == deadEnds.Count - 1);
+
+            if (!merchantRoomSpawned && (Random.value < merchantRoomChance || isLast))
             {
                 SpawnMerchantRoom(socket.SocketTransform);
                 merchantRoomSpawned = true;
             }
-            // (Se você quiser fechar os outros becos sem saída com um corredor + parede,
-            // adicionaríamos a lógica aqui)
+            else
+            {
+                // Sela o beco com a sala Dead End (se definida); do contrário só loga aviso.
+                SealDeadEnd(socket.SocketTransform);
+            }
         }
         
         Debug.Log("Geração de Nível Completa (com Salas Especiais)!");
@@ -247,8 +269,7 @@ public class LevelGenerator : MonoBehaviour
         Debug.Log("Sala do Mercador criada!");
     }
 
-    // --- MUDANÇA 7: NOVA FUNÇÃO PARA A SALA DE SAÍDA ---
-    // (Exatamente igual à do Mercador, mas usa o prefab de saída)
+    // Sala de Saída — conecta ao corredor de transição pelo Entrance
     void SpawnExitRoom(Transform corridorExitSocket)
     {
         if (exitRoomPrefab == null)
@@ -268,6 +289,29 @@ public class LevelGenerator : MonoBehaviour
         
         AlignRooms(corridorExitSocket, entrada); 
         Debug.Log("Sala de Saída criada!");
+    }
+
+    // Sela um beco sem saída com o prefab Dead End (evita corredores no vazio)
+    void SealDeadEnd(Transform corridorExitSocket)
+    {
+        if (deadEndPrefab == null)
+        {
+            Debug.LogWarning("[LevelGenerator] Dead End não selado: campo 'deadEndPrefab' não definido no Inspector.");
+            return;
+        }
+
+        GameObject deadEnd = Instantiate(deadEndPrefab);
+        Transform entrada = FindSocket(deadEnd.transform, "Entrance");
+        if (entrada == null)
+        {
+            // Fallback: alinha pela própria raiz
+            deadEnd.transform.position = corridorExitSocket.position;
+            deadEnd.transform.rotation = Quaternion.LookRotation(-corridorExitSocket.forward);
+            return;
+        }
+
+        AlignRooms(corridorExitSocket, entrada);
+        Debug.Log("Dead End selado.");
     }
     
     // FindMatchingSocket (sem mudanças)
