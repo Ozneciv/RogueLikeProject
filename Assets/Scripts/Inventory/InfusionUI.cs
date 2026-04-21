@@ -47,6 +47,12 @@ public class InfusionUI : MonoBehaviour
 
     public void OpenPanel()
     {
+        // Reconexão de Segurança: Se a travessia do portal apagou o fio do Player, nós ligamos de novo!
+        if (infusionManager == null)
+        {
+            infusionManager = FindFirstObjectByType<InfusionManager>();
+        }
+
         if (painelUpgrades != null) 
         {
             painelUpgrades.SetActive(true);
