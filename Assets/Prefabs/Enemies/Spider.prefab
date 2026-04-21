@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 1522120915187402137}
   - component: {fileID: 1814543006137848}
   - component: {fileID: 5632678571611438161}
+  - component: {fileID: 4576793942197996138}
   m_Layer: 0
   m_Name: Spider
   m_TagString: Untagged
@@ -208,6 +209,36 @@ MonoBehaviour:
   icon: {fileID: 0}
   descricao: "Descri\xE7\xE3o da spider teste"
   foiEncontrado: 0
+--- !u!114 &4576793942197996138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8934992465927708091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
+  essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
+  essenceAmount: 10
+  essenceVariation: 3
+  characteristicItemPrefab: {fileID: 1495922075848748667, guid: 417128186985204448aaa5560b90319f, type: 3}
+  itemDropChance: 0.35
+  itemAmount: 1
+  lootPool:
+  - itemPrefab: {fileID: 1495922075848748667, guid: 417128186985204448aaa5560b90319f, type: 3}
+    weight: 60
+  - itemPrefab: {fileID: 7791058586759529343, guid: e91e2a132d9169e4c9ec01b17cdbddeb, type: 3}
+    weight: 25
+  - itemPrefab: {fileID: 2535762749556102514, guid: 1854f31ac5b398647a13cd8764eecc30, type: 3}
+    weight: 10
+  - itemPrefab: {fileID: 6487865155247758211, guid: 39d888ac082214746bff22ec7715abe4, type: 3}
+    weight: 5
+  spawnHeight: 0.5
+  spawnRadius: 0.5
+  launchForce: 3
 --- !u!1001 &4100340397033638889
 PrefabInstance:
   m_ObjectHideFlags: 0
