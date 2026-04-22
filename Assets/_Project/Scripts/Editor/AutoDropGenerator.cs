@@ -231,8 +231,7 @@ public class AutoDropGenerator : Editor
                 });
             }
 
-            enemyDrops.characteristicItemPrefab = selectedItemPrefab;
-            enemyDrops.itemDropChance = 0.35f;
+            enemyDrops.globalDropChance = 0.35f;
             enemyDrops.itemAmount = 1;
 
             // Salva o prefab
