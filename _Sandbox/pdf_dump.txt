@@ -1,0 +1,139 @@
+MELHORIAS DOS ITENS  
+ 
+ 
+ 
+1. TIER 1  
+ 
+1.1. GOLEM   
+Armadura M áxima  
+1.2. ARANHA  
+Velocidade de Ataque . 
+1.3. GOBLIN  
+Velocidade de Movimento  
+1.4. CRYSTAL TUNNER  
+Chance de crítico  
+1.5. SHARD SWARM  
+Regeneração de Vida 
+1.6. TOTEM  
+Vida Máxima . 
+1.7. CRYSTAL WATCHER  
+Range máximo . 
+1.8. MAGIC CRYSTAL  
+Dano base . 
+ 
+ 
+ 
+ 
+ 
+ 
+2. TIER 2  
+ 
+2.1. GOLEM   
+Armadura Máxima  e Regeneração de  Armadura . 
+2.2. ARANHA  
+Velocidade de Ataque  e Reca rga do Dash . 
+2.3. GOBLIN  
+Velocidade de Movimento e Chance de crítico  
+2.4. CRYSTAL TUNNER  
+Chance de crítico  e Multiplicador de crítico . 
+2.5. SHARD SWARM  
+2.6. TOTEM  
+Vida Máxima  e Rege neração de Vida . 
+ 
+2.7. CRYSTAL WATCHER  
+Range Máximo  e Perfuração . 
+2.8. MAGIC CRYSTAL  
+Dano base e Tempo de inven cibilidade do Dash.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+3. TIER 3  
+ 
+3.1. GOLEM   
+Armadura Máxima, Regeneração  de Armadura  e Knockback . 
+3.2. ARANHA  
+Velocidade de Ataque, Recarga do Dash , Chance de esquiva . 
+3.3. GOBLIN  
+Velocidade de Movimento, Chance de cr ítico e Dano Base . 
+3.4. CRYSTAL TUNNER  
+Chance de critico, Multiplicador de crítico  e Velocidade de Mo vimento.  
+3.5. SHARD SWARM  
+Regeneração  de Vida , Multiplicador de Cr itico, Thorns . 
+3.6. TOTEM  
+Vida máxima , Regeneração de vid a e Negação de dano.  
+3.7. CRYSTAL WATCHER  
+Range Máximo , Perfuração e Chan ce de Crítico . 
+3.8. MAGIC CRYSTAL  
+Dano base, Tempo  de inv encibilidade do Dash e Cargas de Dash extras . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+4. TIER 4  
+ 
+4.1. GOLEM   
+Opçã o 1: A cada  5 segundos, inimigos que sofreram danos  recentemente 
+recebem um  Stun (Atordoamento) em área idêntico ao soco sísmico do Golem.  
+Opção 2:  Quando sua vida cai abaixo de 30% em combate, você invoca uma 
+espessa armadura de pedra (Muita defesa) e emite instantaneamente uma 
+onda de choque que empurra todos os inimigos próximos para longe de você  
+4.2. ARANHA  
+Opção 1: Dar Dash  através dos inimigos deixa um rastro de teia venenosa no 
+chão (causa lentidão e dano contínuo). Assim que o  Dash  termina, ganha um 
+bônus  de Velocidade de Ataque nos próximos 3 segundos.  
+4.3. GOBLIN  
+Opção 1:  A cada  N segundos, bombas pulam passivamente do corpo do 
+Player em direções aleatórias e explodem em área.  
+Opção 2:  Todo inimigo que você  matar  explode, causando dano pesado no 
+raio em volta dele.  
+4.4. CRYSTAL TUNNER  
+Opção 1:  Tomar dano ativa um estado de " Adrenalina"  (Similar com o que o 
+Tunner faz nos inimigos)  que aumenta  seus atributos e acelera o carregamento 
+do medidor da sua  Ultimate . (cooldown  médio ) 
+Opção 2:  Esse poder vai fazer os inimigos melhorarem  você . Ganha uma aura 
+passiva que te dá + n% de Dano e + n% de Armadura  para cada  inimigo que 
+estiver na sua tela prestando atenção em você. Quantos mais inimigos te 
+cercam, mais forte você fica.  (pode ser colocado um limite)  
+4.5. SHARD SWARM  
+Opção 1:  Passam a girar ao seu redor 3 Cristais . Eles dão dano em tudo que 
+tenta te encostar e destroem o primeiro projétil inimigo que acertar você. Eles 
+quebram, mas se regeneram de 5 em 5 segundos.  
+Opção 2:  Toda vez que um ataque seu mata um inimigo , sua arma estilhaça 
+cristais e atira magicamente 3 lascas cortantes no formato de cone atrás do 
+inimigo atingido (como uma escopeta perfurante).  
+4.6. TOTEM  
+Opção 1:  Ficar completamente imóvel durante o combate por mais de 1.5 
+segundos faz com que  você se torne um praticamente um totem  humano. V ocê 
+recebe -50% de todo Dano Inimigo e começa a lançar caveiras periodicamente 
+que causam dano baixo . Assim que você tenta se mexer  o efeito termina . 
+4.7. CRYSTAL WATCHER  
+Opção 1:  A cada  10 segundos (quando há alvo na mira), um laser devastador 
+emerge de dentro de você e varre o cenário rodando em 360 graus.  
+4.8. MAGIC CRYSTAL  
+Opção 1:  A cada 2 segundos, um inimigo  aleatório  próximo será marcado . Um 
+instante depois, um Skybeam  cai do céu naquele local exato causando dano 
+em área (Idêntico ao ataque da Pedra Mágica).  
+Opção 2: O seu movimento de Dash  se torna um  Teletransporte 
+Instantâneo  para o local de destino. Deixa para trás um letal  Skybeam  no local 
+exato de onde você acabou de partir, atacando os inimigos que te cercavam  
+ 
+ 
+ 
+ 
+ 
