@@ -890,6 +890,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 854563786250266021, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -6.4001465
+      objectReference: {fileID: 0}
     - target: {fileID: 1518265498728650474, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
       propertyPath: infusionManager
       value: 
