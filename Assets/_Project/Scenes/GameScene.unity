@@ -480,14 +480,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f035c56f1ebea8248896094f0ab5b9bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator
-  startRoomPrefab: {fileID: 8551674286305367355, guid: d2b3d4f4cf598bf42a212ed7944be7a0, type: 3}
+  startRoomPrefab: {fileID: 7269002344789093212, guid: cca6b67b0e4b0cd4bbb06557336cd6f1, type: 3}
   mainRoomPrefabs:
-  - {fileID: 2176558758385250221, guid: a859a879b5804934891be943b9130724, type: 3}
-  - {fileID: 2176558758385250221, guid: 65138ee803109ed44b5df323d2d75482, type: 3}
-  transitionRoomPrefab: {fileID: 9122629121441900789, guid: cad32160e9a8fc04b9db8ea0c631ea29, type: 3}
+  - {fileID: 5632102137523967313, guid: b93cfc31f7bf548458c607a220183a2c, type: 3}
+  - {fileID: 5586675138096730388, guid: a885e30be4f5f264a97beda3044a066a, type: 3}
+  - {fileID: 4146710997726052074, guid: cad025b8fb426a74f9b442c6b8691e2b, type: 3}
+  - {fileID: 7111935860186150258, guid: 35e0bb0a1e2dd2b45b749ca3da564e78, type: 3}
+  - {fileID: 8193382277276755171, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
+  - {fileID: 6449200655628119667, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
+  - {fileID: 9195137936641119022, guid: afb62f7e72aafd7488de8123fd536ad9, type: 3}
+  - {fileID: 747938906686968887, guid: 7d139ff40d4e4a84f8523a9b0b5b1b9b, type: 3}
+  transitionRoomPrefab: {fileID: 7329181493337166353, guid: c90955ac390ee05469841f819d5a7aeb, type: 3}
   merchantRoomPrefab: {fileID: 8551674286305367355, guid: 32cf0be15a665d04caa9b4c0f05ef1b0, type: 3}
   merchantPrefab: {fileID: 7107249180062719607, guid: 93e8484d2cda5d04f999abe51e48c1e8, type: 3}
   exitRoomPrefab: {fileID: 340013495099815400, guid: 81e897d1678caa14cb9deaf088d7165b, type: 3}
+  deadEndPrefab: {fileID: 7469747940841780509, guid: 74ad1fc7a34a7834abaa12dcf2d745f7, type: 3}
   maxMainRooms: 6
   roomLimitPerType: 6
   merchantRoomChance: 0.1

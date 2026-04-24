@@ -3,340 +3,458 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+/// <summary>
+/// Gerador de nível procedural baseado em ConnectionPoints.
+///
+/// COMO FUNCIONA:
+///   1. Instancia a Safe Room na origem.
+///   2. Coleta todos os ConnectionPoints do tipo "Saida" da sala inicial.
+///   3. Para cada saída livre, tenta parear com a "Entrada" de um novo prefab compatível.
+///   4. Usa AlignRooms para encaixar os dois transforms perfeitamente.
+///   5. Repete até atingir maxMainRooms ou esgotar as saídas.
+///   6. Saídas restantes viram: ExitRoom, MerchantRoom ou DeadEnd.
+///
+/// SETUP NO INSPECTOR:
+///   • startRoomPrefab    → Sala inicial (Safe Room) com ConnectionPoints configurados.
+///   • mainRoomPrefabs    → Lista de salas de combate, orgânicas, Y-shape, etc.
+///   • transitionRoomPrefab → Corredor de transição com 1 Entrada + 1 Saida.
+///   • merchantRoomPrefab, merchantPrefab, exitRoomPrefab, deadEndPrefab → especiais.
+///
+/// REGRA DE SETUP DOS PREFABS:
+///   Cada prefab DEVE ter exatamente 1 ConnectionPoint(Entrada) e N ConnectionPoints(Saida).
+///   O forward de cada ConnectionPoint deve apontar para FORA da sala.
+/// </summary>
 public class LevelGenerator : MonoBehaviour
 {
+    // =========================================================
+    // INSPECTOR
+    // =========================================================
+
     [Header("Prefabs das Salas")]
-    public GameObject startRoomPrefab;      // Sua sala 20x20 segura
-    public List<GameObject> mainRoomPrefabs;  // Suas salas 20x80, 80x80, etc.
-    public GameObject transitionRoomPrefab; // Seu corredor 10x20
+    [Tooltip("A sala inicial (Safe Room). Deve ter 1 Entrada (usada como âncora) e N Saídas.")]
+    public GameObject startRoomPrefab;
+
+    [Tooltip("Pool de salas de combate, orgânicas, Y-shape, etc. Misture quantas quiser.")]
+    public List<GameObject> mainRoomPrefabs;
+
+    [Tooltip("Corredor de ligação entre salas. Deve ter 1 Entrada e 1 Saída.")]
+    public GameObject transitionRoomPrefab;
 
     [Header("Prefabs Especiais")]
     public GameObject merchantRoomPrefab;
     public GameObject merchantPrefab;
-    [Tooltip("O prefab da sala final com a porta de 'próximo nível'.")]
+
+    [Tooltip("Sala final com portal para o próximo nível. Deve ter 1 Entrada.")]
     public GameObject exitRoomPrefab;
-    [Tooltip("Prefab pequeno para selar becos sem saída (ex: parede/beco curto). Evita que corredores terminem no vazio.")]
+
+    [Tooltip("Prefab que sela becos sem saída organicamente (raízes, rochas). Deve ter 1 Entrada.")]
     public GameObject deadEndPrefab;
 
     [Header("Regras de Geração")]
+    [Tooltip("Número alvo de salas principais (sem contar especiais).")]
     public int maxMainRooms = 10;
-    [Tooltip("Quantas vezes cada prefab de sala principal pode aparecer por run. Aumente se tiver poucos prefabs cadastrados (ex: 2 prefabs → precisa de pelo menos 5 aqui para chegar em maxMainRooms=10).")]
+
+    [Tooltip("Quantas vezes o mesmo prefab pode aparecer por run. Evita repetição excessiva.")]
     public int roomLimitPerType = 5;
-    [Range(0, 1)]
-    [Tooltip("Chance de spawnar o mercador em becos sem saída. Se nenhum sortear, o último beco sem saída garante o spawn.")]
+
+    [Range(0f, 1f)]
+    [Tooltip("Chance de cada beco sem saída virar sala do Mercador. O último garante o spawn caso nenhum sorteie.")]
     public float merchantRoomChance = 0.25f;
 
     [Header("Configurações")]
+    [Tooltip("Delay extra após a geração antes de notificar o GameManager (para assets carregarem).")]
     public float extraLoadDelay = 1.0f;
 
+    // =========================================================
+    // ESTADO INTERNO
+    // =========================================================
+
+    /// <summary>Contagem de usos de cada prefab (por nome) na run atual.</summary>
     private Dictionary<string, int> roomCounts = new Dictionary<string, int>();
-    private List<Socket> openSockets = new List<Socket>();
+
+    /// <summary>Fila de ConnectionPoints do tipo Saida ainda não conectados.</summary>
+    private List<ConnectionPoint> openOutputs = new List<ConnectionPoint>();
+
     private Transform playerSpawnPoint;
     private bool merchantRoomSpawned = false;
-    // --- MUDANÇA 2: Trava para a Saída ---
     private bool exitRoomSpawned = false;
-
-    // --- ECONOMIA: rastreia sequência de salas para inicializar RoomControllers ---
     private int roomSequenceCounter = 0;
 
-    // Classe auxiliar (sem mudanças)
-    private class Socket
-    {
-        public Transform SocketTransform;
-        public Vector3 Direction;
-    }
+    // =========================================================
+    // API PÚBLICA
+    // =========================================================
 
-    void Start()
-    {
-        // Espera o GameManager chamar
-    }
-
+    /// <summary>Chamado pelo GameManager para iniciar a geração.</summary>
     public void GenerateLevel()
     {
         roomCounts.Clear();
-        openSockets.Clear();
+        openOutputs.Clear();
         merchantRoomSpawned = false;
         exitRoomSpawned = false;
         roomSequenceCounter = 0;
 
+        // --- Instancia a Safe Room na origem ---
         GameObject startRoom = Instantiate(startRoomPrefab, Vector3.zero, Quaternion.identity);
-        int currentRoomCount = 1;
 
-        playerSpawnPoint = FindSocket(startRoom.transform, "Player_StartPoint");
+        playerSpawnPoint = FindNamedChild(startRoom.transform, "Player_StartPoint");
         if (playerSpawnPoint == null)
         {
-            Debug.LogError("Sala Inicial não tem um 'Player_StartPoint'!");
+            Debug.LogError("[LevelGenerator] Safe Room não tem um filho chamado 'Player_StartPoint'!");
             return;
         }
 
-        AddSocketsToFrontier(startRoom.transform, Vector3.zero, true); 
-        StartCoroutine(GenerationLoop(currentRoomCount));
+        // Registra as saídas da Safe Room (pula a Entrada, que fica no West/Nave)
+        RegisterOutputPoints(startRoom, isStartRoom: true);
+
+        StartCoroutine(GenerationLoop(roomCount: 1));
     }
+
+    // =========================================================
+    // LOOP DE GERAÇÃO
+    // =========================================================
 
     IEnumerator GenerationLoop(int roomCount)
     {
-        // O loop principal constrói o caminho
-        while (roomCount < maxMainRooms && openSockets.Count > 0)
+        while (roomCount < maxMainRooms && openOutputs.Count > 0)
         {
-            int randomIndex = Random.Range(0, openSockets.Count);
-            Socket currentSocket = openSockets[randomIndex];
-            openSockets.RemoveAt(randomIndex); 
+            // Pega uma saída aleatória da fila
+            int idx = Random.Range(0, openOutputs.Count);
+            ConnectionPoint currentOutput = openOutputs[idx];
+            openOutputs.RemoveAt(idx);
+
+            if (currentOutput.isOccupied) continue;
+            currentOutput.isOccupied = true;
+
+            // --- Corredor de Transição ---
+            if (transitionRoomPrefab == null)
+            {
+                Debug.LogError("[LevelGenerator] transitionRoomPrefab não definido!");
+                continue;
+            }
 
             GameObject transitionRoom = Instantiate(transitionRoomPrefab);
-            Transform transitionEntrada = FindSocket(transitionRoom.transform, "Entrance");
-            Transform transitionSaida = FindSocket(transitionRoom.transform, "Exit");
-            
-            if (transitionEntrada == null || transitionSaida == null)
+            ConnectionPoint transEntrada = GetInputPoint(transitionRoom, currentOutput.connectionTag, currentOutput.transform);
+            ConnectionPoint transSaida   = GetFirstOutputPoint(transitionRoom, currentOutput.connectionTag);
+
+            if (transEntrada == null || transSaida == null)
             {
-                Debug.LogError("Prefab da Sala de Transição está faltando 'Entrance' ou 'Exit'");
+                Debug.LogError("[LevelGenerator] Prefab de Transição precisa de 1 Entrada e 1 Saída com ConnectionPoint.");
                 Destroy(transitionRoom);
                 continue;
             }
-            
-            AlignRooms(currentSocket.SocketTransform, transitionEntrada);
-            
-            GameObject roomPrefabToSpawn = GetValidRoomPrefab(currentSocket.Direction);
 
-            if (roomPrefabToSpawn != null)
+            AlignRooms(currentOutput.transform, transEntrada.transform);
+            transEntrada.isOccupied = true;
+
+            // --- Sala Principal ---
+            GameObject roomPrefab = GetCompatibleRoomPrefab(transSaida.connectionTag);
+
+            if (roomPrefab != null)
             {
-                // SUCESSO: Constrói a próxima sala principal
-                GameObject newMainRoom = Instantiate(roomPrefabToSpawn);
-                Transform mainEntrada = FindMatchingSocket(newMainRoom.transform, currentSocket.Direction);
-                AlignRooms(transitionSaida, mainEntrada);
+                GameObject newRoom = Instantiate(roomPrefab);
+                ConnectionPoint roomEntrada = GetInputPoint(newRoom, transSaida.connectionTag, transSaida.transform);
 
+                if (roomEntrada == null)
+                {
+                    Debug.LogError($"[LevelGenerator] Prefab '{roomPrefab.name}' não tem ConnectionPoint(Entrada). Verifique o prefab.");
+                    Destroy(newRoom);
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
+                AlignRooms(transSaida.transform, roomEntrada.transform);
+                transSaida.isOccupied = true;
+                roomEntrada.isOccupied = true;
+
+                // Contagem e índice
                 roomCount++;
                 roomSequenceCounter++;
-                string roomName = roomPrefabToSpawn.name;
-                if (!roomCounts.ContainsKey(roomName)) roomCounts[roomName] = 0;
-                roomCounts[roomName]++;
+                string prefabName = roomPrefab.name;
+                if (!roomCounts.ContainsKey(prefabName)) roomCounts[prefabName] = 0;
+                roomCounts[prefabName]++;
 
-                // --- ECONOMIA: Inicializa o RoomController com o índice da sala ---
-                RoomController roomCtrl = newMainRoom.GetComponentInChildren<RoomController>();
+                // Inicializa o RoomController (sistema de ondas/economia)
+                RoomController roomCtrl = newRoom.GetComponentInChildren<RoomController>();
                 if (roomCtrl != null)
                     roomCtrl.Initialize(roomSequenceCounter);
 
-                AddSocketsToFrontier(newMainRoom.transform, currentSocket.Direction, false);
+                // Registra as saídas da nova sala
+                RegisterOutputPoints(newRoom, isStartRoom: false);
             }
             else
             {
-                // FALHA: Beco sem saída. Adiciona o *soquete da transição* de volta à lista.
-                // Mas agora como um "beco sem saída" oficial.
-                openSockets.Add(new Socket { SocketTransform = transitionSaida, Direction = currentSocket.Direction });
-                Debug.LogWarning("Nenhuma sala encontrada que se encaixe no soquete " + currentSocket.SocketTransform.name + ". Marcando como beco sem saída.");
+                // Sem sala compatível — devolve a saída da transição como beco
+                openOutputs.Add(transSaida);
+                Debug.LogWarning($"[LevelGenerator] Nenhum prefab compatível com tag '{transSaida.connectionTag}'. Beco registrado.");
             }
 
             yield return null;
         }
-        
-        Debug.Log("Geração do Caminho Principal Concluída! Processando becos sem saída...");
 
-        // --- MUDANÇA 3: Lógica de Beco sem Saída (Executada APÓS o loop principal) ---
-        
-        // Primeiro, escolhemos UMA saída
-        if (openSockets.Count > 0)
+        Debug.Log("[LevelGenerator] Caminho principal concluído. Processando saídas restantes...");
+        yield return StartCoroutine(ProcessRemainingOutputs());
+    }
+
+    // =========================================================
+    // PROCESSAMENTO DE SAÍDAS RESTANTES
+    // =========================================================
+
+    IEnumerator ProcessRemainingOutputs()
+    {
+        // 1. Escolhe UMA saída para ser a ExitRoom
+        if (openOutputs.Count > 0 && !exitRoomSpawned)
         {
-            int exitIndex = Random.Range(0, openSockets.Count);
-            Socket exitSocket = openSockets[exitIndex];
-            openSockets.RemoveAt(exitIndex); // Remove o soquete da saída da lista
-
-            // Constrói a sala de saída
-            SpawnExitRoom(exitSocket.SocketTransform);
+            int exitIdx = Random.Range(0, openOutputs.Count);
+            ConnectionPoint exitOutput = openOutputs[exitIdx];
+            openOutputs.RemoveAt(exitIdx);
+            SpawnSpecialRoom(exitRoomPrefab, exitOutput, "Sala de Saída");
             exitRoomSpawned = true;
         }
 
-        // Todos os soquetes restantes são becos sem saída.
-        // Primeiro tenta sortear o mercador. Caso o sorteio falhe em todos,
-        // garante o spawn no ÚLTIMO beco sem saída (fallback 100%).
-        List<Socket> deadEnds = new List<Socket>(openSockets);
+        // 2. Demais saídas → Mercador ou DeadEnd
+        List<ConnectionPoint> deadEnds = new List<ConnectionPoint>(openOutputs);
+        openOutputs.Clear();
+
         for (int i = 0; i < deadEnds.Count; i++)
         {
-            Socket socket = deadEnds[i];
             bool isLast = (i == deadEnds.Count - 1);
 
             if (!merchantRoomSpawned && (Random.value < merchantRoomChance || isLast))
             {
-                SpawnMerchantRoom(socket.SocketTransform);
+                SpawnMerchantRoom(deadEnds[i]);
                 merchantRoomSpawned = true;
             }
             else
             {
-                // Sela o beco com a sala Dead End (se definida); do contrário só loga aviso.
-                SealDeadEnd(socket.SocketTransform);
+                SpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End");
             }
         }
-        
-        Debug.Log("Geração de Nível Completa (com Salas Especiais)!");
-        
+
+        Debug.Log("[LevelGenerator] Geração de Nível Completa!");
         yield return new WaitForSeconds(extraLoadDelay);
 
-        // SPAWN DE ITENS (nível já está pronto)
+        // Spawn de itens
         ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
-        if (itemSpawner != null)
+        if (itemSpawner != null) itemSpawner.SpawnItems();
+        else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
+
+        if (GameManager.instance != null)
+            GameManager.instance.OnLevelReady(playerSpawnPoint);
+    }
+
+    // =========================================================
+    // SPAWN DE SALAS ESPECIAIS
+    // =========================================================
+
+    void SpawnSpecialRoom(GameObject prefab, ConnectionPoint targetOutput, string label)
+    {
+        if (prefab == null)
         {
-            itemSpawner.SpawnItems();
+            Debug.LogWarning($"[LevelGenerator] Prefab de '{label}' não definido no Inspector.");
+            return;
+        }
+
+        GameObject room = Instantiate(prefab);
+        ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);
+
+        if (entrada == null)
+        {
+            // Fallback: alinha pela raiz do prefab
+            room.transform.position = targetOutput.transform.position;
+            room.transform.rotation = Quaternion.LookRotation(-targetOutput.transform.forward);
+            Debug.LogWarning($"[LevelGenerator] '{label}' não tem ConnectionPoint(Entrada). Usando fallback de posição.");
+            return;
+        }
+
+        AlignRooms(targetOutput.transform, entrada.transform);
+        targetOutput.isOccupied = true;
+        entrada.isOccupied = true;
+        Debug.Log($"[LevelGenerator] {label} criado.");
+    }
+
+    void SpawnMerchantRoom(ConnectionPoint targetOutput)
+    {
+        if (merchantRoomPrefab == null || merchantPrefab == null)
+        {
+            Debug.LogWarning("[LevelGenerator] merchantRoomPrefab ou merchantPrefab não definido.");
+            return;
+        }
+
+        GameObject room = Instantiate(merchantRoomPrefab);
+        ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);
+
+        if (entrada == null)
+        {
+            Destroy(room);
+            Debug.LogError("[LevelGenerator] merchantRoomPrefab não tem ConnectionPoint(Entrada)!");
+            return;
+        }
+
+        AlignRooms(targetOutput.transform, entrada.transform);
+        targetOutput.isOccupied = true;
+        entrada.isOccupied = true;
+
+        // Spawn do NPC Mercador
+        Transform spawnPoint = FindNamedChild(room.transform, "Merchant_SpawnPoint");
+        if (spawnPoint != null)
+            Instantiate(merchantPrefab, spawnPoint.position, spawnPoint.rotation);
+
+        Debug.Log("[LevelGenerator] Sala do Mercador criada!");
+    }
+
+    // =========================================================
+    // SELEÇÃO DE PREFAB
+    // =========================================================
+
+    /// <summary>
+    /// Busca um prefab da mainRoomPrefabs que:
+    /// 1. Tenha um ConnectionPoint(Entrada) com a tag compatível.
+    /// 2. Não tenha atingido o roomLimitPerType.
+    /// Retorna null se nenhum for encontrado.
+    /// </summary>
+    GameObject GetCompatibleRoomPrefab(string requiredTag)
+    {
+        List<GameObject> valid = new List<GameObject>();
+
+        foreach (GameObject prefab in mainRoomPrefabs)
+        {
+            string prefabName = prefab.name;
+            int count = roomCounts.ContainsKey(prefabName) ? roomCounts[prefabName] : 0;
+            if (count >= roomLimitPerType) continue;
+
+            // Verifica se o prefab tem pelo menos 1 ConnectionPoint(Entrada) com a tag certa
+            ConnectionPoint[] cps = prefab.GetComponentsInChildren<ConnectionPoint>();
+            bool hasCompatibleInput = cps.Any(cp =>
+                cp.pointType == ConnectionPoint.PointType.Entrada &&
+                cp.connectionTag == requiredTag &&
+                !cp.isOccupied);
+
+            if (hasCompatibleInput)
+                valid.Add(prefab);
+        }
+
+        if (valid.Count == 0) return null;
+        return valid[Random.Range(0, valid.Count)];
+    }
+
+    // =========================================================
+    // REGISTRO DE SAÍDAS
+    // =========================================================
+
+    /// <summary>
+    /// Coleta todos os ConnectionPoints(Saida) de uma sala instanciada e os
+    /// adiciona à fila openOutputs.
+    /// Se isStartRoom == true, pula a saída marcada como West (Nave/Crash Site).
+    /// </summary>
+    void RegisterOutputPoints(GameObject room, bool isStartRoom)
+    {
+        ConnectionPoint[] allCPs = room.GetComponentsInChildren<ConnectionPoint>();
+        List<ConnectionPoint> outputs = allCPs
+            .Where(cp => cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
+            .ToList();
+
+        if (isStartRoom && outputs.Count > 0)
+        {
+            // Na Safe Room, apenas UMA saída aleatória é aberta inicialmente
+            // (a saída West fica reservada para a Nave/Crash Site — não deve gerar salas)
+            List<ConnectionPoint> validStart = outputs
+                .Where(cp => !cp.gameObject.name.Contains("West") && !cp.gameObject.name.Contains("Nave"))
+                .ToList();
+
+            if (validStart.Count > 0)
+                openOutputs.Add(validStart[Random.Range(0, validStart.Count)]);
+            else if (outputs.Count > 0)
+                openOutputs.Add(outputs[Random.Range(0, outputs.Count)]);
         }
         else
         {
-            Debug.LogWarning("ItemSpawner não encontrado na cena!");
-        }
-        
-        if (GameManager.instance != null)
-        {
-            GameManager.instance.OnLevelReady(playerSpawnPoint);
+            openOutputs.AddRange(outputs);
         }
     }
 
-    // Função de "costura" (sem mudanças)
+    // =========================================================
+    // ALINHAMENTO (sem mudanças — já funcionava bem)
+    // =========================================================
+
+    /// <summary>
+    /// Alinha a sala que contém socketB de modo que socketB coincida com socketA,
+    /// com os forwards opostos (as salas se "encaixam" pela boca dos sockets).
+    /// </summary>
     void AlignRooms(Transform socketA, Transform socketB)
     {
-        if (socketA == null || socketB == null) { /* ... (código de erro) ... */ return; }
+        if (socketA == null || socketB == null)
+        {
+            Debug.LogError("[LevelGenerator] AlignRooms: um dos sockets é null!");
+            return;
+        }
+
         Transform roomB = socketB.root;
         Quaternion targetRotation = Quaternion.LookRotation(-socketA.forward, socketA.up);
         Quaternion correctionRotation = targetRotation * Quaternion.Inverse(socketB.rotation);
         roomB.rotation = correctionRotation * roomB.rotation;
-        Vector3 translation = socketA.position - socketB.position;
-        roomB.position += translation;
+        roomB.position += socketA.position - socketB.position;
     }
 
-    // GetValidRoomPrefab (sem mudanças)
-    GameObject GetValidRoomPrefab(Vector3 incomingDirection)
+    // =========================================================
+    // HELPERS DE BUSCA
+    // =========================================================
+
+    /// <summary>
+    /// Retorna o melhor ConnectionPoint(Entrada) disponível para conectar com o socket de origem.
+    ///
+    /// Se o prefab tiver apenas 1 Entrada, retorna ela diretamente.
+    /// Se tiver múltiplas Entradas (candidatas), escolhe a que exige MENOS rotação para se
+    /// alinhar com o socket de origem — ou seja, a cujo forward é mais oposto ao forward do socket.
+    ///
+    /// Isso permite prefabs com 2+ posições de entrada possíveis, onde o gerador escolhe
+    /// automaticamente a mais natural para cada conexão.
+    /// </summary>
+    ConnectionPoint GetInputPoint(GameObject room, string tag, Transform incomingSocket = null)
     {
-        string requiredSocketName = GetSocketNameFromDirection(-incomingDirection);
-        if (requiredSocketName == null) return null;
-        List<GameObject> validPrefabs = new List<GameObject>();
-        foreach (GameObject prefab in mainRoomPrefabs)
+        var candidates = room.GetComponentsInChildren<ConnectionPoint>()
+            .Where(cp =>
+                cp.pointType == ConnectionPoint.PointType.Entrada &&
+                cp.connectionTag == tag &&
+                !cp.isOccupied)
+            .ToList();
+
+        if (candidates.Count == 0) return null;
+        if (candidates.Count == 1 || incomingSocket == null) return candidates[0];
+
+        // Escolhe a Entrada cujo forward é mais oposto ao forward do socket de saída.
+        // O AlignRooms vai rotacionar a sala para que os dois se oponham — quanto mais
+        // alinhados já estiverem, menos rotação é necessária e mais natural fica o layout.
+        ConnectionPoint best = null;
+        float bestDot = float.MinValue;
+
+        foreach (var cp in candidates)
         {
-            string name = prefab.name;
-            int count = roomCounts.ContainsKey(name) ? roomCounts[name] : 0;
-            if (count >= roomLimitPerType) continue; 
-            if (FindSocket(prefab.transform, requiredSocketName) != null)
+            // Queremos: cp.forward ≈ -incomingSocket.forward (opostos = encaixe perfeito)
+            float dot = Vector3.Dot(cp.transform.forward, -incomingSocket.forward);
+            if (dot > bestDot)
             {
-                validPrefabs.Add(prefab);
+                bestDot = dot;
+                best = cp;
             }
         }
-        if (validPrefabs.Count == 0) return null; 
-        return validPrefabs[Random.Range(0, validPrefabs.Count)];
+
+        return best;
     }
 
-    // AddSocketsToFrontier (sem mudanças, já está correto)
-    void AddSocketsToFrontier(Transform room, Vector3 incomingDirection, bool isStartRoom)
+    /// <summary>Retorna o primeiro ConnectionPoint(Saida) não ocupado com a tag especificada.</summary>
+    ConnectionPoint GetFirstOutputPoint(GameObject room, string tag)
     {
-        Vector3 dirOp = -incomingDirection;
-        List<Socket> foundSockets = new List<Socket>();
-        foreach (Transform child in room.GetComponentsInChildren<Transform>())
-        {
-            Vector3 socketDir = Vector3.zero;
-            if (child.name == "North") socketDir = Vector3.forward;
-            else if (child.name == "South") socketDir = Vector3.back;
-            else if (child.name == "East") socketDir = Vector3.right;
-            else if (child.name == "West") socketDir = Vector3.left;
-            if (socketDir == Vector3.zero || socketDir == dirOp) continue;
-            foundSockets.Add(new Socket { SocketTransform = child, Direction = socketDir });
-        }
-        if (isStartRoom && foundSockets.Count > 0)
-        {
-            List<Socket> validStartSockets = new List<Socket>();
-            foreach (Socket s in foundSockets)
-            {
-                if (s.SocketTransform.name != "West")
-                {
-                    validStartSockets.Add(s);
-                }
-            }
-            if (validStartSockets.Count > 0)
-            {
-                int randomIndex = Random.Range(0, validStartSockets.Count);
-                openSockets.Add(validStartSockets[randomIndex]);
-            }
-        }
-        else
-        {
-            openSockets.AddRange(foundSockets);
-        }
+        return room.GetComponentsInChildren<ConnectionPoint>()
+            .FirstOrDefault(cp =>
+                cp.pointType == ConnectionPoint.PointType.Saida &&
+                cp.connectionTag == tag &&
+                !cp.isOccupied);
     }
 
-    // SpawnMerchantRoom (agora se conecta a um soquete de transição)
-    void SpawnMerchantRoom(Transform corridorExitSocket)
+    /// <summary>Encontra um filho pelo nome exato (para Player_StartPoint e Merchant_SpawnPoint).</summary>
+    Transform FindNamedChild(Transform parent, string childName)
     {
-        if (merchantRoomPrefab == null || merchantPrefab == null) return;
-        GameObject room = Instantiate(merchantRoomPrefab);
-        Transform entrada = FindSocket(room.transform, "Entrance"); 
-        if (entrada == null) { Destroy(room); return; }
-        AlignRooms(corridorExitSocket, entrada); 
-        Transform spawnPoint = FindSocket(room.transform, "Merchant_SpawnPoint");
-        if (spawnPoint == null) return;
-        Instantiate(merchantPrefab, spawnPoint.position, spawnPoint.rotation);
-        Debug.Log("Sala do Mercador criada!");
+        return parent.GetComponentsInChildren<Transform>()
+            .FirstOrDefault(t => t.name == childName);
     }
-
-    // Sala de Saída — conecta ao corredor de transição pelo Entrance
-    void SpawnExitRoom(Transform corridorExitSocket)
-    {
-        if (exitRoomPrefab == null)
-        {
-            Debug.LogWarning("Nenhum prefab de Sala de Saída (ExitRoom) definido no LevelGenerator.");
-            return;
-        }
-        
-        GameObject room = Instantiate(exitRoomPrefab);
-        Transform entrada = FindSocket(room.transform, "Entrance"); 
-        if (entrada == null) 
-        {
-            Debug.LogError("Prefab da Sala de Saída não tem um soquete 'Entrance'!");
-            Destroy(room); 
-            return; 
-        }
-        
-        AlignRooms(corridorExitSocket, entrada); 
-        Debug.Log("Sala de Saída criada!");
-    }
-
-    // Sela um beco sem saída com o prefab Dead End (evita corredores no vazio)
-    void SealDeadEnd(Transform corridorExitSocket)
-    {
-        if (deadEndPrefab == null)
-        {
-            Debug.LogWarning("[LevelGenerator] Dead End não selado: campo 'deadEndPrefab' não definido no Inspector.");
-            return;
-        }
-
-        GameObject deadEnd = Instantiate(deadEndPrefab);
-        Transform entrada = FindSocket(deadEnd.transform, "Entrance");
-        if (entrada == null)
-        {
-            // Fallback: alinha pela própria raiz
-            deadEnd.transform.position = corridorExitSocket.position;
-            deadEnd.transform.rotation = Quaternion.LookRotation(-corridorExitSocket.forward);
-            return;
-        }
-
-        AlignRooms(corridorExitSocket, entrada);
-        Debug.Log("Dead End selado.");
-    }
-    
-    // FindMatchingSocket (sem mudanças)
-    Transform FindMatchingSocket(Transform room, Vector3 incomingDirection)
-    {
-        string socketName = GetSocketNameFromDirection(-incomingDirection);
-        if (socketName != null) { return FindSocket(room, socketName); }
-        return FindSocket(room, "Entrance");
-    }
-
-    // GetSocketNameFromDirection (sem mudanças)
-    string GetSocketNameFromDirection(Vector3 direction)
-    {
-        if (direction == Vector3.forward) return "North";
-        if (direction == Vector3.back) return "South";
-        if (direction == Vector3.right) return "East";
-        if (direction == Vector3.left) return "West";
-        return null;
-    }
-
-    // FindSocket (sem mudanças)
-    Transform FindSocket(Transform room, string socketName)
-    {
-        return room.GetComponentsInChildren<Transform>().FirstOrDefault(t => t.name == socketName);
-    }
-
-
 }
