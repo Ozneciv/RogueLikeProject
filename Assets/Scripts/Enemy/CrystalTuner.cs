@@ -165,7 +165,7 @@ public class CrystalTuner : MonoBehaviour
             if (candidate == gameObject) continue;
             if (candidate.GetComponent<CrystalTuner>() != null) continue;
             if (candidate.GetComponent<HomingHazard>() != null) continue;
-            if (candidate.GetComponent<DummyHealth>() == null) continue;
+            if (candidate.GetComponent<DummyHealth>() == null && candidate.GetComponent<ShardSwarmHealth>() == null) continue;
 
             // Já é alvo?
             bool alreadyTargeted = false;
@@ -286,6 +286,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<ShardSwarm_AI>()?.SetBuff(true);
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
+        target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(true);
         target.GetComponent<CrystalWatcher_AI>()?.SetBuff(true);
     }
 
@@ -297,6 +298,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<ShardSwarm_AI>()?.SetBuff(false);
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
+        target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(false);
         target.GetComponent<CrystalWatcher_AI>()?.SetBuff(false);
     }
 
