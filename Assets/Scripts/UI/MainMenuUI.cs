@@ -90,7 +90,7 @@ public class MainMenuUI : MonoBehaviour
         title.alignment = TextAlignmentOptions.Center;
         Place(title.gameObject, 30f, y, PW - 60f, 66f); y -= 74f;
 
-        var sub = Txt(p.transform, "— EPTA Entertainment —", 15, C_DIM);
+        var sub = Txt(p.transform, "- EPTA Entertainment -", 15, C_DIM);
         sub.alignment = TextAlignmentOptions.Center;
         Place(sub.gameObject, 30f, y, PW - 60f, 24f); y -= 40f;
 
@@ -98,10 +98,10 @@ public class MainMenuUI : MonoBehaviour
         Sep(p.transform, y); y -= 24f;
 
         // Botões
-        Btn(p.transform, "▶  JOGAR", y, OnPlay); y -= 76f;
-        Btn(p.transform, "⚙  OPÇÕES", y, OnOptions); y -= 76f;
-        Btn(p.transform, "★  CRÉDITOS", y, OnCredits); y -= 76f;
-        Btn(p.transform, "✕  SAIR", y, OnQuit); y -= 76f;
+        Btn(p.transform, "JOGAR", y, OnPlay); y -= 76f;
+        Btn(p.transform, "OPCOES", y, OnOptions); y -= 76f;
+        Btn(p.transform, "CREDITOS", y, OnCredits); y -= 76f;
+        Btn(p.transform, "SAIR", y, OnQuit); y -= 76f;
 
         var ver = Txt(p.transform, gameVersion, 12, C_DIM);
         ver.alignment = TextAlignmentOptions.Center;
@@ -119,7 +119,7 @@ public class MainMenuUI : MonoBehaviour
         var p = Panel(parent, "OptionsPanel");
         float y = -36f;
 
-        var hdr = Txt(p.transform, "⚙  OPÇÕES", 30, C_ACCENT);
+        var hdr = Txt(p.transform, "OPCOES", 30, C_ACCENT);
         hdr.fontStyle = FontStyles.Bold;
         hdr.alignment = TextAlignmentOptions.Center;
         Place(hdr.gameObject, 30f, y, PW - 60f, 42f); y -= 56f;
@@ -127,24 +127,36 @@ public class MainMenuUI : MonoBehaviour
         Sep(p.transform, y); y -= 20f;
 
         // Áudio
-        y = Section(p.transform, "🔊  ÁUDIO", y);
+        y = Section(p.transform, "AUDIO", y);
         y = SliderRow(p.transform, "Volume Geral", y, 0.7f);
         y = SliderRow(p.transform, "Volume Efeitos", y, 0.8f);
         y = SliderRow(p.transform, "Volume Música", y, 0.6f);
         y -= 12f;
 
         // Vídeo
-        y = Section(p.transform, "🖥  VÍDEO", y);
+        y = Section(p.transform, "VIDEO", y);
         y = ToggleRow(p.transform, "Tela Cheia", y, Screen.fullScreen);
         y = CycleRow(p.transform, "Qualidade", y, new[]{"Baixa","Média","Alta","Ultra"}, 2);
         y -= 12f;
 
         // Gameplay
-        y = Section(p.transform, "🎮  GAMEPLAY", y);
-        y = SliderRow(p.transform, "Sensibilidade", y, 0.5f);
+        y = Section(p.transform, "GAMEPLAY", y);
+        y = NavRow(p.transform, "Controles", "->", y, () => {
+            var ctrl = FindObjectOfType<ControlsReferenceMenu>(true);
+            if (ctrl != null)
+            {
+                // Simulate pressing the toggle key
+                ctrl.gameObject.SetActive(true);
+                ctrl.SendMessage("ToggleMenu", SendMessageOptions.DontRequireReceiver);
+            }
+            else
+            {
+                Debug.LogWarning("ControlsReferenceMenu not found in scene.");
+            }
+        });
         y -= 28f;
 
-        Btn(p.transform, "← VOLTAR", y, ShowMain); y -= 76f;
+        Btn(p.transform, "VOLTAR", y, ShowMain); y -= 76f;
 
         p.GetComponent<RectTransform>().sizeDelta = new Vector2(PW, -y);
         return p;
@@ -158,7 +170,7 @@ public class MainMenuUI : MonoBehaviour
         var p = Panel(parent, "CreditsPanel");
         float y = -24f;
 
-        var hdr = Txt(p.transform, "★  CRÉDITOS", 28, C_ACCENT);
+        var hdr = Txt(p.transform, "CREDITOS", 28, C_ACCENT);
         hdr.fontStyle = FontStyles.Bold;
         hdr.alignment = TextAlignmentOptions.Center;
         Place(hdr.gameObject, 24f, y, PW - 48f, 38f); y -= 48f;
@@ -195,7 +207,7 @@ public class MainMenuUI : MonoBehaviour
         v.alignment = TextAlignmentOptions.Center;
         Place(v.gameObject, 24f, y, PW - 48f, 18f); y -= 30f;
 
-        Btn(p.transform, "← VOLTAR", y, ShowMain); y -= 66f;
+        Btn(p.transform, "VOLTAR", y, ShowMain); y -= 66f;
 
         p.GetComponent<RectTransform>().sizeDelta = new Vector2(PW, -y);
         return p;
@@ -248,8 +260,9 @@ public class MainMenuUI : MonoBehaviour
 
         // --- Slider (construção correta para Unity) ---
         var sliderGO = new GameObject("Slider_" + label);
+        sliderGO.AddComponent<RectTransform>();
         sliderGO.transform.SetParent(parent, false);
-        Place(sliderGO, 36f + lw, y + 10f, sw, 24f);
+        Place(sliderGO, 36f + lw, y - 10f, sw, 24f);
 
         // Background
         var bgGO = Img(sliderGO.transform, "Background", new Color(0.10f, 0.08f, 0.18f));
@@ -349,7 +362,7 @@ public class MainMenuUI : MonoBehaviour
         dObj.GetComponent<Image>().raycastTarget = true;
 
         int cur = idx;
-        var dTxt = Txt(dObj.transform, "◂ " + opts[cur] + " ▸", 14, C_TEXT);
+        var dTxt = Txt(dObj.transform, "< " + opts[cur] + " >", 14, C_TEXT);
         dTxt.alignment = TextAlignmentOptions.Center;
         dTxt.raycastTarget = false;
         Stretch(dTxt.gameObject);
@@ -359,8 +372,35 @@ public class MainMenuUI : MonoBehaviour
         var oRef = opts;
         btn.onClick.AddListener(() => {
             cur = (cur + 1) % oRef.Length;
-            dRef.text = "◂ " + oRef[cur] + " ▸";
+            dRef.text = "< " + oRef[cur] + " >";
         });
+
+        return y - 50f;
+    }
+
+    float NavRow(Transform parent, string label, string arrow, float y, UnityEngine.Events.UnityAction act)
+    {
+        var lbl = Txt(parent, label, 15, C_TEXT);
+        lbl.alignment = TextAlignmentOptions.MidlineLeft;
+        Place(lbl.gameObject, 36f, y, 200f, 42f);
+
+        var navObj = Img(parent, "Nav", C_BTN);
+        Place(navObj, PW - 170f, y - 6f, 120f, 30f);
+        navObj.GetComponent<Image>().raycastTarget = true;
+
+        var navTxt = Txt(navObj.transform, arrow, 16, C_ACCENT);
+        navTxt.fontStyle = FontStyles.Bold;
+        navTxt.alignment = TextAlignmentOptions.Center;
+        navTxt.raycastTarget = false;
+        Stretch(navTxt.gameObject);
+
+        var btn = navObj.AddComponent<Button>();
+        ColorBlock cb = btn.colors;
+        cb.normalColor = C_BTN; cb.highlightedColor = C_BTN_HOV;
+        cb.pressedColor = C_BTN_PRS; cb.selectedColor = C_BTN_HOV;
+        cb.fadeDuration = 0.08f;
+        btn.colors = cb;
+        btn.onClick.AddListener(act);
 
         return y - 50f;
     }

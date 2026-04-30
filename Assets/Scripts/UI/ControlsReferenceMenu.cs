@@ -58,9 +58,17 @@ public class ControlsReferenceMenu : MonoBehaviour
     {
         if (Input.GetKeyDown(toggleKey))
         {
-            isVisible = !isVisible;
-            panel.SetActive(isVisible);
+            ToggleMenu();
         }
+    }
+
+    /// <summary>
+    /// Abre/fecha o menu de controles. Pode ser chamado externamente.
+    /// </summary>
+    public void ToggleMenu()
+    {
+        isVisible = !isVisible;
+        panel.SetActive(isVisible);
     }
 
     // ═══════════════════════════════════════════
@@ -138,7 +146,6 @@ public class ControlsReferenceMenu : MonoBehaviour
         // ══ MOVIMENTAÇÃO ══
         y = AddSection(parent, "🚀  MOVIMENTAÇÃO", y);
         y = AddKeybind(parent, "WASD", "Mover personagem", y);
-        y = AddKeybind(parent, "Shift", "Sprint (sempre ativo)", y, C_TEXT_DIM);
         y = AddKeybind(parent, "E", "Dash", y);
 
         y -= 6f;
