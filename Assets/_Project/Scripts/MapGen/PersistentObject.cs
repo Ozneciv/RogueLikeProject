@@ -1,0 +1,18 @@
+using UnityEngine;
+
+public class PersistentObject : MonoBehaviour
+{
+    private static PersistentObject instance;
+    void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(this.gameObject);
+        }
+        else
+        {
+            Destroy(this.gameObject);
+        }
+    }
+}
