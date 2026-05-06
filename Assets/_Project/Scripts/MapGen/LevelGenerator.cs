@@ -94,7 +94,8 @@ public class LevelGenerator : MonoBehaviour
         roomSequenceCounter = 0;
 
         // --- Instancia a Safe Room na origem ---
-        GameObject startRoom = Instantiate(startRoomPrefab, Vector3.zero, Quaternion.identity);
+        // Usa a rotação salva no prefab (não força identity) para respeitar correções de eixo do FBX
+        GameObject startRoom = Instantiate(startRoomPrefab, Vector3.zero, startRoomPrefab.transform.rotation);
 
         playerSpawnPoint = FindNamedChild(startRoom.transform, "Player_StartPoint");
         if (playerSpawnPoint == null)

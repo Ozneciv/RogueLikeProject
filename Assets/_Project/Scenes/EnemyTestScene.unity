@@ -1477,6 +1477,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d51afe4baf9e5cb40b83fa416d9ac29c, type: 2}
   - {fileID: 11400000, guid: 0297bd4d2ac4bc34b9ce3d68e2adf3e5, type: 2}
   - {fileID: 11400000, guid: 704636780efab254e81ab6cca56b5a2d, type: 2}
+  - {fileID: 11400000, guid: fc628f609a4595a4db1e457b7a166322, type: 2}
+  - {fileID: 11400000, guid: 41b7c776d16a52149a1517184ebec63b, type: 2}
+  - {fileID: 11400000, guid: 79dfe6ebec3e9494b94c80c2d5a0129f, type: 2}
+  - {fileID: 11400000, guid: 9fa9ac96d1f391943a4f4d3c54e4bdf2, type: 2}
 --- !u!4 &688351568
 Transform:
   m_ObjectHideFlags: 0
@@ -2239,6 +2243,10 @@ PrefabInstance:
     - target: {fileID: 3017463410146802124, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 5301761075157900069, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: baseDamageMultiplier
+      value: 1000
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3844,13 +3852,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1950511225}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
+  m_LocalPosition: {x: 0, y: 11.59, z: -12.08}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
 --- !u!114 &1950511229
 MonoBehaviour:
   m_ObjectHideFlags: 0

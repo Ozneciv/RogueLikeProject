@@ -1,20 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public struct ItemCatalogado
-{
-    public string nome;
-    public Sprite icon;
-    public string descricao;
-}
-
+/// <summary>
+/// Gerencia o Catálogo de Itens do Eptinho — rastreia itens coletados durante a run.
+///
+/// FLUXO:
+///   1. ItemCollectable detecta que o player coletou um item.
+///   2. Chama CatalogoManager.instancia.Catalogar(interactable).
+///   3. CatalogoManager adiciona o ItemData à lista e dispara o popup.
+///   4. EptinhoMenuController exibe a lista ao abrir o menu (tecla I).
+/// </summary>
 public class CatalogoManager : MonoBehaviour
 {
     public static CatalogoManager instancia;
 
-    public List<ItemCatalogado> itensCatalogados = new();
-    private HashSet<string> nomesCatalogados = new();
+    // Lista de ItemData já coletados/catalogados nesta run
+    public List<ItemData> itensCatalogados = new();
+    private HashSet<string> idsRegistrados = new();
 
     void Awake()
     {
@@ -30,22 +32,34 @@ public class CatalogoManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Cataloga um item pela primeira vez que é coletado.
+    /// Aceita um Interactable para compatibilidade com o sistema antigo.
+    /// </summary>
     public void Catalogar(Interactable item)
     {
+        if (item == null) return;
         if (item.foiCatalogado) return;
-        if (nomesCatalogados.Contains(item.objetoNome)) return;
 
-        item.foiCatalogado = true;
-
-        ItemCatalogado dados = new ItemCatalogado
+        // Se o ItemData está configurado no Interactable (novo padrão)
+        if (item.itemData != null)
         {
-            nome = item.objetoNome,
-            icon = item.icon,
-            descricao = item.descricao
-        };
-        itensCatalogados.Add(dados);
-        nomesCatalogados.Add(item.objetoNome);
+            if (idsRegistrados.Contains(item.itemData.itemId)) return;
 
-        EptinhoPopupController.instancia.MostrarPopup(dados);
+            item.foiCatalogado = true;
+            itensCatalogados.Add(item.itemData);
+            idsRegistrados.Add(item.itemData.itemId);
+
+            if (EptinhoPopupController.instancia != null)
+                EptinhoPopupController.instancia.MostrarPopup(item.itemData);
+
+            Debug.Log($"[CATÁLOGO] Novo item registrado: {item.itemData.itemName}");
+        }
+        else
+        {
+            // Fallback para itens antigos sem ItemData, apenas marca como catalogado
+            item.foiCatalogado = true;
+            Debug.LogWarning($"[CATÁLOGO] Item {item.objetoNome} catalogado, mas não possui ItemData!");
+        }
     }
 }

@@ -205,9 +205,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Spider
-  icon: {fileID: 0}
-  descricao: "Descri\xE7\xE3o da spider teste"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!114 &4576793942197996138
 MonoBehaviour:
@@ -224,8 +222,7 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 1495922075848748667, guid: 417128186985204448aaa5560b90319f, type: 3}
-  itemDropChance: 0.35
+  globalDropChance: 1
   itemAmount: 1
   lootPool:
   - itemPrefab: {fileID: 1495922075848748667, guid: 417128186985204448aaa5560b90319f, type: 3}
