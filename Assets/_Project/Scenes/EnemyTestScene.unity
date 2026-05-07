@@ -1473,10 +1473,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemDatabase
   allItems:
-  - {fileID: 11400000, guid: ed367eb6db5c6f34083777870ecbaaf8, type: 2}
   - {fileID: 11400000, guid: d51afe4baf9e5cb40b83fa416d9ac29c, type: 2}
   - {fileID: 11400000, guid: 0297bd4d2ac4bc34b9ce3d68e2adf3e5, type: 2}
   - {fileID: 11400000, guid: 704636780efab254e81ab6cca56b5a2d, type: 2}
+  - {fileID: 11400000, guid: 7f4515c2335542a418b55a4651e81a0d, type: 2}
+  - {fileID: 11400000, guid: 955cb6b389f2df746b0daef07a5e4243, type: 2}
+  - {fileID: 11400000, guid: aa874d28912ac8f4381d71a375c04682, type: 2}
+  - {fileID: 11400000, guid: 176914a66279d8d49b37e7b236003963, type: 2}
+  - {fileID: 11400000, guid: 7b5bf97a71cd86c4e8084f87d33acd1a, type: 2}
+  - {fileID: 11400000, guid: e4836809adaee9247b1f7cde4de4c458, type: 2}
+  - {fileID: 11400000, guid: ff10b366f4e90604491bd4944b1af36b, type: 2}
+  - {fileID: 11400000, guid: 3b4c7e60054b2dd47873e2b448bd4e82, type: 2}
+  - {fileID: 11400000, guid: 773429f761ea12a4f91a931be3647ad7, type: 2}
+  - {fileID: 11400000, guid: 1031d377f92b59140bb6c88db065602b, type: 2}
+  - {fileID: 11400000, guid: 1c67c6cfda4df514badcc77fbbe9cbb3, type: 2}
+  - {fileID: 11400000, guid: 19473933b09da014db439945e09280e5, type: 2}
+  - {fileID: 11400000, guid: ceeb41a741bc93645b60d4110912d7be, type: 2}
+  - {fileID: 11400000, guid: 0ae3500d750dc974cac4c1e09ba78fbd, type: 2}
+  - {fileID: 11400000, guid: 06acf79c9ce1ed54793eb9d838f5f446, type: 2}
+  - {fileID: 11400000, guid: 03cc265b102bc124ebd956e0630320f5, type: 2}
+  - {fileID: 11400000, guid: 7bcf12806f720014fabca8dae5f909ed, type: 2}
+  - {fileID: 11400000, guid: 22f57fd4836cdd14288bcea6817e3f95, type: 2}
+  - {fileID: 11400000, guid: 9be213ef1b77619408724ccd9b6e6c95, type: 2}
+  - {fileID: 11400000, guid: 497b4399c8ca2a043815277a80669ea5, type: 2}
+  - {fileID: 11400000, guid: 79dfe6ebec3e9494b94c80c2d5a0129f, type: 2}
+  - {fileID: 11400000, guid: 9fa9ac96d1f391943a4f4d3c54e4bdf2, type: 2}
+  - {fileID: 11400000, guid: 41b7c776d16a52149a1517184ebec63b, type: 2}
+  - {fileID: 11400000, guid: fc628f609a4595a4db1e457b7a166322, type: 2}
+  - {fileID: 11400000, guid: e4d6229504f6e4d439378db635d83e3a, type: 2}
+  - {fileID: 11400000, guid: ff8f93546844caf45b75ee0b4f4d21c7, type: 2}
+  - {fileID: 11400000, guid: b660cd7e8c7814e47b5ae636f4079ba4, type: 2}
+  - {fileID: 11400000, guid: dc0de1c58fc15b741b3a2823a227d76e, type: 2}
 --- !u!4 &688351568
 Transform:
   m_ObjectHideFlags: 0
@@ -3518,6 +3545,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 854563786250266021, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -6.4001465
+      objectReference: {fileID: 0}
+    - target: {fileID: 854563786250266021, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -5.5999756
       objectReference: {fileID: 0}
@@ -4462,10 +4493,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 2201983130971189720, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
-      propertyPath: m_Constraints
-      value: 112
-      objectReference: {fileID: 0}
     - target: {fileID: 3963383441999901335, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
       propertyPath: m_LocalPosition.x
       value: -40

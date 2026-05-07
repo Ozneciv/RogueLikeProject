@@ -207,13 +207,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
-  essenceAmount: 10
-  essenceVariation: 3
+  essenceAmount: 100
+  essenceVariation: 10
   globalDropChance: 1
   itemAmount: 1
   lootPool:
-  - itemPrefab: {fileID: 1066167381274076914, guid: 294f662b14179e84ea3e72c6956c2460, type: 3}
-    weight: 1
+  - itemPrefab: {fileID: 4483142858074221592, guid: c92e479881a9a5d4697323958b3595fb, type: 3}
+    weight: 40
+  - itemPrefab: {fileID: 1582116761678166610, guid: f9df4ec66da70494db04e3035831e297, type: 3}
+    weight: 30
+  - itemPrefab: {fileID: 1346386853181149894, guid: 4ab4ccdfba961a14eb47afe0ec707df5, type: 3}
+    weight: 20
+  - itemPrefab: {fileID: 5351024838107336789, guid: aeea4dbbbd52cd048a997a6b83b367ec, type: 3}
+    weight: 10
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 2

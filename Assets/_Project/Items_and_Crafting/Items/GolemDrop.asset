@@ -18,8 +18,8 @@ MonoBehaviour:
   icon: {fileID: 0}
   tier: 1
   enemySource: Golem
-  recycleEssenceValue: 50
-  infusionEssenceCost: 50
+  recycleEssenceValue: 100
+  infusionEssenceCost: 0
   itemAttributes:
   - attributeType: 13
     value: 50
