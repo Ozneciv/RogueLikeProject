@@ -165,10 +165,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 5866666021909216657, guid: c0c65d5866a5c8547adde151ba97005e, type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: d4aa0e107cc8d45418c4554b8f412050, type: 2}
     - target: {fileID: -9070493210130169274, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
       propertyPath: m_Layer
       value: 6
@@ -187,15 +183,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -8.808235
+      value: -40.15
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.0000019073486
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.68
+      value: -39.83
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 11d00224e6263d04ca38f8bf5db30190, type: 3}
       propertyPath: m_LocalRotation.w
@@ -521,6 +517,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: c0c65d5866a5c8547adde151ba97005e, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: d4aa0e107cc8d45418c4554b8f412050, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -615,6 +615,10 @@ MonoBehaviour:
   forcaArremesso: 10
   forcaArco: 5
   intervaloAtaque: 0.1
+  distanciaMelee: 2.5
+  danoMelee: 20
+  cooldownMelee: 1.5
+  raioHitMelee: 1.8
   strafeChangeDuration: 1.2
 --- !u!95 &3836112350719978704
 Animator:
@@ -698,8 +702,7 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  characteristicItemPrefab: {fileID: 4609917713084158627, guid: cd5363bd7755ba74a85b266b7d99ef00, type: 3}
-  itemDropChance: 0.35
+  globalDropChance: 1
   itemAmount: 1
   lootPool:
   - itemPrefab: {fileID: 4609917713084158627, guid: cd5363bd7755ba74a85b266b7d99ef00, type: 3}

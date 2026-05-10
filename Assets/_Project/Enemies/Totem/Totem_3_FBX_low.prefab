@@ -168,15 +168,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 89.5
+      value: 40.7
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.0057809353
+      value: 0.0000038146973
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -3.5
+      value: 0.02
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
       propertyPath: m_LocalRotation.w
@@ -340,9 +340,17 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  globalDropChance: 0.3
+  globalDropChance: 1
   itemAmount: 1
-  lootPool: []
+  lootPool:
+  - itemPrefab: {fileID: 3764477026988318115, guid: 2be4f3a63b118e64bb2a69427bfbf3f9, type: 3}
+    weight: 40
+  - itemPrefab: {fileID: 7710391414899334709, guid: 5314d132cb2d52f409294ab016c985d9, type: 3}
+    weight: 30
+  - itemPrefab: {fileID: 1892841328970859659, guid: 87d066aa87c84744a871765c7c0c1cf6, type: 3}
+    weight: 20
+  - itemPrefab: {fileID: 410151209585210004, guid: 6554e4a4dbb882e45a7a04c31a6d00b6, type: 3}
+    weight: 10
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3

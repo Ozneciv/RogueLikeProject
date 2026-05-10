@@ -145,7 +145,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &1522120915187402137
 MonoBehaviour:
@@ -226,13 +226,13 @@ MonoBehaviour:
   itemAmount: 1
   lootPool:
   - itemPrefab: {fileID: 1495922075848748667, guid: 417128186985204448aaa5560b90319f, type: 3}
-    weight: 60
+    weight: 40
   - itemPrefab: {fileID: 7791058586759529343, guid: e91e2a132d9169e4c9ec01b17cdbddeb, type: 3}
-    weight: 25
+    weight: 30
   - itemPrefab: {fileID: 2535762749556102514, guid: 1854f31ac5b398647a13cd8764eecc30, type: 3}
-    weight: 10
+    weight: 20
   - itemPrefab: {fileID: 6487865155247758211, guid: 39d888ac082214746bff22ec7715abe4, type: 3}
-    weight: 5
+    weight: 10
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
