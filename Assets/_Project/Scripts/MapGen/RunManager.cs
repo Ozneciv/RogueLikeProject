@@ -29,6 +29,16 @@ public class RunManager : MonoBehaviour
     [Tooltip("Incremento de pontos de spawn por sala.")]
     public float spawnPointsGrowth = 0.9f;
 
+    [Header("Progressão de Rounds")]
+    [Tooltip("Total de rounds por run. O ÚLTIMO round é sempre Boss Fight.")]
+    public int totalLevels = 4;
+
+    [Tooltip("Número de salas principais geradas em cada round normal (índice 0 = Round 1, 1 = Round 2, etc.).\nO boss round não usa este array.")]
+    public int[] roomsPerLevel = new int[] { 5, 7, 9 };
+
+    /// <summary>Round atual da run (1 = primeiro nível, totalLevels = boss). Persiste entre cenas via DontDestroyOnLoad.</summary>
+    [HideInInspector] public int currentLevel = 1;
+
     // =====================================================
 
     void Awake()
@@ -49,13 +59,41 @@ public class RunManager : MonoBehaviour
     // =====================================================
 
     /// <summary>
-    /// Inicia uma nova Run: reseta o contador de salas.
-    /// Chamado pelo GameManager ao carregar uma nova partida.
+    /// Inicia uma nova Run: reseta sala E round.
+    /// Chamado pelo GameManager quando o jogador começa uma partida do zero (ex: saindo da BaseLab).
+    /// NÃO chame isso ao avançar entre níveis da mesma run — use AdvanceLevel().
     /// </summary>
     public void StartNewRun()
     {
         currentRoomNumber = 1;
-        Debug.Log("[RUN MANAGER] Nova run iniciada. Sala atual = 1.");
+        currentLevel = 1;
+        Debug.Log("[RunManager] 🆕 Nova run iniciada. Sala 1 | Round 1.");
+    }
+
+    /// <summary>
+    /// True se o round atual é o Boss Fight (último round da run).
+    /// </summary>
+    public bool isBossRound => currentLevel >= totalLevels;
+
+    /// <summary>
+    /// Avança para o próximo round da run.
+    /// Chamado pelo GameManager quando o jogador usa a Exit Room.
+    /// </summary>
+    public void AdvanceLevel()
+    {
+        currentLevel = Mathf.Min(currentLevel + 1, totalLevels);
+        Debug.Log($"[RunManager] ▶️ Round {currentLevel}/{totalLevels} | Boss? {isBossRound}");
+    }
+
+    /// <summary>
+    /// Retorna o maxMainRooms configurado para o round atual.
+    /// Retorna 0 se for Boss Round (o LevelGenerator deve lidar com isso).
+    /// </summary>
+    public int GetMaxRoomsForCurrentLevel()
+    {
+        if (isBossRound) return 0;
+        int idx = Mathf.Clamp(currentLevel - 1, 0, roomsPerLevel.Length - 1);
+        return roomsPerLevel[idx];
     }
 
     /// <summary>

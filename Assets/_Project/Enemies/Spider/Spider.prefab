@@ -205,9 +205,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Spider
-  icon: {fileID: 0}
-  descricao: "Descri\xE7\xE3o da spider teste"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!114 &4576793942197996138
 MonoBehaviour:

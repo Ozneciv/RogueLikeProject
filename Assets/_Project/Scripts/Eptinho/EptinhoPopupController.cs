@@ -3,6 +3,10 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 
+/// <summary>
+/// Controla o popup de notificação do Eptinho (item coletado / inimigo encontrado).
+/// Aparece automaticamente por 3 segundos quando algo novo é catalogado.
+/// </summary>
 public class EptinhoPopupController : MonoBehaviour
 {
     public static EptinhoPopupController instancia;
@@ -27,14 +31,16 @@ public class EptinhoPopupController : MonoBehaviour
         }
     }
 
-    public void MostrarPopup(ItemCatalogado item)
+    /// <summary>Popup ao catalogar um novo ItemData.</summary>
+    public void MostrarPopup(ItemData item)
     {
-        MostrarPopupGenerico(item.icon, "Eptinho analisou: " + item.nome);
+        MostrarPopupGenerico(item.icon, $"Eptinho analisou: {item.itemName}");
     }
 
-    public void MostrarPopupInimigo(InimigoCatalogado inimigo)
+    /// <summary>Popup ao registrar um novo EnemyData no Bestiário.</summary>
+    public void MostrarPopupInimigo(EnemyData inimigo)
     {
-        MostrarPopupGenerico(inimigo.icon, "Novo inimigo encontrado: " + inimigo.nome);
+        MostrarPopupGenerico(inimigo.icon, $"Novo inimigo encontrado: {inimigo.enemyName}");
     }
 
     void MostrarPopupGenerico(Sprite icone, string mensagem)
@@ -49,7 +55,7 @@ public class EptinhoPopupController : MonoBehaviour
         if (imagemDoItem != null && icone != null) imagemDoItem.sprite = icone;
         if (textoDoItem != null) textoDoItem.text = mensagem;
 
-        Debug.Log("[POPUP] Mostrando: " + mensagem);
+        Debug.Log($"[POPUP] Mostrando: {mensagem}");
 
         if (esconderCoroutine != null)
             StopCoroutine(esconderCoroutine);
