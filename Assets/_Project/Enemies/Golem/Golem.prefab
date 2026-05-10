@@ -229,9 +229,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Golem
-  icon: {fileID: 21300000, guid: ed0bc8cd41f91174fb5eff00e69d5caf, type: 3}
-  descricao: "Golem descr\xE7\xE3o teste"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!1001 &5881570581251759777
 PrefabInstance:
@@ -397,7 +395,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1.42
+      value: 1.405
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

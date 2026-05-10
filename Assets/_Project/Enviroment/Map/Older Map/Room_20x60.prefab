@@ -861,18 +861,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoomController
   isSafeRoom: 0
   doorsAreLocked: 0
-  biomeEnemyPool:
-  - {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
-  - {fileID: 1086662407212499298, guid: 1434b58caf94e6141a914f1f5806c875, type: 3}
+  roomIndex: 1
+  mobMenorPrefabs:
+  - {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
+  - {fileID: 1155010451884850368, guid: 17526d5d2a1393e438fd19d86fdfed1c, type: 3}
+  atiradorPrefabs:
+  - {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
+  - {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
+  tanquePrefabs:
+  - {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
   - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
+  - {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
+  elitePrefabs:
+  - {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
   - {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
-  minEnemyTypes: 3
-  maxEnemyTypes: 5
   minWaves: 1
   maxWaves: 3
+  timeBetweenWaves: 2
   minEnemiesPerWave: 3
-  maxEnemiesPerWave: 5
-  spawnArea: {fileID: 7536777513122493299}
+  mobCapFraction: 0.7
+  spawnAreas: []
   spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
   spawnDelay: 1.5
   spawnHeightOffset: 0.5
@@ -881,6 +889,7 @@ MonoBehaviour:
   - {fileID: 8211162357720697860}
   - {fileID: 2911738065706837138}
   - {fileID: 3172820402529805796}
+  showSpawnLog: 1
 --- !u!65 &9094200340547882319
 BoxCollider:
   m_ObjectHideFlags: 0

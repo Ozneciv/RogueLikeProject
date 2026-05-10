@@ -89,8 +89,8 @@ public class RoomController : MonoBehaviour
     public GameObject spawnIndicatorPrefab;
     [Tooltip("Tempo em segundos entre o indicador aparecer e o inimigo spawnar.")]
     public float spawnDelay = 1.5f;
-    [Tooltip("Altura extra acima do chão para spawnar inimigos.")]
-    public float spawnHeightOffset = 2f;
+    [Tooltip("Altura acima do CHÃO da SpawnArea onde inimigos aparecem. 0.1 = rente ao chão.")]
+    public float spawnHeightOffset = 0.1f;
 
     // =====================================================
     // PORTAS E REFERÊNCIAS
@@ -149,7 +149,17 @@ public class RoomController : MonoBehaviour
             CheckWaveStatus();
     }
 
+    // Caso o BoxCollider (trigger) esteja no MESMO GameObject que o RoomController
     private void OnTriggerEnter(Collider other)
+    {
+        OnPlayerEnteredRoom(other);
+    }
+
+    /// <summary>
+    /// Chamado diretamente pelo OnTriggerEnter (quando o collider está no mesmo GO)
+    /// OU pelo RoomTriggerProxy (quando o collider está num filho).
+    /// </summary>
+    public void OnPlayerEnteredRoom(Collider other)
     {
         if (other.CompareTag("Player") && !isSafeRoom && !hasTriggered)
         {
@@ -169,6 +179,10 @@ public class RoomController : MonoBehaviour
 
     IEnumerator StartCombatEncounter()
     {
+        // Aguarda o player entrar completamente na sala antes de fechar as portas.
+        // Sem este delay, a barreira fecha enquanto o player ainda está no vão da entrada.
+        yield return new WaitForSeconds(0.8f);
+
         LockDoors();
         if (showSpawnLog)
             Debug.Log($"[ROOM {roomIndex}] Portas trancadas. {totalWavesThisRoom} ondas programadas.");
@@ -369,7 +383,9 @@ public class RoomController : MonoBehaviour
         Bounds bounds = area.bounds;
         float x = Random.Range(bounds.min.x, bounds.max.x);
         float z = Random.Range(bounds.min.z, bounds.max.z);
-        float y = area.transform.position.y + spawnHeightOffset;
+        // Usa bounds.min.y (chão da BoxCollider) como referência base.
+        // Isso é correto independente de onde o pivot/root da área estiver.
+        float y = bounds.min.y + spawnHeightOffset;
         return new Vector3(x, y, z);
     }
 

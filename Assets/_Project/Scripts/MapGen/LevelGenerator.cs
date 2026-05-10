@@ -50,6 +50,10 @@ public class LevelGenerator : MonoBehaviour
     [Tooltip("Prefab que sela becos sem saída organicamente (raízes, rochas). Deve ter 1 Entrada.")]
     public GameObject deadEndPrefab;
 
+    [Header("Boss Fight")]
+    [Tooltip("Prefab da sala de Boss Fight (Round 4). Deve ter 1 ConnectionPoint(Entrada).\nQuando o round boss for detectado, apenas Safe Room + Boss Room são gerados.")]
+    public GameObject bossRoomPrefab;
+
     [Header("Regras de Geração")]
     [Tooltip("Número alvo de salas principais (sem contar especiais).")]
     public int maxMainRooms = 10;
@@ -64,6 +68,14 @@ public class LevelGenerator : MonoBehaviour
     [Header("Configurações")]
     [Tooltip("Delay extra após a geração antes de notificar o GameManager (para assets carregarem).")]
     public float extraLoadDelay = 1.0f;
+
+    [Header("Alinhamento")]
+    [Tooltip("Posição Y do chão de todas as salas. Ajuste se as salas flutuarem ou afundarem.")]
+    public float roomFloorY = 0f;
+
+    [Header("Anti-Sobreposição")]
+    [Tooltip("Margem (metros) aplicada ao bounds check. Aumente se salas legítimas forem descartadas (falso positivo). Diminua se ainda houver colisões.")]
+    public float overlapTolerance = 0.5f;
 
     // =========================================================
     // ESTADO INTERNO
@@ -80,6 +92,9 @@ public class LevelGenerator : MonoBehaviour
     private bool exitRoomSpawned = false;
     private int roomSequenceCounter = 0;
 
+    /// <summary>Bounds de todas as salas já confirmadas no mapa — (referência + bounds) para exclusão de vizinhos diretos.</summary>
+    private List<(GameObject room, Bounds bounds)> placedRoomBounds = new List<(GameObject, Bounds)>();
+
     // =========================================================
     // API PÚBLICA
     // =========================================================
@@ -89,9 +104,26 @@ public class LevelGenerator : MonoBehaviour
     {
         roomCounts.Clear();
         openOutputs.Clear();
+        placedRoomBounds.Clear();
         merchantRoomSpawned = false;
         exitRoomSpawned = false;
         roomSequenceCounter = 0;
+
+        // --- Progressão de Rounds: ajusta maxMainRooms dinamicamente ---
+        bool isBossRound = false;
+        if (RunManager.instance != null)
+        {
+            isBossRound = RunManager.instance.isBossRound;
+            if (!isBossRound)
+            {
+                maxMainRooms = RunManager.instance.GetMaxRoomsForCurrentLevel();
+                Debug.Log($"[LevelGenerator] 🗺️ Round {RunManager.instance.currentLevel}/{RunManager.instance.totalLevels} — gerando {maxMainRooms} salas principais.");
+            }
+            else
+            {
+                Debug.Log($"[LevelGenerator] 🏆 Round {RunManager.instance.currentLevel}/{RunManager.instance.totalLevels} — BOSS FIGHT!");
+            }
+        }
 
         // --- Instancia a Safe Room na origem ---
         // Usa a rotação salva no prefab (não força identity) para respeitar correções de eixo do FBX
@@ -104,10 +136,72 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
+        // Registra bounds da Safe Room como âncora para o sistema anti-sobreposição
+        RegisterRoomBounds(startRoom);
+
         // Registra as saídas da Safe Room (pula a Entrada, que fica no West/Nave)
         RegisterOutputPoints(startRoom, isStartRoom: true);
 
-        StartCoroutine(GenerationLoop(roomCount: 1));
+        if (isBossRound)
+            StartCoroutine(BossGenerationCoroutine());
+        else
+            StartCoroutine(GenerationLoop(roomCount: 1));
+    }
+
+    // =========================================================
+    // BOSS GENERATION
+    // =========================================================
+
+    /// <summary>
+    /// Corrotina usada no round de Boss Fight.
+    /// Pula a geração procedural normal e conecta o bossRoomPrefab
+    /// diretamente à primeira saída disponível da Safe Room.
+    /// </summary>
+    IEnumerator BossGenerationCoroutine()
+    {
+        if (bossRoomPrefab == null)
+        {
+            Debug.LogError("[LevelGenerator] ❌ bossRoomPrefab não definido no Inspector! " +
+                           "Arraste o prefab de Boss Fight no campo 'Boss Room Prefab' do LevelGenerator.");
+            yield break;
+        }
+
+        if (openOutputs.Count == 0)
+        {
+            Debug.LogError("[LevelGenerator] ❌ Safe Room não tem saídas disponíveis para conectar o Boss!");
+            yield break;
+        }
+
+        // Pega a primeira saída da Safe Room
+        ConnectionPoint bossOutput = openOutputs[0];
+        openOutputs.RemoveAt(0);
+        bossOutput.isOccupied = true;
+
+        GameObject bossRoom = Instantiate(bossRoomPrefab);
+        ConnectionPoint bossEntrada = GetInputPoint(bossRoom, bossOutput.connectionTag, bossOutput.transform);
+
+        if (bossEntrada != null)
+        {
+            AlignRooms(bossOutput.transform, bossEntrada.transform);
+            bossEntrada.isOccupied = true;
+            Debug.Log("[LevelGenerator] ✅ Sala de Boss conectada à Safe Room!");
+        }
+        else
+        {
+            // Fallback: posiciona na frente da saída sem alinhar sockets
+            bossRoom.transform.position = bossOutput.transform.position + bossOutput.transform.forward * 20f;
+            Debug.LogWarning("[LevelGenerator] ⚠️ Boss Room não tem ConnectionPoint(Entrada) compatível. Usando posição fallback.");
+        }
+
+        Debug.Log("[LevelGenerator] 🏆 BOSS FIGHT gerado!");
+        yield return new WaitForSeconds(extraLoadDelay);
+
+        ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
+        if (itemSpawner != null) itemSpawner.SpawnItems();
+        else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
+
+        if (GameManager.instance != null)
+            GameManager.instance.OnLevelReady(playerSpawnPoint);
     }
 
     // =========================================================
@@ -129,23 +223,50 @@ public class LevelGenerator : MonoBehaviour
             // --- Corredor de Transição ---
             if (transitionRoomPrefab == null)
             {
-                Debug.LogError("[LevelGenerator] transitionRoomPrefab não definido!");
+                Debug.LogError("[LevelGenerator] transitionRoomPrefab não definido no Inspector!");
                 continue;
             }
 
+            // O corredor de transição é agnóstico de tag — busca pelo PointType apenas.
+            // Isso evita falhas quando as connectionTags do prefab não batem exatamente.
             GameObject transitionRoom = Instantiate(transitionRoomPrefab);
-            ConnectionPoint transEntrada = GetInputPoint(transitionRoom, currentOutput.connectionTag, currentOutput.transform);
-            ConnectionPoint transSaida   = GetFirstOutputPoint(transitionRoom, currentOutput.connectionTag);
+            ConnectionPoint[] transCPs = transitionRoom.GetComponentsInChildren<ConnectionPoint>();
 
-            if (transEntrada == null || transSaida == null)
+            ConnectionPoint transEntrada = null;
+            ConnectionPoint transSaida   = null;
+
+            foreach (var cp in transCPs)
             {
-                Debug.LogError("[LevelGenerator] Prefab de Transição precisa de 1 Entrada e 1 Saída com ConnectionPoint.");
+                if (transEntrada == null && cp.pointType == ConnectionPoint.PointType.Entrada && !cp.isOccupied)
+                    transEntrada = cp;
+                if (transSaida == null && cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
+                    transSaida = cp;
+                if (transEntrada != null && transSaida != null) break;
+            }
+
+            if (transEntrada == null)
+            {
+                Debug.LogError("[LevelGenerator] ❌ transitionRoomPrefab não tem nenhum ConnectionPoint do tipo Entrada. " +
+                               "Adicione um CP filho com PointType = Entrada no prefab.");
                 Destroy(transitionRoom);
                 continue;
             }
 
+            if (transSaida == null)
+            {
+                Debug.LogError("[LevelGenerator] ❌ transitionRoomPrefab não tem nenhum ConnectionPoint do tipo Saida. " +
+                               "Adicione um CP filho com PointType = Saida no prefab.");
+                Destroy(transitionRoom);
+                continue;
+            }
+
+            // Propaga a tag da saída atual para a saída da transição,
+            // garantindo que a busca por mainRoomPrefab funcione corretamente.
+            transSaida.connectionTag = currentOutput.connectionTag;
+
             AlignRooms(currentOutput.transform, transEntrada.transform);
             transEntrada.isOccupied = true;
+            Debug.Log($"[LevelGenerator] ✅ Transição conectada à saída '{currentOutput.gameObject.name}' (tag='{currentOutput.connectionTag}').");
 
             // --- Sala Principal ---
             GameObject roomPrefab = GetCompatibleRoomPrefab(transSaida.connectionTag);
@@ -157,15 +278,35 @@ public class LevelGenerator : MonoBehaviour
 
                 if (roomEntrada == null)
                 {
-                    Debug.LogError($"[LevelGenerator] Prefab '{roomPrefab.name}' não tem ConnectionPoint(Entrada). Verifique o prefab.");
+                    Debug.LogError($"[LevelGenerator] ❌ Prefab '{roomPrefab.name}' não tem ConnectionPoint(Entrada) com tag='{transSaida.connectionTag}'. " +
+                                   $"Verifique o prefab. Transição descartada.");
                     Destroy(newRoom);
                     Destroy(transitionRoom);
                     continue;
                 }
 
                 AlignRooms(transSaida.transform, roomEntrada.transform);
+
+                // --- Verificação de Sobreposição ---
+                // Checa DEPOIS de posicionar (bounds dependem da posição final).
+                // A sala de origem de currentOutput e o próprio corredor são EXCLUÍDOS da checagem:
+                // salas vizinhas sempre se tocam por design — isso não é colisão real.
+                GameObject sourceRoom = currentOutput.transform.root.gameObject;
+                if (HasOverlapWithExistingRooms(transitionRoom, excludeRoom: sourceRoom) ||
+                    HasOverlapWithExistingRooms(newRoom, excludeRoom: transitionRoom))
+                {
+                    Debug.LogWarning($"[LevelGenerator] ⚠️ Sala '{roomPrefab.name}' causaria sobreposição com sala existente. Par descartado.");
+                    Destroy(newRoom);
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
                 transSaida.isOccupied = true;
                 roomEntrada.isOccupied = true;
+
+                // Registra bounds de ambas no sistema anti-sobreposição
+                RegisterRoomBounds(transitionRoom);
+                RegisterRoomBounds(newRoom);
 
                 // Contagem e índice
                 roomCount++;
@@ -181,12 +322,14 @@ public class LevelGenerator : MonoBehaviour
 
                 // Registra as saídas da nova sala
                 RegisterOutputPoints(newRoom, isStartRoom: false);
+                Debug.Log($"[LevelGenerator] ✅ Sala '{prefabName}' adicionada (#{roomCount}). Saídas abertas: {openOutputs.Count}");
             }
             else
             {
-                // Sem sala compatível — devolve a saída da transição como beco
+                // Sem sala compatível — mantém a transição no mapa e registra a saída dela como beco
                 openOutputs.Add(transSaida);
-                Debug.LogWarning($"[LevelGenerator] Nenhum prefab compatível com tag '{transSaida.connectionTag}'. Beco registrado.");
+                Debug.LogWarning($"[LevelGenerator] ⚠️ Nenhum prefab de mainRoom compatível com tag='{transSaida.connectionTag}'. " +
+                                 $"A transição ficou no mapa e sua saída virou beco.");
             }
 
             yield return null;
@@ -374,12 +517,16 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // =========================================================
-    // ALINHAMENTO (sem mudanças — já funcionava bem)
+    // ALINHAMENTO
     // =========================================================
 
     /// <summary>
-    /// Alinha a sala que contém socketB de modo que socketB coincida com socketA,
-    /// com os forwards opostos (as salas se "encaixam" pela boca dos sockets).
+    /// Alinha a sala que contém socketB de modo que socketB coincida com socketA
+    /// no plano XZ, com os forwards opostos (as salas se "encaixam" pela boca dos sockets).
+    ///
+    /// O eixo Y é IGNORADO no delta de posição: todas as salas ficam ancoradas em
+    /// roomFloorY independentemente da altura local dos sockets no prefab.
+    /// Isso evita que diferenças de pivot entre modelos façam uma sala flutuar ou afundar.
     /// </summary>
     void AlignRooms(Transform socketA, Transform socketB)
     {
@@ -389,11 +536,29 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
+        Transform roomA = socketA.root;
         Transform roomB = socketB.root;
-        Quaternion targetRotation = Quaternion.LookRotation(-socketA.forward, socketA.up);
+
+        // 1. Rotação: faz o forward de socketB apontar contra o forward de socketA
+        Quaternion targetRotation = Quaternion.LookRotation(-socketA.forward, Vector3.up);
         Quaternion correctionRotation = targetRotation * Quaternion.Inverse(socketB.rotation);
         roomB.rotation = correctionRotation * roomB.rotation;
-        roomB.position += socketA.position - socketB.position;
+
+        // 2. Posição XZ: alinha os sockets horizontalmente
+        Vector3 delta = socketA.position - socketB.position;
+        roomB.position += new Vector3(delta.x, 0f, delta.z);
+
+        // 3. Posição Y: iguala diretamente o Y de socketB ao Y de socketA.
+        //
+        //    ABORDAGEM ANTERIOR (bugada): definia roomB.position.y = socketA.y
+        //    Isso ignorava o offset local do socket dentro do prefab, causando
+        //    acúmulo de erro a cada conexão (cada sala afundava um pouco mais).
+        //
+        //    ABORDAGEM CORRETA: como todos os ConnectionPoints são posicionados
+        //    rentes ao chão nos prefabs, igualar o Y dos sockets é equivalente
+        //    a igualar os pisos — independente de onde o pivot/root do prefab esteja.
+        float deltaY = socketA.position.y - socketB.position.y;
+        roomB.position += new Vector3(0f, deltaY, 0f);
     }
 
     // =========================================================
@@ -457,5 +622,58 @@ public class LevelGenerator : MonoBehaviour
     {
         return parent.GetComponentsInChildren<Transform>()
             .FirstOrDefault(t => t.name == childName);
+    }
+
+    // =========================================================
+    // ANTI-SOBREPOSIÇÃO
+    // =========================================================
+
+    /// <summary>
+    /// Calcula o Bounds combinado de todos os Renderers da sala.
+    /// Retorna Bounds zerado se não houver renderers (sala invisível/vazia).
+    /// </summary>
+    Bounds GetRoomBounds(GameObject room)
+    {
+        Renderer[] renderers = room.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return new Bounds();
+
+        Bounds combined = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            combined.Encapsulate(renderers[i].bounds);
+        return combined;
+    }
+
+    /// <summary>Registra os bounds da sala como área ocupada para checagens futuras.</summary>
+    void RegisterRoomBounds(GameObject room)
+    {
+        Bounds b = GetRoomBounds(room);
+        // Só registra se tem volume real (evita entrar com bounds nulo)
+        if (b.size.sqrMagnitude > 0f)
+            placedRoomBounds.Add((room, b));
+    }
+
+    /// <summary>
+    /// Retorna true se os bounds da sala se sobrepõem com alguma sala já confirmada.
+    /// O overlapTolerance encolhe o bounds antes de testar, permitindo que paredes
+    /// encostem sem disparar um falso positivo.
+    ///
+    /// excludeRoom: ignora este GameObject na checagem (usado para não rejeitar
+    /// salas que encostam em seu vizinho direto por design).
+    /// </summary>
+    bool HasOverlapWithExistingRooms(GameObject room, GameObject excludeRoom = null)
+    {
+        Bounds b = GetRoomBounds(room);
+        if (b.size.sqrMagnitude == 0f) return false;
+
+        // Encolhe para aceitar paredes tocando, mas rejeitar penetração real
+        b.Expand(-overlapTolerance);
+
+        foreach (var entry in placedRoomBounds)
+        {
+            // Pula o vizinho direto — ele encosta por design, não é colisão real
+            if (excludeRoom != null && entry.room == excludeRoom) continue;
+            if (b.Intersects(entry.bounds)) return true;
+        }
+        return false;
     }
 }
