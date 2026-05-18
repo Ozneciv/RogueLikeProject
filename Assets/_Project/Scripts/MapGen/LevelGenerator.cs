@@ -37,8 +37,8 @@ public class LevelGenerator : MonoBehaviour
     [Tooltip("Pool de salas de combate, orgânicas, Y-shape, etc. Misture quantas quiser.")]
     public List<GameObject> mainRoomPrefabs;
 
-    [Tooltip("Corredor de ligação entre salas. Deve ter 1 Entrada e 1 Saída.")]
-    public GameObject transitionRoomPrefab;
+    [Tooltip("Pool de corredores de ligação entre salas. Devem ter 1 Entrada e 1 Saída.")]
+    public List<GameObject> transitionRoomPrefabs = new List<GameObject>();
 
     [Header("Prefabs Especiais")]
     public GameObject merchantRoomPrefab;
@@ -220,66 +220,74 @@ public class LevelGenerator : MonoBehaviour
             if (currentOutput.isOccupied) continue;
             currentOutput.isOccupied = true;
 
-            // --- Corredor de Transição ---
-            if (transitionRoomPrefab == null)
+            // --- Corredor de Transição (retry com todas as opções embaralhadas) ---
+            if (transitionRoomPrefabs == null || transitionRoomPrefabs.Count == 0)
             {
-                Debug.LogError("[LevelGenerator] transitionRoomPrefab não definido no Inspector!");
+                Debug.LogError("[LevelGenerator] transitionRoomPrefabs vazio no Inspector!");
                 continue;
             }
 
-            // O corredor de transição é agnóstico de tag — busca pelo PointType apenas.
-            // Isso evita falhas quando as connectionTags do prefab não batem exatamente.
-            GameObject transitionRoom = Instantiate(transitionRoomPrefab);
-            ConnectionPoint[] transCPs = transitionRoom.GetComponentsInChildren<ConnectionPoint>();
+            GameObject sourceRoom = currentOutput.transform.root.gameObject;
+            List<GameObject> shuffledTransitions = ShuffledCopy(transitionRoomPrefabs);
+            bool outputPlaced = false;
 
-            ConnectionPoint transEntrada = null;
-            ConnectionPoint transSaida   = null;
-
-            foreach (var cp in transCPs)
+            foreach (GameObject selectedTransitionPrefab in shuffledTransitions)
             {
-                if (transEntrada == null && cp.pointType == ConnectionPoint.PointType.Entrada && !cp.isOccupied)
-                    transEntrada = cp;
-                if (transSaida == null && cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
-                    transSaida = cp;
-                if (transEntrada != null && transSaida != null) break;
-            }
+                if (selectedTransitionPrefab == null) continue;
 
-            if (transEntrada == null)
-            {
-                Debug.LogError("[LevelGenerator] ❌ transitionRoomPrefab não tem nenhum ConnectionPoint do tipo Entrada. " +
-                               "Adicione um CP filho com PointType = Entrada no prefab.");
-                Destroy(transitionRoom);
-                continue;
-            }
+                GameObject transitionRoom = Instantiate(selectedTransitionPrefab);
+                ConnectionPoint[] transCPs = transitionRoom.GetComponentsInChildren<ConnectionPoint>();
 
-            if (transSaida == null)
-            {
-                Debug.LogError("[LevelGenerator] ❌ transitionRoomPrefab não tem nenhum ConnectionPoint do tipo Saida. " +
-                               "Adicione um CP filho com PointType = Saida no prefab.");
-                Destroy(transitionRoom);
-                continue;
-            }
+                ConnectionPoint transEntrada = null;
+                ConnectionPoint transSaida   = null;
 
-            // Propaga a tag da saída atual para a saída da transição,
-            // garantindo que a busca por mainRoomPrefab funcione corretamente.
-            transSaida.connectionTag = currentOutput.connectionTag;
+                foreach (var cp in transCPs)
+                {
+                    if (transEntrada == null && cp.pointType == ConnectionPoint.PointType.Entrada && !cp.isOccupied)
+                        transEntrada = cp;
+                    if (transSaida == null && cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
+                        transSaida = cp;
+                    if (transEntrada != null && transSaida != null) break;
+                }
 
-            AlignRooms(currentOutput.transform, transEntrada.transform);
-            transEntrada.isOccupied = true;
-            Debug.Log($"[LevelGenerator] ✅ Transição conectada à saída '{currentOutput.gameObject.name}' (tag='{currentOutput.connectionTag}').");
+                if (transEntrada == null || transSaida == null)
+                {
+                    Debug.LogWarning($"[LevelGenerator] ⚠️ '{selectedTransitionPrefab.name}' sem Entrada/Saida válida. Pulando.");
+                    Destroy(transitionRoom);
+                    continue;
+                }
 
-            // --- Sala Principal ---
-            GameObject roomPrefab = GetCompatibleRoomPrefab(transSaida.connectionTag);
+                transSaida.connectionTag = currentOutput.connectionTag;
+                AlignRooms(currentOutput.transform, transEntrada.transform);
 
-            if (roomPrefab != null)
-            {
+                // Checa sobreposição da transição ANTES de tentar a sala principal
+                if (HasOverlapWithExistingRooms(transitionRoom, excludeRoom: sourceRoom))
+                {
+                    Debug.LogWarning($"[LevelGenerator] ⚠️ Transição '{selectedTransitionPrefab.name}' sobrepõe. Tentando próxima...");
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
+                // --- Sala Principal ---
+                GameObject roomPrefab = GetCompatibleRoomPrefab(transSaida.connectionTag);
+
+                if (roomPrefab == null)
+                {
+                    // Sem sala compatível — mantém transição e registra saída como beco
+                    transEntrada.isOccupied = true;
+                    RegisterRoomBounds(transitionRoom);
+                    openOutputs.Add(transSaida);
+                    outputPlaced = true;
+                    Debug.LogWarning($"[LevelGenerator] ⚠️ Nenhum mainRoom compatível com tag='{transSaida.connectionTag}'. Transição virou beco.");
+                    break;
+                }
+
                 GameObject newRoom = Instantiate(roomPrefab);
                 ConnectionPoint roomEntrada = GetInputPoint(newRoom, transSaida.connectionTag, transSaida.transform);
 
                 if (roomEntrada == null)
                 {
-                    Debug.LogError($"[LevelGenerator] ❌ Prefab '{roomPrefab.name}' não tem ConnectionPoint(Entrada) com tag='{transSaida.connectionTag}'. " +
-                                   $"Verifique o prefab. Transição descartada.");
+                    Debug.LogError($"[LevelGenerator] ❌ '{roomPrefab.name}' sem Entrada compatível. Descartando.");
                     Destroy(newRoom);
                     Destroy(transitionRoom);
                     continue;
@@ -287,50 +295,40 @@ public class LevelGenerator : MonoBehaviour
 
                 AlignRooms(transSaida.transform, roomEntrada.transform);
 
-                // --- Verificação de Sobreposição ---
-                // Checa DEPOIS de posicionar (bounds dependem da posição final).
-                // A sala de origem de currentOutput e o próprio corredor são EXCLUÍDOS da checagem:
-                // salas vizinhas sempre se tocam por design — isso não é colisão real.
-                GameObject sourceRoom = currentOutput.transform.root.gameObject;
-                if (HasOverlapWithExistingRooms(transitionRoom, excludeRoom: sourceRoom) ||
-                    HasOverlapWithExistingRooms(newRoom, excludeRoom: transitionRoom))
+                if (HasOverlapWithExistingRooms(newRoom, excludeRoom: transitionRoom))
                 {
-                    Debug.LogWarning($"[LevelGenerator] ⚠️ Sala '{roomPrefab.name}' causaria sobreposição com sala existente. Par descartado.");
+                    Debug.LogWarning($"[LevelGenerator] ⚠️ Sala '{roomPrefab.name}' sobrepõe. Tentando próxima transição...");
                     Destroy(newRoom);
                     Destroy(transitionRoom);
                     continue;
                 }
 
+                // ✅ Par transição + sala aceito sem sobreposição
+                transEntrada.isOccupied = true;
                 transSaida.isOccupied = true;
                 roomEntrada.isOccupied = true;
 
-                // Registra bounds de ambas no sistema anti-sobreposição
                 RegisterRoomBounds(transitionRoom);
                 RegisterRoomBounds(newRoom);
 
-                // Contagem e índice
                 roomCount++;
                 roomSequenceCounter++;
                 string prefabName = roomPrefab.name;
                 if (!roomCounts.ContainsKey(prefabName)) roomCounts[prefabName] = 0;
                 roomCounts[prefabName]++;
 
-                // Inicializa o RoomController (sistema de ondas/economia)
                 RoomController roomCtrl = newRoom.GetComponentInChildren<RoomController>();
                 if (roomCtrl != null)
                     roomCtrl.Initialize(roomSequenceCounter);
 
-                // Registra as saídas da nova sala
                 RegisterOutputPoints(newRoom, isStartRoom: false);
                 Debug.Log($"[LevelGenerator] ✅ Sala '{prefabName}' adicionada (#{roomCount}). Saídas abertas: {openOutputs.Count}");
+                outputPlaced = true;
+                break;
             }
-            else
-            {
-                // Sem sala compatível — mantém a transição no mapa e registra a saída dela como beco
-                openOutputs.Add(transSaida);
-                Debug.LogWarning($"[LevelGenerator] ⚠️ Nenhum prefab de mainRoom compatível com tag='{transSaida.connectionTag}'. " +
-                                 $"A transição ficou no mapa e sua saída virou beco.");
-            }
+
+            if (!outputPlaced)
+                Debug.LogWarning($"[LevelGenerator] ⚠️ Saída '{currentOutput.gameObject.name}' descartada: nenhuma transição sem sobreposição.");
 
             yield return null;
         }
@@ -374,10 +372,42 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        Debug.Log("[LevelGenerator] Geração de Nível Completa!");
+        // Garantia: se ExitRoom não foi colocada, busca qualquer saída disponível na cena
+        if (!exitRoomSpawned)
+        {
+            Debug.LogError("[LevelGenerator] ❌ ExitRoom não colocada. Buscando saída disponível na cena...");
+
+            // Tenta conectar a ExitRoom a qualquer ConnectionPoint(Saida) não ocupado na cena
+            ConnectionPoint[] allCPs = FindObjectsByType<ConnectionPoint>(FindObjectsSortMode.None);
+            ConnectionPoint anyFreeOutput = null;
+            foreach (var cp in allCPs)
+            {
+                if (cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
+                {
+                    anyFreeOutput = cp;
+                    break;
+                }
+            }
+
+            if (anyFreeOutput != null)
+            {
+                SpawnSpecialRoom(exitRoomPrefab, anyFreeOutput, "Sala de Saída (recuperação)");
+                exitRoomSpawned = true;
+                Debug.LogWarning("[LevelGenerator] ⚠️ ExitRoom conectada a saída de recuperação. Mapa pode ter layout não ideal.");
+            }
+            else if (exitRoomPrefab != null && playerSpawnPoint != null)
+            {
+                // Último recurso absoluto: sem nenhuma saída disponível na cena inteira
+                Debug.LogError("[LevelGenerator] ❌ Nenhuma saída encontrada na cena. ExitRoom colocada sem conexão (último recurso).");
+                GameObject lastResortExit = Instantiate(exitRoomPrefab);
+                lastResortExit.transform.position = playerSpawnPoint.position + playerSpawnPoint.forward * 30f;
+                exitRoomSpawned = true;
+            }
+        }
+
+        Debug.Log($"[LevelGenerator] Geração Completa! ExitRoom: {(exitRoomSpawned ? "✅" : "❌")}");
         yield return new WaitForSeconds(extraLoadDelay);
 
-        // Spawn de itens
         ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
         if (itemSpawner != null) itemSpawner.SpawnItems();
         else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
@@ -675,5 +705,20 @@ public class LevelGenerator : MonoBehaviour
             if (b.Intersects(entry.bounds)) return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Retorna uma cópia embaralhada da lista sem modificar a original.
+    /// Usada para tentar todas as transições em ordem aleatória antes de desistir.
+    /// </summary>
+    List<T> ShuffledCopy<T>(List<T> source)
+    {
+        List<T> copy = new List<T>(source);
+        for (int i = copy.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            T tmp = copy[i]; copy[i] = copy[j]; copy[j] = tmp;
+        }
+        return copy;
     }
 }
