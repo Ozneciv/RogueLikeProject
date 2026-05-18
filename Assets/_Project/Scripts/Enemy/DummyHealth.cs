@@ -6,6 +6,8 @@ public class DummyHealth : MonoBehaviour
 {
     [Header("Vida")]
     public int maxHealth = 100;
+    [Tooltip("Ativa logs detalhados de dano/morte para depuração em runtime.")]
+    public bool debugLogDamage = false;
     public int CurrentHealth { get; private set; }
 
     [Header("Referências UI")]
@@ -109,6 +111,11 @@ public class DummyHealth : MonoBehaviour
         if (isInvulnerable) return;
         if (CurrentHealth <= 0) return;
 
+        if (debugLogDamage)
+        {
+            Debug.Log($"[DummyHealth] {gameObject.name} TakeDamage({damage}) before={CurrentHealth}");
+        }
+
         // Se estiver buffado, recebe dano reduzido (ex: metade)
         if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
 
@@ -176,6 +183,10 @@ public class DummyHealth : MonoBehaviour
         }
 
         Debug.Log(gameObject.name + " foi destruído.");
+        if (debugLogDamage)
+        {
+            Debug.Log("[DummyHealth] Death stack:\n" + System.Environment.StackTrace);
+        }
 
         // Chama o sistema de drops se existir
         // Busca em filhos e pais também — cobre hierarquias mais complexas de prefab
