@@ -4,24 +4,25 @@ using System.Collections.Generic;
 
 /// <summary>
 /// IA do Shard Swarm - Enxame de fragmentos de cristal que ataca em grupo
-/// Usa DummyHealth para sistema de vida integrado (barra de HP, texto de dano, etc.)
-/// Fragmentos podem se separar ao tomar dano pesado e reagrupar depois
+/// Usa ShardSwarmHealth para sistema de vida (com SetHealth para split)
+/// Fragmentos podem se separar ao tomar dano pesado
+/// Possui 3 padrões de ataque e entra em Enrage com HP baixo
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(DummyHealth))]
+[RequireComponent(typeof(ShardSwarmHealth))]
 public class ShardSwarm_AI : MonoBehaviour
 {
     [Header("Referências")]
     private Transform playerTransform;
     private Rigidbody rb;
-    private DummyHealth health;
+    private ShardSwarmHealth health;
 
     [Header("Fragmentos")]
     [Tooltip("Lista de GameObjects filhos que são os fragmentos")]
     public List<GameObject> shards = new List<GameObject>();
     [Tooltip("Raio da órbita dos fragmentos")]
     public float orbitRadius = 1.5f;
-    [Tooltip("Velocidade de órbita")]
+    [Tooltip("Velocidade de órbita base")]
     public float orbitSpeed = 2f;
 
     [Header("Ativação")]
@@ -32,7 +33,6 @@ public class ShardSwarm_AI : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 8f;
     public float attackRange = 5f;
-    public float retreatDistance = 8f;
 
     [Header("Ataque")]
     public float attackCooldown = 2f;
@@ -48,33 +48,54 @@ public class ShardSwarm_AI : MonoBehaviour
     public float splitSpawnOffset = 3f;
     [Tooltip("Se false, este enxame é um clone e não pode se dividir novamente")]
     public bool canSplit = true;
-    [Tooltip("% do HP máximo curado ao reagrupar após split")]
-    [Range(0f, 0.5f)]
-    public float reformHealPercent = 0.1f;
+    [Tooltip("VFX de partícula ao fazer split")]
+    public GameObject splitVFX;
+
+    [Header("Enrage")]
+    [Tooltip("% do HP que ativa o modo enrage")]
+    [Range(0.1f, 0.5f)]
+    public float enrageThreshold = 0.3f;
+    [Tooltip("Multiplicador de velocidade de órbita durante enrage")]
+    public float enrageOrbitMultiplier = 1.5f;
+    [Tooltip("Multiplicador de velocidade de movimento durante enrage")]
+    public float enrageMoveMultiplier = 1.3f;
+    private bool isEnraged = false;
 
     [Header("Morte")]
     public float deathExplosionRadius = 3f;
     public int deathExplosionDamage = 15;
     public GameObject deathExplosionVFX;
 
-    [Header("Estados")]
+    // Estados internos
     private bool isAttacking = false;
     private float attackTimer = 0f;
     private int lastKnownHP;
     private float damageAccumulator = 0f;
     private bool hasSplit = false;
+    private bool isClone = false;
 
-    // Tracking de fragmentos
+    // Tracking
     private int shardsAlive;
     private List<Vector3> originalShardPositions = new List<Vector3>();
+    private float anchoredY;
+
+    // Velocidades base (para enrage)
+    private float baseOrbitSpeed;
+    private float baseMoveSpeed;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        health = GetComponent<DummyHealth>();
+        health = GetComponent<ShardSwarmHealth>();
 
         rb.useGravity = false;
         rb.freezeRotation = true;
+
+        anchoredY = transform.position.y;
+
+        // Salva velocidades base para enrage
+        baseOrbitSpeed = orbitSpeed;
+        baseMoveSpeed = moveSpeed;
 
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -87,16 +108,12 @@ public class ShardSwarm_AI : MonoBehaviour
             Debug.LogError("[SHARD SWARM] Player não encontrado! Verifique a tag 'Player'.");
         }
 
-        // Inicializa fragmentos
         InitializeShards();
-
-        // Guarda HP inicial
         lastKnownHP = health.CurrentHealth;
     }
 
     void InitializeShards()
     {
-        // Se não tiver fragmentos definidos, procura nos filhos
         if (shards.Count == 0)
         {
             foreach (Transform child in transform)
@@ -109,13 +126,14 @@ public class ShardSwarm_AI : MonoBehaviour
         }
 
         shardsAlive = shards.Count;
+        originalShardPositions.Clear();
 
         foreach (GameObject shard in shards)
         {
             originalShardPositions.Add(shard.transform.localPosition);
         }
 
-        Debug.Log("[SHARD SWARM] Inicializado com " + shards.Count + " fragmentos. HP Total: " + health.maxHealth);
+        Debug.Log("[SHARD SWARM] Inicializado com " + shards.Count + " fragmentos. HP: " + health.maxHealth + (isClone ? " (CLONE)" : ""));
     }
 
     void Update()
@@ -123,92 +141,32 @@ public class ShardSwarm_AI : MonoBehaviour
         if (playerTransform == null) return;
         if (health.CurrentHealth <= 0) return;
 
-        // Detecta dano recebido (via DummyHealth)
         DetectDamage();
+        CheckEnrage();
 
-        // Timer
         if (attackTimer > 0) attackTimer -= Time.deltaTime;
 
-        // Ativação por proximidade
         if (!isActivated)
         {
             float dist = Vector3.Distance(transform.position, playerTransform.position);
             if (dist < activationDistance)
             {
                 isActivated = true;
-                Debug.Log("[SHARD SWARM] Ativado! Player detectado a " + dist.ToString("F1") + "m");
 
                 EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
-                Debug.Log("[SHARD] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
                 if (id != null && BestiarioManager.instancia != null)
                     BestiarioManager.instancia.Registrar(id);
             }
             return;
         }
 
-        // Atualiza órbita dos fragmentos
         UpdateShardOrbit();
 
-        // Não faz nada enquanto ataca
         if (isAttacking) return;
 
         HandleRotation();
         HandleCombat();
-
-        // Verifica se deve destruir fragmentos baseado no HP
         UpdateShardVisibility();
-    }
-
-    void DetectDamage()
-    {
-        int currentHP = health.CurrentHealth;
-        if (currentHP < lastKnownHP)
-        {
-            int damageTaken = lastKnownHP - currentHP;
-            damageAccumulator += damageTaken;
-
-            Debug.Log("[SHARD SWARM] Recebeu " + damageTaken + " de dano! HP: " + currentHP + "/" + health.maxHealth);
-
-            // Verifica split (se perdeu mais que X% do HP de uma vez)
-            float splitThreshold = health.maxHealth * splitThresholdPercent;
-            if (canSplit && !hasSplit && damageAccumulator >= splitThreshold && currentHP > 1)
-            {
-                Split();
-                damageAccumulator = 0;
-            }
-        }
-        lastKnownHP = currentHP;
-
-        // Verifica morte
-        if (currentHP <= 0)
-        {
-            Die();
-        }
-    }
-
-    void UpdateShardVisibility()
-    {
-        // Calcula quantos shards devem estar vivos baseado no HP
-        float hpPercent = (float)health.CurrentHealth / health.maxHealth;
-        int targetShards = Mathf.CeilToInt(hpPercent * shards.Count);
-        targetShards = Mathf.Max(1, targetShards); // Pelo menos 1 enquanto vivo
-
-        // Desativa shards extras
-        int activeCount = GetActiveShardCount();
-        if (activeCount > targetShards)
-        {
-            int toDisable = activeCount - targetShards;
-            for (int i = shards.Count - 1; i >= 0 && toDisable > 0; i--)
-            {
-                if (shards[i] != null && shards[i].activeSelf)
-                {
-                    shards[i].SetActive(false);
-                    Debug.Log("[SHARD SWARM] Fragmento destruído! Restam: " + (activeCount - 1));
-                    toDisable--;
-                    activeCount--;
-                }
-            }
-        }
     }
 
     void FixedUpdate()
@@ -218,6 +176,49 @@ public class ShardSwarm_AI : MonoBehaviour
 
         HandleMovement();
     }
+
+    // ==================== DETECÇÃO DE DANO ====================
+
+    void DetectDamage()
+    {
+        int currentHP = health.CurrentHealth;
+        if (currentHP < lastKnownHP)
+        {
+            int damageTaken = lastKnownHP - currentHP;
+            damageAccumulator += damageTaken;
+
+            float splitThreshold = health.maxHealth * splitThresholdPercent;
+            if (canSplit && !hasSplit && damageAccumulator >= splitThreshold && currentHP > 1)
+            {
+                Split();
+                damageAccumulator = 0;
+            }
+        }
+        lastKnownHP = currentHP;
+
+        if (currentHP <= 0)
+        {
+            Die();
+        }
+    }
+
+    // ==================== ENRAGE ====================
+
+    void CheckEnrage()
+    {
+        if (isEnraged) return;
+
+        float hpPercent = (float)health.CurrentHealth / health.maxHealth;
+        if (hpPercent <= enrageThreshold)
+        {
+            isEnraged = true;
+            orbitSpeed = baseOrbitSpeed * enrageOrbitMultiplier;
+            moveSpeed = baseMoveSpeed * enrageMoveMultiplier;
+            Debug.Log("[SHARD SWARM] ENRAGE! Velocidade aumentada!");
+        }
+    }
+
+    // ==================== FRAGMENTOS ====================
 
     void UpdateShardOrbit()
     {
@@ -235,7 +236,7 @@ public class ShardSwarm_AI : MonoBehaviour
 
             Vector3 offset = new Vector3(
                 Mathf.Cos(rad) * orbitRadius,
-                Mathf.Sin(time + index) * 0.3f, // Movimento vertical suave
+                Mathf.Sin(time + index) * 0.3f,
                 Mathf.Sin(rad) * orbitRadius
             );
 
@@ -248,6 +249,30 @@ public class ShardSwarm_AI : MonoBehaviour
             index++;
         }
     }
+
+    void UpdateShardVisibility()
+    {
+        float hpPercent = (float)health.CurrentHealth / health.maxHealth;
+        int targetShards = Mathf.CeilToInt(hpPercent * shards.Count);
+        targetShards = Mathf.Max(1, targetShards);
+
+        int activeCount = GetActiveShardCount();
+        if (activeCount > targetShards)
+        {
+            int toDisable = activeCount - targetShards;
+            for (int i = shards.Count - 1; i >= 0 && toDisable > 0; i--)
+            {
+                if (shards[i] != null && shards[i].activeSelf)
+                {
+                    shards[i].SetActive(false);
+                    toDisable--;
+                    activeCount--;
+                }
+            }
+        }
+    }
+
+    // ==================== MOVIMENTO ====================
 
     void HandleRotation()
     {
@@ -264,31 +289,32 @@ public class ShardSwarm_AI : MonoBehaviour
     void HandleMovement()
     {
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-
         Vector3 direction = Vector3.zero;
 
         if (distToPlayer > attackRange)
         {
-            // Aproxima do player
             direction = (playerTransform.position - transform.position).normalized;
         }
         else if (distToPlayer < attackRange * 0.5f)
         {
-            // Muito perto, recua um pouco
             direction = (transform.position - playerTransform.position).normalized;
         }
+
+        float yCorrection = (anchoredY - transform.position.y) * 5f;
 
         if (direction != Vector3.zero)
         {
             direction.y = 0;
             Vector3 targetVelocity = direction * moveSpeed;
-            rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+            rb.linearVelocity = new Vector3(targetVelocity.x, yCorrection, targetVelocity.z);
         }
         else
         {
-            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            rb.linearVelocity = new Vector3(0, yCorrection, 0);
         }
     }
+
+    // ==================== COMBATE ====================
 
     void HandleCombat()
     {
@@ -296,41 +322,248 @@ public class ShardSwarm_AI : MonoBehaviour
 
         if (distToPlayer <= attackRange && attackTimer <= 0)
         {
-            StartCoroutine(PerformSwarmAttack());
+            // Seleciona ataque aleatório baseado no HP
+            float hpPercent = (float)health.CurrentHealth / health.maxHealth;
+
+            if (hpPercent > 0.5f)
+            {
+                // HP alto: Swarm Attack ou Orbit Attack
+                if (Random.value > 0.5f)
+                    StartCoroutine(PerformSwarmAttack());
+                else
+                    StartCoroutine(PerformOrbitAttack());
+            }
+            else
+            {
+                // HP baixo: Barrage Attack ou Swarm Attack (mais agressivo)
+                if (Random.value > 0.5f)
+                    StartCoroutine(PerformBarrageAttack());
+                else
+                    StartCoroutine(PerformSwarmAttack());
+            }
         }
     }
 
+    /// <summary>
+    /// Ataque original: todos os shards voam em direção ao player de uma vez
+    /// </summary>
     IEnumerator PerformSwarmAttack()
     {
         isAttacking = true;
         attackTimer = attackCooldown;
 
-        int activeShards = GetActiveShardCount();
-        Debug.Log("[SHARD SWARM] SWARM ATTACK! " + activeShards + " fragmentos atacando!");
+        // Salva as posições locais iniciais dos shards para retorno
+        Dictionary<GameObject, Vector3> startLocalPos = new Dictionary<GameObject, Vector3>();
+        foreach (GameObject shard in shards)
+        {
+            if (shard != null && shard.activeSelf)
+                startLocalPos[shard] = shard.transform.localPosition;
+        }
 
-        // Todos os fragmentos voam em direção ao player
-        Vector3 targetPos = playerTransform.position + Vector3.up;
-
-        // Move cada fragmento para o player
+        // Todos voam para o player
         float elapsed = 0;
         while (elapsed < attackDuration)
         {
             elapsed += Time.deltaTime;
+            Vector3 targetPos = playerTransform.position + Vector3.up;
 
             foreach (GameObject shard in shards)
             {
                 if (shard == null || !shard.activeSelf) continue;
 
-                Vector3 worldPos = shard.transform.position;
-                Vector3 direction = (targetPos - worldPos).normalized;
-                shard.transform.position += direction * moveSpeed * 2f * Time.deltaTime;
+                Vector3 dirToTarget = (targetPos - shard.transform.position).normalized;
+                shard.transform.position += dirToTarget * moveSpeed * 2f * Time.deltaTime;
             }
 
             yield return null;
         }
 
-        // Verifica hits
-        bool hitPlayer = false;
+        // Verifica dano no player
+        CheckPlayerHit(combinedDamage);
+
+        // Retorna shards às posições orbitais suavemente
+        yield return StartCoroutine(ReturnShardsToOrbit(startLocalPos, 0.3f));
+
+        isAttacking = false;
+    }
+
+    /// <summary>
+    /// Barrage Attack: shards atacam o player um por um em sequência
+    /// </summary>
+    IEnumerator PerformBarrageAttack()
+    {
+        isAttacking = true;
+        attackTimer = attackCooldown * 1.2f; // Cooldown um pouco maior
+
+        float delayBetweenShards = 0.15f;
+        int totalDamage = 0;
+
+        foreach (GameObject shard in shards)
+        {
+            if (shard == null || !shard.activeSelf) continue;
+
+            Vector3 startLocal = shard.transform.localPosition;
+            Vector3 targetPos = playerTransform.position + Vector3.up;
+
+            // Shard voa até o player
+            float elapsed = 0;
+            float duration = attackDuration * 0.6f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                if (shard == null) break;
+
+                Vector3 dir = (targetPos - shard.transform.position).normalized;
+                shard.transform.position += dir * moveSpeed * 3f * Time.deltaTime;
+                yield return null;
+            }
+
+            // Verifica hit individual
+            if (shard != null)
+            {
+                Collider[] hits = Physics.OverlapSphere(shard.transform.position, 0.5f);
+                foreach (Collider hit in hits)
+                {
+                    if (hit.CompareTag("Player"))
+                    {
+                        totalDamage += damagePerShard;
+                        break;
+                    }
+                }
+
+                // Retorna este shard rapidamente
+                float returnElapsed = 0;
+                while (returnElapsed < 0.2f)
+                {
+                    returnElapsed += Time.deltaTime;
+                    shard.transform.localPosition = Vector3.Lerp(shard.transform.localPosition, startLocal, returnElapsed / 0.2f);
+                    yield return null;
+                }
+            }
+
+            yield return new WaitForSeconds(delayBetweenShards);
+        }
+
+        // Aplica dano acumulado
+        if (totalDamage > 0)
+        {
+            PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(totalDamage, gameObject);
+            }
+        }
+
+        isAttacking = false;
+    }
+
+    /// <summary>
+    /// Orbit Attack: shards expandem rapidamente a órbita como uma serra giratória
+    /// </summary>
+    IEnumerator PerformOrbitAttack()
+    {
+        isAttacking = true;
+        attackTimer = attackCooldown;
+
+        float originalRadius = orbitRadius;
+        float expandedRadius = attackRange * 0.9f;
+        float expandDuration = 0.3f;
+        float holdDuration = 0.8f;
+        float retractDuration = 0.4f;
+
+        bool hitRegistered = false;
+
+        // Expande a órbita rapidamente
+        float elapsed = 0;
+        while (elapsed < expandDuration)
+        {
+            elapsed += Time.deltaTime;
+            orbitRadius = Mathf.Lerp(originalRadius, expandedRadius, elapsed / expandDuration);
+            UpdateShardOrbit();
+            yield return null;
+        }
+
+        // Mantém expandido — verifica hits durante o hold
+        elapsed = 0;
+        while (elapsed < holdDuration)
+        {
+            elapsed += Time.deltaTime;
+            UpdateShardOrbit();
+
+            // Checa colisão com player a cada frame
+            if (!hitRegistered)
+            {
+                foreach (GameObject shard in shards)
+                {
+                    if (shard == null || !shard.activeSelf) continue;
+
+                    Collider[] hits = Physics.OverlapSphere(shard.transform.position, 0.4f);
+                    foreach (Collider hit in hits)
+                    {
+                        if (hit.CompareTag("Player"))
+                        {
+                            PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
+                            if (playerHealth != null)
+                            {
+                                playerHealth.TakeDamage(combinedDamage, gameObject);
+                            }
+                            hitRegistered = true;
+                            break;
+                        }
+                    }
+                    if (hitRegistered) break;
+                }
+            }
+
+            yield return null;
+        }
+
+        // Retrai a órbita
+        elapsed = 0;
+        while (elapsed < retractDuration)
+        {
+            elapsed += Time.deltaTime;
+            orbitRadius = Mathf.Lerp(expandedRadius, originalRadius, elapsed / retractDuration);
+            UpdateShardOrbit();
+            yield return null;
+        }
+
+        orbitRadius = originalRadius;
+        isAttacking = false;
+    }
+
+    /// <summary>
+    /// Retorna shards suavemente às posições orbitais
+    /// </summary>
+    IEnumerator ReturnShardsToOrbit(Dictionary<GameObject, Vector3> targetPositions, float duration)
+    {
+        float elapsed = 0;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            foreach (var kvp in targetPositions)
+            {
+                if (kvp.Key != null && kvp.Key.activeSelf)
+                {
+                    kvp.Key.transform.localPosition = Vector3.Lerp(
+                        kvp.Key.transform.localPosition,
+                        kvp.Value,
+                        t
+                    );
+                }
+            }
+
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// Verifica se algum shard atingiu o player e aplica dano
+    /// </summary>
+    void CheckPlayerHit(int damage)
+    {
         foreach (GameObject shard in shards)
         {
             if (shard == null || !shard.activeSelf) continue;
@@ -340,41 +573,40 @@ public class ShardSwarm_AI : MonoBehaviour
             {
                 if (hit.CompareTag("Player"))
                 {
-                    hitPlayer = true;
-                    break;
+                    PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        playerHealth.TakeDamage(damage, gameObject);
+                    }
+                    return; // Dano aplicado uma vez só
                 }
             }
-            if (hitPlayer) break;
         }
-
-        if (hitPlayer)
-        {
-            PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
-            if (playerHealth != null)
-            {
-                int damage = combinedDamage;
-                playerHealth.TakeDamage(damage, gameObject);
-                Debug.Log("[SHARD SWARM] HIT! Dano causado: " + damage);
-            }
-        }
-
-        // Retorna fragmentos às posições orbitais
-        yield return new WaitForSeconds(0.3f);
-
-        isAttacking = false;
     }
+
+    // ==================== SPLIT ====================
 
     void Split()
     {
         hasSplit = true;
         Debug.Log("[SHARD SWARM] SPLIT! Duplicando enxame!");
 
-        // Calcula posição do clone ao lado do original
-        Vector3 cloneOffset = transform.right * splitSpawnOffset;
-        GameObject clone = Instantiate(gameObject, transform.position + cloneOffset, transform.rotation);
+        // VFX do split
+        if (splitVFX != null)
+        {
+            Instantiate(splitVFX, transform.position, Quaternion.identity);
+        }
 
-        // --- Reset do clone para evitar AABB inválido ---
-        // O Rigidbody herda a velocidade do original — zerar para evitar NaN/Infinity
+        // Calcula HP dividido ANTES de criar o clone
+        int halfHP = Mathf.Max(1, health.CurrentHealth / 2);
+
+        // Cria clone ao lado do original
+        Vector3 cloneOffset = transform.right * splitSpawnOffset;
+        Vector3 clonePos = transform.position + cloneOffset;
+        clonePos.y = anchoredY;
+        GameObject clone = Instantiate(gameObject, clonePos, transform.rotation);
+
+        // Reset do Rigidbody do clone
         Rigidbody cloneRb = clone.GetComponent<Rigidbody>();
         if (cloneRb != null)
         {
@@ -382,14 +614,25 @@ public class ShardSwarm_AI : MonoBehaviour
             cloneRb.angularVelocity = Vector3.zero;
         }
 
-        // Reposicionar fragmentos filhos do clone para posições orbitais simples e válidas
+        // Configura o clone
         ShardSwarm_AI cloneAI = clone.GetComponent<ShardSwarm_AI>();
         if (cloneAI != null)
         {
+            cloneAI.anchoredY = anchoredY;
             cloneAI.canSplit = false;
             cloneAI.hasSplit = true;
+            cloneAI.isClone = true;
 
-            // Reseta posições dos fragmentos para evitar localPositions herdadas em órbita aleatória
+            // Clone tem shards 20% menores (diferenciação visual)
+            foreach (GameObject shard in cloneAI.shards)
+            {
+                if (shard != null)
+                {
+                    shard.transform.localScale *= 0.8f;
+                }
+            }
+
+            // Reseta posições dos fragmentos do clone
             int count = cloneAI.shards.Count;
             for (int i = 0; i < count; i++)
             {
@@ -405,25 +648,28 @@ public class ShardSwarm_AI : MonoBehaviour
             }
         }
 
-        DummyHealth cloneHealth = clone.GetComponent<DummyHealth>();
+        // Remove drops do clone (evita exploit)
+        EnemyDrops cloneDrops = clone.GetComponent<EnemyDrops>();
+        if (cloneDrops != null) Destroy(cloneDrops);
 
-        // Reduz HP de ambos para metade do HP atual do original
-        int halfHP = Mathf.Max(1, health.CurrentHealth / 2);
+        // Divide HP: metade pro original, metade pro clone
+        ShardSwarmHealth cloneHealth = clone.GetComponent<ShardSwarmHealth>();
+        if (cloneHealth != null)
+        {
+            cloneHealth.SetHealth(halfHP);
+        }
+        health.SetHealth(halfHP);
 
-        // Cura ao reagrupar (usa DummyHealth internamente se possível)
-        // Nota: DummyHealth não tem método de cura, mas podemos simular
-        int healAmount = Mathf.RoundToInt(health.maxHealth * reformHealPercent);
-        Debug.Log("[SHARD SWARM] Bônus de reagrupamento: +" + healAmount + " HP");
-
-        // Fragmentos voltam às posições originais (a órbita cuida disso no próximo frame)
+        // Atualiza o lastKnownHP para não triggerar DetectDamage no próximo frame
+        lastKnownHP = health.CurrentHealth;
     }
 
+    // ==================== MORTE ====================
 
     void Die()
     {
-        Debug.Log("[SHARD SWARM] Destruído! Explosão final!");
+        Debug.Log("[SHARD SWARM] Destruído!" + (isClone ? " (Clone)" : ""));
 
-        // Explosão ao morrer
         Collider[] hits = Physics.OverlapSphere(transform.position, deathExplosionRadius);
         foreach (Collider hit in hits)
         {
@@ -433,19 +679,17 @@ public class ShardSwarm_AI : MonoBehaviour
                 if (playerHealth != null)
                 {
                     playerHealth.TakeDamage(deathExplosionDamage, gameObject);
-                    Debug.Log("[SHARD SWARM] Explosão acertou o player! Dano: " + deathExplosionDamage);
                 }
             }
         }
 
-        // VFX de explosão
         if (deathExplosionVFX != null)
         {
             Instantiate(deathExplosionVFX, transform.position, Quaternion.identity);
         }
-
-        // DummyHealth cuida da destruição
     }
+
+    // ==================== UTILS ====================
 
     int GetActiveShardCount()
     {
@@ -466,7 +710,6 @@ public class ShardSwarm_AI : MonoBehaviour
         {
             damagePerShard = Mathf.RoundToInt(damagePerShard * 1.5f);
             combinedDamage = Mathf.RoundToInt(combinedDamage * 1.5f);
-            Debug.Log("[SHARD SWARM] BUFFED! Dano +50%");
         }
         else
         {
@@ -475,22 +718,19 @@ public class ShardSwarm_AI : MonoBehaviour
         }
     }
 
-    // Visualização no Editor
+    // ==================== EDITOR ====================
+
     void OnDrawGizmosSelected()
     {
-        // Range de ativação
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, activationDistance);
 
-        // Range de ataque
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
 
-        // Órbita dos fragmentos
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, orbitRadius);
 
-        // Explosão de morte
         Gizmos.color = new Color(1, 0.5f, 0, 0.3f);
         Gizmos.DrawSphere(transform.position, deathExplosionRadius);
     }
