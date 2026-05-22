@@ -17,7 +17,7 @@ public class Cristalus_AI : MonoBehaviour
     private float trailTimer = 0f;
 
     [Header("Arco Cristalino")]
-    public GameObject crystalPrefab;
+    public GameObject[] crystalPrefabs; // Os colchetes [] indicam que agora é uma lista!
     public float arcAngle = 120f;
     public int crystalsPerArc = 5;
     public float crystalSpawnInterval = 0.5f;
@@ -183,10 +183,21 @@ public class Cristalus_AI : MonoBehaviour
 
     GameObject SpawnCrystal(Vector3 position)
     {
-        if (crystalPrefab == null) return null;
-        return Instantiate(crystalPrefab, position, Quaternion.identity);
-    }
+        // 1. Verifica se a lista existe e tem pelo menos 1 cristal dentro
+        if (crystalPrefabs == null || crystalPrefabs.Length == 0) return null;
 
+        // 2. Sorteia um número aleatório de 0 até o tamanho da lista
+        int randomIndex = Random.Range(0, crystalPrefabs.Length);
+        
+        // 3. Pega o prefab sorteado na prateleira
+        GameObject selectedPrefab = crystalPrefabs[randomIndex];
+
+        // Segurança: se houver um buraco vazio na lista, ele não tenta criar o nada
+        if (selectedPrefab == null) return null;
+
+        // 4. Finalmente, instancia o prefab sorteado
+        return Instantiate(selectedPrefab, position, Quaternion.identity);
+    }
 
     void LookAtTarget(Vector3 target, float rotationSpeed)
     {

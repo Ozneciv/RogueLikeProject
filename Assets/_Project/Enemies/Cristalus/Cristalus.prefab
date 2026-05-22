@@ -250,9 +250,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 253ae9ff0c8bd5a43aa584ad64b9b4d1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8661531409174220816}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 253ae9ff0c8bd5a43aa584ad64b9b4d1, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6949981340692142339}
   m_SourcePrefab: {fileID: 100100000, guid: 253ae9ff0c8bd5a43aa584ad64b9b4d1, type: 3}
 --- !u!1 &7260973751649085606 stripped
 GameObject:
@@ -319,35 +316,13 @@ MonoBehaviour:
   moveSpeed: 4
   trailDropInterval: 1.5
   trailOffset: 1.5
-  crystalPrefab: {fileID: 919132149155446097, guid: c2e7afa12f0da2e4b86e1bef85127fb6, type: 3}
+  crystalPrefabs: []
   arcAngle: 120
   crystalsPerArc: 5
   crystalSpawnInterval: 0.5
-  arcOverlapThreshold: 10
+  arcOverlapThreshold: 5
   playerMovementTolerance: 2
   minRepositionAngle: 90
---- !u!114 &6949981340692142339
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7260973751649085606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 100
-  healthBarSlider: {fileID: 0}
-  normalColor: {r: 1, g: 0, b: 0, a: 1}
-  buffedColor: {r: 0, g: 1, b: 1, a: 1}
-  floatingDamageTextPrefab: {fileID: 0}
-  textOffset: {x: 0, y: 2, z: 0}
-  hitColor: {r: 1, g: 0, b: 0, a: 1}
-  hitFlashTime: 0.2
-  isInvulnerable: 0
-  isBuffed: 0
 --- !u!4 &8038918208378040860 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 253ae9ff0c8bd5a43aa584ad64b9b4d1, type: 3}

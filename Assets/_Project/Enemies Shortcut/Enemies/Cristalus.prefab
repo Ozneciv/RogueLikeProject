@@ -331,11 +331,16 @@ MonoBehaviour:
   moveSpeed: 6
   trailDropInterval: 1.5
   trailOffset: 1.5
-  crystalPrefab: {fileID: 1234396947130864949, guid: 5160905cc8a1a014d9d24eacb8dfbf13, type: 3}
+  crystalPrefabs:
+  - {fileID: 1234396947130864949, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
+  - {fileID: 1234396947130864949, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
+  - {fileID: 5792087848057019593, guid: f71c469ff2c4188418907fc54073f410, type: 3}
+  - {fileID: 1234396947130864949, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
+  - {fileID: 1234396947130864949, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
   arcAngle: 120
   crystalsPerArc: 5
   crystalSpawnInterval: 0.5
-  arcOverlapThreshold: 6
+  arcOverlapThreshold: 10
   playerMovementTolerance: 2
   minRepositionAngle: 90
 --- !u!114 &2199149859530074480

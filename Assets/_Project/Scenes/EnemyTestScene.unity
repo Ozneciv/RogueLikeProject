@@ -4471,6 +4471,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8661531409174220816, guid: ea10a39b0c872fb4f8fe5c20d7ef6c31, type: 3}
+      propertyPath: 'crystalPrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 5773874075916715037, guid: b443081fb7f36044e90f38be50621fdb, type: 3}
+    - target: {fileID: 8661531409174220816, guid: ea10a39b0c872fb4f8fe5c20d7ef6c31, type: 3}
+      propertyPath: 'crystalPrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 6230593887686849060, guid: e7bb87534bad7a04c9626216d8515711, type: 3}
+    - target: {fileID: 8661531409174220816, guid: ea10a39b0c872fb4f8fe5c20d7ef6c31, type: 3}
+      propertyPath: 'crystalPrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 3042150092044236706, guid: 9fa43bc1071a32d4c8bfb218994a1efd, type: 3}
+    - target: {fileID: 8661531409174220816, guid: ea10a39b0c872fb4f8fe5c20d7ef6c31, type: 3}
+      propertyPath: 'crystalPrefabs.Array.data[4]'
+      value: 
+      objectReference: {fileID: 700640002960959754, guid: 6381de00f93d57e48b6d1d51c867f677, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
