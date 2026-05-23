@@ -27,6 +27,12 @@ public class Cristalus_AI : MonoBehaviour
     public float playerMovementTolerance = 2.0f;
     public float minRepositionAngle = 90f;
 
+    // Variaveis Crystal Tunner
+    private bool isBuffed = false;
+    private float originalMoveSpeed;
+    private float originalTrailDropInterval;
+    private float originalCrystalSpawnInterval;
+
     private enum State { Idle, Approaching, CastingArc, Repositioning }
     private State currentState = State.Idle;
     private List<CrystalArcGroup> activeArcs = new List<CrystalArcGroup>();
@@ -207,6 +213,29 @@ public class Cristalus_AI : MonoBehaviour
         {
             Quaternion rot = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, rot, rotationSpeed * Time.deltaTime);
+        }
+    }
+
+    // Buff do Crystal Tuner
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            originalMoveSpeed = moveSpeed;
+            originalTrailDropInterval = trailDropInterval;
+            originalCrystalSpawnInterval = crystalSpawnInterval;
+
+            moveSpeed *= 1.5f;                
+            trailDropInterval *= 0.6f;    
+            crystalSpawnInterval *= 0.6f;
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            moveSpeed = originalMoveSpeed;
+            trailDropInterval = originalTrailDropInterval;
+            crystalSpawnInterval = originalCrystalSpawnInterval;
         }
     }
 
