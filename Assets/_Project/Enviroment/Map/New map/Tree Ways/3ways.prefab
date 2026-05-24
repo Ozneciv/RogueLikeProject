@@ -317,7 +317,7 @@ GameObject:
   - component: {fileID: 1400548831571525977}
   - component: {fileID: 5802764154400291488}
   m_Layer: 0
-  m_Name: 3Ways
+  m_Name: 3ways
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

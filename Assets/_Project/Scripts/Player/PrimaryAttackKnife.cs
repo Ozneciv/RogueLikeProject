@@ -35,7 +35,10 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float swordRange = 7f;
 
     [Header("VFX")]
-    public GameObject hitImpactPrefab;
+    [Tooltip("Arraste aqui suas variações de VFX (o original e o Slash). O script vai sortear um deles a cada hit!")]
+    public GameObject[] hitImpactVariations;
+    // (Mantive o antigo escondido só para não dar erro se alguma outra coisa puxar ele)
+    [HideInInspector] public GameObject hitImpactPrefab; 
 
     [Header("Settings")]
     public float attackAnimationSpeed = 1.0f;
@@ -179,10 +182,17 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
-            if (hitImpactPrefab != null)
+            // Escolhe o VFX: tenta pegar do array de variações, se estiver vazio, usa o antigo
+            GameObject vfxToSpawn = hitImpactPrefab;
+            if (hitImpactVariations != null && hitImpactVariations.Length > 0)
+            {
+                vfxToSpawn = hitImpactVariations[Random.Range(0, hitImpactVariations.Length)];
+            }
+
+            if (vfxToSpawn != null)
             {
                 Vector3 hitPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up);
-                GameObject hitVFX = Instantiate(hitImpactPrefab, hitPoint, Quaternion.identity);
+                GameObject hitVFX = Instantiate(vfxToSpawn, hitPoint, Quaternion.identity);
                 Destroy(hitVFX, 2f);
             }
         }

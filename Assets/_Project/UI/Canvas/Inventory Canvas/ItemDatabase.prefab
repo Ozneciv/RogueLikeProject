@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3599556432106196011}
   - component: {fileID: 6114307166007688842}
+  - component: {fileID: 3525588704483551635}
   m_Layer: 0
   m_Name: ItemDatabase
   m_TagString: Untagged
@@ -49,3 +50,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d51afe4baf9e5cb40b83fa416d9ac29c, type: 2}
   - {fileID: 11400000, guid: 0297bd4d2ac4bc34b9ce3d68e2adf3e5, type: 2}
   - {fileID: 11400000, guid: 704636780efab254e81ab6cca56b5a2d, type: 2}
+--- !u!114 &3525588704483551635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2328379038287056132}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c00357530d5078248a53ffa09bad7a77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PersistentObject

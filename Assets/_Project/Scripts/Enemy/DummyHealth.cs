@@ -153,6 +153,20 @@ public class DummyHealth : MonoBehaviour
     {
         Debug.Log(gameObject.name + " foi destruído.");
 
+        // --- SISTEMA DE PACTOS DO JOGADOR ---
+        PlayerHealth playerHealth = FindFirstObjectByType<PlayerHealth>();
+        if (playerHealth != null)
+        {
+            playerHealth.lastKillTime = Time.time;        // Checa Vampirismo (GDD §4.1 - Carta O Parasita)
+            if (playerHealth != null && playerHealth.currentHealth > 0 && playerHealth.hasVampirism)
+            {
+                Debug.Log("[DUMMY] Inimigo morreu! Curando Player (Vampirismo).");
+                playerHealth.Heal(5); // Cura fixa de 5 (ajustável se quiser balancear)
+                playerHealth.lastKillTime = Time.time; // Reseta a degeneração!
+            }
+        }
+        // ------------------------------------
+
         // Chama o sistema de drops se existir
         // Busca em filhos e pais também — cobre hierarquias mais complexas de prefab
         EnemyDrops drops = GetComponent<EnemyDrops>()
