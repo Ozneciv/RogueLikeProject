@@ -189,19 +189,19 @@ public class Cristalus_AI : MonoBehaviour
 
     GameObject SpawnCrystal(Vector3 position)
     {
-        // 1. Verifica se a lista existe e tem pelo menos 1 cristal dentro
+   
         if (crystalPrefabs == null || crystalPrefabs.Length == 0) return null;
 
-        // 2. Sorteia um número aleatório de 0 até o tamanho da lista
+
         int randomIndex = Random.Range(0, crystalPrefabs.Length);
         
-        // 3. Pega o prefab sorteado na prateleira
+
         GameObject selectedPrefab = crystalPrefabs[randomIndex];
 
-        // Segurança: se houver um buraco vazio na lista, ele não tenta criar o nada
+   
         if (selectedPrefab == null) return null;
 
-        // 4. Finalmente, instancia o prefab sorteado
+
         return Instantiate(selectedPrefab, position, Quaternion.identity);
     }
 
@@ -226,7 +226,7 @@ public class Cristalus_AI : MonoBehaviour
             originalTrailDropInterval = trailDropInterval;
             originalCrystalSpawnInterval = crystalSpawnInterval;
 
-            moveSpeed *= 1.5f;                
+            moveSpeed *= 1.5f;    //            
             trailDropInterval *= 0.6f;    
             crystalSpawnInterval *= 0.6f;
         }
