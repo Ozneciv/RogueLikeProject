@@ -1,0 +1,496 @@
+using UnityEngine;
+using System.Collections;
+
+/// <summary>
+/// IA do Crystal Dragon (mob comum).
+/// Voa a uma altura fixa, mantém distância ideal de combate (~3 m),
+/// dispara rajadas de 3 projéteis e executa ataque de rabada 360°
+/// quando o player flanqueia por trás — detectado via Vector3.Dot.
+/// </summary>
+[RequireComponent(typeof(Rigidbody))]
+public class CrystalDragonCommon_AI : MonoBehaviour
+{
+    // ─────────────────────────────────────────────────────────────
+    // Enum de estados
+    // ─────────────────────────────────────────────────────────────
+
+    public enum EstadoDragao
+    {
+        AjustarDistancia, // Aproxima-se até entrar na zona ideal
+        Orbitar,          // Gira ao redor do player mantendo ~3 m (kiting)
+        Fugir,            // Player chegou perto demais — recua
+        AtacarProjetil,   // Para e dispara rajada de 3 projéteis
+        AtaqueTail        // Rabada de emergência 360° quando flanqueado por trás
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Inspector
+    // ─────────────────────────────────────────────────────────────
+
+    [Header("Alvo")]
+    [Tooltip("Referência ao Transform do Player. Se null, localiza via tag 'Player' no Start.")]
+    public Transform player;
+
+    [Header("Movimentação")]
+    public float velocidadeVoo = 5f;
+    [Tooltip("Altura mundial (Y) em que o dragão deve voar")]
+    public float alturaFixa = 3f;
+    [Tooltip("Distância ideal de combate (metros)")]
+    public float distanciaIdeal = 3.0f;
+    [Tooltip("Recua se o player ficar abaixo desta distância")]
+    public float distanciaFuga = 2.8f;
+    [Tooltip("Aproxima-se se o player ficar acima desta distância")]
+    public float distanciaAproximacao = 3.5f;
+    public float velocidadeRotacao = 6f;
+
+    [Header("Órbita")]
+    [Tooltip("Velocidade angular ao orbitar o player (graus/segundo)")]
+    public float velocidadeOrbita = 60f;
+    [Tooltip("Intervalo mínimo/máximo (segundos) para sortear nova direção de órbita")]
+    public float intervaloMudancaDirecaoMin = 2f;
+    public float intervaloMudancaDirecaoMax = 5f;
+
+    [Header("Ataque de Projétil")]
+    [Tooltip("Ponto de origem dos projéteis")]
+    public Transform pointDisparo;
+    public GameObject projectilePrefab;
+    [Tooltip("Cooldown total entre rajadas (segundos)")]
+    public float cooldownAtaque = 3f;
+    [Tooltip("Delay entre cada disparo da rajada")]
+    public float delayEntreDisparos = 0.2f;
+    public float velocidadeProjétil = 10f;
+    [Tooltip("Lifetime do projétil (segundos)")]
+    public float lifetimeProjétil = 5f;
+    [Tooltip("Ângulo horizontal de cada projétil lateral do spread (graus)")]
+    public float anguloSpread = 15f;
+
+    [Header("Ataque de Rabada")]
+    [Tooltip("Raio do OverlapSphere do ataque de rabada")]
+    public float raioTail = 2.0f;
+    [Tooltip("Limiar do dot product: valores menores indicam que o player está atrás.\n" +
+             "0 = hemisfério traseiro | -0.5 = cone traseiro de 120°")]
+    public float dotLimiarTras = -0.2f;
+    public int danoRabada = 20;
+    [Tooltip("Nome do trigger no Animator para a animação de rabada")]
+    public string animTriggerRabada = "Tail";
+    [Tooltip("Delay após o SetTrigger antes de aplicar o dano (para sincronizar com a animação)")]
+    public float delayDanoRabada = 0.3f;
+
+    // ─────────────────────────────────────────────────────────────
+    // Privado
+    // ─────────────────────────────────────────────────────────────
+
+    private Rigidbody rb;
+    private Animator anim;
+
+    private EstadoDragao estado = EstadoDragao.AjustarDistancia;
+    private float timerAtaque = 0f;
+
+    // Flags: impedem que Update dispare múltiplas corrotinas em paralelo
+    private bool estaAtacando = false;
+    private bool estaExecutandoRabada = false;
+
+    // Órbita
+    private float anguloOrbita = 0f;
+    private int direcaoOrbita = 1;
+    private float timerMudancaDirecao = 0f;
+
+    // Debug
+    private EstadoDragao estadoAnterior = EstadoDragao.AjustarDistancia;
+    private float timerLogPeriodico = 0f;
+    private float timerLogTravado = 0f;
+
+    // ─────────────────────────────────────────────────────────────
+    // Unity callbacks
+    // ─────────────────────────────────────────────────────────────
+
+    private void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        anim = GetComponent<Animator>(); // pode ser null — checaremos antes de usar
+
+        rb.freezeRotation = true;
+        rb.useGravity = false; // dragão voa
+
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+                player = playerObj.transform;
+            else
+                Debug.LogError("[CRYSTAL DRAGON COMMON] Player não encontrado! Verifique a tag 'Player'.");
+        }
+
+        // Inicia o ângulo de órbita a partir da posição atual em relação ao player
+        if (player != null)
+        {
+            Vector3 offset = transform.position - player.position;
+            offset.y = 0f;
+            if (offset.magnitude > 0.01f)
+                anguloOrbita = Mathf.Atan2(offset.x, offset.z) * Mathf.Rad2Deg;
+
+            // Impede que o Rigidbody do dragão empurre o player fisicamente.
+            // O contato é tratado apenas pela IA (distância/órbita), não pela física.
+            Collider[] dragonColliders = GetComponentsInChildren<Collider>();
+            Collider[] playerColliders = player.GetComponentsInChildren<Collider>();
+            foreach (Collider dc in dragonColliders)
+                foreach (Collider pc in playerColliders)
+                    Physics.IgnoreCollision(dc, pc, true);
+        }
+        direcaoOrbita = Random.value > 0.5f ? 1 : -1;
+        timerMudancaDirecao = Random.Range(intervaloMudancaDirecaoMin, intervaloMudancaDirecaoMax);
+    }
+
+    private void Update()
+    {
+        if (player == null) return;
+
+        // Log periódico a cada 2s com distância e estado atual
+        timerLogPeriodico -= Time.deltaTime;
+        if (timerLogPeriodico <= 0f)
+        {
+            timerLogPeriodico = 2f;
+            Debug.Log($"[DRAGON] Estado={estado} | Dist={DistanciaHorizontal():F2}m " +
+                      $"| timerAtaque={timerAtaque:F1}s " +
+                      $"| estaAtacando={estaAtacando} | estaRabada={estaExecutandoRabada}");
+        }
+
+        // Se estiver travado (flags ativas), avisa a cada 1s
+        if (estaAtacando || estaExecutandoRabada)
+        {
+            timerLogTravado -= Time.deltaTime;
+            if (timerLogTravado <= 0f)
+            {
+                timerLogTravado = 1f;
+                Debug.LogWarning($"[DRAGON] BLOQUEADO — estaAtacando={estaAtacando} estaExecutandoRabada={estaExecutandoRabada}");
+            }
+            return;
+        }
+        timerLogTravado = 0f; // reseta quando desbloqueado
+
+        timerAtaque -= Time.deltaTime;
+
+        // Timer para mudar direção de órbita aleatoriamente
+        timerMudancaDirecao -= Time.deltaTime;
+        if (timerMudancaDirecao <= 0f)
+        {
+            direcaoOrbita = Random.value > 0.5f ? 1 : -1;
+            timerMudancaDirecao = Random.Range(intervaloMudancaDirecaoMin, intervaloMudancaDirecaoMax);
+        }
+
+        AvaliarEstado();
+
+        // Log quando o estado muda
+        if (estado != estadoAnterior)
+        {
+            Debug.Log($"[DRAGON] Estado mudou: {estadoAnterior} → {estado} | Dist={DistanciaHorizontal():F2}m");
+            estadoAnterior = estado;
+        }
+
+        // Corrotinas são disparadas do Update (correto — apenas iniciam uma vez)
+        if (estado == EstadoDragao.AtacarProjetil)
+            StartCoroutine(RajadaDeProjeteis());
+        else if (estado == EstadoDragao.AtaqueTail)
+            StartCoroutine(ExecutarRabada());
+
+        RotacionarParaPlayer();
+    }
+
+    private void FixedUpdate()
+    {
+        if (player == null) return;
+
+        // Toda física (rb.MovePosition) deve ficar no FixedUpdate
+        if (!estaAtacando && !estaExecutandoRabada)
+        {
+            switch (estado)
+            {
+                case EstadoDragao.AjustarDistancia:
+                    MoverParaDistanciaIdeal();
+                    break;
+                case EstadoDragao.Orbitar:
+                    Orbitar();
+                    break;
+                case EstadoDragao.Fugir:
+                    Recuar();
+                    break;
+                default:
+                    MantenerAltura();
+                    break;
+            }
+        }
+        else
+        {
+            MantenerAltura();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Máquina de estados
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Avalia a situação e seleciona o estado mais adequado.
+    /// O flanco traseiro tem prioridade máxima sobre qualquer outra condição.
+    /// </summary>
+    private void AvaliarEstado()
+    {
+        float dist = DistanciaHorizontal();
+
+        // ── Prioridade 1: flanqueamento traseiro ──────────────────
+        if (dist <= raioTail && PlayerEstaTras())
+        {
+            estado = EstadoDragao.AtaqueTail;
+            return;
+        }
+
+        // ── Prioridade 2: manutenção de distância ─────────────────
+        if (dist > distanciaAproximacao)
+        {
+            estado = EstadoDragao.AjustarDistancia;
+            return;
+        }
+
+        if (dist < distanciaFuga)
+        {
+            estado = EstadoDragao.Fugir;
+            return;
+        }
+
+        // ── Prioridade 3: atacar ou orbitar na zona ideal ─────────────
+        if (timerAtaque <= 0f)
+            estado = EstadoDragao.AtacarProjetil;
+        else
+            estado = EstadoDragao.Orbitar; // orbita enquanto aguarda cooldown
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Movimento
+    // ─────────────────────────────────────────────────────────────
+
+    private void MoverParaDistanciaIdeal()
+    {
+        Vector3 direcao = DirecaoHorizontalParaPlayer();
+        Vector3 alvo = player.position - direcao * distanciaIdeal;
+        alvo.y = alturaFixa;
+
+        rb.MovePosition(Vector3.MoveTowards(transform.position, alvo, velocidadeVoo * Time.fixedDeltaTime));
+    }
+
+    /// <summary>
+    /// Move o dragão tangencialmente ao redor do player mantendo distanciaIdeal.
+    /// O ângulo é sincronizado da posição real a cada frame para transições suaves.
+    /// </summary>
+    private void Orbitar()
+    {
+        // Sincroniza o ângulo com a posição real (elimina saltos ao entrar no estado)
+        Vector3 offset = new Vector3(
+            transform.position.x - player.position.x, 0f,
+            transform.position.z - player.position.z);
+        if (offset.magnitude > 0.05f)
+            anguloOrbita = Mathf.Atan2(offset.x, offset.z) * Mathf.Rad2Deg;
+
+        // Avança o ângulo neste frame
+        anguloOrbita += velocidadeOrbita * direcaoOrbita * Time.fixedDeltaTime;
+
+        // Posição alvo na circunferência de órbita
+        Vector3 alvo = player.position
+            + Quaternion.Euler(0f, anguloOrbita, 0f) * Vector3.forward * distanciaIdeal;
+        alvo.y = alturaFixa;
+
+        rb.MovePosition(Vector3.MoveTowards(transform.position, alvo, velocidadeVoo * Time.fixedDeltaTime));
+    }
+
+    private void Recuar()
+    {
+        Vector3 direcaoFuga = -DirecaoHorizontalParaPlayer();
+        Vector3 alvo = new Vector3(
+            transform.position.x + direcaoFuga.x * velocidadeVoo * Time.fixedDeltaTime,
+            alturaFixa,
+            transform.position.z + direcaoFuga.z * velocidadeVoo * Time.fixedDeltaTime
+        );
+        rb.MovePosition(alvo);
+    }
+
+    /// <summary>Mantém a altura fixa sem movimento horizontal (hover).</summary>
+    private void MantenerAltura()
+    {
+        Vector3 pos = transform.position;
+        pos.y = Mathf.MoveTowards(pos.y, alturaFixa, velocidadeVoo * Time.fixedDeltaTime);
+        rb.MovePosition(pos);
+    }
+
+    private void RotacionarParaPlayer()
+    {
+        Vector3 direcao = DirecaoHorizontalParaPlayer();
+        if (direcao == Vector3.zero) return;
+
+        Quaternion rotAlvo = Quaternion.LookRotation(direcao);
+        transform.rotation = Quaternion.Slerp(transform.rotation, rotAlvo, velocidadeRotacao * Time.deltaTime);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Ataques
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Dispara 3 projéteis simultaneamente em formato de cone (spread shot).
+    /// Ângulos: -anguloSpread | 0° | +anguloSpread
+    /// O dragão para completamente enquanto atira.
+    /// </summary>
+    private IEnumerator RajadaDeProjeteis()
+    {
+        estaAtacando = true;
+        timerAtaque = cooldownAtaque;
+        rb.linearVelocity = Vector3.zero;
+        Debug.Log("[DRAGON] ATAQUE — Spread shot iniciado. pointDisparo=" +
+                  (pointDisparo != null ? pointDisparo.name : "NULL") +
+                  " | projectilePrefab=" + (projectilePrefab != null ? projectilePrefab.name : "NULL"));
+
+        // Dispara os 3 projéteis ao mesmo tempo
+        DispararProjetil(Quaternion.Euler(0f, -anguloSpread, 0f));
+        DispararProjetil(Quaternion.Euler(0f,            0f, 0f));
+        DispararProjetil(Quaternion.Euler(0f,  anguloSpread, 0f));
+        Debug.Log("[DRAGON] Spread shot disparado (3 projéteis).");
+
+        // Pequena pausa antes de liberar o movimento (dá feel ao ataque)
+        yield return new WaitForSeconds(delayEntreDisparos);
+
+        Debug.Log("[DRAGON] Ataque concluído. Retomando movimento.");
+        estaAtacando = false;
+        estado = EstadoDragao.AjustarDistancia;
+    }
+
+    /// <summary>Instancia e lança um projétil com a rotação horizontal dada.</summary>
+    private void DispararProjetil(Quaternion rotacaoSpread)
+    {
+        if (projectilePrefab == null || pointDisparo == null)
+        {
+            Debug.LogWarning("[CRYSTAL DRAGON COMMON] projectilePrefab ou pointDisparo não atribuído.");
+            return;
+        }
+
+        Vector3 origem = pointDisparo.position;
+
+        // Zera o Y para disparar em linha reta horizontal, independente da altura do dragão
+        Vector3 diff = player.position - origem;
+        diff.y = 0f;
+        Vector3 direcaoBase = diff.normalized;
+        Vector3 direcao = rotacaoSpread * direcaoBase;
+
+        GameObject proj = Instantiate(projectilePrefab, origem, Quaternion.LookRotation(direcao));
+
+        // Compatibilidade com CrystalSpikeProjectile (sistema existente)
+        CrystalSpikeProjectile spike = proj.GetComponent<CrystalSpikeProjectile>();
+        if (spike != null)
+        {
+            spike.owner = gameObject;
+            spike.Launch(direcao, velocidadeProjétil, lifetimeProjétil);
+            return;
+        }
+
+        // Fallback: move via Rigidbody puro
+        Rigidbody rbProj = proj.GetComponent<Rigidbody>();
+        if (rbProj != null)
+        {
+            rbProj.useGravity = false;
+            rbProj.linearVelocity = direcao * velocidadeProjétil;
+        }
+
+        Destroy(proj, lifetimeProjétil);
+    }
+
+    /// <summary>
+    /// Rabada de emergência: aciona animação e aplica dano em área 360°
+    /// ao redor do dragão via Physics.OverlapSphere.
+    /// </summary>
+    private IEnumerator ExecutarRabada()
+    {
+        estaExecutandoRabada = true;
+        Debug.Log("[DRAGON] RABADA iniciada.");
+
+        if (anim != null)
+            anim.SetTrigger(animTriggerRabada);
+
+        yield return new WaitForSeconds(delayDanoRabada);
+
+        Collider[] atingidos = Physics.OverlapSphere(transform.position, raioTail);
+        Debug.Log($"[DRAGON] Rabada — {atingidos.Length} colliders detectados no raio {raioTail}m");
+        foreach (Collider col in atingidos)
+        {
+            if (col.CompareTag("Player"))
+            {
+                PlayerHealth ph = col.GetComponent<PlayerHealth>();
+                if (ph != null)
+                {
+                    ph.TakeDamage(danoRabada, gameObject);
+                    Debug.Log($"[DRAGON] Rabada acertou o Player! Dano={danoRabada}");
+                }
+            }
+        }
+
+        yield return new WaitForSeconds(0.5f);
+
+        estaExecutandoRabada = false;
+        timerAtaque = cooldownAtaque * 0.5f;
+        estado = EstadoDragao.AjustarDistancia;
+        Debug.Log("[DRAGON] Rabada concluída. Retomando movimento.");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Usa Vector3.Dot para detectar se o player está atrás do dragão.
+    /// dot = 1  → player está na frente.
+    /// dot = 0  → player está a 90° (lateral).
+    /// dot = -1 → player está diretamente atrás.
+    /// Retorna true se dot &lt; dotLimiarTras.
+    /// </summary>
+    private bool PlayerEstaTras()
+    {
+        Vector3 paraPlayer = (player.position - transform.position).normalized;
+        float dot = Vector3.Dot(transform.forward, paraPlayer);
+        return dot < dotLimiarTras;
+    }
+
+    /// <summary>Distância horizontal (ignora Y) entre o dragão e o player.</summary>
+    private float DistanciaHorizontal()
+    {
+        Vector3 posA = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 posB = new Vector3(player.position.x, 0f, player.position.z);
+        return Vector3.Distance(posA, posB);
+    }
+
+    /// <summary>Direção normalizada do dragão → player, sem componente Y.</summary>
+    private Vector3 DirecaoHorizontalParaPlayer()
+    {
+        Vector3 dir = player.position - transform.position;
+        dir.y = 0f;
+        return dir.normalized;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Gizmos (editor only)
+    // ─────────────────────────────────────────────────────────────
+
+    private void OnDrawGizmosSelected()
+    {
+        // Zona de aproximação
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, distanciaAproximacao);
+
+        // Distância ideal
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, distanciaIdeal);
+
+        // Zona de fuga
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, distanciaFuga);
+
+        // Raio da rabada
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, raioTail);
+    }
+}
