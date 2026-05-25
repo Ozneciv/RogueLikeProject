@@ -4,8 +4,8 @@ using System.Collections;
 /// <summary>
 /// IA do Crystal Dragon (mob comum).
 /// Voa a uma altura fixa, mantém distância ideal de combate (~3 m),
-/// dispara rajadas de 3 projéteis e executa ataque de rabada 360°
-/// quando o player flanqueia por trás — detectado via Vector3.Dot.
+/// dispara spread shot, executa ataque de rabada e spin attack 360° melee.
+/// Usa DummyHealth para vida e PlayerHealth para causar dano.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class CrystalDragonCommon_AI : MonoBehaviour
@@ -16,11 +16,13 @@ public class CrystalDragonCommon_AI : MonoBehaviour
 
     public enum EstadoDragao
     {
-        AjustarDistancia, // Aproxima-se até entrar na zona ideal
-        Orbitar,          // Gira ao redor do player mantendo ~3 m (kiting)
-        Fugir,            // Player chegou perto demais — recua
-        AtacarProjetil,   // Para e dispara rajada de 3 projéteis
-        AtaqueTail        // Rabada de emergência 360° quando flanqueado por trás
+        Idle,           // Recuperação / estado inicial após ações
+        Chasing,        // Aproxima-se até entrar na zona ideal
+        Orbitar,        // Kiting — gira ao redor do player mantendo ~3 m
+        Fugir,          // Player chegou perto demais — recua
+        RangedAttack,   // Para e dispara spread shot
+        AtaqueTail,     // Rabada quando flanqueado por trás
+        SpinAttack      // Giro 360° melee quando player entra em curta distância
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -76,6 +78,20 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     [Tooltip("Delay após o SetTrigger antes de aplicar o dano (para sincronizar com a animação)")]
     public float delayDanoRabada = 0.3f;
 
+    [Header("Spin Attack (Melee)")]
+    [Tooltip("Distância para ativar o spin attack (metros)")]
+    public float meleeAttackRange = 1.5f;
+    [Tooltip("Duração total do giro (segundos)")]
+    public float spinDuration = 1.2f;
+    [Tooltip("Velocidade do giro (graus/segundo)")]
+    public float spinSpeed = 720f;
+    [Tooltip("Dano aplicado durante o giro")]
+    public int spinDamage = 25;
+    [Tooltip("Cooldown entre spin attacks (segundos)")]
+    public float spinCooldown = 5f;
+    [Tooltip("Trigger do Animator para o spin attack")]
+    public string animTriggerSpin = "SpinAttack";
+
     // ─────────────────────────────────────────────────────────────
     // Privado
     // ─────────────────────────────────────────────────────────────
@@ -83,12 +99,14 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     private Rigidbody rb;
     private Animator anim;
 
-    private EstadoDragao estado = EstadoDragao.AjustarDistancia;
+    private EstadoDragao estado = EstadoDragao.Idle;
     private float timerAtaque = 0f;
 
     // Flags: impedem que Update dispare múltiplas corrotinas em paralelo
     private bool estaAtacando = false;
     private bool estaExecutandoRabada = false;
+    private bool estaExecutandoSpin = false;
+    private float timerSpinCooldown = 0f;
 
     // Órbita
     private float anguloOrbita = 0f;
@@ -96,7 +114,7 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     private float timerMudancaDirecao = 0f;
 
     // Debug
-    private EstadoDragao estadoAnterior = EstadoDragao.AjustarDistancia;
+    private EstadoDragao estadoAnterior = EstadoDragao.Idle;
     private float timerLogPeriodico = 0f;
     private float timerLogTravado = 0f;
 
@@ -151,24 +169,25 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         {
             timerLogPeriodico = 2f;
             Debug.Log($"[DRAGON] Estado={estado} | Dist={DistanciaHorizontal():F2}m " +
-                      $"| timerAtaque={timerAtaque:F1}s " +
-                      $"| estaAtacando={estaAtacando} | estaRabada={estaExecutandoRabada}");
+                      $"| timerAtaque={timerAtaque:F1}s | spinCD={timerSpinCooldown:F1}s " +
+                      $"| atk={estaAtacando} | rabada={estaExecutandoRabada} | spin={estaExecutandoSpin}");
         }
 
         // Se estiver travado (flags ativas), avisa a cada 1s
-        if (estaAtacando || estaExecutandoRabada)
+        if (estaAtacando || estaExecutandoRabada || estaExecutandoSpin)
         {
             timerLogTravado -= Time.deltaTime;
             if (timerLogTravado <= 0f)
             {
                 timerLogTravado = 1f;
-                Debug.LogWarning($"[DRAGON] BLOQUEADO — estaAtacando={estaAtacando} estaExecutandoRabada={estaExecutandoRabada}");
+                Debug.LogWarning($"[DRAGON] BLOQUEADO — atk={estaAtacando} rabada={estaExecutandoRabada} spin={estaExecutandoSpin}");
             }
             return;
         }
-        timerLogTravado = 0f; // reseta quando desbloqueado
+        timerLogTravado = 0f;
 
         timerAtaque -= Time.deltaTime;
+        timerSpinCooldown -= Time.deltaTime;
 
         // Timer para mudar direção de órbita aleatoriamente
         timerMudancaDirecao -= Time.deltaTime;
@@ -188,10 +207,12 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         }
 
         // Corrotinas são disparadas do Update (correto — apenas iniciam uma vez)
-        if (estado == EstadoDragao.AtacarProjetil)
+        if (estado == EstadoDragao.RangedAttack)
             StartCoroutine(RajadaDeProjeteis());
         else if (estado == EstadoDragao.AtaqueTail)
             StartCoroutine(ExecutarRabada());
+        else if (estado == EstadoDragao.SpinAttack)
+            StartCoroutine(ExecutarSpinAttack());
 
         RotacionarParaPlayer();
     }
@@ -201,11 +222,12 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         if (player == null) return;
 
         // Toda física (rb.MovePosition) deve ficar no FixedUpdate
-        if (!estaAtacando && !estaExecutandoRabada)
+        if (!estaAtacando && !estaExecutandoRabada && !estaExecutandoSpin)
         {
             switch (estado)
             {
-                case EstadoDragao.AjustarDistancia:
+                case EstadoDragao.Idle:
+                case EstadoDragao.Chasing:
                     MoverParaDistanciaIdeal();
                     break;
                 case EstadoDragao.Orbitar:
@@ -219,10 +241,12 @@ public class CrystalDragonCommon_AI : MonoBehaviour
                     break;
             }
         }
-        else
+        else if (!estaExecutandoSpin)
         {
+            // Durante ataques de projétil/rabada: hover parado
             MantenerAltura();
         }
+        // Durante SpinAttack: a corrotina controla a posição diretamente
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -237,6 +261,13 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     {
         float dist = DistanciaHorizontal();
 
+        // ── Prioridade 0 (máxima): Spin Attack melee ─────────────────
+        if (dist <= meleeAttackRange && timerSpinCooldown <= 0f)
+        {
+            estado = EstadoDragao.SpinAttack;
+            return;
+        }
+
         // ── Prioridade 1: flanqueamento traseiro ──────────────────
         if (dist <= raioTail && PlayerEstaTras())
         {
@@ -247,7 +278,7 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         // ── Prioridade 2: manutenção de distância ─────────────────
         if (dist > distanciaAproximacao)
         {
-            estado = EstadoDragao.AjustarDistancia;
+            estado = EstadoDragao.Chasing;
             return;
         }
 
@@ -259,9 +290,9 @@ public class CrystalDragonCommon_AI : MonoBehaviour
 
         // ── Prioridade 3: atacar ou orbitar na zona ideal ─────────────
         if (timerAtaque <= 0f)
-            estado = EstadoDragao.AtacarProjetil;
+            estado = EstadoDragao.RangedAttack;
         else
-            estado = EstadoDragao.Orbitar; // orbita enquanto aguarda cooldown
+            estado = EstadoDragao.Orbitar;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -358,7 +389,7 @@ public class CrystalDragonCommon_AI : MonoBehaviour
 
         Debug.Log("[DRAGON] Ataque concluído. Retomando movimento.");
         estaAtacando = false;
-        estado = EstadoDragao.AjustarDistancia;
+        estado = EstadoDragao.Idle;
     }
 
     /// <summary>Instancia e lança um projétil com a rotação horizontal dada.</summary>
@@ -433,12 +464,94 @@ public class CrystalDragonCommon_AI : MonoBehaviour
 
         estaExecutandoRabada = false;
         timerAtaque = cooldownAtaque * 0.5f;
-        estado = EstadoDragao.AjustarDistancia;
+        estado = EstadoDragao.Idle;
         Debug.Log("[DRAGON] Rabada concluída. Retomando movimento.");
+    }
+
+    /// <summary>
+    /// Spin Attack 360° melee.
+    /// Fases: wind-up (abaixa), giro com dano área, recovery (sobe).
+    /// </summary>
+    private IEnumerator ExecutarSpinAttack()
+    {
+        estaExecutandoSpin = true;
+        timerSpinCooldown = spinCooldown;
+        rb.linearVelocity = Vector3.zero;
+        Debug.Log("[DRAGON] SPIN ATTACK iniciado!");
+
+        if (anim != null)
+            anim.SetTrigger(animTriggerSpin);
+
+        // ── Fase 1: Wind-up — abaixa levemente o corpo ────────────────
+        float windUpTime = 0.25f;
+        float alturaWindUp = alturaFixa - 0.6f;
+        float t = 0f;
+        float yInicial = transform.position.y;
+        while (t < windUpTime)
+        {
+            t += Time.fixedDeltaTime;
+            Vector3 pos = transform.position;
+            pos.y = Mathf.Lerp(yInicial, alturaWindUp, t / windUpTime);
+            rb.MovePosition(pos);
+            yield return new WaitForFixedUpdate();
+        }
+
+        // ── Fase 2: Giro 360° com dano ────────────────────────
+        // HashSet evita aplicar dano múltiplas vezes no mesmo alvo
+        var atingidos = new System.Collections.Generic.HashSet<GameObject>();
+        float elapsed = 0f;
+
+        // Libera rotação durante o giro
+        rb.freezeRotation = false;
+
+        while (elapsed < spinDuration)
+        {
+            elapsed += Time.deltaTime;
+            transform.Rotate(Vector3.up * spinSpeed * Time.deltaTime, Space.World);
+
+            // Aplica dano por área a cada frame (cada alvo só é atingido uma vez)
+            Collider[] cols = Physics.OverlapSphere(transform.position, meleeAttackRange);
+            foreach (Collider col in cols)
+            {
+                if (!col.CompareTag("Player")) continue;
+                if (atingidos.Contains(col.gameObject)) continue;
+
+                atingidos.Add(col.gameObject);
+                PlayerHealth ph = col.GetComponent<PlayerHealth>();
+                if (ph != null)
+                {
+                    ph.TakeDamage(spinDamage, gameObject);
+                    Debug.Log($"[DRAGON] Spin acertou Player! Dano={spinDamage}");
+                }
+            }
+            yield return null;
+        }
+
+        // Restaura constraênt de rotação
+        rb.freezeRotation = true;
+        rb.angularVelocity = Vector3.zero;
+
+        // ── Fase 3: Recovery — sobe de volta à altura normal ─────────
+        float recoverTime = 0.3f;
+        t = 0f;
+        float yPos = transform.position.y;
+        while (t < recoverTime)
+        {
+            t += Time.fixedDeltaTime;
+            Vector3 pos = transform.position;
+            pos.y = Mathf.Lerp(yPos, alturaFixa, t / recoverTime);
+            rb.MovePosition(pos);
+            yield return new WaitForFixedUpdate();
+        }
+
+        estaExecutandoSpin = false;
+        estado = EstadoDragao.Idle;
+        Debug.Log("[DRAGON] Spin Attack concluído. Retomando movimento.");
     }
 
     // ─────────────────────────────────────────────────────────────
     // Helpers
+    // ─────────────────────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -492,5 +605,9 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         // Raio da rabada
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, raioTail);
+
+        // Raio do spin attack melee
+        Gizmos.color = new Color(1f, 0.4f, 0f); // laranja
+        Gizmos.DrawWireSphere(transform.position, meleeAttackRange);
     }
 }
