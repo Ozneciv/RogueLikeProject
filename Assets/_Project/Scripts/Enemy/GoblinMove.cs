@@ -1,82 +1,117 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Serialization;
 
 /// <summary>
-/// IA do Goblin. Estados: Idle → Pursue → Strafe/Attack → Flee → MeleePickaxe
-/// Mineiro subterrâneo: arremessa bombas à distância e ataca com picareta no corpo-a-corpo.
-/// Movimentação suave via MoveTowards no Rigidbody.
+/// Goblin AI. States: Idle → Pursue → Strafe/Attack → Flee → MeleePickaxe
+/// Underground miner: throws bombs from a distance and attacks with a pickaxe in melee.
+/// Smooth movement via MoveTowards on the Rigidbody.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Animator))]
 public class GoblinAI_Transform : MonoBehaviour
 {
-    // ── Referências ──────────────────────────────────────────────────
-    [Header("Referências")]
-    public Transform jogador;
-    public GameObject prefabBomba;
-    public Transform pontoDeArremesso;
+    // ── References ──────────────────────────────────────────────────
+    [Header("References")]
+    [FormerlySerializedAs("jogador")]
+    public Transform player;
+    
+    [FormerlySerializedAs("prefabBomba")]
+    public GameObject bombPrefab;
+    
+    [FormerlySerializedAs("pontoDeArremesso")]
+    public Transform throwPoint;
 
-    // ── Distâncias ───────────────────────────────────────────────────
-    [Header("Distâncias")]
-    [Tooltip("Distância mínima para o Goblin manter do jogador (gatilho de fuga).")]
-    public float distanciaFuga = 6f;
-    [Tooltip("Distância ideal para arremessar. O Goblin tenta ficar aqui.")]
-    public float distanciaAtaque = 12f;
-    [Tooltip("Distância máxima para o Goblin começar a perseguir.")]
-    public float distanciaMaxBusca = 28f;
+    // ── Distances ───────────────────────────────────────────────────
+    [Header("Distances")]
+    [Tooltip("Minimum distance to keep from the player (triggers fleeing).")]
+    [FormerlySerializedAs("distanciaFuga")]
+    public float fleeDistance = 6f;
+    
+    [Tooltip("Ideal distance to throw bombs. The Goblin tries to stay here.")]
+    [FormerlySerializedAs("distanciaAtaque")]
+    public float throwDistance = 12f;
+    
+    [Tooltip("Maximum distance to start pursuing the player.")]
+    [FormerlySerializedAs("distanciaMaxBusca")]
+    public float chaseDistance = 28f;
 
-    // ── Velocidades ──────────────────────────────────────────────────
-    [Header("Velocidades")]
-    public float velocidadePerseguicao = 7f;
-    public float velocidadeFuga = 11f;
-    public float velocidadeStrafe = 4f;
-    [Tooltip("Aceleração do movimento (mais alto = mais responsivo, mas pode parecer 'travado').")]
-    public float aceleracao = 12f;
+    // ── Speeds ──────────────────────────────────────────────────
+    [Header("Speeds")]
+    [FormerlySerializedAs("velocidadePerseguicao")]
+    public float chaseSpeed = 7f;
+    
+    [FormerlySerializedAs("velocidadeFuga")]
+    public float fleeSpeed = 11f;
+    
+    [FormerlySerializedAs("velocidadeStrafe")]
+    public float strafeSpeed = 4f;
+    
+    [Tooltip("Movement acceleration (higher = more responsive).")]
+    [FormerlySerializedAs("aceleracao")]
+    public float acceleration = 12f;
 
-    // ── Ataque à Distância (Bomba) ────────────────────────────────────
-    [Header("Arremesso")]
-    public float forcaArremesso = 12f;
-    public float forcaArco = 6f;
-    public float intervaloAtaque = 2.8f;
+    // ── Ranged Attack (Bomb) ────────────────────────────────────
+    [Header("Ranged - Bomb Throw")]
+    [FormerlySerializedAs("forcaArremesso")]
+    public float throwForce = 12f;
+    
+    [FormerlySerializedAs("forcaArco")]
+    public float throwArcForce = 6f;
+    
+    [FormerlySerializedAs("intervaloAtaque")]
+    public float throwCooldown = 2.8f;
+    
+    [Tooltip("If the player enters this distance while the Goblin is winding up a throw, the throw is cancelled.")]
+    public float cancelThrowDistance = 4f;
 
-    // ── Ataque Melee (Picareta) ───────────────────────────────────────
-    [Header("Melee - Picareta")]
-    [Tooltip("Distância máxima para o ataque de picareta (tem prioridade sobre a fuga).")]
-    public float distanciaMelee = 2.5f;
-    [Tooltip("Dano causado pelo golpe de picareta.")]
-    public int danoMelee = 20;
-    [Tooltip("Cooldown entre golpes de picareta.")]
-    public float cooldownMelee = 1.5f;
-    [Tooltip("Raio da hitbox do golpe de picareta.")]
-    public float raioHitMelee = 1.8f;
+    // ── Melee Attack (Pickaxe) ───────────────────────────────────────
+    [Header("Melee - Pickaxe")]
+    [Tooltip("Max distance for melee attack (overrides fleeing).")]
+    [FormerlySerializedAs("distanciaMelee")]
+    public float meleeDistance = 2.5f;
+    
+    [Tooltip("Damage dealt by the pickaxe hit.")]
+    [FormerlySerializedAs("danoMelee")]
+    public int meleeDamage = 20;
+    
+    [Tooltip("Cooldown between pickaxe hits.")]
+    [FormerlySerializedAs("cooldownMelee")]
+    public float meleeCooldown = 1.5f;
+    
+    [Tooltip("Radius of the pickaxe hitbox.")]
+    [FormerlySerializedAs("raioHitMelee")]
+    public float meleeHitRadius = 1.8f;
 
     // ── Strafe ───────────────────────────────────────────────────────
-    [Header("Strafe (movimento lateral ao atacar)")]
-    [Tooltip("Duração de cada ciclo de strafe antes de mudar de direção.")]
+    [Header("Strafe (Lateral movement when attacking)")]
+    [Tooltip("Duration of each strafe cycle before changing direction.")]
+    [FormerlySerializedAs("strafeChangeDuration")]
     public float strafeChangeDuration = 1.2f;
 
-    // ── Privados ─────────────────────────────────────────────────────    // Privados
+    // ── Private ─────────────────────────────────────────────────────    
     private Rigidbody rb;
     private Animator anim;
-    private float tempoUltimoAtaque;
+    private float lastThrowTime;
     private float strafeTimer;
     private int strafeDir = 1;
-    private Vector3 velocidadeAtual = Vector3.zero;
+    private Vector3 currentVelocity = Vector3.zero;
 
     // Buff (Crystal Tuner)
     private bool isBuffed = false;
-    private float velPerseguicaoOriginal;
-    private float velFugaOriginal;
-    private float intervaloOriginal;
+    private float originalChaseSpeed;
+    private float originalFleeSpeed;
+    private float originalThrowCooldown;
 
-    // Estado simples
-    private enum Estado { Idle, Perseguir, Atacar, Fugir, MeleePickaxe }
-    private Estado estadoAtual = Estado.Idle;
-    private bool registradoNoBestiario = false;
+    // Simple State Machine
+    private enum State { Idle, Chase, RangedAttack, Flee, MeleeAttack }
+    private State currentState = State.Idle;
+    private bool registeredInBestiary = false;
 
-    // Melee picaxe
-    private float timerMelee = 0f;
-    private bool realizandoMelee = false;
+    // Attack Flags
+    private float meleeTimer = 0f;
+    private bool isDoingMelee = false;
+    private bool isThrowing = false; // Tracks if a bomb throw animation is currently active
 
     // ─────────────────────────────────────────────────────────────────
     void Start()
@@ -85,145 +120,150 @@ public class GoblinAI_Transform : MonoBehaviour
         anim = GetComponent<Animator>();
         rb.freezeRotation = true;
 
-        velPerseguicaoOriginal = velocidadePerseguicao;
-        velFugaOriginal = velocidadeFuga;
-        intervaloOriginal = intervaloAtaque;
+        originalChaseSpeed = chaseSpeed;
+        originalFleeSpeed = fleeSpeed;
+        originalThrowCooldown = throwCooldown;
 
-        if (jogador == null)
+        if (player == null)
         {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
-            if (p != null) jogador = p.transform;
+            if (p != null) player = p.transform;
         }
 
         strafeTimer = strafeChangeDuration;
     }
 
-    // ── Buff do Crystal Tuner ─────────────────────────────────────────
+    // ── Crystal Tuner Buff ─────────────────────────────────────────
     public void SetBuff(bool active)
     {
         if (active && !isBuffed)
         {
             isBuffed = true;
-            velocidadePerseguicao *= 1.15f;
-            velocidadeFuga *= 1.15f;
-            intervaloAtaque /= 2f;
+            chaseSpeed *= 1.15f;
+            fleeSpeed *= 1.15f;
+            throwCooldown /= 2f;
         }
         else if (!active && isBuffed)
         {
             isBuffed = false;
-            velocidadePerseguicao = velPerseguicaoOriginal;
-            velocidadeFuga = velFugaOriginal;
-            intervaloAtaque = intervaloOriginal;
+            chaseSpeed = originalChaseSpeed;
+            fleeSpeed = originalFleeSpeed;
+            throwCooldown = originalThrowCooldown;
         }
     }
 
     // ─────────────────────────────────────────────────────────────────
     void Update()
     {
-        if (jogador == null) return;
+        if (player == null) return;
 
-        if (timerMelee > 0f) timerMelee -= Time.deltaTime;
+        if (meleeTimer > 0f) meleeTimer -= Time.deltaTime;
 
-        float dist = Vector3.Distance(transform.position, jogador.position);
-        AtualizarEstado(dist);
+        float dist = Vector3.Distance(transform.position, player.position);
+        UpdateState(dist);
 
-        // Gira em direção ao player (exceto durante fuga pura)
-        if (estadoAtual != Estado.Fugir)
-            OlharParaJogador();
+        // Turn towards player (except during pure fleeing)
+        if (currentState != State.Flee)
+            LookAtPlayer();
     }
 
     void FixedUpdate()
     {
-        if (jogador == null) return;
-        ExecutarMovimento();
+        if (player == null) return;
+        ExecuteMovement();
     }
 
     // ─────────────────────────────────────────────────────────────────
-    void AtualizarEstado(float dist)
+    void UpdateState(float dist)
     {
-        // Prioridade: Melee > Fuga > Ataque ranged > Perseguição > Idle
-        if (dist <= distanciaMelee)        MudarEstado(Estado.MeleePickaxe);
-        else if (dist < distanciaFuga)     MudarEstado(Estado.Fugir);
-        else if (dist <= distanciaAtaque)  MudarEstado(Estado.Atacar);
-        else if (dist <= distanciaMaxBusca) MudarEstado(Estado.Perseguir);
-        else                               MudarEstado(Estado.Idle);
-
-        // Lógica do estado atual
-        switch (estadoAtual)
+        // Cancel Throw Logic
+        if (isThrowing && dist <= cancelThrowDistance)
         {
-            case Estado.Atacar:
-                TentarAtacar();
-                AtualizarStrafe();
+            CancelThrow();
+        }
+
+        // Priority: Melee > Flee > Ranged Attack > Chase > Idle
+        if (dist <= meleeDistance)         ChangeState(State.MeleeAttack);
+        else if (dist < fleeDistance)      ChangeState(State.Flee);
+        else if (dist <= throwDistance)    ChangeState(State.RangedAttack);
+        else if (dist <= chaseDistance)    ChangeState(State.Chase);
+        else                               ChangeState(State.Idle);
+
+        // State Logic execution
+        switch (currentState)
+        {
+            case State.RangedAttack:
+                TryThrowBomb();
+                UpdateStrafe();
                 break;
-            case Estado.MeleePickaxe:
-                TentarAtaqueMelee();
+            case State.MeleeAttack:
+                TryMeleeAttack();
                 break;
         }
     }
 
-    void MudarEstado(Estado novo)
+    void ChangeState(State newState)
     {
-        if (estadoAtual == novo) return;
+        if (currentState == newState) return;
 
-        // Registra no bestiário na primeira vez que sai do Idle
-        if (!registradoNoBestiario && estadoAtual == Estado.Idle && novo != Estado.Idle)
+        // Register in Bestiary the first time it leaves Idle
+        if (!registeredInBestiary && currentState == State.Idle && newState != State.Idle)
         {
-            registradoNoBestiario = true;
+            registeredInBestiary = true;
             EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
-            Debug.Log("[GOBLIN] EnemyIdentity: " + (id != null ? id.nomeInimigo : "NULL") + " | BestiarioManager: " + (BestiarioManager.instancia != null));
             if (id != null && BestiarioManager.instancia != null)
                 BestiarioManager.instancia.Registrar(id);
         }
 
-        estadoAtual = novo;
-        anim.SetBool("Running", novo == Estado.Perseguir || novo == Estado.Fugir);
+        currentState = newState;
+        anim.SetBool("Running", newState == State.Chase || newState == State.Flee);
     }
 
     // ─────────────────────────────────────────────────────────────────
-    void ExecutarMovimento()
+    void ExecuteMovement()
     {
-        Vector3 alvo = Vector3.zero;
+        Vector3 targetVelocity = Vector3.zero;
 
-        switch (estadoAtual)
+        switch (currentState)
         {
-            case Estado.Perseguir:
-                alvo = DirecaoPara(jogador.position) * velocidadePerseguicao;
+            case State.Chase:
+                targetVelocity = DirectionTo(player.position) * chaseSpeed;
                 break;
 
-            case Estado.Fugir:
-                alvo = DirecaoFugindo() * velocidadeFuga;
-                OlharParaDirecao(DirecaoFugindo());
+            case State.Flee:
+                targetVelocity = FleeDirection() * fleeSpeed;
+                LookAtDirection(FleeDirection());
                 break;
 
-            case Estado.MeleePickaxe:
-                // Para completamente para golpear — o Goblin planta o pé
-                alvo = Vector3.zero;
+            case State.MeleeAttack:
+                // Stop completely to strike
+                targetVelocity = Vector3.zero;
                 break;
 
-            case Estado.Atacar:
-                // Strafe lento ao atacar — evita o efeito de deslizamento
-                Vector3 lateral = transform.right * strafeDir * velocidadeStrafe * 0.3f;
-                alvo = new Vector3(lateral.x, 0, lateral.z);
+            case State.RangedAttack:
+                // Slow strafe when attacking
+                Vector3 lateral = transform.right * strafeDir * strafeSpeed * 0.3f;
+                targetVelocity = new Vector3(lateral.x, 0, lateral.z);
                 break;
 
-            case Estado.Idle:
+            case State.Idle:
             default:
-                alvo = Vector3.zero;
+                targetVelocity = Vector3.zero;
                 break;
         }
 
-        // Suaviza a velocidade (aceleração) para movimento fluido
-        velocidadeAtual = Vector3.MoveTowards(
-            velocidadeAtual,
-            new Vector3(alvo.x, 0, alvo.z),
-            aceleracao * Time.fixedDeltaTime
+        // Smooth acceleration
+        currentVelocity = Vector3.MoveTowards(
+            currentVelocity,
+            new Vector3(targetVelocity.x, 0, targetVelocity.z),
+            acceleration * Time.fixedDeltaTime
         );
 
-        rb.linearVelocity = new Vector3(velocidadeAtual.x, rb.linearVelocity.y, velocidadeAtual.z);
+        rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
     }
 
     // ─────────────────────────────────────────────────────────────────
-    void AtualizarStrafe()
+    void UpdateStrafe()
     {
         strafeTimer -= Time.deltaTime;
         if (strafeTimer <= 0f)
@@ -233,40 +273,56 @@ public class GoblinAI_Transform : MonoBehaviour
         }
     }
 
-    void TentarAtacar()
+    void TryThrowBomb()
     {
-        if (Time.time >= tempoUltimoAtaque + intervaloAtaque)
+        if (!isThrowing && Time.time >= lastThrowTime + throwCooldown)
         {
+            isThrowing = true;
             anim.SetTrigger("Attacking");
-            tempoUltimoAtaque = Time.time;
+            lastThrowTime = Time.time;
         }
+    }
+
+    void CancelThrow()
+    {
+        if (!isThrowing) return;
+        
+        isThrowing = false;
+        anim.ResetTrigger("Attacking");
+        
+        // Force the animator to abort the Throw animation immediately
+        // CrossFade smoothly transitions to Idle, interrupting the attack.
+        anim.CrossFade("Idle", 0.1f);
+        Debug.Log("[GOBLIN] Throw cancelled due to player proximity!");
     }
 
     // ─────────────────────────────────────────────────────────────────
     /// <summary>
-    /// Ataque de picareta corpo-a-corpo. Triggered quando o player entra em distanciaMelee.
-    /// O Goblin para, olha para o player e desfere um golpe com a picareta.
+    /// Melee Pickaxe Attack.
     /// </summary>
-    void TentarAtaqueMelee()
+    void TryMeleeAttack()
     {
-        if (realizandoMelee || timerMelee > 0f) return;
-        StartCoroutine(ExecutarMelee());
+        if (isDoingMelee || meleeTimer > 0f) return;
+        
+        // If we were throwing, definitely cancel it to prioritize melee
+        if (isThrowing) CancelThrow();
+
+        StartCoroutine(ExecuteMeleeRoutine());
     }
 
-    IEnumerator ExecutarMelee()
+    IEnumerator ExecuteMeleeRoutine()
     {
-        realizandoMelee = true;
-        timerMelee = cooldownMelee;
+        isDoingMelee = true;
+        meleeTimer = meleeCooldown;
 
-        // Telegrafagem: o Goblin levanta a picareta (wind-up)
+        // Wind-up
         anim.SetTrigger("MeleeAttack");
-        Debug.Log("[GOBLIN] PICARETA! Wind-up...");
 
-        yield return new WaitForSeconds(0.35f); // timing do swing
+        yield return new WaitForSeconds(0.35f); // Swing timing
 
-        // Hitbox em frente ao Goblin
-        Vector3 centroHit = transform.position + transform.forward * 1.2f + Vector3.up * 0.5f;
-        Collider[] hits = Physics.OverlapSphere(centroHit, raioHitMelee);
+        // Hitbox check
+        Vector3 hitCenter = transform.position + transform.forward * 1.2f + Vector3.up * 0.5f;
+        Collider[] hits = Physics.OverlapSphere(hitCenter, meleeHitRadius);
 
         foreach (Collider hit in hits)
         {
@@ -275,78 +331,80 @@ public class GoblinAI_Transform : MonoBehaviour
                 PlayerHealth ph = hit.GetComponent<PlayerHealth>();
                 if (ph != null)
                 {
-                    ph.TakeDamage(danoMelee, gameObject);
-                    Debug.Log("[GOBLIN] Picareta acertou o player! Dano: " + danoMelee);
+                    ph.TakeDamage(meleeDamage, gameObject);
+                    Debug.Log("[GOBLIN] Melee hit player! Damage: " + meleeDamage);
                 }
                 break;
             }
         }
 
-        yield return new WaitForSeconds(0.4f); // recovery
-        realizandoMelee = false;
+        yield return new WaitForSeconds(0.4f); // Recovery
+        isDoingMelee = false;
     }
 
     // ─────────────────────────────────────────────────────────────────
-    // Chamado pelo Animation Event
-    public void EventoDispararBomba()
+    // Called by Unity Animation Event exactly when the hand goes forward
+    public void AnimationEvent_ThrowBomb()
     {
-        if (prefabBomba == null || pontoDeArremesso == null) return;
+        isThrowing = false; // Throw completed successfully
 
-        GameObject bomba = Instantiate(prefabBomba, pontoDeArremesso.position, Quaternion.identity);
+        if (bombPrefab == null || throwPoint == null) return;
 
-        // Ignore colisão com o próprio Goblin
-        Collider cBomba = bomba.GetComponent<Collider>();
+        GameObject bomb = Instantiate(bombPrefab, throwPoint.position, Quaternion.identity);
+
+        // Ignore collision with the Goblin itself
+        Collider cBomb = bomb.GetComponent<Collider>();
         Collider cGoblin = GetComponent<Collider>();
-        if (cBomba != null && cGoblin != null)
-            Physics.IgnoreCollision(cBomba, cGoblin);
+        if (cBomb != null && cGoblin != null)
+            Physics.IgnoreCollision(cBomb, cGoblin);
 
-        // Passa referência do dono e raio de acordo com o buff
-        BombaExplosiva script = bomba.GetComponent<BombaExplosiva>();
+        // Pass references and buff stats
+        BombaExplosiva script = bomb.GetComponent<BombaExplosiva>();
         if (script != null)
         {
             script.owner = gameObject;
-            script.raioExplosao = isBuffed ? 4f : 2f; // buffado = raio maior
+            script.raioExplosao = isBuffed ? 4f : 2f;
         }
 
-        // Aplica força parabólica em direção ao jogador
-        Rigidbody rbBomba = bomba.GetComponent<Rigidbody>();
-        if (rbBomba != null)
+        // Apply parabolic force towards player
+        Rigidbody rbBomb = bomb.GetComponent<Rigidbody>();
+        if (rbBomb != null)
         {
-            rbBomba.WakeUp();
-            Vector3 direcao = (jogador != null)
-                ? (jogador.position - pontoDeArremesso.position).normalized
+            rbBomb.WakeUp();
+            Vector3 direction = (player != null)
+                ? (player.position - throwPoint.position).normalized
                 : transform.forward;
 
-            Vector3 forca = direcao * forcaArremesso + Vector3.up * forcaArco;
-            rbBomba.AddForce(forca, ForceMode.Impulse);
+            Vector3 force = direction * throwForce + Vector3.up * throwArcForce;
+            rbBomb.AddForce(force, ForceMode.Impulse);
         }
     }
 
     // ─────────────────────────────────────────────────────────────────
     // Helpers
-    Vector3 DirecaoPara(Vector3 alvo)
+    Vector3 DirectionTo(Vector3 target)
     {
-        Vector3 dir = alvo - transform.position;
+        Vector3 dir = target - transform.position;
         dir.y = 0;
         return dir.normalized;
     }
 
-    Vector3 DirecaoFugindo()
+    Vector3 FleeDirection()
     {
-        Vector3 dir = transform.position - jogador.position;
+        Vector3 dir = transform.position - player.position;
         dir.y = 0;
         return dir.normalized;
     }
 
-    void OlharParaJogador()
+    void LookAtPlayer()
     {
-        Vector3 dir = jogador.position - transform.position;
+        Vector3 dir = player.position - transform.position;
         dir.y = 0;
         if (dir.sqrMagnitude > 0.01f)
-            OlharParaDirecao(dir);
+            LookAtDirection(dir);
     }
 
-    void OlharParaDirecao(Vector3 dir)
+    void LookAtDirection(Vector3 dir)
     {
         if (dir.sqrMagnitude < 0.01f) return;
         Quaternion rot = Quaternion.LookRotation(dir);

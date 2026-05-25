@@ -84,7 +84,7 @@ public class GameManager : MonoBehaviour
 
     public void LoadGameLevel()
     {
-        // Reseta o estado econômico da Run (sala 1, inflação zerrada)
+        // Reseta estado da Run completo (sala 1, round 1, inflação zerrada)
         if (RunManager.instance != null)
             RunManager.instance.StartNewRun();
 
@@ -93,6 +93,19 @@ public class GameManager : MonoBehaviour
             InfusionManager im = currentPlayer.GetComponent<InfusionManager>();
             if (im != null) im.ResetRunInflation();
         }
+
+        StartCoroutine(LoadLevelAsync("GameScene"));
+    }
+
+    /// <summary>
+    /// Carrega o próximo nível SEM resetar a run.
+    /// Chamado pelo NextLevelTrigger quando o jogador usa a Exit Room.
+    /// Avança o round no RunManager (Round 1 → 2 → 3 → Boss).
+    /// </summary>
+    public void LoadNextLevel()
+    {
+        if (RunManager.instance != null)
+            RunManager.instance.AdvanceLevel();
 
         StartCoroutine(LoadLevelAsync("GameScene"));
     }

@@ -27,6 +27,13 @@ public class DummyHealth : MonoBehaviour
     [HideInInspector] public bool isInvulnerable = false;
     [HideInInspector] public bool isBuffed = false;
 
+    /// <summary>
+    /// Se definido, chama este callback ao invés da lógica padrão de morte (drops + Destroy).
+    /// Usado pelo Geobionte para substituir morte por fuga.
+    /// Não afeta nenhum inimigo que não defina esse campo (null por padrão).
+    /// </summary>
+    [HideInInspector] public System.Action onDeathOverride = null;
+
     private Color originalRenderColor;
     private Color originalBaseColor;
     private bool hasBaseColor = false;
@@ -86,6 +93,15 @@ public class DummyHealth : MonoBehaviour
         {
             healthBarFill.color = buffed ? buffedColor : normalColor;
         }
+    }
+
+    /// <summary>
+    /// Reseta o HP para o valor máximo. Usado pelo Geobionte no respawn.
+    /// </summary>
+    public void ResetHealth()
+    {
+        CurrentHealth = maxHealth;
+        UpdateHealthBar();
     }
 
     public void TakeDamage(int damage, bool isCritical = false)
@@ -151,6 +167,14 @@ public class DummyHealth : MonoBehaviour
 
     private void Die()
     {
+        // Se um override foi definido (ex: Geobionte usa fuga ao invés de morte),
+        // chama o callback e retorna sem executar a lógica padrão.
+        if (onDeathOverride != null)
+        {
+            onDeathOverride.Invoke();
+            return;
+        }
+
         Debug.Log(gameObject.name + " foi destruído.");
 
         // Chama o sistema de drops se existir

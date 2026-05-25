@@ -9,7 +9,6 @@ public class EptinhoMenuController : MonoBehaviour
     public GameObject menuUI;
     public GameObject HUDCanvas;
 
-
     [Header("Configuração da Lista")]
     public Transform gridContentItens;      // Grid dos itens catalogados
     public Transform gridContentInimigos;   // Grid do bestiário
@@ -67,41 +66,45 @@ public class EptinhoMenuController : MonoBehaviour
 
     void AtualizarListaVisual()
     {
-        // Limpa grid de itens
+        // --- Itens catalogados (usa ItemData) ---
         foreach (Transform child in gridContentItens)
             Destroy(child.gameObject);
 
-        // Limpa grid de inimigos
+        if (CatalogoManager.instancia != null)
+        {
+            foreach (ItemData item in CatalogoManager.instancia.itensCatalogados)
+            {
+                GameObject novoItemUI = Instantiate(itemPrefab, gridContentItens);
+
+                Image imgComp = novoItemUI.transform.Find("IconeItem")?.GetComponent<Image>();
+                if (imgComp != null) imgComp.sprite = item.icon;
+
+                TextMeshProUGUI txtComp = novoItemUI.transform.Find("NomeItem")?.GetComponent<TextMeshProUGUI>();
+                if (txtComp != null) txtComp.text = item.itemName;
+
+                // Opcional: exibe a cor do tier no nome
+                if (txtComp != null) txtComp.color = item.GetTierColor();
+            }
+        }
+
+        // --- Bestiário (usa EnemyData) ---
         if (gridContentInimigos != null)
         {
             foreach (Transform child in gridContentInimigos)
                 Destroy(child.gameObject);
-        }
 
-        // Itens catalogados
-        foreach (ItemCatalogado item in CatalogoManager.instancia.itensCatalogados)
-        {
-            GameObject novoItemUI = Instantiate(itemPrefab, gridContentItens);
-
-            Image imgComp = novoItemUI.transform.Find("IconeItem").GetComponent<Image>();
-            if (imgComp != null) imgComp.sprite = item.icon;
-
-            TextMeshProUGUI txtComp = novoItemUI.transform.Find("NomeItem").GetComponent<TextMeshProUGUI>();
-            if (txtComp != null) txtComp.text = item.nome;
-        }
-
-        // Inimigos catalogados
-        if (BestiarioManager.instancia != null && gridContentInimigos != null)
-        {
-            foreach (InimigoCatalogado inimigo in BestiarioManager.instancia.inimigosEncontrados)
+            if (BestiarioManager.instancia != null)
             {
-                GameObject novoItemUI = Instantiate(itemPrefab, gridContentInimigos);
+                foreach (EnemyData inimigo in BestiarioManager.instancia.inimigosEncontrados)
+                {
+                    GameObject novoItemUI = Instantiate(itemPrefab, gridContentInimigos);
 
-                Image imgComp = novoItemUI.transform.Find("IconeItem").GetComponent<Image>();
-                if (imgComp != null) imgComp.sprite = inimigo.icon;
+                    Image imgComp = novoItemUI.transform.Find("IconeItem")?.GetComponent<Image>();
+                    if (imgComp != null) imgComp.sprite = inimigo.icon;
 
-                TextMeshProUGUI txtComp = novoItemUI.transform.Find("NomeItem").GetComponent<TextMeshProUGUI>();
-                if (txtComp != null) txtComp.text = inimigo.nome;
+                    TextMeshProUGUI txtComp = novoItemUI.transform.Find("NomeItem")?.GetComponent<TextMeshProUGUI>();
+                    if (txtComp != null) txtComp.text = inimigo.enemyName;
+                }
             }
         }
     }
