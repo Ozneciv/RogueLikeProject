@@ -38,6 +38,11 @@ public class PlayerHealth : MonoBehaviour
     [Header("Pactos")]
     [HideInInspector] public float damageMultiplier = 1.0f;
     [HideInInspector] public float damageTakenMultiplier = 1.0f;
+    [HideInInspector] public bool canHeal = true;
+    [HideInInspector] public bool hasDoubleLoot = false;
+    [HideInInspector] public bool hasVampirism = false;
+    [HideInInspector] public bool hasNecrosis = false;
+    [HideInInspector] public float lastKillTime = 0f;
 
     [Header("Stun")]
     public bool isStunned { get; private set; } = false;
@@ -399,7 +404,7 @@ public class PlayerHealth : MonoBehaviour
             stunImmunityTimer -= Time.deltaTime;
         }
         
-        // === REGENERAÇÃO DE ARMADURA ===
+    // === REGENERAÇÃO DE ARMADURA ===
         if (!isDead && currentArmor < maxArmor && playerAttributes != null)
         {
             float regenAmount = armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
@@ -418,6 +423,27 @@ public class PlayerHealth : MonoBehaviour
                 
             UpdateArmorBar();
         }
+
+        // === NECROSE (Pacto do Parasita) ===
+        if (hasNecrosis && !isDead)
+        {
+            if (Time.time - lastKillTime > 5f)
+            {
+                // Dano contínuo se ficar 5s sem matar
+                int necroseDamage = Mathf.Max(1, Mathf.RoundToInt(maxHealth * 0.02f * Time.deltaTime)); 
+                currentHealth -= necroseDamage;
+                if (currentHealth <= 0) Die();
+                UpdateHealthBar();
+            }
+        }
+    }
+
+    public void Heal(int amount)
+    {
+        if (isDead || !canHeal) return;
+        currentHealth += amount;
+        if (currentHealth > maxHealth) currentHealth = maxHealth;
+        UpdateHealthBar();
     }
     
     /// <summary>

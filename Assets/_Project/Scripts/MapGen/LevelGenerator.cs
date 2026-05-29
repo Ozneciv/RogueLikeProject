@@ -343,14 +343,22 @@ public class LevelGenerator : MonoBehaviour
 
     IEnumerator ProcessRemainingOutputs()
     {
-        // 1. Escolhe UMA saída para ser a ExitRoom
+        // 1. Escolhe a saída MAIS DISTANTE para ser a ExitRoom, testando colisões
         if (openOutputs.Count > 0 && !exitRoomSpawned)
         {
-            int exitIdx = Random.Range(0, openOutputs.Count);
-            ConnectionPoint exitOutput = openOutputs[exitIdx];
-            openOutputs.RemoveAt(exitIdx);
-            SpawnSpecialRoom(exitRoomPrefab, exitOutput, "Sala de Saída");
-            exitRoomSpawned = true;
+            openOutputs.Sort((a, b) => 
+                Vector3.Distance(Vector3.zero, b.transform.position)
+                .CompareTo(Vector3.Distance(Vector3.zero, a.transform.position)));
+
+            for (int i = 0; i < openOutputs.Count; i++)
+            {
+                if (TrySpawnSpecialRoom(exitRoomPrefab, openOutputs[i], "Sala de Saída"))
+                {
+                    openOutputs.RemoveAt(i);
+                    exitRoomSpawned = true;
+                    break;
+                }
+            }
         }
 
         // 2. Demais saídas → Mercador ou DeadEnd
@@ -363,42 +371,44 @@ public class LevelGenerator : MonoBehaviour
 
             if (!merchantRoomSpawned && (Random.value < merchantRoomChance || isLast))
             {
-                SpawnMerchantRoom(deadEnds[i]);
-                merchantRoomSpawned = true;
+                if (TrySpawnMerchantRoom(deadEnds[i]))
+                    merchantRoomSpawned = true;
+                else
+                    TrySpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End");
             }
             else
             {
-                SpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End");
+                TrySpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End");
             }
         }
 
-        // Garantia: se ExitRoom não foi colocada, busca qualquer saída disponível na cena
+        // Garantia: se ExitRoom não foi colocada
         if (!exitRoomSpawned)
         {
             Debug.LogError("[LevelGenerator] ❌ ExitRoom não colocada. Buscando saída disponível na cena...");
 
-            // Tenta conectar a ExitRoom a qualquer ConnectionPoint(Saida) não ocupado na cena
             ConnectionPoint[] allCPs = FindObjectsByType<ConnectionPoint>(FindObjectsSortMode.None);
-            ConnectionPoint anyFreeOutput = null;
-            foreach (var cp in allCPs)
+            var sortedCPs = allCPs.OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position));
+
+            foreach (var cp in sortedCPs)
             {
                 if (cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
                 {
-                    anyFreeOutput = cp;
-                    break;
+                    if (startRoomPrefab != null && cp.transform.root.gameObject.name.Contains(startRoomPrefab.name)) continue;
+                    if (cp.transform.root.gameObject.name.Contains("Safe")) continue;
+
+                    if (TrySpawnSpecialRoom(exitRoomPrefab, cp, "Sala de Saída (recuperação)"))
+                    {
+                        exitRoomSpawned = true;
+                        Debug.LogWarning("[LevelGenerator] ⚠️ ExitRoom conectada a saída de recuperação. Mapa pode ter layout não ideal.");
+                        break;
+                    }
                 }
             }
 
-            if (anyFreeOutput != null)
+            if (!exitRoomSpawned && exitRoomPrefab != null && playerSpawnPoint != null)
             {
-                SpawnSpecialRoom(exitRoomPrefab, anyFreeOutput, "Sala de Saída (recuperação)");
-                exitRoomSpawned = true;
-                Debug.LogWarning("[LevelGenerator] ⚠️ ExitRoom conectada a saída de recuperação. Mapa pode ter layout não ideal.");
-            }
-            else if (exitRoomPrefab != null && playerSpawnPoint != null)
-            {
-                // Último recurso absoluto: sem nenhuma saída disponível na cena inteira
-                Debug.LogError("[LevelGenerator] ❌ Nenhuma saída encontrada na cena. ExitRoom colocada sem conexão (último recurso).");
+                Debug.LogError("[LevelGenerator] ❌ Nenhuma saída sem sobreposição encontrada na cena. ExitRoom colocada solta no espaço.");
                 GameObject lastResortExit = Instantiate(exitRoomPrefab);
                 lastResortExit.transform.position = playerSpawnPoint.position + playerSpawnPoint.forward * 30f;
                 exitRoomSpawned = true;
@@ -417,42 +427,42 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // =========================================================
-    // SPAWN DE SALAS ESPECIAIS
+    // SPAWN DE SALAS ESPECIAIS (AGORA COM CHECAGEM DE OVERLAP)
     // =========================================================
 
-    void SpawnSpecialRoom(GameObject prefab, ConnectionPoint targetOutput, string label)
+    bool TrySpawnSpecialRoom(GameObject prefab, ConnectionPoint targetOutput, string label)
     {
-        if (prefab == null)
-        {
-            Debug.LogWarning($"[LevelGenerator] Prefab de '{label}' não definido no Inspector.");
-            return;
-        }
+        if (prefab == null) return false;
 
         GameObject room = Instantiate(prefab);
         ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);
 
         if (entrada == null)
         {
-            // Fallback: alinha pela raiz do prefab
-            room.transform.position = targetOutput.transform.position;
-            room.transform.rotation = Quaternion.LookRotation(-targetOutput.transform.forward);
-            Debug.LogWarning($"[LevelGenerator] '{label}' não tem ConnectionPoint(Entrada). Usando fallback de posição.");
-            return;
+            Destroy(room);
+            Debug.LogWarning($"[LevelGenerator] '{label}' não tem Entrada. Descartando.");
+            return false;
         }
 
         AlignRooms(targetOutput.transform, entrada.transform);
+
+        if (HasOverlapWithExistingRooms(room, excludeRoom: targetOutput.transform.root.gameObject))
+        {
+            Destroy(room);
+            Debug.Log($"[LevelGenerator] ⚠️ '{label}' sobrepôs. Tentando próxima saída...");
+            return false;
+        }
+
         targetOutput.isOccupied = true;
         entrada.isOccupied = true;
-        Debug.Log($"[LevelGenerator] {label} criado.");
+        RegisterRoomBounds(room);
+        Debug.Log($"[LevelGenerator] ✅ {label} criado.");
+        return true;
     }
 
-    void SpawnMerchantRoom(ConnectionPoint targetOutput)
+    bool TrySpawnMerchantRoom(ConnectionPoint targetOutput)
     {
-        if (merchantRoomPrefab == null || merchantPrefab == null)
-        {
-            Debug.LogWarning("[LevelGenerator] merchantRoomPrefab ou merchantPrefab não definido.");
-            return;
-        }
+        if (merchantRoomPrefab == null || merchantPrefab == null) return false;
 
         GameObject room = Instantiate(merchantRoomPrefab);
         ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);
@@ -460,22 +470,28 @@ public class LevelGenerator : MonoBehaviour
         if (entrada == null)
         {
             Destroy(room);
-            Debug.LogError("[LevelGenerator] merchantRoomPrefab não tem ConnectionPoint(Entrada)!");
-            return;
+            return false;
         }
 
         AlignRooms(targetOutput.transform, entrada.transform);
+
+        if (HasOverlapWithExistingRooms(room, excludeRoom: targetOutput.transform.root.gameObject))
+        {
+            Destroy(room);
+            return false;
+        }
+
         targetOutput.isOccupied = true;
         entrada.isOccupied = true;
+        RegisterRoomBounds(room);
 
-        // Spawn do NPC Mercador
         Transform spawnPoint = FindNamedChild(room.transform, "Merchant_SpawnPoint");
         if (spawnPoint != null)
             Instantiate(merchantPrefab, spawnPoint.position, spawnPoint.rotation);
 
-        Debug.Log("[LevelGenerator] Sala do Mercador criada!");
+        Debug.Log("[LevelGenerator] ✅ Sala do Mercador criada.");
+        return true;
     }
-
     // =========================================================
     // SELEÇÃO DE PREFAB
     // =========================================================

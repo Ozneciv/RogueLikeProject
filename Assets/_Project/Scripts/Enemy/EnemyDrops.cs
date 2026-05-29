@@ -67,6 +67,16 @@ public class EnemyDrops : MonoBehaviour
         
         Vector3 basePosition = transform.position + Vector3.up * spawnHeight;
 
+        // --- SISTEMA DE PACTOS DO JOGADOR ---
+        bool doubleLoot = false;
+        PlayerHealth playerHealth = FindFirstObjectByType<PlayerHealth>();
+        if (playerHealth != null && playerHealth.hasDoubleLoot)
+        {
+            doubleLoot = true;
+            Debug.Log("[ENEMY DROPS] A Ganância ativada! Drop em dobro!");
+        }
+        // ------------------------------------
+
         // 1. Sempre spawna essência com inflação por sala
         // Fórmula GDD §1.1: E(n) = d × (1 + α × n)  onde α = 0,05
         if (essencePrefab != null)
@@ -79,6 +89,8 @@ public class EnemyDrops : MonoBehaviour
             int scaledBase  = Mathf.RoundToInt(essenceAmount * roomMultiplier);
             int finalEssence = scaledBase + Random.Range(-essenceVariation, essenceVariation + 1);
             finalEssence = Mathf.Max(1, finalEssence);
+
+            if (doubleLoot) finalEssence *= 2; // Dobra a essência!
 
             GameObject essence = SpawnDrop(essencePrefab, basePosition);
             
@@ -128,7 +140,9 @@ public class EnemyDrops : MonoBehaviour
 
                 if (selectedPrefab != null)
                 {
-                    for (int i = 0; i < itemAmount; i++)
+                    int finalItemAmount = doubleLoot ? itemAmount * 2 : itemAmount; // Dobra itens!
+
+                    for (int i = 0; i < finalItemAmount; i++)
                     {
                         Vector3 offset = Random.insideUnitSphere * spawnRadius;
                         offset.y = 0;
