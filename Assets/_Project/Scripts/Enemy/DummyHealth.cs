@@ -27,6 +27,13 @@ public class DummyHealth : MonoBehaviour
     [HideInInspector] public bool isInvulnerable = false;
     [HideInInspector] public bool isBuffed = false;
 
+    /// <summary>
+    /// Se definido, chama este callback ao invés da lógica padrão de morte (drops + Destroy).
+    /// Usado pelo Geobionte para substituir morte por fuga.
+    /// Não afeta nenhum inimigo que não defina esse campo (null por padrão).
+    /// </summary>
+    [HideInInspector] public System.Action onDeathOverride = null;
+
     private Color originalRenderColor;
     private Color originalBaseColor;
     private bool hasBaseColor = false;
@@ -86,6 +93,15 @@ public class DummyHealth : MonoBehaviour
         {
             healthBarFill.color = buffed ? buffedColor : normalColor;
         }
+    }
+
+    /// <summary>
+    /// Reseta o HP para o valor máximo. Usado pelo Geobionte no respawn.
+    /// </summary>
+    public void ResetHealth()
+    {
+        CurrentHealth = maxHealth;
+        UpdateHealthBar();
     }
 
     public void TakeDamage(int damage, bool isCritical = false)
@@ -151,7 +167,29 @@ public class DummyHealth : MonoBehaviour
 
     private void Die()
     {
+        // Se um override foi definido (ex: Geobionte usa fuga ao invés de morte),
+        // chama o callback e retorna sem executar a lógica padrão.
+        if (onDeathOverride != null)
+        {
+            onDeathOverride.Invoke();
+            return;
+        }
+
         Debug.Log(gameObject.name + " foi destruído.");
+
+        // --- SISTEMA DE PACTOS DO JOGADOR ---
+        PlayerHealth playerHealth = FindFirstObjectByType<PlayerHealth>();
+        if (playerHealth != null)
+        {
+            playerHealth.lastKillTime = Time.time;        // Checa Vampirismo (GDD §4.1 - Carta O Parasita)
+            if (playerHealth != null && playerHealth.currentHealth > 0 && playerHealth.hasVampirism)
+            {
+                Debug.Log("[DUMMY] Inimigo morreu! Curando Player (Vampirismo).");
+                playerHealth.Heal(5); // Cura fixa de 5 (ajustável se quiser balancear)
+                playerHealth.lastKillTime = Time.time; // Reseta a degeneração!
+            }
+        }
+        // ------------------------------------
 
         // Chama o sistema de drops se existir
         // Busca em filhos e pais também — cobre hierarquias mais complexas de prefab

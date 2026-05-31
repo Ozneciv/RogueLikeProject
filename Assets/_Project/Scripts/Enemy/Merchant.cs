@@ -21,7 +21,7 @@ public class Merchant : MonoBehaviour
         // Se o jogador está na área, a UI não está aberta, e ele aperta F
         if (canInteract && uiController != null && !uiController.IsUiOpen() && Input.GetKeyDown(KeyCode.F))
         {
-            uiController.OpenPanel();
+            uiController.OpenPanel(this.transform);
         }
     }
 

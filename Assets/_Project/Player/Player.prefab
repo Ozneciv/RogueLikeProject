@@ -3851,6 +3851,9 @@ MonoBehaviour:
   defaultRange: 2
   daggerRange: 6
   swordRange: 7
+  hitImpactVariations:
+  - {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
+  - {fileID: 5926973241947854841, guid: a42a16372567d9548af804044f68ea52, type: 3}
   hitImpactPrefab: {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
   attackAnimationSpeed: 1
   defaultDamages: 0a0000000f0000001e000000
@@ -3883,7 +3886,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesOffensive
   baseDamageMultiplier: 1
   attackSpeedMelee: 1
-  critChance: 5
+  critChance: 38.3
   critMultiplier: 1.5
   weaponRangeMelee: 1
   weaponRangeProjectile: 10

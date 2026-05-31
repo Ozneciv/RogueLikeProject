@@ -15,9 +15,8 @@ public class NextLevelTrigger : MonoBehaviour
             // Desativa o collider para evitar cliques duplos
             GetComponent<Collider>().enabled = false; 
 
-            // Chama o GameManager para recarregar a GameScene
-            // (Isso reinicia todo o processo de loading e geração)
-            GameManager.instance.LoadGameLevel();
+            // Avança o round e carrega o próximo nível (NÃO reseta a run)
+            GameManager.instance.LoadNextLevel();
         }
     }
 }
