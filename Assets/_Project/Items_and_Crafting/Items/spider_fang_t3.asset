@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: spider_fang_t3
   itemName: Presa Venenosa (T3)
-  description: 
-  icon: {fileID: 0}
+  description: aaaa
+  icon: {fileID: 21300000, guid: 7d8f21abf090633479e2de8430e70915, type: 3}
   tier: 2
   enemySource: Spider
   recycleEssenceValue: 120
   infusionEssenceCost: 300
   itemAttributes:
   - attributeType: 1
-    value: 0.05
+    value: 1.3
     isMultiplier: 1
   - attributeType: 19
-    value: 0.05
+    value: 1.2
     isMultiplier: 1
   - attributeType: 15
-    value: 0.05
+    value: 1.1
     isMultiplier: 1

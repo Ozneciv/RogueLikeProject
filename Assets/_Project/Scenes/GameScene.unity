@@ -20,13 +20,13 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientSkyColor: {r: 0.2924403, g: 0.2285066, b: 0.745283, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
   m_AmbientMode: 0
-  m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SubtractiveShadowColor: {r: 0.6037715, g: 0.45056072, b: 0.7075472, a: 1}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -480,18 +480,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f035c56f1ebea8248896094f0ab5b9bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator
-  startRoomPrefab: {fileID: 8551674286305367355, guid: d2b3d4f4cf598bf42a212ed7944be7a0, type: 3}
+  startRoomPrefab: {fileID: 2005527778805763103, guid: fbefb36eeda6d974fafd3b5ef63fbb4e, type: 3}
   mainRoomPrefabs:
-  - {fileID: 2176558758385250221, guid: a859a879b5804934891be943b9130724, type: 3}
-  - {fileID: 2176558758385250221, guid: 65138ee803109ed44b5df323d2d75482, type: 3}
-  transitionRoomPrefab: {fileID: 9122629121441900789, guid: cad32160e9a8fc04b9db8ea0c631ea29, type: 3}
-  merchantRoomPrefab: {fileID: 8551674286305367355, guid: 32cf0be15a665d04caa9b4c0f05ef1b0, type: 3}
-  merchantPrefab: {fileID: 7107249180062719607, guid: 93e8484d2cda5d04f999abe51e48c1e8, type: 3}
-  exitRoomPrefab: {fileID: 340013495099815400, guid: 81e897d1678caa14cb9deaf088d7165b, type: 3}
-  maxMainRooms: 6
-  roomLimitPerType: 6
-  merchantRoomChance: 0.1
+  - {fileID: 4560169563027851190, guid: afb62f7e72aafd7488de8123fd536ad9, type: 3}
+  - {fileID: 3541687057159095552, guid: 4c631f960120017449ac26803d4a7e7c, type: 3}
+  - {fileID: 4773870657418135382, guid: ba15b0368882e914eb8868439b2ac6c1, type: 3}
+  - {fileID: 8357395002222784038, guid: 7b0c69b08d49878459c51692a1e35b51, type: 3}
+  - {fileID: 5229581802073466358, guid: cad025b8fb426a74f9b442c6b8691e2b, type: 3}
+  - {fileID: 6303555823580562968, guid: e8545541cb8afb6468a4888842d4c6fb, type: 3}
+  - {fileID: 2803324335526979050, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+  transitionRoomPrefabs:
+  - {fileID: 2203966546174670674, guid: 4df9ad30417e9ed4fb9847fcaae8ac3a, type: 3}
+  - {fileID: 8036747435783641409, guid: 3a63c06855d564f41b482bd284f9f3e3, type: 3}
+  - {fileID: 7448369051805098021, guid: 46c61c64b1c7b584a98a21c8b33f08be, type: 3}
+  merchantRoomPrefab: {fileID: 4772105080490564613, guid: c6d1cffb5a3f2d34c8293a6ecfb1753a, type: 3}
+  merchantPrefab: {fileID: 3761318572803560436, guid: 439bea62bc2f06f4e87293ba77d6853a, type: 3}
+  exitRoomPrefab: {fileID: 9111555122348223166, guid: ff1acf62bd7027d4981f6509e9052a16, type: 3}
+  deadEndPrefab: {fileID: 901390459081756430, guid: 99897e60af28beb4989d544507ee2ee7, type: 3}
+  bossRoomPrefab: {fileID: 0}
+  maxMainRooms: 4
+  roomLimitPerType: 10
+  merchantRoomChance: 1
   extraLoadDelay: 0
+  roomFloorY: 0
+  overlapTolerance: 0.5
 --- !u!4 &1112906433
 Transform:
   m_ObjectHideFlags: 0

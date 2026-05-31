@@ -35,7 +35,10 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float swordRange = 7f;
 
     [Header("VFX")]
-    public GameObject hitImpactPrefab;
+    [Tooltip("Arraste aqui suas variações de VFX (o original e o Slash). O script vai sortear um deles a cada hit!")]
+    public GameObject[] hitImpactVariations;
+    // (Mantive o antigo escondido só para não dar erro se alguma outra coisa puxar ele)
+    [HideInInspector] public GameObject hitImpactPrefab; 
 
     [Header("Settings")]
     public float attackAnimationSpeed = 1.0f;
@@ -123,16 +126,22 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void RegisterHit(Collider enemyCollider)
     {
-        // Busca DummyHealth: primeiro no próprio collider, depois no pai
-        // (necessário para fragmentos filhos do ShardSwarm e similares)
+        // Busca DummyHealth ou ShardSwarmHealth: primeiro no próprio collider, depois no pai
         DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>()
                          ?? enemyCollider.GetComponentInParent<DummyHealth>();
 
-        if (enemy == null) return;
+        ShardSwarmHealth swarmEnemy = enemyCollider.GetComponent<ShardSwarmHealth>()
+                                   ?? enemyCollider.GetComponentInParent<ShardSwarmHealth>();
 
-        // Anti-hit-duplo: usa o Collider do objeto que tem o DummyHealth
-        // para não acertar o mesmo inimigo duas vezes por fragmento diferente
-        Collider rootCollider = enemy.GetComponent<Collider>() ?? enemyCollider;
+        if (enemy == null && swarmEnemy == null) return;
+
+        // Anti-hit-duplo: usa o Collider do objeto raiz de vida
+        Collider rootCollider;
+        if (enemy != null)
+            rootCollider = enemy.GetComponent<Collider>() ?? enemyCollider;
+        else
+            rootCollider = swarmEnemy.GetComponent<Collider>() ?? enemyCollider;
+
         if (enemiesHitInThisAttack.Contains(rootCollider)) return;
         enemiesHitInThisAttack.Add(rootCollider);
 
@@ -142,7 +151,7 @@ public class PrimaryAttackKnife : MonoBehaviour
             int finalDamage = baseDamage;
             bool isCritical = false;
 
-            // Aplicar multiplicador de dano BASE (afeta críticos)
+            // Aplicar multiplicador de dano BASE
             if (playerAttributes != null)
                 finalDamage = Mathf.RoundToInt(baseDamage * playerAttributes.baseDamageMultiplier);
 
@@ -158,11 +167,14 @@ public class PrimaryAttackKnife : MonoBehaviour
                 {
                     finalDamage = Mathf.RoundToInt(finalDamage * playerAttributes.critMultiplier);
                     isCritical = true;
-                    Debug.Log($"💥 CRÍTICO! Dano: {finalDamage} ({playerAttributes.critMultiplier}x)");
                 }
             }
 
-            enemy.TakeDamage(finalDamage, isCritical);
+            // Aplica dano no componente correto
+            if (enemy != null)
+                enemy.TakeDamage(finalDamage, isCritical);
+            else if (swarmEnemy != null)
+                swarmEnemy.TakeDamage(finalDamage, isCritical);
 
             // Aplicar Knockback — o Rigidbody pode estar no pai (ex: ShardSwarm)
             if (playerAttributes != null)
@@ -175,14 +187,20 @@ public class PrimaryAttackKnife : MonoBehaviour
                     knockbackDirection.y = 0;
                     float knockbackForce = playerAttributes.knockback * 10f;
                     enemyRb.AddForce(knockbackDirection * knockbackForce, ForceMode.Impulse);
-                    Debug.Log($"🔨 KNOCKBACK! Força: {knockbackForce}");
                 }
             }
 
-            if (hitImpactPrefab != null)
+            // Escolhe o VFX: tenta pegar do array de variações, se estiver vazio, usa o antigo
+            GameObject vfxToSpawn = hitImpactPrefab;
+            if (hitImpactVariations != null && hitImpactVariations.Length > 0)
+            {
+                vfxToSpawn = hitImpactVariations[Random.Range(0, hitImpactVariations.Length)];
+            }
+
+            if (vfxToSpawn != null)
             {
                 Vector3 hitPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up);
-                GameObject hitVFX = Instantiate(hitImpactPrefab, hitPoint, Quaternion.identity);
+                GameObject hitVFX = Instantiate(vfxToSpawn, hitPoint, Quaternion.identity);
                 Destroy(hitVFX, 2f);
             }
         }

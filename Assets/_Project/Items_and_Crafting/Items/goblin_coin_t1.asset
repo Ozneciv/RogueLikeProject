@@ -18,9 +18,9 @@ MonoBehaviour:
   icon: {fileID: 0}
   tier: 0
   enemySource: Goblin
-  recycleEssenceValue: 24
+  recycleEssenceValue: 67
   infusionEssenceCost: 60
   itemAttributes:
   - attributeType: 18
-    value: 0.05
+    value: 1.1
     isMultiplier: 1

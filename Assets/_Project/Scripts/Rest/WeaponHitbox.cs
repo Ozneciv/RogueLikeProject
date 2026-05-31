@@ -23,12 +23,14 @@ public class WeaponHitbox : MonoBehaviour
         DummyHealth enemyHealth = other.GetComponent<DummyHealth>()
                                 ?? other.GetComponentInParent<DummyHealth>();
 
-        if (enemyHealth != null)
+        // ShardSwarm usa ShardSwarmHealth em vez de DummyHealth
+        ShardSwarmHealth swarmHealth = other.GetComponent<ShardSwarmHealth>()
+                                    ?? other.GetComponentInParent<ShardSwarmHealth>();
+
+        if (enemyHealth != null || swarmHealth != null)
         {
             if (primaryAttackScript != null)
             {
-                // Passa o collider original (do fragmento ou do inimigo) — RegisterHit
-                // também faz o fallback GetComponentInParent para DummyHealth e Rigidbody.
                 primaryAttackScript.RegisterHit(other);
             }
             else

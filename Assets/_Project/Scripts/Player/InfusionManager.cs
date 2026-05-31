@@ -24,6 +24,10 @@ public class InfusionManager : MonoBehaviour
 
     // Peso total acumulado de todos os itens já infundidos (Ptotal)
     private float totalInfusionWeight = 0f;
+    
+    // Histórico de itens infundidos
+    [HideInInspector]
+    public System.Collections.Generic.List<ItemData> infusedItems = new System.Collections.Generic.List<ItemData>();
 
     void Start()
     {
@@ -136,6 +140,9 @@ public class InfusionManager : MonoBehaviour
             // Acumula o peso desta infusão no Ptotal
             float addedWeight = data.GetTierWeight();
             totalInfusionWeight += addedWeight;
+            
+            // Registra a infusão para possível cirurgia de remoção
+            infusedItems.Add(data);
 
             // Consome 1 item do inventário
             inventory.RemoveItem(itemId, 1);
@@ -145,6 +152,30 @@ public class InfusionManager : MonoBehaviour
         }
         
         return false;
+    }
+
+    /// <summary>
+    /// Usado pelo Mercador na "Cirurgia de Remoção".
+    /// Remove permanentemente os efeitos de um item e reduz o peso de inflação.
+    /// </summary>
+    public bool RemoveInfusion(ItemData data)
+    {
+        if (data == null || !infusedItems.Contains(data)) return false;
+
+        // Reverte todos os buffs (sinal negativo para somas, ou inversão para multiplicadores)
+        foreach (var buff in data.itemAttributes)
+        {
+            RemoveAttribute(buff);
+        }
+
+        // Subtrai o peso de inflação
+        float removedWeight = data.GetTierWeight();
+        totalInfusionWeight = Mathf.Max(0f, totalInfusionWeight - removedWeight);
+
+        infusedItems.Remove(data);
+        
+        Debug.Log($"[REMOÇÃO] Item extraído: {data.itemName}. Ptotal reduzido para {totalInfusionWeight:F2}");
+        return true;
     }
 
     /// <summary>
@@ -192,6 +223,55 @@ public class InfusionManager : MonoBehaviour
             case AttributeType.MaxArmor:
                 if (healthStats != null)
                     healthStats.ModifyAttribute(attrName, buff.value, buff.isMultiplier);
+                break;
+        }
+    }
+
+    private void RemoveAttribute(ItemAttributeParam buff)
+    {
+        string attrName = buff.attributeType.ToString();
+
+        // Para inverter a soma, mandamos -buff.value
+        // Para inverter o multiplicador, mandamos 1f / buff.value
+        float invertedValue = buff.isMultiplier ? (1f / buff.value) : (-buff.value);
+
+        switch (buff.attributeType)
+        {
+            // ======= OFENSIVOS =======
+            case AttributeType.BaseDamageMultiplier:
+            case AttributeType.AttackSpeedMelee:
+            case AttributeType.CritChance:
+            case AttributeType.CritMultiplier:
+            case AttributeType.Knockback:
+            case AttributeType.WeaponRangeMelee:
+            case AttributeType.WeaponRangeProjectile:
+            case AttributeType.Piercing:
+            case AttributeType.BounceChance:
+            case AttributeType.BounceCount:
+            case AttributeType.MultiShotChance:
+            case AttributeType.Spread:
+                if (offensiveStats != null)
+                    offensiveStats.ModifyAttribute(attrName, invertedValue, buff.isMultiplier);
+                break;
+            
+            // ======= DEFENSIVOS & MOBILIDADE =======
+            case AttributeType.ArmorRegen:
+            case AttributeType.DodgeChance:
+            case AttributeType.DamageNegation:
+            case AttributeType.Thorns:
+            case AttributeType.SpeedMultiplier:
+            case AttributeType.DashCooldownMultiplier:
+            case AttributeType.DashCounts:
+            case AttributeType.DashInvulnerability:
+                if (defensiveStats != null)
+                    defensiveStats.ModifyAttribute(attrName, invertedValue, buff.isMultiplier);
+                break;
+
+            // ======= VIDA & ARMADURA =======
+            case AttributeType.MaxHealth:
+            case AttributeType.MaxArmor:
+                if (healthStats != null)
+                    healthStats.ModifyAttribute(attrName, invertedValue, buff.isMultiplier);
                 break;
         }
     }
