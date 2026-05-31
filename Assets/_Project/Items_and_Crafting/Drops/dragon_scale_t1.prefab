@@ -49,7 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacteristicItemPickup
   itemId: dragon_scale_t1
   itemName: "Escama de Drag\xE3o (T1)"
-  itemDescription: CritMultiplier
+  itemDescription: NegationDamage
   rotateSpeed: 45
   bobSpeed: 2
   bobHeight: 0.2

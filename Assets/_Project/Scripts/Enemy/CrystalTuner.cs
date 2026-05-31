@@ -287,6 +287,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
         target.GetComponent<CrystalWatcher_AI>()?.SetBuff(true);
+        target.GetComponent<CrystalDragonCommon_AI>()?.SetBuff(true);
     }
 
     void RemoveBuffs(GameObject target)
@@ -298,6 +299,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
         target.GetComponent<CrystalWatcher_AI>()?.SetBuff(false);
+        target.GetComponent<CrystalDragonCommon_AI>()?.SetBuff(false);
     }
 
     void OnDestroy()

@@ -66,6 +66,12 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     [Tooltip("Ângulo horizontal de cada projétil lateral do spread (graus)")]
     public float anguloSpread = 15f;
 
+    [Header("Buff (Crystal Tuner)")]
+    [Tooltip("Projéteis extras adicionados à rajada quando buffado.")]
+    public int buffProjeteisExtras = 1;
+    [Tooltip("Multiplicador do tamanho do projétil quando buffado.")]
+    public float buffProjectileSizeMultiplier = 1.25f;
+
     [Header("Ataque de Rabada")]
     [Tooltip("Raio do OverlapSphere do ataque de rabada")]
     public float raioTail = 2.0f;
@@ -107,6 +113,9 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     private bool estaExecutandoRabada = false;
     private bool estaExecutandoSpin = false;
     private float timerSpinCooldown = 0f;
+    private bool isBuffed = false;
+    private int projeteisExtrasAtivos = 0;
+    private float projectileSizeMultiplierAtivo = 1f;
 
     // Órbita
     private float anguloOrbita = 0f;
@@ -157,6 +166,27 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         }
         direcaoOrbita = Random.value > 0.5f ? 1 : -1;
         timerMudancaDirecao = Random.Range(intervaloMudancaDirecaoMin, intervaloMudancaDirecaoMax);
+    }
+
+    /// <summary>
+    /// Crystal Tuner aumenta levemente a pressão do ranged sem alterar dano base por hit.
+    /// </summary>
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            projeteisExtrasAtivos = Mathf.Max(0, buffProjeteisExtras);
+            projectileSizeMultiplierAtivo = Mathf.Max(0.1f, buffProjectileSizeMultiplier);
+            Debug.Log($"[DRAGON] Buff ativo: +{projeteisExtrasAtivos} projétil(eis), tamanho x{projectileSizeMultiplierAtivo:F2}");
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            projeteisExtrasAtivos = 0;
+            projectileSizeMultiplierAtivo = 1f;
+            Debug.Log("[DRAGON] Buff removido: rajada e tamanho do projétil voltaram ao normal.");
+        }
     }
 
     private void Update()
@@ -378,11 +408,14 @@ public class CrystalDragonCommon_AI : MonoBehaviour
                   (pointDisparo != null ? pointDisparo.name : "NULL") +
                   " | projectilePrefab=" + (projectilePrefab != null ? projectilePrefab.name : "NULL"));
 
-        // Dispara os 3 projéteis ao mesmo tempo
-        DispararProjetil(Quaternion.Euler(0f, -anguloSpread, 0f));
-        DispararProjetil(Quaternion.Euler(0f,            0f, 0f));
-        DispararProjetil(Quaternion.Euler(0f,  anguloSpread, 0f));
-        Debug.Log("[DRAGON] Spread shot disparado (3 projéteis).");
+        int totalProjeteis = 3 + projeteisExtrasAtivos;
+        float centro = (totalProjeteis - 1) * 0.5f;
+        for (int i = 0; i < totalProjeteis; i++)
+        {
+            float offset = (i - centro) * anguloSpread;
+            DispararProjetil(Quaternion.Euler(0f, offset, 0f));
+        }
+        Debug.Log($"[DRAGON] Spread shot disparado ({totalProjeteis} projéteis).");
 
         // Pequena pausa antes de liberar o movimento (dá feel ao ataque)
         yield return new WaitForSeconds(delayEntreDisparos);
@@ -410,6 +443,7 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         Vector3 direcao = rotacaoSpread * direcaoBase;
 
         GameObject proj = Instantiate(projectilePrefab, origem, Quaternion.LookRotation(direcao));
+        proj.transform.localScale = proj.transform.localScale * projectileSizeMultiplierAtivo;
 
         // Compatibilidade com CrystalSpikeProjectile (sistema existente)
         CrystalSpikeProjectile spike = proj.GetComponent<CrystalSpikeProjectile>();

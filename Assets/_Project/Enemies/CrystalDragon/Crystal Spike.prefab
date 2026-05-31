@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4582052361002661774}
   - component: {fileID: 1140408679542799529}
   - component: {fileID: 7509062797789902747}
+  - component: {fileID: 2220962194881705214}
   m_Layer: 0
   m_Name: Crystal Spike
   m_TagString: Untagged
@@ -28,8 +29,8 @@ Transform:
   m_GameObject: {fileID: 3126166915568558911}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -11.02855, y: 0.48, z: 15.13909}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -11.02855, y: 3.1, z: 15.13909}
+  m_LocalScale: {x: 0.16710761, y: 0.16710761, z: 0.16710761}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -111,3 +112,17 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2220962194881705214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3126166915568558911}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0de0d82a9093c84097d052a75c35fed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrystalSpikeProjectile
+  owner: {fileID: 0}
+  damage: 8

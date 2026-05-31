@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2333000100010004}
   - component: {fileID: 2333000100010005}
   m_Layer: 0
-  m_Name: dragon_fang_t3
+  m_Name: dragon_tail_t3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47,9 +47,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cefb9ed1af2e0e4198994613a48cc25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacteristicItemPickup
-  itemId: dragon_fang_t3
-  itemName: Presa de Cristal (T3)
-  itemDescription: CritMultiplier, BaseDamageMultiplier, Piercing
+  itemId: dragon_tail_t3
+  itemName: Cauda de Cristal (T3)
+  itemDescription: AttackSpeedMelee, CritChance, CritMultiplier
   rotateSpeed: 45
   bobSpeed: 2
   bobHeight: 0.2
