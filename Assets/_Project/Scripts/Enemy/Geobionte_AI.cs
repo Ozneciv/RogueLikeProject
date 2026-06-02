@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
@@ -50,8 +51,8 @@ public class Geobionte_AI : MonoBehaviour
     // ==================== ATIVAÇÃO ====================
 
     [Header("Ativação")]
-    [Tooltip("Distância para detectar o player e começar a buscar minério")]
-    public float activationDistance = 20f;
+    [Tooltip("Distância para detectar o player e começar a buscar minério (valor alto = sala inteira)")]
+    public float activationDistance = 200f;
     private bool isActivated = false;
 
     // ==================== IDLE (Wandering) ====================
@@ -67,14 +68,15 @@ public class Geobionte_AI : MonoBehaviour
     // ==================== BUSCA DE MINÉRIO ====================
 
     [Header("Busca de Minério")]
-    [Tooltip("Raio de busca por minérios próximos")]
-    public float oreSearchRadius = 30f;
+    [Tooltip("Raio de busca por minérios (valor alto = sala inteira)")]
+    public float oreSearchRadius = 500f;
     [Tooltip("Velocidade ao ir até o minério")]
     public float seekSpeed = 5f;
     [Tooltip("Distância para considerar que chegou ao minério")]
     public float oreReachDistance = 1.5f;
 
     private OreNode targetOre;
+    private bool hasFused = false; // Funde apenas com 1 cristal
 
     // ==================== FUSÃO ====================
 
@@ -85,6 +87,10 @@ public class Geobionte_AI : MonoBehaviour
     public float transformedScale = 2.5f;
 
     private Vector3 originalScale;
+    private int absorbedOreValue = 0; // Valor do cristal absorvido
+    private GameObject cubeMeshObject; // Referência ao cubo criado na transformação
+    private MeshFilter originalMeshFilter;
+    private MeshRenderer originalMeshRenderer;
 
     // ==================== BISMUTADO (Transformado) ====================
 
@@ -276,13 +282,16 @@ public class Geobionte_AI : MonoBehaviour
                 }
             }
 
-            // Busca minério
-            FindNearestOre();
-            if (targetOre != null)
+            // Só busca minério se ainda não fundiu
+            if (!hasFused)
             {
-                ChangeState(GeobionteState.SeekingOre);
+                FindNearestOre();
+                if (targetOre != null)
+                {
+                    ChangeState(GeobionteState.SeekingOre);
+                }
             }
-            // Se não encontrou minério, continua vagando
+            // Se já fundiu ou não encontrou minério, continua vagando
         }
     }
 
@@ -366,8 +375,9 @@ public class Geobionte_AI : MonoBehaviour
         {
             if (!ore.IsAvailable()) continue;
 
+            // Busca qualquer OreNode na cena (sem filtro de distância)
             float dist = Vector3.Distance(transform.position, ore.transform.position);
-            if (dist < closestDist && dist <= oreSearchRadius)
+            if (dist < closestDist)
             {
                 closestDist = dist;
                 targetOre = ore;
@@ -385,17 +395,19 @@ public class Geobionte_AI : MonoBehaviour
     IEnumerator FusionSequence()
     {
         ChangeState(GeobionteState.Fusing);
+        hasFused = true;
 
         // Para o movimento
         rb.linearVelocity = Vector3.zero;
 
-        // Consome o minério
+        // Grava o valor do cristal e consome
         if (targetOre != null)
         {
-            targetOre.Consume();
+            absorbedOreValue = targetOre.oreValue;
+            targetOre.Consume(); // Destrói o cristal (some da cena)
         }
 
-        Debug.Log("[GEOBIONTE] FUSÃO INICIADA! Transformando em Bismutado...");
+        Debug.Log("[GEOBIONTE] FUSÃO INICIADA! Cristal absorvido (valor: " + absorbedOreValue + "). Transformando em Bismutado...");
 
         // Animação de fusão: cresce gradualmente
         float elapsed = 0f;
@@ -426,6 +438,10 @@ public class Geobionte_AI : MonoBehaviour
 
         // TRANSFORMAÇÃO COMPLETA → Bismutado
         transform.localScale = endScale;
+
+        // Troca a mesh para CUBO (demonstra transformação)
+        TransformMeshToCube();
+
         TransformIntoBismutado();
     }
 
@@ -435,9 +451,11 @@ public class Geobionte_AI : MonoBehaviour
         if (health != null)
         {
             health.isInvulnerable = false;
-            // Restaura HP total para a forma transformada
-            // (reseta para garantir que começa cheio)
+            health.ResetHealth();
         }
+
+        // Cria health bar e damage canvas por código se não existir
+        CreateHealthBarIfNeeded();
 
         // Mudar layer para Enemy — agora pode ser atacado pelo WeaponHitbox
         gameObject.layer = originalLayer;
@@ -563,7 +581,31 @@ public class Geobionte_AI : MonoBehaviour
             drops.OnDeath();
         }
 
-        // 2. Restaurar buffs roubados do player
+        // 2. Dropar 60% do valor do cristal absorvido como essência extra
+        if (absorbedOreValue > 0 && drops != null && drops.essencePrefab != null)
+        {
+            int refundAmount = Mathf.RoundToInt(absorbedOreValue * 0.6f);
+            if (refundAmount > 0)
+            {
+                Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
+                GameObject essenceObj = Instantiate(drops.essencePrefab, spawnPos, Quaternion.identity);
+                EssencePickup essencePickup = essenceObj.GetComponent<EssencePickup>();
+                if (essencePickup != null)
+                {
+                    essencePickup.essenceValue = refundAmount;
+                }
+                // Aplica impulso para cima
+                Rigidbody essenceRb = essenceObj.GetComponent<Rigidbody>();
+                if (essenceRb != null)
+                {
+                    essenceRb.linearDamping = 5f;
+                    essenceRb.AddForce(Vector3.up * 3f, ForceMode.Impulse);
+                }
+                Debug.Log("[BISMUTADO] Devolveu 60% do cristal: " + refundAmount + " essência (cristal valia " + absorbedOreValue + ")");
+            }
+        }
+
+        // 3. Restaurar buffs roubados do player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
@@ -575,7 +617,7 @@ public class Geobionte_AI : MonoBehaviour
             }
         }
 
-        // 3. Voltar ao visual base (encolher)
+        // 4. Voltar ao visual base (encolher)
         StartCoroutine(FleeSequence());
     }
 
@@ -597,6 +639,9 @@ public class Geobionte_AI : MonoBehaviour
 
         // Volta para layer Default (não atacável)
         gameObject.layer = LayerMask.NameToLayer("Default");
+
+        // Volta ao formato original (remove o cubo)
+        RestoreOriginalMesh();
 
         // Encolhe de volta ao tamanho original rapidamente
         float shrinkDuration = 0.5f;
@@ -696,8 +741,13 @@ public class Geobionte_AI : MonoBehaviour
         currentState = GeobionteState.Idle;
         isActivated = false;
         hasSpeedBuff = false;
+        hasFused = false;
+        absorbedOreValue = 0;
         targetOre = null;
         fieldTimer = 0f;
+
+        // Restaura mesh original (caso ainda esteja cubo)
+        RestoreOriginalMesh();
 
         // Reset de HP
         if (health != null)
@@ -780,6 +830,10 @@ public class Geobionte_AI : MonoBehaviour
                 geoMaterial.SetColor("_BaseColor", baseColor);
 
             geobionteRenderer.material = geoMaterial;
+
+            // Guarda referências da mesh original para restaurar depois
+            originalMeshFilter = GetComponentInChildren<MeshFilter>();
+            originalMeshRenderer = GetComponentInChildren<MeshRenderer>();
         }
     }
 
@@ -792,6 +846,183 @@ public class Geobionte_AI : MonoBehaviour
         if (currentState == newState) return;
         Debug.Log("[GEOBIONTE] Estado: " + currentState + " → " + newState);
         currentState = newState;
+    }
+
+    // ========================================================================
+    // TRANSFORMAÇÃO VISUAL: CUBO
+    // ========================================================================
+
+    /// <summary>
+    /// Troca a mesh do Geobionte para um cubo, demonstrando a transformação.
+    /// </summary>
+    void TransformMeshToCube()
+    {
+        // Se já tem um cubo criado, não cria outro
+        if (cubeMeshObject != null) return;
+
+        // Desativa a mesh original
+        if (originalMeshRenderer != null)
+            originalMeshRenderer.enabled = false;
+
+        // Cria um cubo primitivo como filho
+        cubeMeshObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cubeMeshObject.name = "BismutadoCubeMesh";
+        cubeMeshObject.transform.SetParent(transform);
+        cubeMeshObject.transform.localPosition = Vector3.zero;
+        cubeMeshObject.transform.localRotation = Quaternion.identity;
+        cubeMeshObject.transform.localScale = Vector3.one;
+
+        // Remove o collider do cubo (já temos o collider do Geobionte)
+        Collider cubeCol = cubeMeshObject.GetComponent<Collider>();
+        if (cubeCol != null) Destroy(cubeCol);
+
+        // Aplica o material bismuto
+        Renderer cubeRenderer = cubeMeshObject.GetComponent<Renderer>();
+        if (cubeRenderer != null && geoMaterial != null)
+        {
+            cubeRenderer.material = geoMaterial;
+        }
+
+        // Atualiza a referência do renderer para flash de dano funcionar
+        geobionteRenderer = cubeRenderer;
+        if (health != null)
+        {
+            // Atualiza o renderer no DummyHealth para flash de dano
+            var dummyRendererField = typeof(DummyHealth).GetField("dummyRenderer", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (dummyRendererField != null)
+                dummyRendererField.SetValue(health, cubeRenderer);
+        }
+
+        Debug.Log("[GEOBIONTE] Mesh transformada para CUBO!");
+    }
+
+    /// <summary>
+    /// Restaura a mesh original do Geobionte (remove o cubo).
+    /// </summary>
+    void RestoreOriginalMesh()
+    {
+        if (cubeMeshObject != null)
+        {
+            Destroy(cubeMeshObject);
+            cubeMeshObject = null;
+        }
+
+        if (originalMeshRenderer != null)
+        {
+            originalMeshRenderer.enabled = true;
+            geobionteRenderer = originalMeshRenderer;
+        }
+
+        Debug.Log("[GEOBIONTE] Mesh restaurada para original.");
+    }
+
+    // ========================================================================
+    // HEALTH BAR (criada por código)
+    // ========================================================================
+
+    /// <summary>
+    /// Cria o Canvas World Space + Slider de vida + configura o DamageCanva por código.
+    /// Só é chamado na transformação, pois a forma base é invulnerável.
+    /// </summary>
+    void CreateHealthBarIfNeeded()
+    {
+        if (health == null) return;
+
+        // Se já tem slider configurado, apenas mostra
+        if (health.healthBarSlider != null)
+        {
+            health.healthBarSlider.gameObject.SetActive(true);
+            return;
+        }
+
+        // Criar Canvas World Space
+        GameObject canvasObj = new GameObject("HealthBarCanvas");
+        canvasObj.transform.SetParent(transform);
+        canvasObj.transform.localPosition = new Vector3(0, 2.5f, 0);
+        canvasObj.transform.localScale = Vector3.one * 0.01f;
+
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        canvasObj.AddComponent<CanvasScaler>();
+        canvasObj.AddComponent<GraphicRaycaster>();
+
+        // Billboard: faz o canvas sempre olhar para a câmera
+        BillboardUI billboard = canvasObj.AddComponent<BillboardUI>();
+
+        RectTransform canvasRect = canvasObj.GetComponent<RectTransform>();
+        canvasRect.sizeDelta = new Vector2(200, 30);
+
+        // Background do slider
+        GameObject bgObj = new GameObject("Background");
+        bgObj.transform.SetParent(canvasObj.transform, false);
+        Image bgImage = bgObj.AddComponent<Image>();
+        bgImage.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+        RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.offsetMin = Vector2.zero;
+        bgRect.offsetMax = Vector2.zero;
+
+        // Slider
+        GameObject sliderObj = new GameObject("HealthSlider");
+        sliderObj.transform.SetParent(canvasObj.transform, false);
+        Slider slider = sliderObj.AddComponent<Slider>();
+        RectTransform sliderRect = sliderObj.GetComponent<RectTransform>();
+        sliderRect.anchorMin = Vector2.zero;
+        sliderRect.anchorMax = Vector2.one;
+        sliderRect.offsetMin = new Vector2(4, 4);
+        sliderRect.offsetMax = new Vector2(-4, -4);
+
+        // Fill Area
+        GameObject fillAreaObj = new GameObject("Fill Area");
+        fillAreaObj.transform.SetParent(sliderObj.transform, false);
+        RectTransform fillAreaRect = fillAreaObj.AddComponent<RectTransform>();
+        fillAreaRect.anchorMin = Vector2.zero;
+        fillAreaRect.anchorMax = Vector2.one;
+        fillAreaRect.offsetMin = Vector2.zero;
+        fillAreaRect.offsetMax = Vector2.zero;
+
+        // Fill
+        GameObject fillObj = new GameObject("Fill");
+        fillObj.transform.SetParent(fillAreaObj.transform, false);
+        Image fillImage = fillObj.AddComponent<Image>();
+        fillImage.color = Color.red;
+        RectTransform fillRect = fillObj.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        // Configurar slider
+        slider.fillRect = fillRect;
+        slider.minValue = 0;
+        slider.maxValue = 1;
+        slider.value = 1;
+        slider.interactable = false;
+        // Remove os handles do slider (não é interativo)
+        slider.transition = Selectable.Transition.None;
+
+        // Registrar no DummyHealth
+        health.healthBarSlider = slider;
+
+        // Tentar buscar o DamageCanva_Text prefab na cena
+        if (health.floatingDamageTextPrefab == null)
+        {
+            // Procurar em Resources ou usar referência de outro inimigo
+            DummyHealth[] allHealth = FindObjectsByType<DummyHealth>(FindObjectsSortMode.None);
+            foreach (var h in allHealth)
+            {
+                if (h != health && h.floatingDamageTextPrefab != null)
+                {
+                    health.floatingDamageTextPrefab = h.floatingDamageTextPrefab;
+                    Debug.Log("[GEOBIONTE] DamageCanva_Text copiado de: " + h.gameObject.name);
+                    break;
+                }
+            }
+        }
+
+        Debug.Log("[GEOBIONTE] Health bar criada por código!");
     }
 
     void OnDestroy()
