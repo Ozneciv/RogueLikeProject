@@ -226,9 +226,9 @@ public class Cristalus_AI : MonoBehaviour
             originalTrailDropInterval = trailDropInterval;
             originalCrystalSpawnInterval = crystalSpawnInterval;
 
-            moveSpeed *= 1.5f;    //            
+            moveSpeed *= 1.5f;             
             trailDropInterval *= 0.6f;    
-            crystalSpawnInterval *= 0.6f;
+            crystalSpawnInterval *= 0.6f; 
         }
         else if (!active && isBuffed)
         {
@@ -238,6 +238,7 @@ public class Cristalus_AI : MonoBehaviour
             crystalSpawnInterval = originalCrystalSpawnInterval;
         }
     }
+
 
         private class CrystalArcGroup
     {
