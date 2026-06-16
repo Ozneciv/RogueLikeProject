@@ -11,6 +11,9 @@ public class OreNode : MonoBehaviour
     [Tooltip("Nome do minério (para identificação e expansão futura)")]
     public string oreName = "Crystal";
 
+    [Tooltip("Valor de essência deste cristal (usado pelo Geobionte para calcular drop)")]
+    public int oreValue = 50;
+
     [Tooltip("Se true, este minério já foi consumido por um Geobionte")]
     [HideInInspector] public bool isConsumed = false;
 
@@ -63,10 +66,10 @@ public class OreNode : MonoBehaviour
         if (isConsumed) return;
 
         isConsumed = true;
-        Debug.Log("[ORE] " + oreName + " consumido por um Geobionte!");
+        Debug.Log("[ORE] " + oreName + " consumido por um Geobionte! Valor: " + oreValue);
 
-        // Desativa o objeto visual (mas mantém o GameObject para referência)
-        gameObject.SetActive(false);
+        // Destrói o cristal — ele some da cena ao ser absorvido
+        Destroy(gameObject);
     }
 
     /// <summary>
