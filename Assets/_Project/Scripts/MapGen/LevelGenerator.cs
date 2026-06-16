@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -199,6 +200,8 @@ public class LevelGenerator : MonoBehaviour
         ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
         if (itemSpawner != null) itemSpawner.SpawnItems();
         else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
+
+        BakeGlobalNavMesh();
 
         if (GameManager.instance != null)
             GameManager.instance.OnLevelReady(playerSpawnPoint);
@@ -421,6 +424,8 @@ public class LevelGenerator : MonoBehaviour
         ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
         if (itemSpawner != null) itemSpawner.SpawnItems();
         else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
+
+        BakeGlobalNavMesh();
 
         if (GameManager.instance != null)
             GameManager.instance.OnLevelReady(playerSpawnPoint);
@@ -737,4 +742,167 @@ public class LevelGenerator : MonoBehaviour
         }
         return copy;
     }
-}
+
+    // =========================================================
+    // RUNTIME NAVMESH BAKING
+    // =========================================================
+
+    [Header("NavMesh Runtime Baking")]
+    [Tooltip("Ângulo máximo de rampa walkable (graus). " +
+             "50° cobre terreno orgânico sem deixar escalar paredes reais.")]
+    [Range(30f, 60f)]
+    public float navMeshSlope = 50f;
+
+    [Tooltip("Altura máxima de degrau que o agente transpõe (metros). " +
+             "0.5 preenche juntas entre peças do terreno orgânico sem escalar obstáculos.")]
+    [Range(0.1f, 1f)]
+    public float navMeshStepHeight = 0.5f;
+
+    [Tooltip("Raio do agente para o bake (metros). " +
+             "0.2 permite que a malha chegue perto das paredes — ideal para agentes de corpo pequeno.")]
+    [Range(0.05f, 0.5f)]
+    public float navMeshAgentRadius = 0.2f;
+
+    [Tooltip("Tamanho do voxel de amostragem (metros). " +
+             "Regra: AgentRadius / 3 = resolução ideal. Menor = mais preciso.")]
+    [Range(0.03f, 0.2f)]
+    public float navMeshVoxelSize = 0.0667f;
+
+    [Tooltip("Área mínima de regiões isoladas do NavMesh (m²). " +
+             "Regiões menores são removidas. Valor baixo preserva passagens estreitas.")]
+    [Range(0f, 2f)]
+    public float navMeshMinRegionArea = 0.05f;
+
+    /// <summary>
+    /// Assa a malha de navegação global usando NavMeshBuilder diretamente.
+    /// Isso dá controle total sobre Slope, StepHeight, VoxelSize e AgentRadius
+    /// — parâmetros que o NavMeshSurface não expõe via script.
+    ///
+    /// Usa o agent type Humanoid (ID 0) para manter compatibilidade com o
+    /// NavMeshAgent do player sem precisar trocar o agent type.
+    /// </summary>
+    void BakeGlobalNavMesh()
+    {
+        // 1. Busca as configurações base do Humanoid e aplica parâmetros relaxados
+        NavMeshBuildSettings settings = NavMesh.GetSettingsByID(0); // 0 = Humanoid
+        if (settings.agentTypeID == -1)
+        {
+            Debug.LogWarning("[LevelGenerator] ⚠️ Agent type 'Humanoid' não encontrado. Usando settings padrão.");
+            settings.agentTypeID = 0;
+        }
+
+        settings.agentSlope          = navMeshSlope;
+        settings.agentClimb          = navMeshStepHeight;
+        settings.agentRadius         = navMeshAgentRadius;
+        settings.agentHeight         = 2.0f;
+        settings.overrideVoxelSize   = true;
+        settings.voxelSize           = navMeshVoxelSize;
+        settings.minRegionArea       = navMeshMinRegionArea;
+
+        // 2. Coleta TODA a geometria render da cena (todas as salas instanciadas)
+        var sources = new List<NavMeshBuildSource>();
+        var markups = new List<NavMeshBuildMarkup>();
+        NavMeshBuilder.CollectSources(
+            null, ~0, NavMeshCollectGeometry.RenderMeshes,
+            0, false, markups, false, sources
+        );
+
+        // Remove geometria de objetos com NavMeshAgent (ex: o player)
+        sources.RemoveAll(s =>
+            s.component != null &&
+            s.component.gameObject.GetComponent<NavMeshAgent>() != null
+        );
+
+        if (sources.Count == 0)
+        {
+            Debug.LogError("[LevelGenerator] ❌ Nenhuma geometria encontrada para assar NavMesh!");
+            return;
+        }
+
+        // 3. Calcula bounds que cobrem toda a geometria coletada
+        Bounds worldBounds = CalculateNavMeshBounds(sources);
+
+        // 4. Assa a malha
+        NavMeshData navData = NavMeshBuilder.BuildNavMeshData(
+            settings, sources, worldBounds, Vector3.zero, Quaternion.identity
+        );
+
+        if (navData != null)
+        {
+            navData.name = "RuntimeGlobalNavMesh";
+            NavMesh.AddNavMeshData(navData);
+            Debug.Log($"[LevelGenerator] ✅ NavMesh global assado! " +
+                      $"Slope={navMeshSlope}° StepHeight={navMeshStepHeight}m " +
+                      $"Radius={navMeshAgentRadius}m VoxelSize={navMeshVoxelSize}m " +
+                      $"({sources.Count} fontes de geometria)");
+        }
+        else
+        {
+            Debug.LogError("[LevelGenerator] ❌ NavMeshBuilder.BuildNavMeshData retornou null!");
+        }
+    }
+
+    /// <summary>
+    /// Calcula os bounds combinados de todas as fontes de geometria do NavMesh.
+    /// </summary>
+    Bounds CalculateNavMeshBounds(List<NavMeshBuildSource> sources)
+    {
+        Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
+        bool initialized = false;
+
+        foreach (var src in sources)
+        {
+            Bounds srcBounds;
+
+            if (src.shape == NavMeshBuildSourceShape.Mesh && src.sourceObject is Mesh mesh)
+            {
+                // Transforma os bounds locais do mesh para world space via Matrix4x4
+                srcBounds = TransformBounds(src.transform, mesh.bounds);
+            }
+            else
+            {
+                // Box, Sphere, Capsule — posição extraída da coluna 3 da matrix
+                Vector3 worldCenter = new Vector3(
+                    src.transform.m03, src.transform.m13, src.transform.m23
+                );
+                srcBounds = new Bounds(worldCenter, src.size);
+            }
+
+            if (!initialized)
+            {
+                bounds = srcBounds;
+                initialized = true;
+            }
+            else
+            {
+                bounds.Encapsulate(srcBounds);
+            }
+        }
+
+        // Margem extra para evitar cortar bordas
+        bounds.Expand(2f);
+        return bounds;
+    }
+
+    /// <summary>
+    /// Transforma Bounds locais para world space usando uma Matrix4x4.
+    /// Lida corretamente com rotação e escala não-uniforme.
+    /// </summary>
+    static Bounds TransformBounds(Matrix4x4 matrix, Bounds localBounds)
+    {
+        Vector3 center = matrix.MultiplyPoint3x4(localBounds.center);
+
+        // Extrai os eixos escalados da matrix para calcular o tamanho correto
+        Vector3 extents = localBounds.extents;
+        Vector3 axisX = new Vector3(matrix.m00, matrix.m10, matrix.m20) * extents.x;
+        Vector3 axisY = new Vector3(matrix.m01, matrix.m11, matrix.m21) * extents.y;
+        Vector3 axisZ = new Vector3(matrix.m02, matrix.m12, matrix.m22) * extents.z;
+
+        // O tamanho no world space é a soma dos valores absolutos dos eixos transformados
+        float worldExtentX = Mathf.Abs(axisX.x) + Mathf.Abs(axisY.x) + Mathf.Abs(axisZ.x);
+        float worldExtentY = Mathf.Abs(axisX.y) + Mathf.Abs(axisY.y) + Mathf.Abs(axisZ.y);
+        float worldExtentZ = Mathf.Abs(axisX.z) + Mathf.Abs(axisY.z) + Mathf.Abs(axisZ.z);
+
+        return new Bounds(center, new Vector3(worldExtentX, worldExtentY, worldExtentZ) * 2f);
+    }
+}

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using UnityEngine.UI;
@@ -47,8 +48,15 @@ public class GameManager : MonoBehaviour
                 GameObject baseSpawn = GameObject.Find("Base_SpawnPoint");
                 if (baseSpawn != null)
                 {
+                    // FIX: Desativa o NavMeshAgent antes de mover para evitar conflito de posição
+                    NavMeshAgent agent = currentPlayer.GetComponent<NavMeshAgent>();
+                    if (agent != null) agent.enabled = false;
+
                     currentPlayer.transform.position = baseSpawn.transform.position;
                     currentPlayer.transform.rotation = baseSpawn.transform.rotation;
+
+                    // Reativa o agente na Base (que tem NavMesh assado)
+                    if (agent != null) agent.enabled = true;
                 }
                 else
                 {
@@ -142,8 +150,16 @@ public class GameManager : MonoBehaviour
     {
         if (currentPlayer != null && spawnPoint != null)
         {
+            // FIX: Desativa o NavMeshAgent antes de teleportar para evitar
+            // conflito com a mudança brusca de transform.position.
+            NavMeshAgent agent = currentPlayer.GetComponent<NavMeshAgent>();
+            if (agent != null) agent.enabled = false;
+
             currentPlayer.transform.position = spawnPoint.position;
             currentPlayer.transform.rotation = spawnPoint.rotation;
+
+            // Reativa o agente — o NavMesh já foi assado em runtime pelo LevelGenerator
+            if (agent != null) agent.enabled = true;
             
             PlayerM playerMovement = currentPlayer.GetComponent<PlayerM>();
             if (playerMovement != null) playerMovement.enabled = true;

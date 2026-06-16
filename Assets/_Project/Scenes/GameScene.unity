@@ -504,6 +504,11 @@ MonoBehaviour:
   extraLoadDelay: 0
   roomFloorY: 0
   overlapTolerance: 0.5
+  navMeshSlope: 60
+  navMeshStepHeight: 1
+  navMeshAgentRadius: 0.2
+  navMeshVoxelSize: 0.0687
+  navMeshMinRegionArea: 2
 --- !u!4 &1112906433
 Transform:
   m_ObjectHideFlags: 0
