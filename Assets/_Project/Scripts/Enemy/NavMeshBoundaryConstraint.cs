@@ -39,22 +39,8 @@ public class NavMeshBoundaryConstraint : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Tenta encontrar o ponto mais próximo no NavMesh
         NavMeshHit hit;
-        bool isOnNavMesh = NavMesh.SamplePosition(
-            transform.position, 
-            out hit, 
-            maxDistanceFromNavMesh, 
-            NavMesh.AllAreas
-        );
-
-        if (isOnNavMesh)
-        {
-            // Está dentro (ou muito perto) do NavMesh — tudo OK
-            return;
-        }
-
-        // Está FORA do NavMesh — busca o ponto válido mais próximo com raio maior
+        // Busca o ponto válido mais próximo no NavMesh
         bool foundValidPoint = NavMesh.SamplePosition(
             transform.position, 
             out hit, 
@@ -64,29 +50,58 @@ public class NavMeshBoundaryConstraint : MonoBehaviour
 
         if (foundValidPoint)
         {
-            // Puxa de volta para o NavMesh
+            // Calcula a distância apenas no plano horizontal (X e Z)
+            // Isso permite que inimigos voadores ou pulando não fiquem presos
+            Vector2 entityPos = new Vector2(transform.position.x, transform.position.z);
+            Vector2 navMeshPos = new Vector2(hit.position.x, hit.position.z);
+            float horizontalDistance = Vector2.Distance(entityPos, navMeshPos);
+
+            if (horizontalDistance <= maxDistanceFromNavMesh)
+            {
+                // Se o inimigo caiu abaixo do NavMesh (atravessou o chão), teleporta ele de volta para cima
+                if (transform.position.y < hit.position.y - 0.5f)
+                {
+                    Vector3 newPos = transform.position;
+                    newPos.y = hit.position.y + 0.1f;
+
+                    if (rb != null && !rb.isKinematic)
+                    {
+                        rb.position = newPos;
+                        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                    }
+                    else
+                    {
+                        transform.position = newPos;
+                    }
+                }
+                return;
+            }
+
+            // Se chegou aqui, o inimigo está fora dos limites horizontais. Puxa de volta para a borda.
             Vector3 correctedPos = hit.position;
 
-            // Preserva a altura Y atual para não interferir com gravidade/voo
-            // (a menos que a diferença seja muito grande, indicando queda no void)
-            if (Mathf.Abs(transform.position.y - correctedPos.y) < 3f)
+            // Mantém a altura Y atual se ele estiver acima da malha (voando/pulando)
+            // Se estiver abaixo, força a altura do NavMesh para trazê-lo de volta
+            if (transform.position.y >= hit.position.y)
             {
                 correctedPos.y = transform.position.y;
+            }
+            else
+            {
+                correctedPos.y = hit.position.y + 0.1f;
             }
 
             if (rb != null && !rb.isKinematic)
             {
-                // Com Rigidbody dinâmico: move via Rigidbody para não quebrar a física
                 rb.MovePosition(correctedPos);
-                // Zera velocidade para evitar que o momentum empurre de volta para fora
-                rb.linearVelocity = Vector3.zero;
+                // Zera apenas a velocidade horizontal para parar o movimento de queda para fora,
+                // mas preserva a velocidade vertical (gravidade/impulso de voo)
+                rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
             }
             else
             {
-                // Sem Rigidbody ou kinematic: move direto via transform
                 transform.position = correctedPos;
             }
         }
-        // Se não encontrou ponto válido (NavMesh não existe ainda), não faz nada
     }
 }
