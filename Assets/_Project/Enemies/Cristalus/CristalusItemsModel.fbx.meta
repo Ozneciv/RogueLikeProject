@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/_Project/Enemies/Cristalus/CristalusItemsModel.fbx.meta
 guid: eee0c6e1907025b48b445d7e83539457
+========
+guid: 4b93829498b0e38478bacef559020734
+>>>>>>>> origin/Lucass:Assets/GameAssets/CraftingTable/crafting table.fbx.meta
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
