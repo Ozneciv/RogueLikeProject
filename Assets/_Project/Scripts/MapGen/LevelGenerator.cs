@@ -92,6 +92,8 @@ public class LevelGenerator : MonoBehaviour
     private bool merchantRoomSpawned = false;
     private bool exitRoomSpawned = false;
     private int roomSequenceCounter = 0;
+    private NavMeshDataInstance activeNavMeshInstance;
+    private NavMeshData activeNavData;
 
     /// <summary>Bounds de todas as salas já confirmadas no mapa — (referência + bounds) para exclusão de vizinhos diretos.</summary>
     private List<(GameObject room, Bounds bounds)> placedRoomBounds = new List<(GameObject, Bounds)>();
@@ -829,8 +831,19 @@ public class LevelGenerator : MonoBehaviour
 
         if (navData != null)
         {
+            // Limpa a malha anterior da memória e do registro global do Unity para evitar acúmulo de NavMeshes fantasmas
+            if (activeNavMeshInstance.valid)
+            {
+                activeNavMeshInstance.Remove();
+            }
+            if (activeNavData != null)
+            {
+                Destroy(activeNavData);
+            }
+
             navData.name = "RuntimeGlobalNavMesh";
-            NavMesh.AddNavMeshData(navData);
+            activeNavData = navData;
+            activeNavMeshInstance = NavMesh.AddNavMeshData(navData);
             Debug.Log($"[LevelGenerator] ✅ NavMesh global assado! " +
                       $"Slope={navMeshSlope}° StepHeight={navMeshStepHeight}m " +
                       $"Radius={navMeshAgentRadius}m VoxelSize={navMeshVoxelSize}m " +
@@ -839,6 +852,18 @@ public class LevelGenerator : MonoBehaviour
         else
         {
             Debug.LogError("[LevelGenerator] ❌ NavMeshBuilder.BuildNavMeshData retornou null!");
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (activeNavMeshInstance.valid)
+        {
+            activeNavMeshInstance.Remove();
+        }
+        if (activeNavData != null)
+        {
+            Destroy(activeNavData);
         }
     }
 
