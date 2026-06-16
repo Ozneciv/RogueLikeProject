@@ -42,6 +42,26 @@ public class CrystalTuner : MonoBehaviour
         public LineRenderer beam;
     }
 
+    private static T GetTargetComponent<T>(GameObject obj) where T : Component
+    {
+        if (obj == null) return null;
+        return obj.GetComponent<T>() ?? obj.GetComponentInParent<T>();
+    }
+
+    private GameObject ResolveTargetRoot(Collider hit)
+    {
+        if (hit == null) return null;
+
+        DummyHealth health = hit.GetComponent<DummyHealth>() ?? hit.GetComponentInParent<DummyHealth>();
+        if (health != null)
+            return health.gameObject;
+
+        if (hit.attachedRigidbody != null)
+            return hit.attachedRigidbody.gameObject;
+
+        return hit.gameObject;
+    }
+
     private bool registradoNoBestiario = false;
 
     // ──────────────────────────────────────────────
@@ -152,6 +172,10 @@ public class CrystalTuner : MonoBehaviour
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, connectRange, enemyLayer);
 
+        // Fallback para prefabs com layer incorreta: ainda permite encontrar inimigos válidos via DummyHealth.
+        if (hits.Length == 0)
+            hits = Physics.OverlapSphere(transform.position, connectRange);
+
         // Ordena por distância
         System.Array.Sort(hits, (a, b) =>
             Vector3.Distance(transform.position, a.transform.position)
@@ -161,11 +185,12 @@ public class CrystalTuner : MonoBehaviour
         {
             if (targets.Count >= maxTargets) break;
 
-            GameObject candidate = hit.gameObject;
+            GameObject candidate = ResolveTargetRoot(hit);
+            if (candidate == null) continue;
             if (candidate == gameObject) continue;
-            if (candidate.GetComponent<CrystalTuner>() != null) continue;
-            if (candidate.GetComponent<HomingHazard>() != null) continue;
-            if (candidate.GetComponent<DummyHealth>() == null && candidate.GetComponent<ShardSwarmHealth>() == null) continue;
+            if (GetTargetComponent<CrystalTuner>(candidate) != null) continue;
+            if (GetTargetComponent<HomingHazard>(candidate) != null) continue;
+            if (GetTargetComponent<DummyHealth>(candidate) == null && GetTargetComponent<ShardSwarmHealth>(candidate) == null) continue;
 
             // Já é alvo?
             bool alreadyTargeted = false;
@@ -281,29 +306,31 @@ public class CrystalTuner : MonoBehaviour
     void ApplyBuffs(GameObject target)
     {
         if (target == null) return;
-        target.GetComponent<TotemSpawner>()?.SetBuff(true);
-        target.GetComponent<MagicStone_AI>()?.SetBuff(true);
-        target.GetComponent<ShardSwarm_AI>()?.SetBuff(true);
-        target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
-        target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
-        target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(true);
-        target.GetComponent<CrystalWatcher_AI>()?.SetBuff(true);
-        target.GetComponent<Cristalus_AI>()?.SetBuff(true);
-        target.GetComponent<Geobionte_AI>()?.SetBuff(true);
+        GetTargetComponent<TotemSpawner>(target)?.SetBuff(true);
+        GetTargetComponent<MagicStone_AI>(target)?.SetBuff(true);
+        GetTargetComponent<ShardSwarm_AI>(target)?.SetBuff(true);
+        GetTargetComponent<GoblinAI_Transform>(target)?.SetBuff(true);
+        GetTargetComponent<DummyHealth>(target)?.SetBuffedStatus(true);
+        GetTargetComponent<ShardSwarmHealth>(target)?.SetBuffedStatus(true);
+        GetTargetComponent<CrystalWatcher_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Cristalus_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Geobionte_AI>(target)?.SetBuff(true);
+        GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(true);
     }
 
     void RemoveBuffs(GameObject target)
     {
         if (target == null) return;
-        target.GetComponent<TotemSpawner>()?.SetBuff(false);
-        target.GetComponent<MagicStone_AI>()?.SetBuff(false);
-        target.GetComponent<ShardSwarm_AI>()?.SetBuff(false);
-        target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
-        target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
-        target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(false);
-        target.GetComponent<CrystalWatcher_AI>()?.SetBuff(false);
-        target.GetComponent<Cristalus_AI>()?.SetBuff(false);
-        target.GetComponent<Geobionte_AI>()?.SetBuff(false);
+        GetTargetComponent<TotemSpawner>(target)?.SetBuff(false);
+        GetTargetComponent<MagicStone_AI>(target)?.SetBuff(false);
+        GetTargetComponent<ShardSwarm_AI>(target)?.SetBuff(false);
+        GetTargetComponent<GoblinAI_Transform>(target)?.SetBuff(false);
+        GetTargetComponent<DummyHealth>(target)?.SetBuffedStatus(false);
+        GetTargetComponent<ShardSwarmHealth>(target)?.SetBuffedStatus(false);
+        GetTargetComponent<CrystalWatcher_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Cristalus_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Geobionte_AI>(target)?.SetBuff(false);
+        GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(false);
     }
 
     void OnDestroy()
