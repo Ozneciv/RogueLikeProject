@@ -975,6 +975,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OreNode
   oreName: Crystal
+  oreValue: 50
   isConsumed: 0
   emissionColor: {r: 0.5, g: 0.8, b: 1, a: 1}
   glowIntensity: 2
@@ -3912,6 +3913,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2218717516770733466, guid: d8bf9856a9590de499ed775858ed6a48, type: 3}
+      propertyPath: floatingDamageTextPrefab
+      value: 
+      objectReference: {fileID: 7217528928149285678, guid: d0cfc8be9256baf4d853d1a092c24d9d, type: 3}
     - target: {fileID: 2219830635270719724, guid: d8bf9856a9590de499ed775858ed6a48, type: 3}
       propertyPath: m_Name
       value: Geobionte

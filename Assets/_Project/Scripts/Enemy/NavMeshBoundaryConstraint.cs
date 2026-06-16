@@ -80,27 +80,34 @@ public class NavMeshBoundaryConstraint : MonoBehaviour
             // Se chegou aqui, o inimigo está fora dos limites horizontais. Puxa de volta para a borda.
             Vector3 correctedPos = hit.position;
 
-            // Mantém a altura Y atual se ele estiver acima da malha (voando/pulando)
-            // Se estiver abaixo, força a altura do NavMesh para trazê-lo de volta
-            if (transform.position.y >= hit.position.y)
-            {
-                correctedPos.y = transform.position.y;
-            }
-            else
-            {
-                correctedPos.y = hit.position.y + 0.1f;
-            }
-
             if (rb != null && !rb.isKinematic)
             {
-                rb.MovePosition(correctedPos);
-                // Zera apenas a velocidade horizontal para parar o movimento de queda para fora,
-                // mas preserva a velocidade vertical (gravidade/impulso de voo)
+                // Teleporta a posição horizontal para a borda mantendo a física Y intacta (sem travar a gravidade)
+                Vector3 newPos = new Vector3(correctedPos.x, rb.position.y, correctedPos.z);
+                
+                // Se estiver abaixo da malha, força a altura do NavMesh para trazê-lo de volta
+                if (rb.position.y < correctedPos.y)
+                {
+                    newPos.y = correctedPos.y + 0.1f;
+                    rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                }
+
+                rb.position = newPos;
+                // Zera apenas a velocidade horizontal para parar o momentum de queda para fora do mapa
                 rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
             }
             else
             {
-                transform.position = correctedPos;
+                Vector3 newPos = correctedPos;
+                if (transform.position.y >= correctedPos.y)
+                {
+                    newPos.y = transform.position.y;
+                }
+                else
+                {
+                    newPos.y = correctedPos.y + 0.1f;
+                }
+                transform.position = newPos;
             }
         }
     }
