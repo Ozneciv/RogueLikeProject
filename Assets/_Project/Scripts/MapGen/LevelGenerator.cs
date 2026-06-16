@@ -27,6 +27,13 @@ using System.Linq;
 /// </summary>
 public class LevelGenerator : MonoBehaviour
 {
+    public static LevelGenerator Instance { get; private set; }
+
+    void Awake()
+    {
+        Instance = this;
+    }
+
     // =========================================================
     // INSPECTOR
     // =========================================================
@@ -749,6 +756,13 @@ public class LevelGenerator : MonoBehaviour
     // RUNTIME NAVMESH BAKING
     // =========================================================
 
+    [Header("NavMesh Debug Options")]
+    [Tooltip("Se desabilitado, não gera o NavMesh global em runtime.")]
+    public bool useNavMesh = true;
+
+    [Tooltip("Se desabilitado, desativa a contenção nos limites do NavMesh para todos os inimigos.")]
+    public bool useNavMeshConstraint = true;
+
     [Header("NavMesh Runtime Baking")]
     [Tooltip("Ângulo máximo de rampa walkable (graus). " +
              "50° cobre terreno orgânico sem deixar escalar paredes reais.")]
@@ -785,6 +799,21 @@ public class LevelGenerator : MonoBehaviour
     /// </summary>
     void BakeGlobalNavMesh()
     {
+        if (!useNavMesh)
+        {
+            Debug.Log("[LevelGenerator] 🚫 Geração de NavMesh desabilitada via Inspector.");
+            if (activeNavMeshInstance.valid)
+            {
+                activeNavMeshInstance.Remove();
+            }
+            if (activeNavData != null)
+            {
+                Destroy(activeNavData);
+                activeNavData = null;
+            }
+            return;
+        }
+
         // 1. Busca as configurações base do Humanoid e aplica parâmetros relaxados
         NavMeshBuildSettings settings = NavMesh.GetSettingsByID(0); // 0 = Humanoid
         if (settings.agentTypeID == -1)

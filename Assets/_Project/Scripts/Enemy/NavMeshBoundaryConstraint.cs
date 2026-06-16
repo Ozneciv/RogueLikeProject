@@ -22,6 +22,9 @@ using UnityEngine.AI;
 public class NavMeshBoundaryConstraint : MonoBehaviour
 {
     [Header("Configuração")]
+    [Tooltip("Se falso, ignora este limitador de NavMesh para esta entidade específica.")]
+    public bool enableConstraint = true;
+
     [Tooltip("Raio máximo de busca pelo ponto válido mais próximo no NavMesh. " +
              "Aumente se inimigos spawnarem muito longe da malha.")]
     public float searchRadius = 5f;
@@ -39,6 +42,13 @@ public class NavMeshBoundaryConstraint : MonoBehaviour
 
     void FixedUpdate()
     {
+        // Se desativado individualmente ou globalmente pelo LevelGenerator, não faz nada
+        if (!enableConstraint)
+            return;
+
+        if (LevelGenerator.Instance != null && !LevelGenerator.Instance.useNavMeshConstraint)
+            return;
+
         NavMeshHit hit;
         // Busca o ponto válido mais próximo no NavMesh
         bool foundValidPoint = NavMesh.SamplePosition(
