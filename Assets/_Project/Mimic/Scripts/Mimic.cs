@@ -122,11 +122,23 @@ namespace MimicSpace
                 if (Vector3.Angle(velocity, newLegPosition - transform.position) > 45)
                     newLegPosition = transform.position + ((newLegPosition - transform.position) + velocity.normalized * (newLegPosition - transform.position).magnitude) / 2f;
 
+                Collider[] cols = GetComponentsInChildren<Collider>();
+                foreach(var c in cols) if (c != null) c.enabled = false;
+
                 RaycastHit hit;
-                Physics.Raycast(newLegPosition + Vector3.up * 10f, -Vector3.up, out hit);
-                Vector3 myHit = hit.point;
-                if (Physics.Linecast(transform.position, hit.point, out hit))
+                Vector3 myHit;
+                if (Physics.Raycast(newLegPosition + Vector3.up * 10f, -Vector3.up, out hit))
+                {
                     myHit = hit.point;
+                    if (Physics.Linecast(transform.position, hit.point, out hit))
+                        myHit = hit.point;
+                }
+                else
+                {
+                    myHit = newLegPosition; // Fallback caso não encontre o chão
+                }
+
+                foreach(var c in cols) if (c != null) c.enabled = true;
 
                 float lifeTime = Random.Range(minLegLifetime, maxLegLifetime);
 

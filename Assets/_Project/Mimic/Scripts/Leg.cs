@@ -48,7 +48,7 @@ namespace MimicSpace
 
         public void Initialize(Vector3 footPosition, int legResolution, float maxLegDistance, float growCoef, Mimic myMimic, float lifeTime)
         {
-            myColor = new Color(Random.Range(0, 1f), Random.Range(0, 1f), Random.Range(0, 1f));
+            myColor = new Color(0.15f, 0.05f, 0.2f, 1f); // Roxo escuro para combinar com o corpo
             this.footPosition = footPosition;
             this.legResolution = legResolution;
             this.maxLegDistance = maxLegDistance;
@@ -56,6 +56,20 @@ namespace MimicSpace
             this.myMimic = myMimic;
 
             this.legLine = GetComponent<LineRenderer>();
+            
+            // Cria um novo material igual ao do corpo principal para garantir que funcione em URP/Standard
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
+
+            Material legMaterial = new Material(shader);
+            legMaterial.color = myColor;
+            legMaterial.EnableKeyword("_EMISSION");
+            legMaterial.SetColor("_EmissionColor", myColor * 0.5f);
+            
+            if (legMaterial.HasProperty("_BaseColor"))
+                legMaterial.SetColor("_BaseColor", myColor);
+
+            this.legLine.material = legMaterial;
             handles = new Vector3[handlesCount];
 
             // We initialize a bunch of random offsets for many aspects of the legs so every leg part is unique
@@ -71,9 +85,21 @@ namespace MimicSpace
             // each leg part have the same foot position, butto make it look like "toes" the last handle (handles[7])
             // is a bit offset for every leg part
             Vector2 footOffset = Random.insideUnitCircle.normalized * finalFootDistance;
+            
+            Collider[] cols = myMimic.GetComponentsInChildren<Collider>();
+            foreach(var c in cols) if (c != null) c.enabled = false;
+
             RaycastHit hit;
-            Physics.Raycast(footPosition + Vector3.up * 5f + new Vector3(footOffset.x, 0, footOffset.y), -Vector3.up, out hit);
-            handles[7] = hit.point;
+            if (Physics.Raycast(footPosition + Vector3.up * 5f + new Vector3(footOffset.x, 0, footOffset.y), -Vector3.up, out hit))
+            {
+                handles[7] = hit.point;
+            }
+            else
+            {
+                handles[7] = footPosition + new Vector3(footOffset.x, 0, footOffset.y); // Fallback caso não ache chão
+            }
+
+            foreach(var c in cols) if (c != null) c.enabled = true;
 
             legHeight = Random.Range(legMinHeight, legMaxHeight);
             rotationSpeed = Random.Range(minRotSpeed, maxRotSpeed); // * (Random.Range(0f, 1f) > 0.5f ? -1 : 1);
@@ -114,11 +140,16 @@ namespace MimicSpace
             else if (growTarget == 1)
             {
                 // Check is the body is in line of sight from the foot position, and initiates the retractation if it isn't
+                Collider[] cols = myMimic.GetComponentsInChildren<Collider>();
+                foreach(var c in cols) if (c != null) c.enabled = false;
+
                 RaycastHit hit;
                 if (Physics.Linecast(footPosition, transform.position, out hit))
                 {
                     growTarget = 0;
                 }
+
+                foreach(var c in cols) if (c != null) c.enabled = true;
             }
             // progression defines the percentage of deployement (1 being fully deployed and 0 fully retracted)
             progression = Mathf.Lerp(progression, growTarget, growCoef * Time.deltaTime);

@@ -148,7 +148,7 @@ public class Geobionte_AI : MonoBehaviour
 
     private Renderer geobionteRenderer;
     private Material geoMaterial;
-    private Color baseColor = new Color(0.4f, 0.9f, 0.5f, 1f); // Verde orgânico
+    private Color baseColor = new Color(0.15f, 0.05f, 0.2f, 1f); // Preto/Roxo escuro
     private Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
     private int originalLayer;
 
@@ -367,8 +367,11 @@ public class Geobionte_AI : MonoBehaviour
             }
         }
 
-        // Verifica se chegou ao minério
-        float distToOre = Vector3.Distance(transform.position, targetOre.transform.position);
+        // Verifica se chegou ao minério (ignora o Y para não dar problema se ele estiver flutuando alto)
+        Vector2 geobiontePos2D = new Vector2(transform.position.x, transform.position.z);
+        Vector2 orePos2D = new Vector2(targetOre.transform.position.x, targetOre.transform.position.z);
+        float distToOre = Vector2.Distance(geobiontePos2D, orePos2D);
+        
         if (distToOre <= oreReachDistance)
         {
             Debug.Log("[GEOBIONTE] Alcançou o minério! Iniciando fusão...");
@@ -847,8 +850,15 @@ public class Geobionte_AI : MonoBehaviour
     void SetupVisual()
     {
         geobionteRenderer = GetComponentInChildren<Renderer>();
+        
         if (geobionteRenderer != null)
         {
+            // Se usar o Mimic, reduz a esfera para 1/3 do tamanho para servir de corpo central
+            if (mimicComponent != null)
+            {
+                geobionteRenderer.transform.localScale *= 0.33f;
+            }
+
             // URP usa "Universal Render Pipeline/Lit", fallback para "Standard"
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) shader = Shader.Find("Standard");
@@ -858,14 +868,14 @@ public class Geobionte_AI : MonoBehaviour
 
             // Emissão (funciona em ambos URP e Built-in)
             geoMaterial.EnableKeyword("_EMISSION");
-            geoMaterial.SetColor("_EmissionColor", baseColor * 2f);
+            // Brilho mais sutil na forma base para combinar com a cor escura
+            geoMaterial.SetColor("_EmissionColor", baseColor * 0.5f);
 
             // Suporte URP (_BaseColor) e Built-in (_Color)
             if (geoMaterial.HasProperty("_BaseColor"))
                 geoMaterial.SetColor("_BaseColor", baseColor);
 
             geobionteRenderer.material = geoMaterial;
-
         }
     }
 
@@ -893,13 +903,15 @@ public class Geobionte_AI : MonoBehaviour
     {
         if (mimicComponent == null) return;
 
-        // Muda layer temporariamente para "Ignore Raycast" (layer 2, built-in do Unity)
-        // Assim o raycast não acerta o próprio collider do Geobionte
-        int savedLayer = gameObject.layer;
-        gameObject.layer = 2; // Ignore Raycast
+        Collider[] cols = GetComponentsInChildren<Collider>();
+        foreach(var c in cols) c.enabled = false;
 
         RaycastHit hit;
-        if (Physics.Raycast(transform.position + Vector3.up * 5f, Vector3.down, out hit, 15f))
+        bool hitGround = Physics.Raycast(transform.position + Vector3.up * 5f, Vector3.down, out hit, 15f);
+
+        foreach(var c in cols) c.enabled = true;
+
+        if (hitGround)
         {
             float targetY = hit.point.y + bodyHoverHeight;
             float yError = targetY - transform.position.y;
@@ -911,8 +923,6 @@ public class Geobionte_AI : MonoBehaviour
             // Fallback: sem chão detectado, simula gravidade
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, rb.linearVelocity.y - 9.81f * Time.fixedDeltaTime, rb.linearVelocity.z);
         }
-
-        gameObject.layer = savedLayer;
     }
 
     // ========================================================================
