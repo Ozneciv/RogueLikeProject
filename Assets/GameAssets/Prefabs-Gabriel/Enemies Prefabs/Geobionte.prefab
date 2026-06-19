@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 2107083964686136380}
   - component: {fileID: 8516439253392406912}
   - component: {fileID: 8252332029297462842}
+  - component: {fileID: 344258591659258005}
   m_Layer: 6
   m_Name: Geobionte
   m_TagString: Untagged
@@ -141,9 +142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Geobionte
-  icon: {fileID: 0}
-  descricao: "Inimigo que se mistura com os min\xE9rios do mapa\n"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!114 &8252332029297462842
 MonoBehaviour:
@@ -175,6 +174,36 @@ MonoBehaviour:
   fleeSpeed: 10
   fleeDestroyDistance: 50
   respawnDelay: 30
+--- !u!114 &344258591659258005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2219830635270719724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96179edeb213c4c479cd5bd1cc0e2715, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MimicSpace.Mimic
+  legPrefab: {fileID: 1682633662898237459, guid: fb7bce2dee9494540a1866bb5d230a51, type: 3}
+  numberOfLegs: 5
+  partsPerLeg: 4
+  legCount: 0
+  deployedLegs: 0
+  minimumAnchoredLegs: 2
+  minimumAnchoredParts: 8
+  minLegLifetime: 5
+  maxLegLifetime: 15
+  legPlacerOrigin: {x: 0, y: 0, z: 0}
+  newLegRadius: 3
+  minLegDistance: 4.5
+  maxLegDistance: 6.2999997
+  legResolution: 40
+  minGrowCoef: 4.5
+  maxGrowCoef: 6.5
+  newLegCooldown: 0.3
+  velocity: {x: -0.5991216, y: 0, z: -0.08149819}
 --- !u!1 &8312534338257933218
 GameObject:
   m_ObjectHideFlags: 0
