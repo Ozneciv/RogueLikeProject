@@ -55,6 +55,14 @@ public class Geobionte_AI : MonoBehaviour
     public float activationDistance = 200f;
     private bool isActivated = false;
 
+    // ==================== MIMIC — HOVER ====================
+
+    [Header("Mimic — Corpo Flutuante")]
+    [Tooltip("Altura do corpo acima do chão (para as pernas do Mimic)")]
+    public float bodyHoverHeight = 1.2f;
+    [Tooltip("Velocidade de ajuste da altura")]
+    public float hoverLerpSpeed = 8f;
+
     // ==================== IDLE (Wandering) ====================
 
     [Header("Idle — Movimento Passivo")]
@@ -88,9 +96,10 @@ public class Geobionte_AI : MonoBehaviour
 
     private Vector3 originalScale;
     private int absorbedOreValue = 0; // Valor do cristal absorvido
-    private GameObject cubeMeshObject; // Referência ao cubo criado na transformação
-    private MeshFilter originalMeshFilter;
-    private MeshRenderer originalMeshRenderer;
+    private MimicSpace.Mimic mimicComponent; // Referência ao sistema de pernas procedurais
+    private int originalNumberOfLegs;
+    private int originalPartsPerLeg;
+    private float originalNewLegRadius;
 
     // ==================== BISMUTADO (Transformado) ====================
 
@@ -139,7 +148,7 @@ public class Geobionte_AI : MonoBehaviour
 
     private Renderer geobionteRenderer;
     private Material geoMaterial;
-    private Color baseColor = new Color(0.4f, 0.9f, 0.5f, 1f); // Verde orgânico
+    private Color baseColor = new Color(0.15f, 0.05f, 0.2f, 1f); // Preto/Roxo escuro
     private Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
     private int originalLayer;
 
@@ -165,6 +174,22 @@ public class Geobionte_AI : MonoBehaviour
         originalChaseSpeed = chaseSpeed;
         originalFieldCooldown = fieldCooldown;
         originalLayer = gameObject.layer;
+
+        // Configurar Mimic (pernas procedurais)
+        mimicComponent = GetComponent<MimicSpace.Mimic>();
+        if (mimicComponent != null)
+        {
+            originalNumberOfLegs = mimicComponent.numberOfLegs;
+            originalPartsPerLeg = mimicComponent.partsPerLeg;
+            originalNewLegRadius = mimicComponent.newLegRadius;
+
+            // Remove o Movement.cs do Mimic (IA do Geobionte controla o movimento)
+            MimicSpace.Movement mimicMovement = GetComponent<MimicSpace.Movement>();
+            if (mimicMovement != null) Destroy(mimicMovement);
+
+            // Desativar gravidade — o hover controla a altura
+            rb.useGravity = false;
+        }
 
         // Encontrar player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -248,6 +273,9 @@ public class Geobionte_AI : MonoBehaviour
                 MoveFlee();
                 break;
         }
+
+        // Manter corpo flutuando para as pernas do Mimic
+        HandleBodyHover();
     }
 
     // ========================================================================
@@ -310,6 +338,7 @@ public class Geobionte_AI : MonoBehaviour
     {
         Vector3 targetVelocity = wanderDirection * wanderSpeed;
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+        UpdateMimicVelocity();
 
         // Rotação suave na direção do movimento
         if (wanderDirection != Vector3.zero)
@@ -338,8 +367,11 @@ public class Geobionte_AI : MonoBehaviour
             }
         }
 
-        // Verifica se chegou ao minério
-        float distToOre = Vector3.Distance(transform.position, targetOre.transform.position);
+        // Verifica se chegou ao minério (ignora o Y para não dar problema se ele estiver flutuando alto)
+        Vector2 geobiontePos2D = new Vector2(transform.position.x, transform.position.z);
+        Vector2 orePos2D = new Vector2(targetOre.transform.position.x, targetOre.transform.position.z);
+        float distToOre = Vector2.Distance(geobiontePos2D, orePos2D);
+        
         if (distToOre <= oreReachDistance)
         {
             Debug.Log("[GEOBIONTE] Alcançou o minério! Iniciando fusão...");
@@ -356,6 +388,7 @@ public class Geobionte_AI : MonoBehaviour
 
         Vector3 targetVelocity = direction * seekSpeed;
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+        UpdateMimicVelocity();
 
         // Rotação na direção do minério
         if (direction != Vector3.zero)
@@ -399,6 +432,7 @@ public class Geobionte_AI : MonoBehaviour
 
         // Para o movimento
         rb.linearVelocity = Vector3.zero;
+        UpdateMimicVelocity();
 
         // Grava o valor do cristal e consome
         if (targetOre != null)
@@ -439,8 +473,8 @@ public class Geobionte_AI : MonoBehaviour
         // TRANSFORMAÇÃO COMPLETA → Bismutado
         transform.localScale = endScale;
 
-        // Troca a mesh para CUBO (demonstra transformação)
-        TransformMeshToCube();
+        // Transforma as pernas do Mimic para forma Bismutado
+        TransformMimicLegs();
 
         TransformIntoBismutado();
     }
@@ -512,11 +546,13 @@ public class Geobionte_AI : MonoBehaviour
             float speed = hasSpeedBuff ? chaseSpeed * 1.3f : chaseSpeed;
             Vector3 targetVelocity = direction * speed;
             rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+            UpdateMimicVelocity();
         }
         else
         {
             // Para perto do player
             rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            UpdateMimicVelocity();
         }
     }
 
@@ -640,8 +676,8 @@ public class Geobionte_AI : MonoBehaviour
         // Volta para layer Default (não atacável)
         gameObject.layer = LayerMask.NameToLayer("Default");
 
-        // Volta ao formato original (remove o cubo)
-        RestoreOriginalMesh();
+        // Restaura pernas do Mimic para forma base
+        RestoreMimicLegs();
 
         // Encolhe de volta ao tamanho original rapidamente
         float shrinkDuration = 0.5f;
@@ -702,6 +738,7 @@ public class Geobionte_AI : MonoBehaviour
 
         Vector3 targetVelocity = fleeDirection * fleeSpeed;
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+        UpdateMimicVelocity();
 
         // Rotação na direção da fuga
         if (fleeDirection != Vector3.zero)
@@ -723,6 +760,7 @@ public class Geobionte_AI : MonoBehaviour
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
         rb.linearVelocity = Vector3.zero;
+        UpdateMimicVelocity();
         rb.isKinematic = true;
 
         Debug.Log("[GEOBIONTE] Respawn agendado em " + respawnDelay + " segundos...");
@@ -746,8 +784,8 @@ public class Geobionte_AI : MonoBehaviour
         targetOre = null;
         fieldTimer = 0f;
 
-        // Restaura mesh original (caso ainda esteja cubo)
-        RestoreOriginalMesh();
+        // Restaura pernas do Mimic para forma base
+        RestoreMimicLegs();
 
         // Reset de HP
         if (health != null)
@@ -812,8 +850,15 @@ public class Geobionte_AI : MonoBehaviour
     void SetupVisual()
     {
         geobionteRenderer = GetComponentInChildren<Renderer>();
+        
         if (geobionteRenderer != null)
         {
+            // Se usar o Mimic, reduz a esfera para 1/3 do tamanho para servir de corpo central
+            if (mimicComponent != null)
+            {
+                geobionteRenderer.transform.localScale *= 0.33f;
+            }
+
             // URP usa "Universal Render Pipeline/Lit", fallback para "Standard"
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) shader = Shader.Find("Standard");
@@ -823,17 +868,14 @@ public class Geobionte_AI : MonoBehaviour
 
             // Emissão (funciona em ambos URP e Built-in)
             geoMaterial.EnableKeyword("_EMISSION");
-            geoMaterial.SetColor("_EmissionColor", baseColor * 2f);
+            // Brilho mais sutil na forma base para combinar com a cor escura
+            geoMaterial.SetColor("_EmissionColor", baseColor * 0.5f);
 
             // Suporte URP (_BaseColor) e Built-in (_Color)
             if (geoMaterial.HasProperty("_BaseColor"))
                 geoMaterial.SetColor("_BaseColor", baseColor);
 
             geobionteRenderer.material = geoMaterial;
-
-            // Guarda referências da mesh original para restaurar depois
-            originalMeshFilter = GetComponentInChildren<MeshFilter>();
-            originalMeshRenderer = GetComponentInChildren<MeshRenderer>();
         }
     }
 
@@ -849,72 +891,84 @@ public class Geobionte_AI : MonoBehaviour
     }
 
     // ========================================================================
-    // TRANSFORMAÇÃO VISUAL: CUBO
+    // MIMIC — HOVER (Corpo Flutuante)
     // ========================================================================
 
     /// <summary>
-    /// Troca a mesh do Geobionte para um cubo, demonstrando a transformação.
+    /// Mantém o corpo do Geobionte flutuando acima do chão para que
+    /// as pernas do Mimic tenham espaço para se estender.
+    /// Substitui a lógica do Movement.cs original do Mimic.
     /// </summary>
-    void TransformMeshToCube()
+    void HandleBodyHover()
     {
-        // Se já tem um cubo criado, não cria outro
-        if (cubeMeshObject != null) return;
+        if (mimicComponent == null) return;
 
-        // Desativa a mesh original
-        if (originalMeshRenderer != null)
-            originalMeshRenderer.enabled = false;
+        Collider[] cols = GetComponentsInChildren<Collider>();
+        foreach(var c in cols) c.enabled = false;
 
-        // Cria um cubo primitivo como filho
-        cubeMeshObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cubeMeshObject.name = "BismutadoCubeMesh";
-        cubeMeshObject.transform.SetParent(transform);
-        cubeMeshObject.transform.localPosition = Vector3.zero;
-        cubeMeshObject.transform.localRotation = Quaternion.identity;
-        cubeMeshObject.transform.localScale = Vector3.one;
+        RaycastHit hit;
+        bool hitGround = Physics.Raycast(transform.position + Vector3.up * 5f, Vector3.down, out hit, 15f);
 
-        // Remove o collider do cubo (já temos o collider do Geobionte)
-        Collider cubeCol = cubeMeshObject.GetComponent<Collider>();
-        if (cubeCol != null) Destroy(cubeCol);
+        foreach(var c in cols) c.enabled = true;
 
-        // Aplica o material bismuto
-        Renderer cubeRenderer = cubeMeshObject.GetComponent<Renderer>();
-        if (cubeRenderer != null && geoMaterial != null)
+        if (hitGround)
         {
-            cubeRenderer.material = geoMaterial;
+            float targetY = hit.point.y + bodyHoverHeight;
+            float yError = targetY - transform.position.y;
+            float yVelocity = Mathf.Clamp(yError * hoverLerpSpeed, -10f, 10f);
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, yVelocity, rb.linearVelocity.z);
         }
-
-        // Atualiza a referência do renderer para flash de dano funcionar
-        geobionteRenderer = cubeRenderer;
-        if (health != null)
+        else
         {
-            // Atualiza o renderer no DummyHealth para flash de dano
-            var dummyRendererField = typeof(DummyHealth).GetField("dummyRenderer", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (dummyRendererField != null)
-                dummyRendererField.SetValue(health, cubeRenderer);
+            // Fallback: sem chão detectado, simula gravidade
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, rb.linearVelocity.y - 9.81f * Time.fixedDeltaTime, rb.linearVelocity.z);
         }
+    }
 
-        Debug.Log("[GEOBIONTE] Mesh transformada para CUBO!");
+    // ========================================================================
+    // TRANSFORMAÇÃO VISUAL: MIMIC LEGS
+    // ========================================================================
+
+    /// <summary>
+    /// Aumenta pernas do Mimic para forma Bismutado.
+    /// </summary>
+    void TransformMimicLegs()
+    {
+        if (mimicComponent == null) return;
+
+        // Aumenta número de pernas e alcance para forma Bismutado
+        mimicComponent.numberOfLegs = originalNumberOfLegs * 2;
+        mimicComponent.partsPerLeg = originalPartsPerLeg + 1;
+        mimicComponent.newLegRadius = originalNewLegRadius * transformedScale;
+        mimicComponent.RecalculateParameters();
+
+        Debug.Log("[GEOBIONTE] Pernas Mimic transformadas para forma Bismutado!");
     }
 
     /// <summary>
-    /// Restaura a mesh original do Geobionte (remove o cubo).
+    /// Restaura parâmetros originais do Mimic.
     /// </summary>
-    void RestoreOriginalMesh()
+    void RestoreMimicLegs()
     {
-        if (cubeMeshObject != null)
-        {
-            Destroy(cubeMeshObject);
-            cubeMeshObject = null;
-        }
+        if (mimicComponent == null) return;
 
-        if (originalMeshRenderer != null)
-        {
-            originalMeshRenderer.enabled = true;
-            geobionteRenderer = originalMeshRenderer;
-        }
+        mimicComponent.numberOfLegs = originalNumberOfLegs;
+        mimicComponent.partsPerLeg = originalPartsPerLeg;
+        mimicComponent.newLegRadius = originalNewLegRadius;
+        mimicComponent.RecalculateParameters();
 
-        Debug.Log("[GEOBIONTE] Mesh restaurada para original.");
+        Debug.Log("[GEOBIONTE] Pernas Mimic restauradas para forma base.");
+    }
+
+    /// <summary>
+    /// Atualiza o velocity do Mimic para posicionamento correto das pernas.
+    /// </summary>
+    void UpdateMimicVelocity()
+    {
+        if (mimicComponent != null)
+        {
+            mimicComponent.velocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        }
     }
 
     // ========================================================================
