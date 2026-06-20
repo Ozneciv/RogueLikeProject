@@ -33,6 +33,8 @@ public class Cristalus_AI : MonoBehaviour
     private float originalTrailDropInterval;
     private float originalCrystalSpawnInterval;
 
+    private Animator animator;
+
     private enum State { Idle, Approaching, CastingArc, Repositioning }
     private State currentState = State.Idle;
     private List<CrystalArcGroup> activeArcs = new List<CrystalArcGroup>();
@@ -40,6 +42,7 @@ public class Cristalus_AI : MonoBehaviour
     void Start()
     {
         health = GetComponent<DummyHealth>();
+        animator = GetComponentInChildren<Animator>();
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null) playerTransform = player.transform;
     }
@@ -57,6 +60,8 @@ public class Cristalus_AI : MonoBehaviour
 
     void HandleIdle()
     {
+        if (animator != null) animator.SetBool("IsMoving", false);
+
         if (Vector3.Distance(transform.position, playerTransform.position) <= activationDistance)
             currentState = State.Approaching;
     }
@@ -67,9 +72,13 @@ public class Cristalus_AI : MonoBehaviour
         LookAtTarget(playerTransform.position, 8f); 
 
         if (distToPlayer <= targetDistance)
+        {
+            if (animator != null) animator.SetBool("IsMoving", false);
             StartCoroutine(CastArcRoutine());
+        }
         else
         {
+            if (animator != null) animator.SetBool("IsMoving", true);
             transform.position = Vector3.MoveTowards(transform.position, playerTransform.position, moveSpeed * Time.deltaTime);
             trailTimer += Time.deltaTime;
             if (trailTimer >= trailDropInterval)
@@ -130,9 +139,11 @@ public class Cristalus_AI : MonoBehaviour
                         LookAtTarget(transform.position + moveDir, 20f);
                     }
 
+                    if (animator != null) animator.SetBool("IsMoving", true);
                     transform.position = newPos;
                     yield return null;
                 }
+                if (animator != null) animator.SetBool("IsMoving", false);
             }
         }
 
@@ -153,6 +164,8 @@ public class Cristalus_AI : MonoBehaviour
         Vector3 newDir = Quaternion.Euler(0, minRepositionAngle * sign, 0) * dirFromPlayerToEnemy;
         Vector3 targetPos = playerTransform.position + newDir * targetDistance;
 
+        if (animator != null) animator.SetBool("IsMoving", true);
+
         while (Vector3.Distance(transform.position, targetPos) > 0.5f)
         {
             transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * 1.5f * Time.deltaTime);
@@ -166,6 +179,8 @@ public class Cristalus_AI : MonoBehaviour
             }
             yield return null;
         }
+
+        if (animator != null) animator.SetBool("IsMoving", false);
         currentState = State.Approaching;
     }
 
