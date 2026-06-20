@@ -684,7 +684,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1830613685876521810, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 16.4
       objectReference: {fileID: 0}
     - target: {fileID: 1830613685876521810, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_LocalPosition.y
@@ -692,7 +692,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1830613685876521810, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -13.21
       objectReference: {fileID: 0}
     - target: {fileID: 1830613685876521810, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_LocalRotation.w
@@ -738,6 +738,71 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1331200002}
   m_SourcePrefab: {fileID: 100100000, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+--- !u!1001 &690252290
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -12.184374
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5.749712
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 286173162090625506, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 626950691794527064, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_Name
+      value: Cristalus
+      objectReference: {fileID: 0}
+    - target: {fileID: 4711066773821520326, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4711066773821520326, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
 --- !u!114 &791312628 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
@@ -3769,3 +3834,4 @@ SceneRoots:
   - {fileID: 5643171052087133151}
   - {fileID: 2670315658592751807}
   - {fileID: 612133956905285774}
+  - {fileID: 690252290}
