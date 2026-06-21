@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: goblin_bomb_t4
   itemName: Bomba Goblin (T4)
   description: "Efeito \xDAnico T4: GoblinBomb"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 34e91295b744b9a43a2cc329dfcf15d2, type: 3}
   tier: 3
   enemySource: Goblin
   recycleEssenceValue: 168

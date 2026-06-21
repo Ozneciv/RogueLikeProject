@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: golem_core_t3
   itemName: "N\xFAcleo de Pedra (T3)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f1511bb86407d0541b1a790ee4586a8a, type: 3}
   tier: 2
   enemySource: Golem
   recycleEssenceValue: 120

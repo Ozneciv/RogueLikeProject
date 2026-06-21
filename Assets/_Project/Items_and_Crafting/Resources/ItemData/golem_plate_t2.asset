@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: golem_plate_t2
   itemName: Placa de Rocha (T2)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 636a96b52b5dcfd45a10203407adbae8, type: 3}
   tier: 1
   enemySource: Golem
   recycleEssenceValue: 72

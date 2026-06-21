@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: totem_monolith_t4
   itemName: Monolito Totem (T4)
   description: "Efeito \xDAnico T4: TotemForm"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 4aa6553b94b167b4283d98ec4f190e35, type: 3}
   tier: 3
   enemySource: Totem
   recycleEssenceValue: 168

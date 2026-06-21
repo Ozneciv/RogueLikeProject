@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: totem_stone_t1
   itemName: Pedra Totem (T1)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 858ce57e823296748908398c615adf13, type: 3}
   tier: 0
   enemySource: Totem
   recycleEssenceValue: 24
