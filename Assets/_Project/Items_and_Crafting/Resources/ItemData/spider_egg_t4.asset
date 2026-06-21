@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: spider_egg_t4
   itemName: Ovo de Aranha (T4)
-  description: aaaaa
+  description: 
   icon: {fileID: 21300000, guid: 7d8f21abf090633479e2de8430e70915, type: 3}
   tier: 3
   enemySource: Spider

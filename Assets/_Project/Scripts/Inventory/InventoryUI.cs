@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections.Generic;
 
@@ -8,15 +9,16 @@ using System.Collections.Generic;
 /// Cria e gerencia o painel visual de grade (estilo Minecraft).
 /// Inclui input handler (Tab para abrir/fechar) e gerenciamento de cursor.
 /// 
-/// SETUP:
-/// 1. Adicione a um GameObject com Canvas (ou filho de Canvas)
-/// 2. O script encontra automaticamente o PlayerInventory na cena
-/// 3. Cria toda a UI por código
+/// PERSISTÊNCIA:
+///   Singleton com DontDestroyOnLoad — cria seu próprio Canvas persistente
+///   e reconecta ao PlayerInventory automaticamente ao trocar de cena.
 /// 
 /// EXTENSÃO: Para alterar aparência, modifique as constantes de configuração.
 /// </summary>
 public class InventoryUI : MonoBehaviour
 {
+    // Singleton
+    public static InventoryUI Instance { get; private set; }
     [Header("Input")]
     [Tooltip("Tecla para abrir/fechar o inventário")]
     public KeyCode toggleKey = KeyCode.Tab;
@@ -32,6 +34,7 @@ public class InventoryUI : MonoBehaviour
     // Referências internas
     private PlayerInventory playerInventory;
     private Canvas inventoryCanvas;
+    private GameObject canvasObject; // Canvas próprio (DontDestroyOnLoad)
     private GameObject panelObject;
     private RectTransform panelRect;
     private TextMeshProUGUI headerText;
@@ -40,6 +43,7 @@ public class InventoryUI : MonoBehaviour
 
     // Estado
     private bool isOpen = false;
+    private bool uiBuilt = false;
 
     // Cores do painel
     private static readonly Color PANEL_BG = new Color(0.06f, 0.06f, 0.10f, 0.92f);
@@ -47,9 +51,91 @@ public class InventoryUI : MonoBehaviour
     private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1f);
     private static readonly Color HEADER_ACCENT = new Color(0.6f, 0.45f, 0.90f, 1f);
 
+    void Awake()
+    {
+        // Singleton: se já existe um InventoryUI, destroi este duplicado
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
     void Start()
     {
-        // Encontra o inventário do Player
+        // Conecta ao PlayerInventory
+        ConnectToPlayerInventory();
+
+        // Cria toda a UI (Canvas próprio, persistente)
+        CreateInventoryUI();
+
+        // Começa fechado
+        panelObject.SetActive(false);
+        isOpen = false;
+        uiBuilt = true;
+    }
+
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        if (playerInventory != null)
+        {
+            playerInventory.onInventoryChanged.RemoveListener(RefreshUI);
+        }
+
+        // Limpa Canvas persistente se este é o singleton sendo destruído
+        if (Instance == this)
+        {
+            Instance = null;
+            if (canvasObject != null) Destroy(canvasObject);
+        }
+    }
+
+    /// <summary>
+    /// Chamado automaticamente quando uma nova cena carrega.
+    /// Reconecta ao PlayerInventory (que é DontDestroyOnLoad) para manter o sistema funcionando.
+    /// </summary>
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!uiBuilt) return; // Start() ainda não rodou
+
+        ConnectToPlayerInventory();
+
+        // Garante que o inventário esteja fechado ao trocar de cena
+        if (isOpen)
+        {
+            isOpen = false;
+            if (panelObject != null) panelObject.SetActive(false);
+        }
+
+        Debug.Log("[INVENTORY UI] Reconectado após carregar cena: " + scene.name);
+    }
+
+    /// <summary>
+    /// Encontra e conecta ao PlayerInventory na cena.
+    /// Remove listener antigo e adiciona novo para evitar duplicação.
+    /// </summary>
+    void ConnectToPlayerInventory()
+    {
+        // Remove listener antigo se existir
+        if (playerInventory != null)
+        {
+            playerInventory.onInventoryChanged.RemoveListener(RefreshUI);
+        }
+
+        // Encontra o inventário do Player (pode ser DontDestroyOnLoad)
         playerInventory = FindObjectOfType<PlayerInventory>();
 
         if (playerInventory == null)
@@ -60,21 +146,7 @@ public class InventoryUI : MonoBehaviour
         {
             // Se inscreve para mudanças no inventário
             playerInventory.onInventoryChanged.AddListener(RefreshUI);
-        }
-
-        // Cria toda a UI
-        CreateInventoryUI();
-
-        // Começa fechado
-        panelObject.SetActive(false);
-        isOpen = false;
-    }
-
-    void OnDestroy()
-    {
-        if (playerInventory != null)
-        {
-            playerInventory.onInventoryChanged.RemoveListener(RefreshUI);
+            Debug.Log("[INVENTORY UI] Conectado ao PlayerInventory.");
         }
     }
 
@@ -102,6 +174,12 @@ public class InventoryUI : MonoBehaviour
     public void OpenInventory()
     {
         if (isOpen) return;
+
+        // Reconexão de segurança: se o PlayerInventory sumiu, tenta encontrar de novo
+        if (playerInventory == null)
+        {
+            ConnectToPlayerInventory();
+        }
 
         isOpen = true;
         panelObject.SetActive(true);
@@ -200,16 +278,14 @@ public class InventoryUI : MonoBehaviour
 
     void CreateInventoryUI()
     {
-        // Garante que tem um Canvas
-        inventoryCanvas = GetComponentInParent<Canvas>();
-        if (inventoryCanvas == null)
-        {
-            inventoryCanvas = gameObject.AddComponent<Canvas>();
-            inventoryCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            inventoryCanvas.sortingOrder = 100;
-            gameObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            gameObject.AddComponent<GraphicRaycaster>();
-        }
+        // Cria Canvas próprio persistente (como EconomyHUD faz)
+        canvasObject = new GameObject("InventoryUI_Canvas");
+        inventoryCanvas = canvasObject.AddComponent<Canvas>();
+        inventoryCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        inventoryCanvas.sortingOrder = 100;
+        canvasObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvasObject.AddComponent<GraphicRaycaster>();
+        DontDestroyOnLoad(canvasObject);
 
         // Garante EventSystem
         if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)

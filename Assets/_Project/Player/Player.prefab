@@ -1776,6 +1776,11 @@ MonoBehaviour:
   percentageText: {fileID: 0}
   damageMultiplier: 1
   damageTakenMultiplier: 1
+  canHeal: 1
+  hasDoubleLoot: 0
+  hasVampirism: 0
+  hasNecrosis: 0
+  lastKillTime: 0
 --- !u!114 &2877796600527432851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1971,6 +1976,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InfusionManager
   inflationAlpha: 0.1
+  infusedItems: []
 --- !u!114 &2622090170748288850
 MonoBehaviour:
   m_ObjectHideFlags: 0

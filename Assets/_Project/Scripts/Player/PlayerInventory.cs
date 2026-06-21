@@ -16,6 +16,62 @@ public class PlayerInventory : MonoBehaviour
     [Tooltip("Dicionário de itens coletados (ID -> Quantidade)")]
     private Dictionary<string, int> items = new Dictionary<string, int>();
 
+    void Start()
+    {
+        // Garante que sistemas de inventário existam em qualquer cena.
+        // O PlayerInventory vive no Player.prefab (DontDestroyOnLoad),
+        // mas ItemDatabase e InventoryUI podem não estar na cena atual.
+        EnsureItemDatabaseExists();
+        EnsureInventoryUIExists();
+    }
+
+    /// <summary>
+    /// Cria o ItemDatabase automaticamente se não existir.
+    /// Sem ele, os itens aparecem sem sprite, nome ou cor de tier.
+    /// </summary>
+    void EnsureItemDatabaseExists()
+    {
+        if (ItemDatabase.Instance != null) return;
+
+        ItemDatabase existing = FindFirstObjectByType<ItemDatabase>();
+        if (existing != null) return;
+
+        // Tenta carregar o prefab completo do Resources (que já tem a lista preenchida no Inspector)
+        GameObject prefab = Resources.Load<GameObject>("ItemDatabase");
+        if (prefab != null)
+        {
+            GameObject dbObj = Instantiate(prefab);
+            dbObj.name = "ItemDatabase_Auto";
+            Debug.Log("[INVENTORY] ItemDatabase instanciado via prefab do Resources.");
+        }
+        else
+        {
+            // Fallback extremo
+            GameObject dbObj = new GameObject("ItemDatabase_Auto");
+            dbObj.AddComponent<ItemDatabase>();
+            Debug.Log("[INVENTORY] ItemDatabase criado vazio como fallback.");
+        }
+    }
+
+    /// <summary>
+    /// Cria o InventoryUI automaticamente se ele não existir.
+    /// Isso garante que Tab funcione em qualquer cena (Base, GameScene, etc.)
+    /// sem precisar de setup manual na cena.
+    /// </summary>
+    void EnsureInventoryUIExists()
+    {
+        if (InventoryUI.Instance != null) return;
+
+        // Procura se existe um na cena mas ainda não se registrou como Instance
+        InventoryUI existing = FindObjectOfType<InventoryUI>();
+        if (existing != null) return;
+
+        // Cria um novo InventoryUI (ele faz DontDestroyOnLoad no próprio Awake)
+        GameObject inventoryUIObj = new GameObject("InventoryUI_Auto");
+        inventoryUIObj.AddComponent<InventoryUI>();
+        Debug.Log("[INVENTORY] InventoryUI criado automaticamente pelo PlayerInventory.");
+    }
+
     [Header("Capacidade")]
     [Tooltip("Número máximo de slots (tipos diferentes de itens)")]
     [SerializeField] private int maxSlots = 10;
