@@ -40,17 +40,9 @@ public class ShardSwarm_AI : MonoBehaviour
     public int combinedDamage = 20;
     public float attackDuration = 0.5f;
 
-    [Header("Split (Divisão)")]
-    [Tooltip("% do HP máximo que triggera split quando perdido de uma vez")]
-    [Range(0.1f, 0.5f)]
-    public float splitThresholdPercent = 0.3f;
-    [Tooltip("Distância lateral em que o clone vai aparecer")]
-    public float splitSpawnOffset = 3f;
-    [Tooltip("Se false, este enxame é um clone e não pode se dividir novamente")]
-    public bool canSplit = true;
-    [Tooltip("% do HP máximo curado ao reagrupar após split")]
-    [Range(0f, 0.5f)]
-    public float reformHealPercent = 0.1f;
+    [Header("Split (Fases)")]
+    [Tooltip("Número de fases: cada hit dobra as esferas ativas. 3 = 1→2→4→8 esferas, depois morre.")]
+    public int maxSplitPhase = 3;
 
     [Header("Morte")]
     public float deathExplosionRadius = 3f;
@@ -61,11 +53,9 @@ public class ShardSwarm_AI : MonoBehaviour
     private bool isAttacking = false;
     private float attackTimer = 0f;
     private int lastKnownHP;
-    private float damageAccumulator = 0f;
-    private bool hasSplit = false;
+    private int splitPhase = 0; // 0=1 esfera, 1=2, 2=4, 3=8
 
     // Tracking de fragmentos
-    private int shardsAlive;
     private List<Vector3> originalShardPositions = new List<Vector3>();
 
     void Start()
@@ -75,6 +65,7 @@ public class ShardSwarm_AI : MonoBehaviour
 
         rb.useGravity = false;
         rb.freezeRotation = true;
+        rb.constraints |= RigidbodyConstraints.FreezePositionY;
 
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -108,23 +99,20 @@ public class ShardSwarm_AI : MonoBehaviour
             }
         }
 
-        shardsAlive = shards.Count;
-
         foreach (GameObject shard in shards)
-        {
             originalShardPositions.Add(shard.transform.localPosition);
-        }
 
-        Debug.Log("[SHARD SWARM] Inicializado com " + shards.Count + " fragmentos. HP Total: " + health.maxHealth);
+        // Começa com apenas 1 esfera ativa
+        for (int i = 0; i < shards.Count; i++)
+            shards[i].SetActive(i == 0);
+
+        Debug.Log("[SHARD SWARM] Inicializado com " + shards.Count + " fragmentos. Fase 0 (1 esfera ativa).");
     }
 
     void Update()
     {
         if (playerTransform == null) return;
         if (health.CurrentHealth <= 0) return;
-
-        // Detecta dano recebido (via DummyHealth)
-        DetectDamage();
 
         // Timer
         if (attackTimer > 0) attackTimer -= Time.deltaTime;
@@ -136,6 +124,8 @@ public class ShardSwarm_AI : MonoBehaviour
             if (dist < activationDistance)
             {
                 isActivated = true;
+                // Reseta snapshot de HP na ativação para evitar falso split por diferença de inicialização
+                lastKnownHP = health.CurrentHealth;
                 Debug.Log("[SHARD SWARM] Ativado! Player detectado a " + dist.ToString("F1") + "m");
 
                 EnemyIdentity id = GetComponent<EnemyIdentity>() ?? GetComponentInChildren<EnemyIdentity>() ?? GetComponentInParent<EnemyIdentity>();
@@ -146,6 +136,9 @@ public class ShardSwarm_AI : MonoBehaviour
             return;
         }
 
+        // Detecta dano recebido (via DummyHealth) — só quando ativado
+        DetectDamage();
+
         // Atualiza órbita dos fragmentos
         UpdateShardOrbit();
 
@@ -154,9 +147,6 @@ public class ShardSwarm_AI : MonoBehaviour
 
         HandleRotation();
         HandleCombat();
-
-        // Verifica se deve destruir fragmentos baseado no HP
-        UpdateShardVisibility();
     }
 
     void DetectDamage()
@@ -164,52 +154,39 @@ public class ShardSwarm_AI : MonoBehaviour
         int currentHP = health.CurrentHealth;
         if (currentHP < lastKnownHP)
         {
-            int damageTaken = lastKnownHP - currentHP;
-            damageAccumulator += damageTaken;
+            Debug.Log("[SHARD SWARM] Hit recebido! Fase atual: " + splitPhase + "/" + maxSplitPhase);
 
-            Debug.Log("[SHARD SWARM] Recebeu " + damageTaken + " de dano! HP: " + currentHP + "/" + health.maxHealth);
-
-            // Verifica split (se perdeu mais que X% do HP de uma vez)
-            float splitThreshold = health.maxHealth * splitThresholdPercent;
-            if (canSplit && !hasSplit && damageAccumulator >= splitThreshold && currentHP > 1)
+            if (splitPhase < maxSplitPhase)
             {
-                Split();
-                damageAccumulator = 0;
+                // Avança fase: dobra as esferas visíveis
+                splitPhase++;
+                AdvanceSplitPhase();
+
+                // Restaura HP para que a próxima fase precise de outro hit
+                health.SetHealth(health.maxHealth);
+                lastKnownHP = health.maxHealth;
+                return;
             }
+            // Fase máxima atingida: deixa HP drenar normalmente → morte
         }
         lastKnownHP = currentHP;
 
-        // Verifica morte
         if (currentHP <= 0)
-        {
             Die();
-        }
     }
 
-    void UpdateShardVisibility()
+    void AdvanceSplitPhase()
     {
-        // Calcula quantos shards devem estar vivos baseado no HP
-        float hpPercent = (float)health.CurrentHealth / health.maxHealth;
-        int targetShards = Mathf.CeilToInt(hpPercent * shards.Count);
-        targetShards = Mathf.Max(1, targetShards); // Pelo menos 1 enquanto vivo
+        // Ativa shards = 2^splitPhase (1, 2, 4, 8)
+        int targetActive = 1 << splitPhase;
+        for (int i = 0; i < shards.Count; i++)
+            if (shards[i] != null)
+                shards[i].SetActive(i < targetActive);
 
-        // Desativa shards extras
-        int activeCount = GetActiveShardCount();
-        if (activeCount > targetShards)
-        {
-            int toDisable = activeCount - targetShards;
-            for (int i = shards.Count - 1; i >= 0 && toDisable > 0; i--)
-            {
-                if (shards[i] != null && shards[i].activeSelf)
-                {
-                    shards[i].SetActive(false);
-                    Debug.Log("[SHARD SWARM] Fragmento destruído! Restam: " + (activeCount - 1));
-                    toDisable--;
-                    activeCount--;
-                }
-            }
-        }
+        Debug.Log("[SHARD SWARM] Fase " + splitPhase + " → " + targetActive + " esferas ativas.");
     }
+
+
 
     void FixedUpdate()
     {
@@ -282,11 +259,11 @@ public class ShardSwarm_AI : MonoBehaviour
         {
             direction.y = 0;
             Vector3 targetVelocity = direction * moveSpeed;
-            rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+            rb.linearVelocity = new Vector3(targetVelocity.x, 0f, targetVelocity.z);
         }
         else
         {
-            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            rb.linearVelocity = new Vector3(0f, 0f, 0f);
         }
     }
 
@@ -364,59 +341,7 @@ public class ShardSwarm_AI : MonoBehaviour
         isAttacking = false;
     }
 
-    void Split()
-    {
-        hasSplit = true;
-        Debug.Log("[SHARD SWARM] SPLIT! Duplicando enxame!");
 
-        // Calcula posição do clone ao lado do original
-        Vector3 cloneOffset = transform.right * splitSpawnOffset;
-        GameObject clone = Instantiate(gameObject, transform.position + cloneOffset, transform.rotation);
-
-        // --- Reset do clone para evitar AABB inválido ---
-        // O Rigidbody herda a velocidade do original — zerar para evitar NaN/Infinity
-        Rigidbody cloneRb = clone.GetComponent<Rigidbody>();
-        if (cloneRb != null)
-        {
-            cloneRb.linearVelocity = Vector3.zero;
-            cloneRb.angularVelocity = Vector3.zero;
-        }
-
-        // Reposicionar fragmentos filhos do clone para posições orbitais simples e válidas
-        ShardSwarm_AI cloneAI = clone.GetComponent<ShardSwarm_AI>();
-        if (cloneAI != null)
-        {
-            cloneAI.canSplit = false;
-            cloneAI.hasSplit = true;
-
-            // Reseta posições dos fragmentos para evitar localPositions herdadas em órbita aleatória
-            int count = cloneAI.shards.Count;
-            for (int i = 0; i < count; i++)
-            {
-                if (cloneAI.shards[i] != null)
-                {
-                    float angle = (360f / Mathf.Max(1, count)) * i * Mathf.Deg2Rad;
-                    cloneAI.shards[i].transform.localPosition = new Vector3(
-                        Mathf.Cos(angle) * cloneAI.orbitRadius,
-                        0f,
-                        Mathf.Sin(angle) * cloneAI.orbitRadius
-                    );
-                }
-            }
-        }
-
-        DummyHealth cloneHealth = clone.GetComponent<DummyHealth>();
-
-        // Reduz HP de ambos para metade do HP atual do original
-        int halfHP = Mathf.Max(1, health.CurrentHealth / 2);
-
-        // Cura ao reagrupar (usa DummyHealth internamente se possível)
-        // Nota: DummyHealth não tem método de cura, mas podemos simular
-        int healAmount = Mathf.RoundToInt(health.maxHealth * reformHealPercent);
-        Debug.Log("[SHARD SWARM] Bônus de reagrupamento: +" + healAmount + " HP");
-
-        // Fragmentos voltam às posições originais (a órbita cuida disso no próximo frame)
-    }
 
 
     void Die()

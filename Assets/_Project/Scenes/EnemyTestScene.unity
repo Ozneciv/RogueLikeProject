@@ -4412,6 +4412,10 @@ PrefabInstance:
       propertyPath: player
       value: 
       objectReference: {fileID: 129002314}
+    - target: {fileID: 2703508351237985606, guid: 1430e281a0db67e469fe83fcfc069ff6, type: 3}
+      propertyPath: spinSpeed
+      value: 500
+      objectReference: {fileID: 0}
     - target: {fileID: 5902058234240059472, guid: 1430e281a0db67e469fe83fcfc069ff6, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0

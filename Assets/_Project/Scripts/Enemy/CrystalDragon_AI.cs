@@ -27,7 +27,7 @@ public class CrystalDragon_AI : MonoBehaviour
 
     [Header("Movimento")]
     public float groundSpeed = 5f;
-    public float rotationSpeed = 5f;
+    public float rotationSpeed = 1.0f;
     public float flightCooldown = 8f;
     private float flightCooldownTimer = 0f;
 
@@ -69,8 +69,18 @@ public class CrystalDragon_AI : MonoBehaviour
     [Tooltip("Animator do modelo — trigger de voo")]
     public Animator modelAnimator;
     public string flightAnimTrigger = "Fly";
+    [Tooltip("Trigger de animação do Tail Sweep")]
+    public string tailSweepAnimTrigger = "TailSweep";
 
-    [Header("Spike Rate")]
+    [Header("Tail Sweep")]
+    [Tooltip("Ângulo total varrido pelo dragão durante o sweep (graus)")]
+    public float tailSweepArcDegrees = 240f;
+    [Tooltip("Duração do arco de rotação do sweep (segundos)")]
+    public float tailSweepDuration = 0.55f;
+    [Tooltip("Pausa de telegraph antes de iniciar o spin (segundos)")]
+    public float tailSweepTelegraph = 0.35f;
+    [Tooltip("Pausa de recovery após o sweep (segundos)")]
+    public float tailSweepRecovery = 0.3f;
     [Tooltip("Cooldown mínimo entre volleys quando na distância ideal (segundos)")]
     public float spikeCooldownMin = 2f;
     [Tooltip("Cooldown máximo entre volleys quando fora da distância ideal (segundos)")]
@@ -81,6 +91,8 @@ public class CrystalDragon_AI : MonoBehaviour
     public int spikeCount = 3;
     public float spikeInterval = 0.15f;
     public float tailHitRadius = 2.5f;
+    public GameObject attackEffect;
+    public Transform attackPoint;
 
     [Header("Ataque frontal")]
     [Tooltip("Origem das crystal spikes. Se null, usa a posição do próprio inimigo.")]
@@ -363,9 +375,9 @@ public class CrystalDragon_AI : MonoBehaviour
 
         if (direction != Vector3.zero)
         {
-            currentYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            Quaternion targetRotation = Quaternion.Euler(0f, currentYaw, 0f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            float targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            currentYaw = Mathf.LerpAngle(currentYaw, targetYaw, rotationSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
         }
 
         Vector3 velocity = direction * speed;
@@ -507,26 +519,53 @@ public class CrystalDragon_AI : MonoBehaviour
         isChargingForTail = true;
         tailTimer = tailCooldown;
 
-        Debug.Log("[CRYSTAL DRAGON] Tail Sweep! Girando e batendo nas laterais.");
+        Debug.Log("[CRYSTAL DRAGON] Tail Sweep! Telegraph.");
         rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
 
-        yield return new WaitForSeconds(0.25f);
+        // Dispara trigger de animação
+        if (modelAnimator != null && !string.IsNullOrEmpty(tailSweepAnimTrigger))
+            modelAnimator.SetTrigger(tailSweepAnimTrigger);
 
-        Collider[] hits = Physics.OverlapSphere(transform.position, tailHitRadius);
-        foreach (Collider hit in hits)
+        // Telegraph — dragão para e "carrega" o giro
+        yield return new WaitForSeconds(tailSweepTelegraph);
+
+        // Arco de rotação física
+        float elapsed = 0f;
+        float startYaw = currentYaw;
+        bool hitDealt = false;
+
+        while (elapsed < tailSweepDuration)
         {
-            if (hit.CompareTag("Player"))
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / tailSweepDuration);
+            currentYaw = startYaw + tailSweepArcDegrees * t;
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+
+            // Verifica hit durante toda a duração do giro
+            if (!hitDealt)
             {
-                PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
-                if (playerHealth != null)
+                Collider[] hits = Physics.OverlapSphere(transform.position, tailHitRadius);
+                foreach (Collider hit in hits)
                 {
-                    playerHealth.TakeDamage(tailDamage, gameObject);
-                    Debug.Log("[CRYSTAL DRAGON] Tail Sweep acertou o player! Dano: " + tailDamage);
+                    if (hit.CompareTag("Player"))
+                    {
+                        PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
+                        if (playerHealth != null)
+                        {
+                            playerHealth.TakeDamage(tailDamage, gameObject);
+                            Debug.Log("[CRYSTAL DRAGON] Tail Sweep acertou o player! Dano: " + tailDamage);
+                        }
+                        hitDealt = true;
+                        break;
+                    }
                 }
             }
+
+            yield return null;
         }
 
-        yield return new WaitForSeconds(0.25f);
+        // Recovery
+        yield return new WaitForSeconds(tailSweepRecovery);
         isCharging = false;
         isChargingForTail = false;
     }
@@ -600,5 +639,13 @@ public class CrystalDragon_AI : MonoBehaviour
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, flightTriggerDistance);
+    }
+    public void Attack()
+    {
+    Instantiate(
+        attackEffect,
+        attackPoint.position,
+        attackPoint.rotation
+    );
     }
 }
