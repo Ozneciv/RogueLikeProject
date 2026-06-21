@@ -91,6 +91,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8098169881513260187, guid: e50082332ad41084cab3ed3dd91cf705, type: 3}
       insertIndex: -1
       addedObject: {fileID: -1610132883090099434}
+    - targetCorrespondingSourceObject: {fileID: -8098169881513260187, guid: e50082332ad41084cab3ed3dd91cf705, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3588484501910454750}
   m_SourcePrefab: {fileID: 3150474306388093854, guid: e50082332ad41084cab3ed3dd91cf705, type: 3}
 --- !u!1 &5825432386404738263 stripped
 GameObject:
@@ -208,3 +211,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a1698e91a0149048b82706898abc45f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GhostTrail
+--- !u!65 &3588484501910454750
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5825432386404738263}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.116713, y: 1.89908, z: 1.0457699}
+  m_Center: {x: 0.00139153, y: -0.0011000037, z: -0.004368007}
