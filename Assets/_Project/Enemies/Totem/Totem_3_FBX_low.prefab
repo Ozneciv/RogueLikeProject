@@ -253,6 +253,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6444019324506880177}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6631541572568996123}
   m_SourcePrefab: {fileID: 100100000, guid: f0def64dc9dfdd140b8846c13142f5c5, type: 3}
 --- !u!4 &45341532090424219 stripped
 Transform:
@@ -298,6 +301,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 200
+  debugLogDamage: 0
   healthBarSlider: {fileID: 2118708073140547246}
   normalColor: {r: 0.32781482, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -366,10 +370,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Totem
-  icon: {fileID: 0}
-  descricao: "Descri\xE7\xE3o teste teste"
+  enemyData: {fileID: 11400000, guid: e60801ab3bd8cd34e966ea8772e49697, type: 2}
   foiEncontrado: 0
+--- !u!114 &6631541572568996123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 858715619969859873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c39072c66833df4b9af927279331bc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
+  enemyIdentity: {fileID: 0}
+  usarTrigger: 1
+  usarDistancia: 0
+  distanciaDeteccao: 12
+  debugLogs: 0
 --- !u!1001 &3277407914684802703
 PrefabInstance:
   m_ObjectHideFlags: 0

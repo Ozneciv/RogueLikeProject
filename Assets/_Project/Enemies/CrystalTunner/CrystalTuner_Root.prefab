@@ -170,6 +170,8 @@ GameObject:
   - component: {fileID: 7654187917618967714}
   - component: {fileID: 2392645962963919257}
   - component: {fileID: 9046059512224515771}
+  - component: {fileID: 776274540154560791}
+  - component: {fileID: 4670368196561541376}
   m_Layer: 0
   m_Name: CrystalTuner_Root
   m_TagString: Untagged
@@ -255,6 +257,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 10
+  debugLogDamage: 0
   healthBarSlider: {fileID: 8496773146762839671}
   normalColor: {r: 0.3763559, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -317,6 +320,37 @@ MonoBehaviour:
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
+--- !u!114 &776274540154560791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5661634700527789902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  enemyData: {fileID: 11400000, guid: 98ad2b0dd9889fb4ba222ed9f9015374, type: 2}
+  foiEncontrado: 0
+--- !u!114 &4670368196561541376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5661634700527789902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c39072c66833df4b9af927279331bc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
+  enemyIdentity: {fileID: 0}
+  usarTrigger: 1
+  usarDistancia: 0
+  distanciaDeteccao: 12
+  debugLogs: 0
 --- !u!1 &6258267013862446760
 GameObject:
   m_ObjectHideFlags: 0
