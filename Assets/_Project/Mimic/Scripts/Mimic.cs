@@ -9,6 +9,12 @@ namespace MimicSpace
         [Header("Animation")]
         public GameObject legPrefab;
 
+        [Header("Audio")]
+        public AudioClip[] legGenerationSounds;
+        [Tooltip("Volume dos sons de geração das pernas")]
+        [Range(0f, 1f)]
+        public float legSoundVolume = 1f;
+
         [Range(2, 20)]
         public int numberOfLegs = 5;
         [Tooltip("The number of splines per leg")]
@@ -60,7 +66,9 @@ namespace MimicSpace
 
         private void OnValidate()
         {
-            ResetMimic();
+            maxLegs = numberOfLegs * partsPerLeg;
+            minimumAnchoredParts = minimumAnchoredLegs * partsPerLeg;
+            maxLegDistance = newLegRadius * 2.1f;
         }
 
         private void ResetMimic()
@@ -168,6 +176,46 @@ namespace MimicSpace
             newLeg.SetActive(true);
             newLeg.GetComponent<Leg>().Initialize(footPosition, legResolution, maxLegDistance, growCoef, myMimic, lifeTime);
             newLeg.transform.SetParent(myMimic.transform);
+            
+            PlayLegSound(footPosition);
+        }
+
+        void PlayLegSound(Vector3 position)
+        {
+            if (legGenerationSounds == null || legGenerationSounds.Length == 0)
+                return;
+
+            int randIndex = Random.Range(0, legGenerationSounds.Length);
+            AudioClip clipToPlay = legGenerationSounds[randIndex];
+            
+            float pitch = Random.Range(0.9f, 1.1f);
+            
+            // Se for o som 3 (index 2) ou o nome contiver "3", acelera para ficar mais agudo
+            if (randIndex == 2 || (clipToPlay != null && clipToPlay.name.Contains("3")))
+            {
+                pitch = Random.Range(1.4f, 1.6f);
+            }
+
+            if (clipToPlay != null)
+            {
+                PlayClipAtPointWithPitch(clipToPlay, position, pitch, legSoundVolume);
+            }
+        }
+
+        void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+        {
+            GameObject audioObj = new GameObject("TempLegAudio");
+            audioObj.transform.position = position;
+            AudioSource aSource = audioObj.AddComponent<AudioSource>();
+            aSource.clip = clip;
+            aSource.pitch = pitch;
+            aSource.volume = volume;
+            aSource.spatialBlend = 1f; // Som 3D
+            aSource.minDistance = 3f;
+            aSource.maxDistance = 20f;
+            aSource.rolloffMode = AudioRolloffMode.Linear;
+            aSource.Play();
+            Destroy(audioObj, clip.length / Mathf.Abs(pitch));
         }
 
         public void RecycleLeg(GameObject leg)

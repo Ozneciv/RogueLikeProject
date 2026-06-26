@@ -44,11 +44,11 @@ namespace MimicSpace
         public float maxOscillationSpeed;
         float oscillationProgress;
 
-        public Color myColor;
+        [Header("Visuals")]
+        public Color myColor = new Color(0.03f, 0.01f, 0.05f, 1f); // Roxo muito escuro, quase preto
 
         public void Initialize(Vector3 footPosition, int legResolution, float maxLegDistance, float growCoef, Mimic myMimic, float lifeTime)
         {
-            myColor = new Color(0.15f, 0.05f, 0.2f, 1f); // Roxo escuro para combinar com o corpo
             this.footPosition = footPosition;
             this.legResolution = legResolution;
             this.maxLegDistance = maxLegDistance;
@@ -63,11 +63,19 @@ namespace MimicSpace
 
             Material legMaterial = new Material(shader);
             legMaterial.color = myColor;
-            legMaterial.EnableKeyword("_EMISSION");
-            legMaterial.SetColor("_EmissionColor", myColor * 0.5f);
+            
+            // Remove a emissão para não clarear a cor artificialmente
+            legMaterial.DisableKeyword("_EMISSION");
+            legMaterial.SetColor("_EmissionColor", Color.black);
             
             if (legMaterial.HasProperty("_BaseColor"))
                 legMaterial.SetColor("_BaseColor", myColor);
+                
+            // Tira o reflexo (glossiness/smoothness) que reflete o céu e deixa tudo com um "esfumaçado" cinza
+            if (legMaterial.HasProperty("_Smoothness"))
+                legMaterial.SetFloat("_Smoothness", 0f);
+            if (legMaterial.HasProperty("_Glossiness"))
+                legMaterial.SetFloat("_Glossiness", 0f);
 
             this.legLine.material = legMaterial;
             handles = new Vector3[handlesCount];

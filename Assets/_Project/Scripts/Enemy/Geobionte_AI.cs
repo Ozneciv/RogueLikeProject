@@ -148,8 +148,13 @@ public class Geobionte_AI : MonoBehaviour
 
     private Renderer geobionteRenderer;
     private Material geoMaterial;
-    private Color baseColor = new Color(0.15f, 0.05f, 0.2f, 1f); // Preto/Roxo escuro
-    private Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
+    
+    [Header("Cores do Geobionte (Corpo)")]
+    [Tooltip("Cor na forma neutra (andando sem atacar)")]
+    public Color baseColor = new Color(0.03f, 0.01f, 0.05f, 1f); // Preto/Roxo muito escuro
+    [Tooltip("Cor quando se funde ao cristal (modo de ataque)")]
+    public Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
+    
     private int originalLayer;
 
     // ==================== BESTIÁRIO ====================
