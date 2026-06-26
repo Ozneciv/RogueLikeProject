@@ -220,8 +220,39 @@ namespace MimicSpace
 
         public void RecycleLeg(GameObject leg)
         {
-            availableLegPool.Add(leg);
+            if (!availableLegPool.Contains(leg))
+            {
+                availableLegPool.Add(leg);
+            }
             leg.SetActive(false);
+        }
+
+        /// <summary>
+        /// Ativa ou desativa a geração de pernas procedurais e limpa as pernas existentes se desativado.
+        /// </summary>
+        public void SetLegsActive(bool active)
+        {
+            if (active)
+            {
+                enabled = true;
+            }
+            else
+            {
+                enabled = false;
+                
+                // Encontra e recicla todas as pernas ativas
+                Leg[] activeLegs = GetComponentsInChildren<Leg>(true);
+                foreach (Leg leg in activeLegs)
+                {
+                    if (leg.gameObject.activeSelf)
+                    {
+                        RecycleLeg(leg.gameObject);
+                    }
+                }
+                
+                legCount = 0;
+                deployedLegs = 0;
+            }
         }
 
         /// <summary>

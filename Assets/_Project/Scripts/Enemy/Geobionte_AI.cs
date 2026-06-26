@@ -7,10 +7,13 @@ using System.Collections;
 /// 
 /// CICLO DE VIDA:
 /// 1. IDLE: Vaga pelo cenário, não-hostil, não pode ser atacado
-/// 2. SEEKING ORE: Ao detectar o player, busca o minério mais próximo
-/// 3. FUSING: Funde-se ao minério (visual muda, cresce)
-/// 4. TRANSFORMED (Bismutado): Persegue player e cria campos de cristal debuffer
-/// 5. FLEEING: Ao ter HP zerado, foge e some (não morre). Pode respawnar.
+/// 2. SEEKING ORE: Ao detectar o player, busca o minério mais próximo (atacável — 7 hits para impedir)
+/// 3. FUSING: Funde-se ao minério (visual muda, cresce, vira cubo)
+/// 4. TRANSFORMED (Bismutado): Cubo que persegue player e usa golpe giratório horizontal
+/// 5. DEFEATED → Reverte ao Geobionte padrão (esfera passiva)
+/// 6. INTERRUPTED: Se impedido durante SeekingOre, foge para um canto e despawna
+/// 
+/// [SENTINELA] (Semi-boss futuro): Usa as pernas maiores + campo de cristais debuffer
 /// 
 /// COMPONENTES NECESSÁRIOS no Prefab:
 /// - Rigidbody
@@ -32,10 +35,11 @@ public class Geobionte_AI : MonoBehaviour
     public enum GeobionteState
     {
         Idle,           // Vagando pacificamente
-        SeekingOre,     // Buscando minério
+        SeekingOre,     // Buscando minério (atacável — pode ser impedido)
         Fusing,         // Fundindo-se ao minério
         Transformed,    // Bismutado — ataca com debuffs
-        Fleeing         // Fugindo após ser derrotado
+        Fleeing,        // Fugindo após ser derrotado
+        Interrupted     // Impedido de transformar — fugindo para canto e despawnando
     }
 
     [Header("Estado Atual")]
@@ -86,6 +90,18 @@ public class Geobionte_AI : MonoBehaviour
     private OreNode targetOre;
     private bool hasFused = false; // Funde apenas com 1 cristal
 
+    // ==================== PREVENÇÃO (Impedimento de Fusão) ====================
+
+    [Header("Prevenção (Impedimento)")]
+    [Tooltip("Número de hits que o player precisa dar para impedir a fusão")]
+    public int preventionMaxHP = 7;
+    [Tooltip("Velocidade de fuga ao ser impedido (indo para o canto da fase)")]
+    public float interruptedFleeSpeed = 8f;
+
+    private int preventionCurrentHP;
+    private bool isPrevented = false; // Já foi impedido?
+    private Vector3 interruptedTargetCorner; // Canto da fase para onde vai fugir
+
     // ==================== FUSÃO ====================
 
     [Header("Fusão")]
@@ -101,16 +117,43 @@ public class Geobionte_AI : MonoBehaviour
     private int originalPartsPerLeg;
     private float originalNewLegRadius;
 
-    // ==================== BISMUTADO (Transformado) ====================
+    // ==================== BISMUTADO (Transformado — Cubo) ====================
 
-    [Header("Bismutado — Combate")]
+    [Header("Bismutado — Combate (Cubo)")]
     [Tooltip("Velocidade de perseguição ao player")]
     public float chaseSpeed = 4f;
     [Tooltip("Velocidade de rotação")]
     public float rotationSpeed = 8f;
-    [Tooltip("Distância ideal para atacar (criar campo de cristais)")]
-    public float attackRange = 8f;
-    [Tooltip("Cooldown entre criações de campo de cristais")]
+    [Tooltip("Distância ideal para atacar")]
+    public float attackRange = 5f;
+
+    [Header("Bismutado — Golpe Giratório")]
+    [Tooltip("Dano do golpe horizontal giratório")]
+    public int sweepDamage = 8;
+    [Tooltip("Raio do golpe giratório (alcance ao redor do corpo)")]
+    public float sweepRange = 4f;
+    [Tooltip("Cooldown entre golpes giratórios (segundos)")]
+    public float sweepCooldown = 6f;
+    [Tooltip("Duração da animação do golpe (segundos)")]
+    public float sweepDuration = 0.6f;
+    [Tooltip("Cor do indicador visual do golpe")]
+    public Color sweepIndicatorColor = new Color(1f, 0.2f, 0.2f, 0.4f);
+
+    private float sweepTimer = 0f;
+    private bool isSweeping = false;
+
+    // ==================== CONFIGURAÇÃO DO TIPO ====================
+
+    [Header("Configuração de Tipo (Sentinela vs Bismutado)")]
+    [Tooltip("Se true, este Geobionte se comportará como o semi-boss Sentinela. Se false, como o Bismutado padrão.")]
+    public bool isSentinel = false;
+    [Tooltip("Escala do Geobionte Bismutado (cubo) após a fusão")]
+    public float bismutadoScale = 2.0f;
+
+    // ==================== SENTINELA (Semi-boss — Futuro) ====================
+
+    [Header("Sentinela — Campo de Cristais (Semi-boss)")]
+    [Tooltip("Cooldown entre criações de campo de cristais (usado pelo Sentinela)")]
     public float fieldCooldown = 6f;
     [Tooltip("Duração de cada campo de cristais")]
     public float fieldDuration = 10f;
@@ -119,6 +162,12 @@ public class Geobionte_AI : MonoBehaviour
 
     private float fieldTimer = 0f;
     private bool hasSpeedBuff = false;  // Ganhou speed ao roubar do player
+
+    // ==================== VISUAL — MESH ====================
+
+    private GameObject bodyMeshObject; // Referência ao mesh do corpo (esfera ou cubo)
+    private Vector3 originalMeshLocalScale; // Escala original do mesh do corpo
+    private Vector3 mimicBodyLocalScale; // Escala reduzida do mesh do corpo para quando tem pernas
 
     // ==================== FUGA ====================
 
@@ -227,6 +276,9 @@ public class Geobionte_AI : MonoBehaviour
             health.onDeathOverride = OnDefeated;
         }
 
+        // Inicializar prevenção HP
+        preventionCurrentHP = preventionMaxHP;
+
         // Iniciar wandering
         PickNewWanderDirection();
 
@@ -258,6 +310,9 @@ public class Geobionte_AI : MonoBehaviour
             case GeobionteState.Fleeing:
                 HandleFleeing();
                 break;
+            case GeobionteState.Interrupted:
+                HandleInterrupted();
+                break;
         }
     }
 
@@ -277,6 +332,9 @@ public class Geobionte_AI : MonoBehaviour
             case GeobionteState.Fleeing:
                 MoveFlee();
                 break;
+            case GeobionteState.Interrupted:
+                MoveInterrupted();
+                break;
         }
 
         // Manter corpo flutuando para as pernas do Mimic
@@ -295,6 +353,9 @@ public class Geobionte_AI : MonoBehaviour
         {
             PickNewWanderDirection();
         }
+
+        // Se já foi impedido, não busca mais minério
+        if (isPrevented) return;
 
         // Verifica proximidade do player para ativar
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
@@ -321,7 +382,7 @@ public class Geobionte_AI : MonoBehaviour
                 FindNearestOre();
                 if (targetOre != null)
                 {
-                    ChangeState(GeobionteState.SeekingOre);
+                    EnterSeekingOre();
                 }
             }
             // Se já fundiu ou não encontrou minério, continua vagando
@@ -357,6 +418,47 @@ public class Geobionte_AI : MonoBehaviour
     // ESTADO: SEEKING ORE (Buscando Minério)
     // ========================================================================
 
+    /// <summary>
+    /// Entra no estado SeekingOre: torna o Geobionte atacável com prevenção HP.
+    /// O player pode impedir a fusão acertando 7 hits.
+    /// </summary>
+    void EnterSeekingOre()
+    {
+        ChangeState(GeobionteState.SeekingOre);
+
+        // Torna atacável durante a busca — player pode impedir a fusão
+        if (health != null)
+        {
+            // Configura HP de prevenção (7 hits para impedir)
+            health.maxHealth = preventionMaxHP;
+            preventionCurrentHP = preventionMaxHP;
+            health.ResetHealth();
+            health.isInvulnerable = false;
+
+            // Cada hit causa exatamente 1 de dano (7 hits = 7 HP)
+            health.fixedDamageOverride = 1;
+
+            // Override de morte: impedimento ao invés de morte
+            health.onDeathOverride = OnPrevented;
+        }
+
+        // Mudar layer para Enemy — agora pode ser atacado
+        gameObject.layer = originalLayer;
+
+        // Cria health bar de prevenção
+        CreateHealthBarIfNeeded();
+
+        // Cor da barra: amarela para indicar prevenção (diferente do vermelho de combate)
+        if (health != null && health.healthBarSlider != null)
+        {
+            Image fillImage = health.healthBarSlider.fillRect?.GetComponent<Image>();
+            if (fillImage != null)
+                fillImage.color = new Color(1f, 0.8f, 0.2f, 1f); // Amarelo/dourado
+        }
+
+        Debug.Log("[GEOBIONTE] Buscando minério — ATACÁVEL! " + preventionMaxHP + " hits para impedir.");
+    }
+
     void HandleSeekingOre()
     {
         // Verifica se o minério alvo ainda é válido
@@ -367,6 +469,7 @@ public class Geobionte_AI : MonoBehaviour
             if (targetOre == null)
             {
                 Debug.Log("[GEOBIONTE] Sem minério disponível! Voltando a vagar.");
+                ExitSeekingOre();
                 ChangeState(GeobionteState.Idle);
                 return;
             }
@@ -380,8 +483,192 @@ public class Geobionte_AI : MonoBehaviour
         if (distToOre <= oreReachDistance)
         {
             Debug.Log("[GEOBIONTE] Alcançou o minério! Iniciando fusão...");
+            ExitSeekingOre();
             StartCoroutine(FusionSequence());
         }
+    }
+
+    /// <summary>
+    /// Sai do estado SeekingOre: torna invulnerável novamente e esconde a health bar.
+    /// </summary>
+    void ExitSeekingOre()
+    {
+        if (health != null)
+        {
+            health.isInvulnerable = true;
+            health.fixedDamageOverride = 0; // Volta ao dano normal
+
+            // Esconde health bar de prevenção
+            if (health.healthBarSlider != null)
+                health.healthBarSlider.gameObject.SetActive(false);
+        }
+
+        // Volta para layer Default (não atacável)
+        gameObject.layer = LayerMask.NameToLayer("Default");
+    }
+
+    // ========================================================================
+    // PREVENÇÃO — Player impediu a fusão
+    // ========================================================================
+
+    /// <summary>
+    /// Chamado quando o player dá 7 hits no Geobionte enquanto ele busca minério.
+    /// O Geobionte é impedido de transformar, foge para um canto da fase e despawna.
+    /// </summary>
+    void OnPrevented()
+    {
+        Debug.Log("[GEOBIONTE] IMPEDIDO! Player conseguiu impedir a fusão!");
+
+        isPrevented = true;
+        hasFused = true; // Marca como fundido para não tentar de novo
+
+        // Torna invulnerável (não pode ser atacado durante a fuga)
+        if (health != null)
+        {
+            health.isInvulnerable = true;
+            if (health.healthBarSlider != null)
+                health.healthBarSlider.gameObject.SetActive(false);
+        }
+
+        // Volta para layer Default (não atacável)
+        gameObject.layer = LayerMask.NameToLayer("Default");
+
+        // Encontra o canto mais distante da fase
+        interruptedTargetCorner = FindFarthestCorner();
+
+        // Entra no estado Interrupted
+        ChangeState(GeobionteState.Interrupted);
+
+        Debug.Log("[GEOBIONTE] Fugindo para o canto em " + interruptedTargetCorner + " e despawnando...");
+    }
+
+    /// <summary>
+    /// Encontra o canto mais distante da fase usando os limites dos renderers da cena
+    /// ou os colliders de chão.
+    /// </summary>
+    Vector3 FindFarthestCorner()
+    {
+        // Tenta encontrar os limites da sala usando o chão ou as paredes
+        // Busca todos os colliders de chão (normalmente no layer Default ou com tag "Ground")
+        Bounds roomBounds = new Bounds(transform.position, Vector3.one * 10f);
+        bool foundBounds = false;
+
+        // Busca pelo chão/paredes da sala
+        Collider[] allColliders = FindObjectsByType<Collider>(FindObjectsSortMode.None);
+        foreach (Collider col in allColliders)
+        {
+            // Ignora triggers e o próprio Geobionte
+            if (col.isTrigger) continue;
+            if (col.gameObject == gameObject) continue;
+            if (col.GetComponent<Rigidbody>() != null) continue; // Ignora objetos dinâmicos
+
+            if (!foundBounds)
+            {
+                roomBounds = col.bounds;
+                foundBounds = true;
+            }
+            else
+            {
+                roomBounds.Encapsulate(col.bounds);
+            }
+        }
+
+        // Define os 4 cantos no nível do chão
+        float y = transform.position.y;
+        Vector3[] corners = new Vector3[4]
+        {
+            new Vector3(roomBounds.min.x, y, roomBounds.min.z),
+            new Vector3(roomBounds.min.x, y, roomBounds.max.z),
+            new Vector3(roomBounds.max.x, y, roomBounds.min.z),
+            new Vector3(roomBounds.max.x, y, roomBounds.max.z)
+        };
+
+        // Encontra o canto mais distante do player
+        Vector3 farthest = corners[0];
+        float maxDist = 0f;
+        foreach (Vector3 corner in corners)
+        {
+            float dist = Vector3.Distance(playerTransform.position, corner);
+            if (dist > maxDist)
+            {
+                maxDist = dist;
+                farthest = corner;
+            }
+        }
+
+        return farthest;
+    }
+
+    void HandleInterrupted()
+    {
+        // Verifica se chegou ao canto (ignora Y)
+        Vector2 pos2D = new Vector2(transform.position.x, transform.position.z);
+        Vector2 target2D = new Vector2(interruptedTargetCorner.x, interruptedTargetCorner.z);
+        float dist = Vector2.Distance(pos2D, target2D);
+
+        if (dist <= 2f)
+        {
+            Debug.Log("[GEOBIONTE] Chegou ao canto da fase. Despawnando...");
+            StartCoroutine(DespawnSequence());
+        }
+    }
+
+    void MoveInterrupted()
+    {
+        // Move em direção ao canto alvo
+        Vector3 direction = (interruptedTargetCorner - transform.position).normalized;
+        direction.y = 0;
+
+        Vector3 targetVelocity = direction * interruptedFleeSpeed;
+        rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+        UpdateMimicVelocity();
+
+        // Rotação na direção da fuga
+        if (direction != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.fixedDeltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Sequência de despawn: encolhe gradualmente e se destrói.
+    /// </summary>
+    IEnumerator DespawnSequence()
+    {
+        // Para o movimento
+        rb.linearVelocity = Vector3.zero;
+        UpdateMimicVelocity();
+
+        // Encolhe até sumir
+        float shrinkDuration = 1f;
+        float elapsed = 0f;
+        Vector3 startScale = transform.localScale;
+
+        while (elapsed < shrinkDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / shrinkDuration;
+
+            // Encolhe com easing
+            float easedT = t * t;
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, easedT);
+
+            // Escurece gradualmente
+            if (geoMaterial != null)
+            {
+                Color fadeColor = Color.Lerp(baseColor, Color.black, easedT);
+                geoMaterial.color = fadeColor;
+                geoMaterial.SetColor("_EmissionColor", fadeColor * 0.5f);
+                if (geoMaterial.HasProperty("_BaseColor"))
+                    geoMaterial.SetColor("_BaseColor", fadeColor);
+            }
+
+            yield return null;
+        }
+
+        Debug.Log("[GEOBIONTE] Despawnado após ser impedido.");
+        Destroy(gameObject);
     }
 
     void MoveToOre()
@@ -451,7 +738,8 @@ public class Geobionte_AI : MonoBehaviour
         // Animação de fusão: cresce gradualmente
         float elapsed = 0f;
         Vector3 startScale = transform.localScale;
-        Vector3 endScale = originalScale * transformedScale;
+        float targetScaleMultiplier = isSentinel ? transformedScale : bismutadoScale;
+        Vector3 endScale = originalScale * targetScaleMultiplier;
 
         while (elapsed < fusionDuration)
         {
@@ -475,35 +763,62 @@ public class Geobionte_AI : MonoBehaviour
             yield return null;
         }
 
-        // TRANSFORMAÇÃO COMPLETA → Bismutado
+        // TRANSFORMAÇÃO COMPLETA
         transform.localScale = endScale;
 
-        // Transforma as pernas do Mimic para forma Bismutado
-        TransformMimicLegs();
+        if (!isSentinel)
+        {
+            // Troca o mesh do corpo: esfera → cubo (Bismutado)
+            SwapBodyMeshToCube();
+            // Desativa as pernas para o Bismutado
+            if (mimicComponent != null)
+            {
+                mimicComponent.SetLegsActive(false);
+            }
+        }
+        else
+        {
+            // [SENTINELA] Transforma as pernas do Mimic
+            TransformMimicLegs();
+        }
 
         TransformIntoBismutado();
     }
 
     void TransformIntoBismutado()
     {
-        // Ativa combate
+        // Ativa combate — restaura HP de combate (diferente do HP de prevenção)
         if (health != null)
         {
+            health.maxHealth = 100; // HP de combate (original do DummyHealth)
             health.isInvulnerable = false;
+            health.fixedDamageOverride = 0; // Volta ao dano normal da arma
             health.ResetHealth();
+
+            // Override de morte: Bismutado derrotado → volta ao Geobionte padrão
+            health.onDeathOverride = OnDefeated;
         }
 
         // Cria health bar e damage canvas por código se não existir
         CreateHealthBarIfNeeded();
 
+        // Restaura cor da barra para vermelho (combate)
+        if (health != null && health.healthBarSlider != null)
+        {
+            Image fillImage = health.healthBarSlider.fillRect?.GetComponent<Image>();
+            if (fillImage != null)
+                fillImage.color = Color.red;
+        }
+
         // Mudar layer para Enemy — agora pode ser atacado pelo WeaponHitbox
         gameObject.layer = originalLayer;
 
         // Reset de timers
-        fieldTimer = 0f;
+        sweepTimer = 0f;
+        isSweeping = false;
 
         ChangeState(GeobionteState.Transformed);
-        Debug.Log("[GEOBIONTE] TRANSFORMAÇÃO COMPLETA! Agora é BISMUTADO — modo de combate ativado!");
+        Debug.Log("[BISMUTADO] TRANSFORMAÇÃO COMPLETA! Forma de CUBO — golpe giratório ativado!");
     }
 
     // ========================================================================
@@ -515,17 +830,20 @@ public class Geobionte_AI : MonoBehaviour
         if (health != null && health.CurrentHealth <= 0) return;
 
         // Timers
+        if (sweepTimer > 0) sweepTimer -= Time.deltaTime;
         if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
 
         // Rotação para olhar o player
         HandleRotation();
 
-        // Combate
+        // Combate — golpe giratório / campo de cristais
         HandleCombat();
     }
 
     void HandleRotation()
     {
+        if (isSweeping) return; // Não rotaciona durante o golpe
+
         Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
         dirToPlayer.y = 0;
 
@@ -539,11 +857,13 @@ public class Geobionte_AI : MonoBehaviour
     void MoveChasePlayer()
     {
         if (health != null && health.CurrentHealth <= 0) return;
+        if (isSweeping) return; // Não se move durante o golpe
 
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+        float effectiveAttackRange = isSentinel ? attackRange : sweepRange;
 
         // Persegue o player se está fora do range de ataque
-        if (distToPlayer > attackRange * 0.6f)
+        if (distToPlayer > effectiveAttackRange * 0.8f)
         {
             Vector3 direction = (playerTransform.position - transform.position).normalized;
             direction.y = 0;
@@ -565,13 +885,187 @@ public class Geobionte_AI : MonoBehaviour
     {
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        // Cria campo de cristais quando está perto e cooldown pronto
+        // Cria campo de cristais quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
         if (distToPlayer <= attackRange && fieldTimer <= 0)
         {
             CreateCrystalField();
         }
+
+        // Golpe giratório quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
+        if (distToPlayer <= sweepRange && sweepTimer <= 0 && !isSweeping)
+        {
+            StartCoroutine(SweepAttack());
+        }
     }
 
+    // ========================================================================
+    // GOLPE GIRATÓRIO (Bismutado)
+    // ========================================================================
+
+    /// <summary>
+    /// Executa o golpe giratório horizontal ao redor do corpo do Bismutado.
+    /// Cria um indicador visual (disco rotativo) e verifica colisão com o player.
+    /// </summary>
+    IEnumerator SweepAttack()
+    {
+        isSweeping = true;
+        sweepTimer = sweepCooldown;
+
+        // Para o movimento durante o golpe
+        rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+        UpdateMimicVelocity();
+
+        Debug.Log("[BISMUTADO] Golpe giratório!");
+
+        // === FASE 1: Indicador de aviso (0.3s) ===
+        // Cria disco visual de aviso na posição do corpo
+        GameObject warningDisc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        warningDisc.name = "SweepWarning";
+        warningDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+        warningDisc.transform.localScale = new Vector3(0.1f, 0.02f, 0.1f); // Começa pequeno
+
+        // Remove collider do visual (não é hitbox)
+        Collider warningCol = warningDisc.GetComponent<Collider>();
+        if (warningCol != null) Destroy(warningCol);
+
+        // Material de aviso (amarelo pulsante)
+        Renderer warningRenderer = warningDisc.GetComponent<Renderer>();
+        Material warningMat = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.3f));
+        warningRenderer.material = warningMat;
+
+        // Cresce o disco de aviso
+        float warningDuration = 0.3f;
+        float elapsed = 0f;
+        while (elapsed < warningDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / warningDuration;
+
+            // Segue a posição do Bismutado
+            if (warningDisc != null)
+            {
+                warningDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+                float scale = Mathf.Lerp(0.1f, sweepRange * 2f, t);
+                warningDisc.transform.localScale = new Vector3(scale, 0.02f, scale);
+            }
+
+            yield return null;
+        }
+
+        // Destrói aviso
+        if (warningDisc != null) Destroy(warningDisc);
+
+        // === FASE 2: Golpe (sweepDuration) ===
+        // Cria o disco de ataque (vermelho)
+        GameObject sweepDisc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        sweepDisc.name = "SweepHitbox";
+        sweepDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+        sweepDisc.transform.localScale = new Vector3(sweepRange * 2f, 0.05f, sweepRange * 2f);
+
+        // Remove collider do visual
+        Collider sweepCol = sweepDisc.GetComponent<Collider>();
+        if (sweepCol != null) Destroy(sweepCol);
+
+        // Material de ataque (vermelho translúcido)
+        Renderer sweepRenderer = sweepDisc.GetComponent<Renderer>();
+        Material sweepMat = CreateSweepMaterial(sweepIndicatorColor);
+        sweepRenderer.material = sweepMat;
+
+        // Verifica se o player está no alcance — aplica dano
+        bool playerHit = false;
+        elapsed = 0f;
+        while (elapsed < sweepDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / sweepDuration;
+
+            // Rotaciona o Bismutado durante o golpe (giro rápido)
+            transform.Rotate(0, 720f * Time.deltaTime, 0);
+
+            // Segue a posição do corpo
+            if (sweepDisc != null)
+            {
+                sweepDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+
+                // Pulsação do disco
+                float pulse = 1f + Mathf.Sin(t * Mathf.PI * 4f) * 0.1f;
+                sweepDisc.transform.localScale = new Vector3(sweepRange * 2f * pulse, 0.05f, sweepRange * 2f * pulse);
+            }
+
+            // Detecta player no alcance (apenas uma vez por golpe)
+            if (!playerHit && playerTransform != null)
+            {
+                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+                if (distToPlayer <= sweepRange)
+                {
+                    // Aplica dano ao player
+                    PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        playerHealth.TakeDamage(sweepDamage, gameObject);
+                        playerHit = true;
+                        Debug.Log("[BISMUTADO] Golpe giratório acertou! Dano: " + sweepDamage);
+                    }
+                }
+            }
+
+            yield return null;
+        }
+
+        // Limpa visuais
+        if (sweepDisc != null) Destroy(sweepDisc);
+        if (sweepMat != null) Destroy(sweepMat);
+        if (warningMat != null) Destroy(warningMat);
+
+        isSweeping = false;
+    }
+
+    /// <summary>
+    /// Cria um material transparente para os indicadores visuais do golpe giratório.
+    /// </summary>
+    Material CreateSweepMaterial(Color color)
+    {
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) shader = Shader.Find("Standard");
+
+        Material mat = new Material(shader);
+
+        // Configurar transparência
+        if (shader.name.Contains("Universal"))
+        {
+            mat.SetFloat("_Surface", 1);
+            mat.SetFloat("_Blend", 0);
+            mat.SetFloat("_ZWrite", 0);
+            mat.SetFloat("_AlphaClip", 0);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            mat.SetColor("_BaseColor", color);
+        }
+        else
+        {
+            mat.SetFloat("_Mode", 3);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.EnableKeyword("_ALPHABLEND_ON");
+            mat.renderQueue = 3000;
+        }
+
+        mat.color = color;
+        mat.EnableKeyword("_EMISSION");
+        mat.SetColor("_EmissionColor", color * 2f);
+
+        return mat;
+    }
+
+    // ========================================================================
+    // CAMPO DE CRISTAIS — [SENTINELA] (Semi-boss, futuro)
+    // ========================================================================
+
+    /// <summary>
+    /// [SENTINELA] Cria campo de cristais debuffer. Reservado para o Geobionte Sentinela.
+    /// </summary>
     void CreateCrystalField()
     {
         fieldTimer = fieldCooldown;
@@ -588,32 +1082,35 @@ public class Geobionte_AI : MonoBehaviour
         field.ownerBismutado = this;
         field.stealBuffTime = 3f; // 3 segundos
 
-        Debug.Log("[BISMUTADO] Campo de cristais criado na posição do player!");
+        Debug.Log($"[{(isSentinel ? "SENTINELA" : "BISMUTADO")}] Campo de cristais criado na posição do player!");
     }
 
     /// <summary>
     /// Chamado pelo BismuthCrystalField quando rouba um buff de speed do player.
-    /// O Bismutado ganha um buff de velocidade para si.
+    /// O Bismutado/Sentinela ganha um buff de velocidade para si.
     /// </summary>
     public void OnStoleSpeedBuff()
     {
         hasSpeedBuff = true;
-        Debug.Log("[BISMUTADO] Ganhou buff de velocidade roubado do player!");
+        Debug.Log($"[{(isSentinel ? "SENTINELA" : "BISMUTADO")}] Ganhou buff de velocidade roubado do player!");
     }
 
     // ========================================================================
-    // DERROTA → FUGA (não morre)
+    // DERROTA → REVERSÃO (Bismutado volta ao Geobionte padrão)
     // ========================================================================
 
     /// <summary>
-    /// Chamado pelo DummyHealth.onDeathOverride quando HP chega a 0.
-    /// Ao invés de morrer, o Geobionte "desmerge" e foge.
+    /// Chamado pelo DummyHealth.onDeathOverride quando HP do Bismutado chega a 0.
+    /// Ao invés de morrer, o Bismutado reverte ao Geobionte padrão (forma base).
     /// </summary>
     void OnDefeated()
     {
-        Debug.Log("[BISMUTADO] Derrotado! Desfazendo fusão e fugindo...");
+        Debug.Log("[BISMUTADO] Derrotado! Revertendo ao Geobionte padrão...");
 
-        // 1. Dropar loot antes de fugir
+        // Cancela qualquer sweep em andamento
+        isSweeping = false;
+
+        // 1. Dropar loot
         EnemyDrops drops = GetComponent<EnemyDrops>()
                         ?? GetComponentInChildren<EnemyDrops>()
                         ?? GetComponentInParent<EnemyDrops>();
@@ -658,9 +1155,101 @@ public class Geobionte_AI : MonoBehaviour
             }
         }
 
-        // 4. Voltar ao visual base (encolher)
-        StartCoroutine(FleeSequence());
+        // 4. Reverter ao Geobionte padrão (animação)
+        StartCoroutine(RevertToBaseSequence());
     }
+
+    /// <summary>
+    /// Sequência de reversão: Bismutado (cubo) → Geobionte padrão (esfera).
+    /// Encolhe, troca mesh, muda cor e volta ao estado Idle.
+    /// </summary>
+    IEnumerator RevertToBaseSequence()
+    {
+        // Torna invulnerável durante a reversão
+        if (health != null)
+        {
+            health.isInvulnerable = true;
+        }
+
+        // Esconde health bar
+        if (health != null && health.healthBarSlider != null)
+        {
+            health.healthBarSlider.gameObject.SetActive(false);
+        }
+
+        // Volta para layer Default (não atacável)
+        gameObject.layer = LayerMask.NameToLayer("Default");
+
+        // Encolhe de volta ao tamanho original + muda cor
+        float shrinkDuration = 0.8f;
+        float elapsed = 0f;
+        Vector3 startScale = transform.localScale;
+
+        while (elapsed < shrinkDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / shrinkDuration;
+            float easedT = t * t * (3f - 2f * t); // smoothstep
+            transform.localScale = Vector3.Lerp(startScale, originalScale, easedT);
+
+            // Volta à cor base
+            if (geoMaterial != null)
+            {
+                Color currentColor = Color.Lerp(transformedColor, baseColor, easedT);
+                geoMaterial.color = currentColor;
+                geoMaterial.SetColor("_EmissionColor", currentColor * 0.5f);
+                if (geoMaterial.HasProperty("_BaseColor"))
+                    geoMaterial.SetColor("_BaseColor", currentColor);
+            }
+
+            yield return null;
+        }
+
+        transform.localScale = originalScale;
+
+        // Troca o mesh de volta: cubo → esfera
+        SwapBodyMeshToSphere();
+
+        // Restaura pernas do Mimic
+        if (mimicComponent != null)
+        {
+            if (isSentinel)
+            {
+                RestoreMimicLegs();
+            }
+            else
+            {
+                mimicComponent.SetLegsActive(true);
+            }
+        }
+
+        // Reset de estado para Geobionte padrão
+        hasFused = false;
+        isPrevented = false; // Permite buscar minérios novamente
+        absorbedOreValue = 0;
+        hasSpeedBuff = false;
+        targetOre = null;
+        sweepTimer = 0f;
+        isSweeping = false;
+
+        // Procura por minérios na sala novamente
+        FindNearestOre();
+        if (targetOre != null)
+        {
+            EnterSeekingOre();
+        }
+        else
+        {
+            ChangeState(GeobionteState.Idle);
+            PickNewWanderDirection();
+        }
+
+        Debug.Log("[GEOBIONTE] Revertido ao Geobionte padrão! Procurando novos minérios ou vagando pacificamente.");
+    }
+
+    // ========================================================================
+    // FUGA — [SENTINELA] (mantido para o semi-boss)
+    // ========================================================================
 
     IEnumerator FleeSequence()
     {
@@ -785,6 +1374,8 @@ public class Geobionte_AI : MonoBehaviour
         isActivated = false;
         hasSpeedBuff = false;
         hasFused = false;
+        isPrevented = false;
+        preventionCurrentHP = preventionMaxHP;
         absorbedOreValue = 0;
         targetOre = null;
         fieldTimer = 0f;
@@ -858,11 +1449,20 @@ public class Geobionte_AI : MonoBehaviour
         
         if (geobionteRenderer != null)
         {
+            // Guardar referência ao mesh do corpo
+            bodyMeshObject = geobionteRenderer.gameObject;
+            
+            // Salva escala original do mesh (completa, antes de reduzir)
+            originalMeshLocalScale = geobionteRenderer.transform.localScale;
+
             // Se usar o Mimic, reduz a esfera para 1/3 do tamanho para servir de corpo central
             if (mimicComponent != null)
             {
                 geobionteRenderer.transform.localScale *= 0.33f;
             }
+            
+            // Salva a escala do corpo com pernas (reduzida)
+            mimicBodyLocalScale = geobionteRenderer.transform.localScale;
 
             // URP usa "Universal Render Pipeline/Lit", fallback para "Standard"
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -882,6 +1482,98 @@ public class Geobionte_AI : MonoBehaviour
 
             geobionteRenderer.material = geoMaterial;
         }
+    }
+
+    // ========================================================================
+    // TROCA DE MESH (Esfera ↔ Cubo)
+    // ========================================================================
+
+    /// <summary>
+    /// Troca o mesh do corpo de esfera para cubo (transformação Bismutado).
+    /// Preserva a hierarquia, escala e material.
+    /// </summary>
+    void SwapBodyMeshToCube()
+    {
+        if (bodyMeshObject == null) return;
+
+        // Guarda referências
+        Transform parent = bodyMeshObject.transform.parent;
+        Vector3 localPos = bodyMeshObject.transform.localPosition;
+        Quaternion localRot = bodyMeshObject.transform.localRotation;
+
+        // Destrói o mesh antigo (esfera)
+        Destroy(bodyMeshObject);
+
+        // Cria cubo
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.name = "BismutadoBody";
+        cube.transform.SetParent(parent);
+        cube.transform.localPosition = localPos;
+        cube.transform.localScale = originalMeshLocalScale; // Usa escala original não-reduzida
+        cube.transform.localRotation = localRot;
+
+        // Remove o collider do cubo (o Geobionte já tem seu próprio collider)
+        Collider cubeCol = cube.GetComponent<Collider>();
+        if (cubeCol != null) Destroy(cubeCol);
+
+        // Aplica o material existente
+        Renderer cubeRenderer = cube.GetComponent<Renderer>();
+        if (cubeRenderer != null && geoMaterial != null)
+        {
+            cubeRenderer.material = geoMaterial;
+        }
+
+        // Atualiza referências
+        bodyMeshObject = cube;
+        geobionteRenderer = cubeRenderer;
+
+        Debug.Log("[BISMUTADO] Mesh do corpo trocado para CUBO (tamanho original).");
+    }
+
+    /// <summary>
+    /// Troca o mesh do corpo de cubo para esfera (reversão ao Geobionte padrão).
+    /// Preserva a hierarquia, escala e material.
+    /// </summary>
+    void SwapBodyMeshToSphere()
+    {
+        if (bodyMeshObject == null) return;
+
+        // Guarda referências
+        Transform parent = bodyMeshObject.transform.parent;
+        Vector3 localPos = bodyMeshObject.transform.localPosition;
+        Quaternion localRot = bodyMeshObject.transform.localRotation;
+
+        // Destrói o mesh antigo (cubo)
+        Destroy(bodyMeshObject);
+
+        // Cria esfera
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.name = "GeobionteBody";
+        sphere.transform.SetParent(parent);
+        sphere.transform.localPosition = localPos;
+        sphere.transform.localScale = mimicBodyLocalScale; // Usa escala reduzida para as pernas do Mimic
+        sphere.transform.localRotation = localRot;
+
+        // Remove o collider da esfera (o Geobionte já tem seu próprio collider)
+        Collider sphereCol = sphere.GetComponent<Collider>();
+        if (sphereCol != null) Destroy(sphereCol);
+
+        // Aplica o material existente (com cor base)
+        Renderer sphereRenderer = sphere.GetComponent<Renderer>();
+        if (sphereRenderer != null && geoMaterial != null)
+        {
+            geoMaterial.color = baseColor;
+            geoMaterial.SetColor("_EmissionColor", baseColor * 0.5f);
+            if (geoMaterial.HasProperty("_BaseColor"))
+                geoMaterial.SetColor("_BaseColor", baseColor);
+            sphereRenderer.material = geoMaterial;
+        }
+
+        // Atualiza referências
+        bodyMeshObject = sphere;
+        geobionteRenderer = sphereRenderer;
+
+        Debug.Log("[GEOBIONTE] Mesh do corpo restaurado para ESFERA (tamanho reduzido).");
     }
 
     // ========================================================================
@@ -918,7 +1610,8 @@ public class Geobionte_AI : MonoBehaviour
 
         if (hitGround)
         {
-            float targetY = hit.point.y + bodyHoverHeight;
+            float currentHoverHeight = (currentState == GeobionteState.Transformed && !isSentinel) ? bodyHoverHeight * 0.5f : bodyHoverHeight;
+            float targetY = hit.point.y + currentHoverHeight;
             float yError = targetY - transform.position.y;
             float yVelocity = Mathf.Clamp(yError * hoverLerpSpeed, -10f, 10f);
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, yVelocity, rb.linearVelocity.z);
