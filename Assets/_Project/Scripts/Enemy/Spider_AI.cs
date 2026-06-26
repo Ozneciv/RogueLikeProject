@@ -61,6 +61,7 @@ public class Spider_AI : MonoBehaviour
     private float leapTimer = 0f;
     private float retreatTimer = 0f;
     private bool hasHitThisLeap = false;
+    private bool isBuffed = false;
 
     public bool IsLeaping => isLeaping;
     public bool IsRetreating => isRetreating;
@@ -283,6 +284,24 @@ public class Spider_AI : MonoBehaviour
         yield return new WaitForSeconds(0.2f);
 
         isRetreating = false;
+    }
+
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            moveSpeed *= 1.3f;
+            leapCooldown *= 0.7f;
+            Debug.Log("[SPIDER] BUFFED! Velocidade +30%, Cooldown do Leap -30%");
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            moveSpeed /= 1.3f;
+            leapCooldown /= 0.7f;
+            Debug.Log("[SPIDER] UNBUFFED! Velocidade e Cooldown restaurados");
+        }
     }
 
     // Visualização do range no Editor
