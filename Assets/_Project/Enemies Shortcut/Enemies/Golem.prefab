@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 4728308152487144125}
   - component: {fileID: 343962479280987070}
   - component: {fileID: 9160692238743494521}
+  - component: {fileID: 2299441470955144535}
   m_Layer: 6
   m_Name: Golem
   m_TagString: Untagged
@@ -158,6 +159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 100
+  debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 0.45705712, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -229,10 +231,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Golem
-  icon: {fileID: 21300000, guid: ed0bc8cd41f91174fb5eff00e69d5caf, type: 3}
-  descricao: "Golem descr\xE7\xE3o teste"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
+--- !u!114 &2299441470955144535
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748345383327806496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7e6d1907d8dca54e845f512b0ef738f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GolemProceduralAnimation
+  hipsBone: {fileID: 0}
+  leftLeg: {fileID: 0}
+  leftCalf: {fileID: 0}
+  rightLeg: {fileID: 0}
+  rightCalf: {fileID: 0}
+  leftArm: {fileID: 0}
+  rightArm: {fileID: 0}
+  walkCycleSpeed: 5.5
+  swingAngle: 22
+  liftAngle: 18
+  bodyBounceAmount: 0.08
+  bodySwayAngle: 4
+  transitionSmoothness: 5
+  armSwingAngle: 10
+  armPhaseDelay: 1.1
+  armInertiaFactor: 3
+  armRotationAxis: {x: 1, y: 0, z: 0}
+  hipRotationAxis: {x: 1, y: 0, z: 0}
+  calfRotationAxis: {x: 1, y: 0, z: 0}
+  bodySwayAxis: {x: 0, y: 0, z: 1}
+  invertLeftSwing: 0
+  invertRightSwing: 0
+  invertLeftKnee: 0
+  invertRightKnee: 0
+  attackLeanBackAngle: -35
+  attackSlamForwardAngle: 45
+  attackLeanAxis: {x: 1, y: 0, z: 0}
+  attackDuration: 1
+  stunRiseHeight: 0.4
+  stunLegFoldAngle: 30
+  stunCastDuration: 1.5
 --- !u!1001 &5881570581251759777
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -31,6 +31,8 @@ public class SpiderDashVFX : MonoBehaviour
     public Color afterImageColor = new Color(0.5f, 0.2f, 0.6f, 0.4f);
     [Tooltip("Duracao de cada after-image em segundos")]
     public float afterImageDuration = 0.2f;
+    [Tooltip("Multiplicador de escala das after-images. Ajuste se o ghost mesh ficar gigante/pequeno por escala de bones.")]
+    public float ghostScaleMultiplier = 1.0f;
 
     public enum GhostMeshMode
     {
@@ -68,6 +70,14 @@ public class SpiderDashVFX : MonoBehaviour
         trailObj.transform.SetParent(transform);
         trailObj.transform.localPosition = new Vector3(0, 0.3f, 0);
 
+        // Neutraliza escala do pai para evitar rastro gigante se a aranha for escalada na cena
+        Vector3 parentScale = transform.lossyScale;
+        trailObj.transform.localScale = new Vector3(
+            parentScale.x > 0.0001f ? 1f / parentScale.x : 1f,
+            parentScale.y > 0.0001f ? 1f / parentScale.y : 1f,
+            parentScale.z > 0.0001f ? 1f / parentScale.z : 1f
+        );
+
         trailRenderer = trailObj.AddComponent<TrailRenderer>();
         trailRenderer.time = trailDuration;
         trailRenderer.startWidth = trailWidth;
@@ -99,6 +109,14 @@ public class SpiderDashVFX : MonoBehaviour
         isActive = true;
         if (trailRenderer != null)
         {
+            // Neutraliza a escala do pai em tempo de execucao para o rastro nao esticar
+            Vector3 parentScale = transform.lossyScale;
+            trailRenderer.transform.localScale = new Vector3(
+                parentScale.x > 0.0001f ? 1f / parentScale.x : 1f,
+                parentScale.y > 0.0001f ? 1f / parentScale.y : 1f,
+                parentScale.z > 0.0001f ? 1f / parentScale.z : 1f
+            );
+
             trailRenderer.Clear();
             trailRenderer.emitting = true;
         }
@@ -171,7 +189,7 @@ public class SpiderDashVFX : MonoBehaviour
             GameObject ghost = new GameObject("SpiderGhost_Mesh");
             ghost.transform.position = source.transform.position;
             ghost.transform.rotation = source.transform.rotation;
-            ghost.transform.localScale = source.transform.lossyScale;
+            ghost.transform.localScale = source.transform.lossyScale * ghostScaleMultiplier;
 
             MeshFilter mf = ghost.AddComponent<MeshFilter>();
             mf.mesh = bakedMesh;
@@ -203,7 +221,7 @@ public class SpiderDashVFX : MonoBehaviour
             GameObject ghost = new GameObject("SpiderGhost_Static");
             ghost.transform.position = rend.transform.position;
             ghost.transform.rotation = rend.transform.rotation;
-            ghost.transform.localScale = rend.transform.lossyScale;
+            ghost.transform.localScale = rend.transform.lossyScale * ghostScaleMultiplier;
 
             MeshFilter ghostMf = ghost.AddComponent<MeshFilter>();
             ghostMf.mesh = mf2.sharedMesh;

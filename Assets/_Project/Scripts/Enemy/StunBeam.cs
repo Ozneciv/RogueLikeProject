@@ -10,8 +10,20 @@ public class StunBeam : MonoBehaviour
     public float radius = 4f;
     public float stunDuration = 1.5f;
 
-    [Header("VFX Placeholder")]
+    [Header("Configurações de VFX")]
+    [Tooltip("Cor principal do Stun VFX.")]
     public Color beamColor = Color.cyan;
+    [Tooltip("Cor do flash inicial de luz.")]
+    public Color flashColor = Color.white;
+    [Tooltip("Espessura dos anéis de onda de choque.")]
+    public float ringWidth = 0.5f;
+    [Tooltip("Altura máxima do pilar de energia vertical.")]
+    public float pillarHeight = 8f;
+    [Tooltip("Duração do pilar vertical de energia.")]
+    public float pillarDuration = 0.4f;
+    [Tooltip("Quantidade de partículas emitidas no burst.")]
+    public int particleCount = 30;
+
     private bool hasAppliedStun = false;
 
     /// <summary>
@@ -34,7 +46,7 @@ public class StunBeam : MonoBehaviour
             ApplyStunToPlayersInArea();
         }
 
-        // Visual placeholder: cria um efeito simples
+        // Cria o efeito visual
         CreatePlaceholderVisual();
     }
 
@@ -59,13 +71,18 @@ public class StunBeam : MonoBehaviour
 
     void CreatePlaceholderVisual()
     {
-        // Cria o VFX elaborado do stun
+        // Cria o VFX do stun e passa as configurações expostas no prefab
         GameObject vfxObj = new GameObject("GolemStunVFX");
         vfxObj.transform.position = transform.position;
         
         GolemStunVFX vfx = vfxObj.AddComponent<GolemStunVFX>();
         vfx.SetRadius(radius);
         vfx.stunColor = beamColor;
+        vfx.flashColor = flashColor;
+        vfx.ringWidth = ringWidth;
+        vfx.pillarHeight = pillarHeight;
+        vfx.pillarDuration = pillarDuration;
+        vfx.particleCount = particleCount;
         
         // Autodestruction do StunBeam (VFX se destrói sozinho)
         Destroy(gameObject, 0.1f);

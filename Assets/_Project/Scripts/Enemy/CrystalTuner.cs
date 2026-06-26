@@ -316,6 +316,7 @@ public class CrystalTuner : MonoBehaviour
         GetTargetComponent<Cristalus_AI>(target)?.SetBuff(true);
         GetTargetComponent<Geobionte_AI>(target)?.SetBuff(true);
         GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Golem_AI>(target)?.SetBuff(true);
     }
 
     void RemoveBuffs(GameObject target)
@@ -331,11 +332,35 @@ public class CrystalTuner : MonoBehaviour
         GetTargetComponent<Cristalus_AI>(target)?.SetBuff(false);
         GetTargetComponent<Geobionte_AI>(target)?.SetBuff(false);
         GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Golem_AI>(target)?.SetBuff(false);
+    }
+
+    void OnDisable()
+    {
+        for (int i = targets.Count - 1; i >= 0; i--)
+        {
+            var td = targets[i];
+            if (td.obj != null)
+            {
+                RemoveBuffs(td.obj);
+            }
+            if (td.beam != null)
+            {
+                Destroy(td.beam.gameObject);
+            }
+        }
+        targets.Clear();
     }
 
     void OnDestroy()
     {
         foreach (var td in targets)
-            RemoveBuffs(td.obj);
+        {
+            if (td.obj != null)
+                RemoveBuffs(td.obj);
+            if (td.beam != null)
+                Destroy(td.beam.gameObject);
+        }
+        targets.Clear();
     }
 }

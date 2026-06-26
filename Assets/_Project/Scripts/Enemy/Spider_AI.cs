@@ -40,6 +40,12 @@ public class Spider_AI : MonoBehaviour
     [Tooltip("Raio da hitbox durante o leap")]
     public float leapHitRadius = 1.5f;
 
+    [Header("Duração do Leap")]
+    [Tooltip("Duração do pulo do leap attack em segundos.")]
+    public float leapDuration = 0.4f;
+    [Tooltip("Tempo de espera ao aterrissar antes de voltar ao estado normal.")]
+    public float leapLandingDuration = 0.15f;
+
     [Header("Recuo (Retreat)")]
     [Tooltip("Chance de recuar após um ataque (0-1)")]
     [Range(0f, 1f)]
@@ -55,6 +61,9 @@ public class Spider_AI : MonoBehaviour
     private float leapTimer = 0f;
     private float retreatTimer = 0f;
     private bool hasHitThisLeap = false;
+
+    public bool IsLeaping => isLeaping;
+    public bool IsRetreating => isRetreating;
 
     void Start()
     {
@@ -197,7 +206,6 @@ public class Spider_AI : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
 
         // Durante o pulo, verifica colisão com player
-        float leapDuration = 0.5f;
         float elapsed = 0;
 
         while (elapsed < leapDuration)
@@ -234,7 +242,7 @@ public class Spider_AI : MonoBehaviour
 
         // Para VFX e espera tocar o chão
         if (dashVFX != null) dashVFX.StopDashEffect();
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(leapLandingDuration);
 
         isLeaping = false;
 
