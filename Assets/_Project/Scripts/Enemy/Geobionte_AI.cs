@@ -147,8 +147,8 @@ public class Geobionte_AI : MonoBehaviour
     [Header("Configuração de Tipo (Sentinela vs Bismutado)")]
     [Tooltip("Se true, este Geobionte se comportará como o semi-boss Sentinela. Se false, como o Bismutado padrão.")]
     public bool isSentinel = false;
-    [Tooltip("Escala do Geobionte Bismutado (cubo) após a fusão")]
-    public float bismutadoScale = 2.0f;
+    [System.NonSerialized]
+    public float bismutadoScale = 5.0f;
 
     // ==================== SENTINELA (Semi-boss — Futuro) ====================
 
@@ -915,25 +915,21 @@ public class Geobionte_AI : MonoBehaviour
         rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         UpdateMimicVelocity();
 
-        Debug.Log("[BISMUTADO] Golpe giratório!");
+        Debug.Log("[BISMUTADO] Golpe giratório meia-lua!");
 
         // === FASE 1: Indicador de aviso (0.3s) ===
-        // Cria disco visual de aviso na posição do corpo
-        GameObject warningDisc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        warningDisc.name = "SweepWarning";
-        warningDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-        warningDisc.transform.localScale = new Vector3(0.1f, 0.02f, 0.1f); // Começa pequeno
+        GameObject warningArcObj = new GameObject("SweepWarningArc");
+        LineRenderer warningLR = warningArcObj.AddComponent<LineRenderer>();
+        warningLR.startWidth = 0.15f;
+        warningLR.endWidth = 0.15f;
+        warningLR.useWorldSpace = true;
+        
+        Material warningMat = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.5f)); // Amarelo
+        warningLR.material = warningMat;
 
-        // Remove collider do visual (não é hitbox)
-        Collider warningCol = warningDisc.GetComponent<Collider>();
-        if (warningCol != null) Destroy(warningCol);
+        int pointsCount = 30;
+        warningLR.positionCount = pointsCount;
 
-        // Material de aviso (amarelo pulsante)
-        Renderer warningRenderer = warningDisc.GetComponent<Renderer>();
-        Material warningMat = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.3f));
-        warningRenderer.material = warningMat;
-
-        // Cresce o disco de aviso
         float warningDuration = 0.3f;
         float elapsed = 0f;
         while (elapsed < warningDuration)
@@ -941,37 +937,35 @@ public class Geobionte_AI : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / warningDuration;
 
-            // Segue a posição do Bismutado
-            if (warningDisc != null)
+            // Desenha o arco de 180 graus na frente
+            Vector3[] points = new Vector3[pointsCount];
+            for (int i = 0; i < pointsCount; i++)
             {
-                warningDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-                float scale = Mathf.Lerp(0.1f, sweepRange * 2f, t);
-                warningDisc.transform.localScale = new Vector3(scale, 0.02f, scale);
+                float angle = Mathf.Lerp(-90f, 90f, (float)i / (pointsCount - 1));
+                float rad = angle * Mathf.Deg2Rad;
+                Vector3 localPos = new Vector3(Mathf.Sin(rad) * sweepRange, 0f, Mathf.Cos(rad) * sweepRange);
+                points[i] = transform.TransformPoint(localPos);
             }
+            warningLR.SetPositions(points);
 
             yield return null;
         }
 
-        // Destrói aviso
-        if (warningDisc != null) Destroy(warningDisc);
+        if (warningArcObj != null) Destroy(warningArcObj);
+        if (warningMat != null) Destroy(warningMat);
 
         // === FASE 2: Golpe (sweepDuration) ===
-        // Cria o disco de ataque (vermelho)
-        GameObject sweepDisc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        sweepDisc.name = "SweepHitbox";
-        sweepDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-        sweepDisc.transform.localScale = new Vector3(sweepRange * 2f, 0.05f, sweepRange * 2f);
+        GameObject slashArcObj = new GameObject("SweepSlashArc");
+        LineRenderer slashLR = slashArcObj.AddComponent<LineRenderer>();
+        slashLR.startWidth = 0.5f; // Corte largo
+        slashLR.endWidth = 0.5f;
+        slashLR.useWorldSpace = true;
 
-        // Remove collider do visual
-        Collider sweepCol = sweepDisc.GetComponent<Collider>();
-        if (sweepCol != null) Destroy(sweepCol);
+        Material slashMat = CreateSweepMaterial(sweepIndicatorColor); // Vermelho/Rosa Bismuto
+        slashLR.material = slashMat;
+        slashLR.positionCount = pointsCount;
 
-        // Material de ataque (vermelho translúcido)
-        Renderer sweepRenderer = sweepDisc.GetComponent<Renderer>();
-        Material sweepMat = CreateSweepMaterial(sweepIndicatorColor);
-        sweepRenderer.material = sweepMat;
-
-        // Verifica se o player está no alcance — aplica dano
+        // Verifica se o player está no alcance e na frente — aplica dano
         bool playerHit = false;
         elapsed = 0f;
         while (elapsed < sweepDuration)
@@ -979,32 +973,53 @@ public class Geobionte_AI : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / sweepDuration;
 
-            // Rotaciona o Bismutado durante o golpe (giro rápido)
-            transform.Rotate(0, 720f * Time.deltaTime, 0);
-
-            // Segue a posição do corpo
-            if (sweepDisc != null)
+            // Fade visual e redução de largura
+            if (slashLR != null)
             {
-                sweepDisc.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+                float currentWidth = Mathf.Lerp(0.5f, 0.05f, t);
+                slashLR.startWidth = currentWidth;
+                slashLR.endWidth = currentWidth;
 
-                // Pulsação do disco
-                float pulse = 1f + Mathf.Sin(t * Mathf.PI * 4f) * 0.1f;
-                sweepDisc.transform.localScale = new Vector3(sweepRange * 2f * pulse, 0.05f, sweepRange * 2f * pulse);
+                Color fadedColor = Color.Lerp(sweepIndicatorColor, new Color(sweepIndicatorColor.r, sweepIndicatorColor.g, sweepIndicatorColor.b, 0f), t);
+                if (slashMat != null)
+                {
+                    slashMat.color = fadedColor;
+                    slashMat.SetColor("_EmissionColor", fadedColor * 2f);
+                }
+
+                // Desenha a meia lua se movendo levemente para a frente
+                Vector3[] points = new Vector3[pointsCount];
+                for (int i = 0; i < pointsCount; i++)
+                {
+                    float angle = Mathf.Lerp(-90f, 90f, (float)i / (pointsCount - 1));
+                    float rad = angle * Mathf.Deg2Rad;
+                    // Expande o corte ligeiramente durante a animação
+                    float radius = sweepRange * (1.0f + t * 0.1f);
+                    Vector3 localPos = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius);
+                    points[i] = transform.TransformPoint(localPos);
+                }
+                slashLR.SetPositions(points);
             }
+
+            // Rotação rápida do corpo durante o golpe
+            transform.Rotate(0, 360f * Time.deltaTime / sweepDuration, 0);
 
             // Detecta player no alcance (apenas uma vez por golpe)
             if (!playerHit && playerTransform != null)
             {
                 float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-                if (distToPlayer <= sweepRange)
+                Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
+                float dot = Vector3.Dot(transform.forward, dirToPlayer);
+
+                // Meia lua: dentro do alcance E na frente (ângulo menor que 90 graus de desvio, ou seja, dot > 0)
+                if (distToPlayer <= sweepRange && dot >= 0f)
                 {
-                    // Aplica dano ao player
                     PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
                     if (playerHealth != null)
                     {
                         playerHealth.TakeDamage(sweepDamage, gameObject);
                         playerHit = true;
-                        Debug.Log("[BISMUTADO] Golpe giratório acertou! Dano: " + sweepDamage);
+                        Debug.Log("[BISMUTADO] Golpe giratório meia-lua acertou o player! Dano: " + sweepDamage);
                     }
                 }
             }
@@ -1012,10 +1027,8 @@ public class Geobionte_AI : MonoBehaviour
             yield return null;
         }
 
-        // Limpa visuais
-        if (sweepDisc != null) Destroy(sweepDisc);
-        if (sweepMat != null) Destroy(sweepMat);
-        if (warningMat != null) Destroy(warningMat);
+        if (slashArcObj != null) Destroy(slashArcObj);
+        if (slashMat != null) Destroy(slashMat);
 
         isSweeping = false;
     }
@@ -1070,8 +1083,18 @@ public class Geobionte_AI : MonoBehaviour
     {
         fieldTimer = fieldCooldown;
 
-        // Posiciona o campo na posição atual do player
-        Vector3 fieldPos = new Vector3(playerTransform.position.x, 0.05f, playerTransform.position.z);
+        // Posiciona o campo na posição horizontal atual do player, mas no chão
+        Vector3 fieldPos = playerTransform.position;
+        RaycastHit groundHit;
+        // Faz um raycast para baixo a partir de 2.0 unidades acima da posição do player para achar o chão
+        if (Physics.Raycast(fieldPos + Vector3.up * 2f, Vector3.down, out groundHit, 10f))
+        {
+            fieldPos.y = groundHit.point.y + 0.05f;
+        }
+        else
+        {
+            fieldPos.y = 0.05f; // Fallback caso não ache o chão
+        }
 
         GameObject fieldObj = new GameObject("BismuthCrystalField");
         fieldObj.transform.position = fieldPos;
@@ -1603,15 +1626,33 @@ public class Geobionte_AI : MonoBehaviour
         Collider[] cols = GetComponentsInChildren<Collider>();
         foreach(var c in cols) c.enabled = false;
 
-        RaycastHit hit;
-        bool hitGround = Physics.Raycast(transform.position + Vector3.up * 5f, Vector3.down, out hit, 15f);
+        RaycastHit[] hits = Physics.RaycastAll(transform.position + Vector3.up * 5f, Vector3.down, 15f);
+        RaycastHit groundHit = new RaycastHit();
+        bool hitGround = false;
+        float highestGroundY = -float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            if (hit.collider.isTrigger) continue;
+            if (hit.collider.CompareTag("Player")) continue;
+            if (hit.collider.gameObject == gameObject || hit.collider.transform.IsChildOf(transform)) continue;
+            if (hit.collider.CompareTag("Enemy")) continue;
+
+            // Encontra o chão válido mais alto abaixo de nós
+            if (hit.point.y > highestGroundY)
+            {
+                highestGroundY = hit.point.y;
+                groundHit = hit;
+                hitGround = true;
+            }
+        }
 
         foreach(var c in cols) c.enabled = true;
 
         if (hitGround)
         {
             float currentHoverHeight = (currentState == GeobionteState.Transformed && !isSentinel) ? bodyHoverHeight * 0.5f : bodyHoverHeight;
-            float targetY = hit.point.y + currentHoverHeight;
+            float targetY = groundHit.point.y + currentHoverHeight;
             float yError = targetY - transform.position.y;
             float yVelocity = Mathf.Clamp(yError * hoverLerpSpeed, -10f, 10f);
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, yVelocity, rb.linearVelocity.z);
