@@ -915,6 +915,17 @@ public class Geobionte_AI : MonoBehaviour
         rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         UpdateMimicVelocity();
 
+        // Rotaciona para olhar para o player antes do golpe para alinhar a meia lua
+        if (playerTransform != null)
+        {
+            Vector3 lookDir = (playerTransform.position - transform.position).normalized;
+            lookDir.y = 0;
+            if (lookDir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(lookDir);
+            }
+        }
+
         Debug.Log("[BISMUTADO] Golpe giratório meia-lua!");
 
         // === FASE 1: Indicador de aviso (0.3s) ===
@@ -937,7 +948,7 @@ public class Geobionte_AI : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / warningDuration;
 
-            // Desenha o arco de 180 graus na frente
+            // Desenha o arco completo de 180 graus na frente como aviso
             Vector3[] points = new Vector3[pointsCount];
             for (int i = 0; i < pointsCount; i++)
             {
@@ -973,7 +984,7 @@ public class Geobionte_AI : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / sweepDuration;
 
-            // Fade visual e redução de largura
+            // Fade visual e redução de largura do corte
             if (slashLR != null)
             {
                 float currentWidth = Mathf.Lerp(0.5f, 0.05f, t);
@@ -984,25 +995,27 @@ public class Geobionte_AI : MonoBehaviour
                 if (slashMat != null)
                 {
                     slashMat.color = fadedColor;
-                    slashMat.SetColor("_EmissionColor", fadedColor * 2f);
                 }
 
-                // Desenha a meia lua se movendo levemente para a frente
+                // O corte meia-lua cresce angularmente e expande para a frente
+                float currentSweepAngle = Mathf.Lerp(0f, 180f, t * 1.5f);
+                currentSweepAngle = Mathf.Clamp(currentSweepAngle, 0f, 180f);
+                
+                float radius = Mathf.Lerp(1.5f, sweepRange, t);
+
                 Vector3[] points = new Vector3[pointsCount];
                 for (int i = 0; i < pointsCount; i++)
                 {
-                    float angle = Mathf.Lerp(-90f, 90f, (float)i / (pointsCount - 1));
+                    float angle = -90f + ((float)i / (pointsCount - 1)) * currentSweepAngle;
                     float rad = angle * Mathf.Deg2Rad;
-                    // Expande o corte ligeiramente durante a animação
-                    float radius = sweepRange * (1.0f + t * 0.1f);
                     Vector3 localPos = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius);
                     points[i] = transform.TransformPoint(localPos);
                 }
                 slashLR.SetPositions(points);
             }
 
-            // Rotação rápida do corpo durante o golpe
-            transform.Rotate(0, 360f * Time.deltaTime / sweepDuration, 0);
+            // Realiza um pequeno movimento rápido de rotação no sentido do golpe (swing da espada)
+            transform.Rotate(0, 90f * Time.deltaTime / sweepDuration, 0);
 
             // Detecta player no alcance (apenas uma vez por golpe)
             if (!playerHit && playerTransform != null)
@@ -1019,7 +1032,7 @@ public class Geobionte_AI : MonoBehaviour
                     {
                         playerHealth.TakeDamage(sweepDamage, gameObject);
                         playerHit = true;
-                        Debug.Log("[BISMUTADO] Golpe giratório meia-lua acertou o player! Dano: " + sweepDamage);
+                        Debug.Log("[BISMUTADO] Golpe meia-lua acertou o player! Dano: " + sweepDamage);
                     }
                 }
             }
@@ -1038,37 +1051,12 @@ public class Geobionte_AI : MonoBehaviour
     /// </summary>
     Material CreateSweepMaterial(Color color)
     {
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader == null) shader = Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply");
         if (shader == null) shader = Shader.Find("Standard");
 
         Material mat = new Material(shader);
-
-        // Configurar transparência
-        if (shader.name.Contains("Universal"))
-        {
-            mat.SetFloat("_Surface", 1);
-            mat.SetFloat("_Blend", 0);
-            mat.SetFloat("_ZWrite", 0);
-            mat.SetFloat("_AlphaClip", 0);
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            mat.SetColor("_BaseColor", color);
-        }
-        else
-        {
-            mat.SetFloat("_Mode", 3);
-            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetInt("_ZWrite", 0);
-            mat.EnableKeyword("_ALPHABLEND_ON");
-            mat.renderQueue = 3000;
-        }
-
         mat.color = color;
-        mat.EnableKeyword("_EMISSION");
-        mat.SetColor("_EmissionColor", color * 2f);
-
         return mat;
     }
 
