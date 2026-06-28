@@ -85,10 +85,11 @@ public class Geobionte_AI : MonoBehaviour
     [Tooltip("Velocidade ao ir até o minério")]
     public float seekSpeed = 5f;
     [Tooltip("Distância para considerar que chegou ao minério")]
-    public float oreReachDistance = 1.5f;
+    public float oreReachDistance = 2.5f;
 
     private OreNode targetOre;
     private bool hasFused = false; // Funde apenas com 1 cristal
+    private float oreStallTimer = 0f; // Timer para forçar absorção se ficar perto do cristal
 
     // ==================== PREVENÇÃO (Impedimento de Fusão) ====================
 
@@ -131,7 +132,7 @@ public class Geobionte_AI : MonoBehaviour
     [Tooltip("Dano do golpe horizontal giratório")]
     public int sweepDamage = 8;
     [Tooltip("Raio do golpe giratório (alcance ao redor do corpo)")]
-    public float sweepRange = 4f;
+    public float sweepRange = 2f;
     [Tooltip("Cooldown entre golpes giratórios (segundos)")]
     public float sweepCooldown = 6f;
     [Tooltip("Duração da animação do golpe (segundos)")]
@@ -148,7 +149,7 @@ public class Geobionte_AI : MonoBehaviour
     [Tooltip("Se true, este Geobionte se comportará como o semi-boss Sentinela. Se false, como o Bismutado padrão.")]
     public bool isSentinel = false;
     [System.NonSerialized]
-    public float bismutadoScale = 5.0f;
+    public float bismutadoScale = 1.5f;
 
     // ==================== SENTINELA (Semi-boss — Futuro) ====================
 
@@ -471,6 +472,7 @@ public class Geobionte_AI : MonoBehaviour
                 Debug.Log("[GEOBIONTE] Sem minério disponível! Voltando a vagar.");
                 ExitSeekingOre();
                 ChangeState(GeobionteState.Idle);
+                oreStallTimer = 0f;
                 return;
             }
         }
@@ -480,11 +482,32 @@ public class Geobionte_AI : MonoBehaviour
         Vector2 orePos2D = new Vector2(targetOre.transform.position.x, targetOre.transform.position.z);
         float distToOre = Vector2.Distance(geobiontePos2D, orePos2D);
         
+        // Absorção direta se chegou perto o suficiente
         if (distToOre <= oreReachDistance)
         {
             Debug.Log("[GEOBIONTE] Alcançou o minério! Iniciando fusão...");
+            oreStallTimer = 0f;
             ExitSeekingOre();
             StartCoroutine(FusionSequence());
+            return;
+        }
+        
+        // Segurança: se está relativamente perto mas não conseguiu absorver,
+        // conta um timer e força a absorção após 2 segundos
+        if (distToOre <= oreReachDistance * 2.5f)
+        {
+            oreStallTimer += Time.deltaTime;
+            if (oreStallTimer >= 2f)
+            {
+                Debug.Log("[GEOBIONTE] Perto do minério por muito tempo — forçando absorção! Dist: " + distToOre.ToString("F2"));
+                oreStallTimer = 0f;
+                ExitSeekingOre();
+                StartCoroutine(FusionSequence());
+            }
+        }
+        else
+        {
+            oreStallTimer = 0f;
         }
     }
 
@@ -903,8 +926,9 @@ public class Geobionte_AI : MonoBehaviour
     // ========================================================================
 
     /// <summary>
-    /// Executa o golpe giratório horizontal ao redor do corpo do Bismutado.
-    /// Cria um indicador visual (disco rotativo) e verifica colisão com o player.
+    /// Executa o golpe em meia-lua frontal do Bismutado.
+    /// O corpo gira 360° durante o ataque, mas o dano e o visual
+    /// são baseados na direção inicial (meia-lua fixa na frente).
     /// </summary>
     IEnumerator SweepAttack()
     {
@@ -926,113 +950,192 @@ public class Geobionte_AI : MonoBehaviour
             }
         }
 
-        Debug.Log("[BISMUTADO] Golpe giratório meia-lua!");
+        // Salva a direção frontal inicial (mundo) — o arco visual e dano usam essa referência fixa
+        Vector3 initialForward = transform.forward;
+        Vector3 initialRight = transform.right;
+        Quaternion initialRotation = transform.rotation;
 
-        // === FASE 1: Indicador de aviso (0.3s) ===
-        GameObject warningArcObj = new GameObject("SweepWarningArc");
-        LineRenderer warningLR = warningArcObj.AddComponent<LineRenderer>();
-        warningLR.startWidth = 0.15f;
-        warningLR.endWidth = 0.15f;
-        warningLR.useWorldSpace = true;
-        
-        Material warningMat = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.5f)); // Amarelo
-        warningLR.material = warningMat;
+        Debug.Log("[BISMUTADO] Golpe meia-lua frontal com giro completo!");
 
         int pointsCount = 30;
-        warningLR.positionCount = pointsCount;
 
-        float warningDuration = 0.3f;
+        // === FASE 1: Indicador de aviso (0.4s) ===
+        // Mostra o arco de 180° na frente + linhas radiais para preencher a zona de perigo
+        GameObject warningObj = new GameObject("SweepWarning");
+        
+        // Arco externo (borda da meia-lua)
+        LineRenderer warningArcLR = warningObj.AddComponent<LineRenderer>();
+        warningArcLR.startWidth = 0.2f;
+        warningArcLR.endWidth = 0.2f;
+        warningArcLR.useWorldSpace = true;
+        Material warningMat = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.6f));
+        warningArcLR.material = warningMat;
+        warningArcLR.positionCount = pointsCount + 2; // +2 para fechar com linhas até o centro
+
+        // Linhas radiais de preenchimento (mostram a área da meia-lua)
+        int fillLineCount = 5;
+        GameObject[] fillLines = new GameObject[fillLineCount];
+        Material[] fillMats = new Material[fillLineCount];
+        for (int f = 0; f < fillLineCount; f++)
+        {
+            fillLines[f] = new GameObject("FillLine_" + f);
+            fillLines[f].transform.SetParent(warningObj.transform);
+            LineRenderer flr = fillLines[f].AddComponent<LineRenderer>();
+            flr.startWidth = 0.08f;
+            flr.endWidth = 0.08f;
+            flr.useWorldSpace = true;
+            flr.positionCount = 2;
+            fillMats[f] = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.3f));
+            flr.material = fillMats[f];
+        }
+
+        float warningDuration = 0.4f;
         float elapsed = 0f;
         while (elapsed < warningDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / warningDuration;
 
-            // Desenha o arco completo de 180 graus na frente como aviso
-            Vector3[] points = new Vector3[pointsCount];
+            Vector3 center = transform.position;
+            float pulseAlpha = 0.4f + Mathf.Sin(t * Mathf.PI * 4f) * 0.2f;
+
+            // Arco de 180° + linhas de fechamento até o centro
+            Vector3[] arcPoints = new Vector3[pointsCount + 2];
+            arcPoints[0] = center; // Linha do centro ao início do arco
             for (int i = 0; i < pointsCount; i++)
             {
                 float angle = Mathf.Lerp(-90f, 90f, (float)i / (pointsCount - 1));
                 float rad = angle * Mathf.Deg2Rad;
-                Vector3 localPos = new Vector3(Mathf.Sin(rad) * sweepRange, 0f, Mathf.Cos(rad) * sweepRange);
-                points[i] = transform.TransformPoint(localPos);
+                // Usa a direção inicial fixa (não gira com o corpo)
+                Vector3 worldPos = center + (initialRight * Mathf.Sin(rad) + initialForward * Mathf.Cos(rad)) * sweepRange;
+                arcPoints[i + 1] = worldPos;
             }
-            warningLR.SetPositions(points);
+            arcPoints[pointsCount + 1] = center; // Linha do fim do arco de volta ao centro
+            warningArcLR.SetPositions(arcPoints);
+
+            // Linhas radiais de preenchimento
+            for (int f = 0; f < fillLineCount; f++)
+            {
+                float fillAngle = Mathf.Lerp(-90f, 90f, (float)(f + 1) / (fillLineCount + 1));
+                float fillRad = fillAngle * Mathf.Deg2Rad;
+                Vector3 endPos = center + (initialRight * Mathf.Sin(fillRad) + initialForward * Mathf.Cos(fillRad)) * sweepRange * t;
+                LineRenderer flr = fillLines[f].GetComponent<LineRenderer>();
+                flr.SetPosition(0, center);
+                flr.SetPosition(1, endPos);
+            }
 
             yield return null;
         }
 
-        if (warningArcObj != null) Destroy(warningArcObj);
+        // Limpa aviso
+        if (warningObj != null) Destroy(warningObj);
         if (warningMat != null) Destroy(warningMat);
+        foreach (Material fm in fillMats) { if (fm != null) Destroy(fm); }
 
-        // === FASE 2: Golpe (sweepDuration) ===
-        GameObject slashArcObj = new GameObject("SweepSlashArc");
-        LineRenderer slashLR = slashArcObj.AddComponent<LineRenderer>();
-        slashLR.startWidth = 0.5f; // Corte largo
-        slashLR.endWidth = 0.5f;
-        slashLR.useWorldSpace = true;
+        // === FASE 2: Golpe com giro de 360° (sweepDuration) ===
+        
+        // Rastro do arco (mostra a meia-lua já varrida)
+        GameObject trailArcObj = new GameObject("SweepTrailArc");
+        LineRenderer trailLR = trailArcObj.AddComponent<LineRenderer>();
+        trailLR.startWidth = 0.35f;
+        trailLR.endWidth = 0.35f;
+        trailLR.useWorldSpace = true;
+        Material trailMat = CreateSweepMaterial(new Color(sweepIndicatorColor.r, sweepIndicatorColor.g, sweepIndicatorColor.b, 0.3f));
+        trailLR.material = trailMat;
 
-        Material slashMat = CreateSweepMaterial(sweepIndicatorColor); // Vermelho/Rosa Bismuto
-        slashLR.material = slashMat;
-        slashLR.positionCount = pointsCount;
+        // Lâmina (linha que varre da esquerda para a direita)
+        GameObject bladeObj = new GameObject("SweepBlade");
+        LineRenderer bladeLR = bladeObj.AddComponent<LineRenderer>();
+        bladeLR.startWidth = 0.6f;
+        bladeLR.endWidth = 0.1f;
+        bladeLR.useWorldSpace = true;
+        Material bladeMat = CreateSweepMaterial(sweepIndicatorColor);
+        bladeLR.material = bladeMat;
+        bladeLR.positionCount = 2;
 
-        // Verifica se o player está no alcance e na frente — aplica dano
         bool playerHit = false;
         elapsed = 0f;
+        float totalBodyRotation = 0f;
+
         while (elapsed < sweepDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / sweepDuration;
 
-            // Fade visual e redução de largura do corte
-            if (slashLR != null)
+            Vector3 center = transform.position;
+
+            // --- Giro de 360° do corpo ---
+            float rotationThisFrame = 360f * (Time.deltaTime / sweepDuration);
+            transform.Rotate(0, rotationThisFrame, 0);
+            totalBodyRotation += rotationThisFrame;
+
+            // --- Visual da lâmina varrendo -90° até +90° (baseado na direção inicial) ---
+            float bladeAngle = Mathf.Lerp(-90f, 90f, t);
+            float bladeRad = bladeAngle * Mathf.Deg2Rad;
+            Vector3 bladeDir = (initialRight * Mathf.Sin(bladeRad) + initialForward * Mathf.Cos(bladeRad)).normalized;
+            Vector3 bladeEnd = center + bladeDir * sweepRange;
+
+            bladeLR.SetPosition(0, center);
+            bladeLR.SetPosition(1, bladeEnd);
+
+            // Cor da lâmina com brilho pulsante
+            float bladePulse = 0.8f + Mathf.Sin(t * Mathf.PI * 6f) * 0.2f;
+            if (bladeMat != null)
             {
-                float currentWidth = Mathf.Lerp(0.5f, 0.05f, t);
-                slashLR.startWidth = currentWidth;
-                slashLR.endWidth = currentWidth;
-
-                Color fadedColor = Color.Lerp(sweepIndicatorColor, new Color(sweepIndicatorColor.r, sweepIndicatorColor.g, sweepIndicatorColor.b, 0f), t);
-                if (slashMat != null)
-                {
-                    slashMat.color = fadedColor;
-                }
-
-                // O corte meia-lua cresce angularmente e expande para a frente
-                float currentSweepAngle = Mathf.Lerp(0f, 180f, t * 1.5f);
-                currentSweepAngle = Mathf.Clamp(currentSweepAngle, 0f, 180f);
-                
-                float radius = Mathf.Lerp(1.5f, sweepRange, t);
-
-                Vector3[] points = new Vector3[pointsCount];
-                for (int i = 0; i < pointsCount; i++)
-                {
-                    float angle = -90f + ((float)i / (pointsCount - 1)) * currentSweepAngle;
-                    float rad = angle * Mathf.Deg2Rad;
-                    Vector3 localPos = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius);
-                    points[i] = transform.TransformPoint(localPos);
-                }
-                slashLR.SetPositions(points);
+                bladeMat.color = new Color(
+                    sweepIndicatorColor.r * bladePulse,
+                    sweepIndicatorColor.g * bladePulse,
+                    sweepIndicatorColor.b * bladePulse,
+                    Mathf.Lerp(0.9f, 0.3f, t)
+                );
             }
 
-            // Realiza um pequeno movimento rápido de rotação no sentido do golpe (swing da espada)
-            transform.Rotate(0, 90f * Time.deltaTime / sweepDuration, 0);
+            // --- Rastro: arco mostrando a área já varrida ---
+            float sweptAngle = Mathf.Lerp(-90f, 90f, t); // Ângulo atual da lâmina
+            int trailPoints = Mathf.Max(2, Mathf.RoundToInt(pointsCount * t));
+            trailLR.positionCount = trailPoints;
+            Vector3[] trailPositions = new Vector3[trailPoints];
+            for (int i = 0; i < trailPoints; i++)
+            {
+                float a = Mathf.Lerp(-90f, sweptAngle, (float)i / (trailPoints - 1));
+                float aRad = a * Mathf.Deg2Rad;
+                trailPositions[i] = center + (initialRight * Mathf.Sin(aRad) + initialForward * Mathf.Cos(aRad)) * sweepRange;
+            }
+            trailLR.SetPositions(trailPositions);
 
-            // Detecta player no alcance (apenas uma vez por golpe)
+            // Fade do rastro
+            if (trailMat != null)
+            {
+                trailMat.color = new Color(sweepIndicatorColor.r, sweepIndicatorColor.g, sweepIndicatorColor.b, Mathf.Lerp(0.4f, 0.05f, t));
+            }
+
+            // --- Detecção de dano baseada na direção inicial (meia-lua fixa) ---
             if (!playerHit && playerTransform != null)
             {
                 float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
                 Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
-                float dot = Vector3.Dot(transform.forward, dirToPlayer);
+                // Usa a direção inicial para detectar se o player está na meia-lua frontal
+                float dot = Vector3.Dot(initialForward, dirToPlayer);
 
-                // Meia lua: dentro do alcance E na frente (ângulo menor que 90 graus de desvio, ou seja, dot > 0)
+                // Meia lua: dentro do alcance E na frente da direção inicial (dot > 0)
                 if (distToPlayer <= sweepRange && dot >= 0f)
                 {
-                    PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
-                    if (playerHealth != null)
+                    // Verifica se a lâmina já passou pela posição do player
+                    float playerAngle = Mathf.Atan2(
+                        Vector3.Dot(initialRight, dirToPlayer),
+                        Vector3.Dot(initialForward, dirToPlayer)
+                    ) * Mathf.Rad2Deg;
+                    
+                    // A lâmina varre de -90° a +90°, acerta quando passa pelo ângulo do player
+                    if (playerAngle <= bladeAngle + 15f) // +15° de tolerância
                     {
-                        playerHealth.TakeDamage(sweepDamage, gameObject);
-                        playerHit = true;
-                        Debug.Log("[BISMUTADO] Golpe meia-lua acertou o player! Dano: " + sweepDamage);
+                        PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
+                        if (playerHealth != null)
+                        {
+                            playerHealth.TakeDamage(sweepDamage, gameObject);
+                            playerHit = true;
+                            Debug.Log("[BISMUTADO] Golpe meia-lua acertou o player! Dano: " + sweepDamage);
+                        }
                     }
                 }
             }
@@ -1040,8 +1143,14 @@ public class Geobionte_AI : MonoBehaviour
             yield return null;
         }
 
-        if (slashArcObj != null) Destroy(slashArcObj);
-        if (slashMat != null) Destroy(slashMat);
+        // Garante que o corpo completou os 360° exatos
+        transform.rotation = initialRotation;
+
+        // Limpa visuais
+        if (trailArcObj != null) Destroy(trailArcObj);
+        if (bladeObj != null) Destroy(bladeObj);
+        if (trailMat != null) Destroy(trailMat);
+        if (bladeMat != null) Destroy(bladeMat);
 
         isSweeping = false;
     }
@@ -1230,6 +1339,11 @@ public class Geobionte_AI : MonoBehaviour
             }
             else
             {
+                // Recalcula parâmetros para o tamanho original antes de reativar as pernas
+                mimicComponent.numberOfLegs = originalNumberOfLegs;
+                mimicComponent.partsPerLeg = originalPartsPerLeg;
+                mimicComponent.newLegRadius = originalNewLegRadius;
+                mimicComponent.RecalculateParameters();
                 mimicComponent.SetLegsActive(true);
             }
         }
