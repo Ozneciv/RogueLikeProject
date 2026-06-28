@@ -472,13 +472,10 @@ MonoBehaviour:
   anticipationTime: 0.2
   leadPrediction: 0.5
   retreatDistance: 4
-  dashOpacity: 0.15
-  fadeSpeed: 12
-  trailMaterial: {fileID: 0}
-  ghostLifetime: 0.4
-  ghostSpawnInterval: 0.03
-  ghostInitialAlpha: 0.5
   dashDamage: 15
+  hologramPrefab: {fileID: 4268998290841704769}
+  hologramMaterial: {fileID: 2100000, guid: e6b9b44320f4448d9d5e0ee634259966, type: 2}
+  hologramAlpha: 0.23
 --- !u!65 &5437306787277278715
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -498,8 +495,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1, y: 2, z: 1}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &6527869336085566463
 MonoBehaviour:
   m_ObjectHideFlags: 0

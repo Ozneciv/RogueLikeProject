@@ -1,62 +1,44 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class GhostTrail : MonoBehaviour
+public class DashHologram : MonoBehaviour
 {
     private float ghostLifetime;
     private Material ghostMaterial;
     private float alpha;
     private float fadeSpeed;
 
-  
     private List<Mesh> meshesToDraw = new List<Mesh>();
     private List<Matrix4x4> matricesToDraw = new List<Matrix4x4>();
 
-
-    public void Init(Transform target, float lifetime, Material mat, float initialAlpha)
+    public void Init(Transform target, Vector3 futurePos, Quaternion futureRot, float lifetime, Material mat, float initialAlpha)
     {
         ghostLifetime = lifetime;
         
-    
-        transform.position = target.position;
-        transform.rotation = target.rotation;
+        transform.position = futurePos;
+        transform.rotation = futureRot;
         transform.localScale = target.localScale;
 
-    
+        // Cria uma cópia do material que você configurou na Unity para podermos sumir com ele aos poucos
         ghostMaterial = new Material(mat); 
-
-    
-        ghostMaterial.SetFloat("_Surface", 1); 
-        ghostMaterial.SetFloat("_Mode", 2);    
-        ghostMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        ghostMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        ghostMaterial.SetInt("_ZWrite", 0);
-        ghostMaterial.DisableKeyword("_ALPHATEST_ON");
-        ghostMaterial.EnableKeyword("_ALPHABLEND_ON");
-        ghostMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        ghostMaterial.renderQueue = 3000;
-
-  
-        if (ghostMaterial.HasProperty("_Glossiness")) ghostMaterial.SetFloat("_Glossiness", 0f);
-        if (ghostMaterial.HasProperty("_Smoothness")) ghostMaterial.SetFloat("_Smoothness", 0f);
-        if (ghostMaterial.HasProperty("_Metallic")) ghostMaterial.SetFloat("_Metallic", 0f);
-        if (ghostMaterial.HasProperty("_SpecularHighlights")) ghostMaterial.SetFloat("_SpecularHighlights", 0f);
-        if (ghostMaterial.HasProperty("_EnvironmentReflections")) ghostMaterial.SetFloat("_EnvironmentReflections", 0f);
 
         alpha = initialAlpha;
         fadeSpeed = initialAlpha / lifetime;
 
-    
+        Matrix4x4 rootInverse = target.worldToLocalMatrix;
+        Matrix4x4 holoRootMatrix = Matrix4x4.TRS(futurePos, futureRot, target.localScale);
+
         MeshFilter[] mfs = target.GetComponentsInChildren<MeshFilter>();
         foreach (var mf in mfs)
         {
             if (mf != null && mf.sharedMesh != null)
             {
                 meshesToDraw.Add(mf.sharedMesh);
-                matricesToDraw.Add(mf.transform.localToWorldMatrix);
+                Matrix4x4 originalMatrix = mf.transform.localToWorldMatrix;
+                Matrix4x4 localMatrix = rootInverse * originalMatrix;
+                matricesToDraw.Add(holoRootMatrix * localMatrix);
             }
         }
-
 
         SkinnedMeshRenderer[] smrs = target.GetComponentsInChildren<SkinnedMeshRenderer>();
         foreach (var smr in smrs)
@@ -66,21 +48,22 @@ public class GhostTrail : MonoBehaviour
                 Mesh bakedMesh = new Mesh();
                 smr.BakeMesh(bakedMesh); 
                 meshesToDraw.Add(bakedMesh);
-                matricesToDraw.Add(smr.transform.localToWorldMatrix);
+                
+                Matrix4x4 originalMatrix = smr.transform.localToWorldMatrix;
+                Matrix4x4 localMatrix = rootInverse * originalMatrix;
+                matricesToDraw.Add(holoRootMatrix * localMatrix);
             }
         }
-
 
         Destroy(gameObject, ghostLifetime);
     }
 
     void Update()
     {
-
         alpha -= fadeSpeed * Time.deltaTime;
         if (alpha <= 0) return;
 
- 
+        // Faz o holograma desvanecer (fade out)
         if (ghostMaterial.HasProperty("_Color"))
         {
             Color col = ghostMaterial.color;
@@ -94,7 +77,7 @@ public class GhostTrail : MonoBehaviour
             ghostMaterial.SetColor("_BaseColor", col);
         }
 
-
+        // Desenha as malhas na tela usando o material transparente
         for (int i = 0; i < meshesToDraw.Count; i++)
         {
             Graphics.DrawMesh(meshesToDraw[i], matricesToDraw[i], ghostMaterial, gameObject.layer);
