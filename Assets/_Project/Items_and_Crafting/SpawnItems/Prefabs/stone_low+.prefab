@@ -259,16 +259,13 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -3211426682805899923}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}
-      insertIndex: -1
       addedObject: {fileID: -3205815920262334413}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -5974847057677023420}
+      addedObject: {fileID: -5305567963310127091}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -5305567963310127091}
+      addedObject: {fileID: 8900229294562556693}
     - targetCorrespondingSourceObject: {fileID: 6831378391443133917, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3228652674904900628}
@@ -278,21 +275,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}
   m_PrefabInstance: {fileID: 591647280011178909}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &-3211426682805899923
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 357083722210168524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
-  collectable: {fileID: 0}
-  glowObject: {fileID: 0}
-  pressFUI: {fileID: 0}
 --- !u!114 &-3205815920262334413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -305,25 +287,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  itemData: {fileID: 11400000, guid: 0428189b6b7857b4e9a7c134c0826b09, type: 2}
   objetoNome: Pedra
   icon: {fileID: 0}
   descricao: 
   foiCatalogado: 0
---- !u!114 &-5974847057677023420
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 357083722210168524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
-  collectable: {fileID: 0}
-  glowObject: {fileID: 8047958251740234933}
-  pressFUI: {fileID: 7764943003512654382}
 --- !u!65 &-5305567963310127091
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -345,6 +313,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 6.183292, y: 2.796172, z: 6.217312}
   m_Center: {x: -0.006182432, y: 0.89808595, z: -0.24541521}
+--- !u!114 &8900229294562556693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357083722210168524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81838ed9fcc92fa49a447d87ed102ca1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
+  bobSpeed: 2
+  bobHeight: 0.2
+  glowObject: {fileID: 8047958251740234933}
+  pressFUI: {fileID: 7764943003512654382}
+  pickupDelay: 0.5
+  lifetime: 60
 --- !u!4 &1134710759450285174 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 09c6b49982858df4eb07a3332d95802b, type: 3}

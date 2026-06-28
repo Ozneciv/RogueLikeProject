@@ -1822,7 +1822,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.000029379877}
+  m_AnchoredPosition: {x: 0, y: 0.000012457665}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &494046970
@@ -2433,6 +2433,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfb6371bbe908ad4fb4af21b7e35f91c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveManager
+--- !u!114 &630199965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 630199949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a65bbe800014fc429d5677c9a782c79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemDatabase
+  allItems:
+  - {fileID: 11400000, guid: 0cd9f6c1106f5c94da716cb26d915758, type: 2}
 --- !u!1 &667467583
 GameObject:
   m_ObjectHideFlags: 0
@@ -2904,7 +2918,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.000029379877}
+  m_AnchoredPosition: {x: 0, y: 0.000012457665}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &789798781
@@ -7279,6 +7293,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 630199964}
+    - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 630199965}
   m_SourcePrefab: {fileID: 100100000, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
 --- !u!1 &1936037157
 GameObject:
