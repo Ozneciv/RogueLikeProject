@@ -88,7 +88,8 @@ public class Geobionte_AI : MonoBehaviour
     public float oreReachDistance = 2.5f;
 
     private OreNode targetOre;
-    private bool hasFused = false; // Funde apenas com 1 cristal
+    private bool hasFused = false; // Flag por ciclo (reset após derrota)
+    private int bismutadoDefeatCount = 0; // Quantas vezes foi derrotado como Bismutado
     private float oreStallTimer = 0f; // Timer para forçar absorção se ficar perto do cristal
 
     // ==================== PREVENÇÃO (Impedimento de Fusão) ====================
@@ -145,15 +146,51 @@ public class Geobionte_AI : MonoBehaviour
 
     // ==================== CONFIGURAÇÃO DO TIPO ====================
 
-    [Header("Configuração de Tipo (Sentinela vs Bismutado)")]
-    [Tooltip("Se true, este Geobionte se comportará como o semi-boss Sentinela. Se false, como o Bismutado padrão.")]
-    public bool isSentinel = false;
+    [Header("Configuração de Tipo")]
+    [Tooltip("Número de absorções/derrotas como Bismutado necessárias para virar Sentinela")]
+    public int fusionsToSentinel = 3;
     [System.NonSerialized]
     public float bismutadoScale = 1.5f;
 
-    // ==================== SENTINELA (Semi-boss — Futuro) ====================
+    /// <summary>
+    /// Flag definida automaticamente em runtime quando o Geobionte evolui para Sentinela.
+    /// NÃO configurar manualmente no Inspector.
+    /// </summary>
+    private bool isSentinel = false;
 
-    [Header("Sentinela — Campo de Cristais (Semi-boss)")]
+    // ==================== SENTINELA (Semi-boss) ====================
+
+    [Header("Sentinela — Configuração (Semi-boss)")]
+    [Tooltip("Número de pernas do Sentinela")]
+    public int sentinelNumberOfLegs = 12;
+    [Tooltip("Partes por perna do Sentinela")]
+    public int sentinelPartsPerLeg = 5;
+    [Tooltip("Raio das pernas do Sentinela")]
+    public float sentinelLegRadius = 6f;
+    [Tooltip("Escala do Sentinela (tamanho grande)")]
+    public float sentinelScale = 2.5f;
+
+    [Header("Sentinela — Esfera Alta/Baixa")]
+    [Tooltip("Altura da esfera quando invulnerável (alta, fora de alcance)")]
+    public float sentinelHighHeight = 5f;
+    [Tooltip("Altura da esfera quando vulnerável (baixa, player pode hitar)")]
+    public float sentinelLowHeight = 1.2f;
+    [Tooltip("Tempo que a esfera fica alta/invulnerável (segundos)")]
+    public float sentinelInvulnerableDuration = 3f;
+    [Tooltip("Duração da janela de vulnerabilidade (segundos)")]
+    public float sentinelVulnerableWindow = 1f;
+    [Tooltip("Hits necessários para derrotar o Sentinela (fixedDamageOverride = 1)")]
+    public int sentinelMaxHP = 10;
+
+    [Header("Sentinela — Dano das Pernas")]
+    [Tooltip("Dano das pernas do Sentinela ao player")]
+    public int sentinelLegDamage = 10;
+    [Tooltip("Cooldown entre danos de perna (segundos)")]
+    public float sentinelLegDamageCooldown = 0.5f;
+    [Tooltip("Raio de proximidade para dano de perna")]
+    public float sentinelLegDamageRadius = 1.0f;
+
+    [Header("Sentinela — Campo de Cristais")]
     [Tooltip("Cooldown entre criações de campo de cristais (usado pelo Sentinela)")]
     public float fieldCooldown = 6f;
     [Tooltip("Duração de cada campo de cristais")]
@@ -161,8 +198,12 @@ public class Geobionte_AI : MonoBehaviour
     [Tooltip("Raio de cada campo de cristais")]
     public float fieldRadius = 4f;
 
+    // Estado do Sentinela em runtime
     private float fieldTimer = 0f;
     private bool hasSpeedBuff = false;  // Ganhou speed ao roubar do player
+    private bool sentinelVulnerable = false; // Esfera está baixa/vulnerável?
+    private float sentinelPhaseTimer = 0f; // Timer do ciclo alta/baixa
+    private float sentinelTargetHeight; // Altura alvo atual da esfera
 
     // ==================== VISUAL — MESH ====================
 
@@ -852,15 +893,20 @@ public class Geobionte_AI : MonoBehaviour
     {
         if (health != null && health.CurrentHealth <= 0) return;
 
-        // Timers
-        if (sweepTimer > 0) sweepTimer -= Time.deltaTime;
-        if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
+        if (isSentinel)
+        {
+            // Sentinela: ciclo de esfera alta/baixa + campo de cristais
+            HandleSentinelCombat();
+        }
+        else
+        {
+            // Bismutado: perseguição + golpe giratório
+            if (sweepTimer > 0) sweepTimer -= Time.deltaTime;
+            if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
 
-        // Rotação para olhar o player
-        HandleRotation();
-
-        // Combate — golpe giratório / campo de cristais
-        HandleCombat();
+            HandleRotation();
+            HandleCombat();
+        }
     }
 
     void HandleRotation()
@@ -882,8 +928,16 @@ public class Geobionte_AI : MonoBehaviour
         if (health != null && health.CurrentHealth <= 0) return;
         if (isSweeping) return; // Não se move durante o golpe
 
+        // Sentinela fica parado — combate é baseado nas pernas e ciclo de esfera
+        if (isSentinel)
+        {
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            UpdateMimicVelocity();
+            return;
+        }
+
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-        float effectiveAttackRange = isSentinel ? attackRange : sweepRange;
+        float effectiveAttackRange = sweepRange;
 
         // Persegue o player se está fora do range de ataque
         if (distToPlayer > effectiveAttackRange * 0.8f)
@@ -1221,14 +1275,16 @@ public class Geobionte_AI : MonoBehaviour
 
     /// <summary>
     /// Chamado pelo DummyHealth.onDeathOverride quando HP do Bismutado chega a 0.
-    /// Ao invés de morrer, o Bismutado reverte ao Geobionte padrão (forma base).
+    /// Incrementa contador de derrotas. Após 3 derrotas, evolui para Sentinela.
     /// </summary>
     void OnDefeated()
     {
-        Debug.Log("[BISMUTADO] Derrotado! Revertendo ao Geobionte padrão...");
-
         // Cancela qualquer sweep em andamento
         isSweeping = false;
+
+        // Incrementa contador de derrotas como Bismutado
+        bismutadoDefeatCount++;
+        Debug.Log("[BISMUTADO] Derrotado! Derrota #" + bismutadoDefeatCount + "/" + fusionsToSentinel);
 
         // 1. Dropar loot
         EnemyDrops drops = GetComponent<EnemyDrops>()
@@ -1252,7 +1308,6 @@ public class Geobionte_AI : MonoBehaviour
                 {
                     essencePickup.essenceValue = refundAmount;
                 }
-                // Aplica impulso para cima
                 Rigidbody essenceRb = essenceObj.GetComponent<Rigidbody>();
                 if (essenceRb != null)
                 {
@@ -1271,17 +1326,26 @@ public class Geobionte_AI : MonoBehaviour
             if (playerDebuffs != null)
             {
                 playerDebuffs.RestoreStolenBuffs(gameObject);
-                playerDebuffs.RemoveSlow(); // Remove qualquer slow ativo
+                playerDebuffs.RemoveSlow();
             }
         }
 
-        // 4. Reverter ao Geobionte padrão (animação)
-        StartCoroutine(RevertToBaseSequence());
+        // 4. Verificar se deve evoluir para Sentinela
+        if (bismutadoDefeatCount >= fusionsToSentinel)
+        {
+            Debug.Log("[GEOBIONTE] " + fusionsToSentinel + " derrotas como Bismutado! EVOLUINDO PARA SENTINELA!");
+            StartCoroutine(TransformIntoSentinel());
+        }
+        else
+        {
+            // Reverter ao Geobionte padrão e buscar novo minério
+            StartCoroutine(RevertToBaseSequence());
+        }
     }
 
     /// <summary>
     /// Sequência de reversão: Bismutado (cubo) → Geobionte padrão (esfera).
-    /// Encolhe, troca mesh, muda cor e volta ao estado Idle.
+    /// Encolhe, troca mesh, muda cor e volta ao estado Idle para buscar mais minérios.
     /// </summary>
     IEnumerator RevertToBaseSequence()
     {
@@ -1312,7 +1376,6 @@ public class Geobionte_AI : MonoBehaviour
             float easedT = t * t * (3f - 2f * t); // smoothstep
             transform.localScale = Vector3.Lerp(startScale, originalScale, easedT);
 
-            // Volta à cor base
             if (geoMaterial != null)
             {
                 Color currentColor = Color.Lerp(transformedColor, baseColor, easedT);
@@ -1333,24 +1396,18 @@ public class Geobionte_AI : MonoBehaviour
         // Restaura pernas do Mimic
         if (mimicComponent != null)
         {
-            if (isSentinel)
-            {
-                RestoreMimicLegs();
-            }
-            else
-            {
-                // Recalcula parâmetros para o tamanho original antes de reativar as pernas
-                mimicComponent.numberOfLegs = originalNumberOfLegs;
-                mimicComponent.partsPerLeg = originalPartsPerLeg;
-                mimicComponent.newLegRadius = originalNewLegRadius;
-                mimicComponent.RecalculateParameters();
-                mimicComponent.SetLegsActive(true);
-            }
+            // Recalcula parâmetros para o tamanho original antes de reativar as pernas
+            mimicComponent.numberOfLegs = originalNumberOfLegs;
+            mimicComponent.partsPerLeg = originalPartsPerLeg;
+            mimicComponent.newLegRadius = originalNewLegRadius;
+            mimicComponent.legsDealDamage = false; // Desativa dano das pernas
+            mimicComponent.RecalculateParameters();
+            mimicComponent.SetLegsActive(true);
         }
 
         // Reset de estado para Geobionte padrão
         hasFused = false;
-        isPrevented = false; // Permite buscar minérios novamente
+        isPrevented = false;
         absorbedOreValue = 0;
         hasSpeedBuff = false;
         targetOre = null;
@@ -1369,7 +1426,299 @@ public class Geobionte_AI : MonoBehaviour
             PickNewWanderDirection();
         }
 
-        Debug.Log("[GEOBIONTE] Revertido ao Geobionte padrão! Procurando novos minérios ou vagando pacificamente.");
+        Debug.Log("[GEOBIONTE] Revertido ao padrão! Derrota " + bismutadoDefeatCount + "/" + fusionsToSentinel + ". Buscando novo minério...");
+    }
+
+    // ========================================================================
+    // SENTINELA — EVOLUÇÃO E COMBATE (Semi-boss)
+    // ========================================================================
+
+    /// <summary>
+    /// Transforma o Geobionte no Sentinela após 3 derrotas como Bismutado.
+    /// Cresce, ativa pernas com dano, inicia ciclo de esfera alta/baixa.
+    /// </summary>
+    IEnumerator TransformIntoSentinel()
+    {
+        isSentinel = true;
+
+        // Torna invulnerável durante a transformação
+        if (health != null)
+        {
+            health.isInvulnerable = true;
+        }
+
+        // Esconde health bar temporariamente
+        if (health != null && health.healthBarSlider != null)
+        {
+            health.healthBarSlider.gameObject.SetActive(false);
+        }
+
+        // Volta para layer Default durante a transformação
+        gameObject.layer = LayerMask.NameToLayer("Default");
+
+        Debug.Log("[SENTINELA] EVOLUÇÃO INICIADA! Crescendo...");
+
+        // Se ainda é cubo, volta para esfera primeiro
+        SwapBodyMeshToSphere();
+
+        // Animação: cresce ao tamanho do Sentinela
+        float growDuration = 2f;
+        float elapsed = 0f;
+        Vector3 startScale = transform.localScale;
+        Vector3 endScale = originalScale * sentinelScale;
+
+        // Cor do Sentinela: roxo mais intenso/brilhante
+        Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f);
+
+        while (elapsed < growDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / growDuration;
+            float easedT = t * t * (3f - 2f * t);
+            transform.localScale = Vector3.Lerp(startScale, endScale, easedT);
+
+            if (geoMaterial != null)
+            {
+                Color currentColor = Color.Lerp(transformedColor, sentinelColor, easedT);
+                geoMaterial.color = currentColor;
+                geoMaterial.SetColor("_EmissionColor", currentColor * 3f);
+                if (geoMaterial.HasProperty("_BaseColor"))
+                    geoMaterial.SetColor("_BaseColor", currentColor);
+            }
+
+            yield return null;
+        }
+
+        transform.localScale = endScale;
+
+        // Configura pernas do Sentinela (com dano!)
+        if (mimicComponent != null)
+        {
+            mimicComponent.numberOfLegs = sentinelNumberOfLegs;
+            mimicComponent.partsPerLeg = sentinelPartsPerLeg;
+            mimicComponent.newLegRadius = sentinelLegRadius;
+            mimicComponent.legsDealDamage = true;
+            mimicComponent.legDamageAmount = sentinelLegDamage;
+            mimicComponent.legDamageCooldown = sentinelLegDamageCooldown;
+            mimicComponent.legDamageRadius = sentinelLegDamageRadius;
+            mimicComponent.RecalculateParameters();
+            mimicComponent.SetLegsActive(true);
+        }
+
+        // Configura HP do Sentinela: 10 hits com fixedDamageOverride = 1
+        if (health != null)
+        {
+            health.maxHealth = sentinelMaxHP;
+            health.fixedDamageOverride = 1;
+            health.ResetHealth();
+            health.onDeathOverride = OnSentinelDefeated;
+            // Começa invulnerável (esfera alta)
+            health.isInvulnerable = true;
+        }
+
+        // Cria health bar
+        CreateHealthBarIfNeeded();
+
+        // Cor da barra: roxo para indicar Sentinela
+        if (health != null && health.healthBarSlider != null)
+        {
+            Image fillImage = health.healthBarSlider.fillRect?.GetComponent<Image>();
+            if (fillImage != null)
+                fillImage.color = new Color(0.8f, 0.2f, 0.9f, 1f); // Roxo
+        }
+
+        // Mudar layer para Enemy
+        gameObject.layer = originalLayer;
+
+        // Inicia o ciclo de esfera alta/baixa
+        sentinelVulnerable = false;
+        sentinelPhaseTimer = 0f;
+        sentinelTargetHeight = sentinelHighHeight;
+
+        // Reset timers
+        sweepTimer = 0f;
+        isSweeping = false;
+        fieldTimer = 0f;
+
+        ChangeState(GeobionteState.Transformed);
+        Debug.Log("[SENTINELA] TRANSFORMAÇÃO COMPLETA! Esfera alta, pernas com dano, " + sentinelMaxHP + " hits para derrotar!");
+    }
+
+    /// <summary>
+    /// Lógica de combate do Sentinela:
+    /// - Esfera fica alta (invulnerável) por sentinelInvulnerableDuration segundos
+    /// - Depois desce (vulnerável) por sentinelVulnerableWindow segundos
+    /// - Ciclo repete até derrota
+    /// - Pernas dão dano automaticamente (gerenciado pelo Leg.cs)
+    /// - Campo de cristais é criado periodicamente
+    /// </summary>
+    void HandleSentinelCombat()
+    {
+        if (health != null && health.CurrentHealth <= 0) return;
+
+        // Timer do campo de cristais
+        if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
+
+        // Rotação lenta para olhar o player
+        HandleRotation();
+
+        // Ciclo de esfera alta/baixa
+        sentinelPhaseTimer += Time.deltaTime;
+
+        if (!sentinelVulnerable)
+        {
+            // FASE: Esfera ALTA (invulnerável)
+            sentinelTargetHeight = sentinelHighHeight;
+
+            if (health != null) health.isInvulnerable = true;
+
+            // Cria campo de cristais periodicamente
+            if (fieldTimer <= 0 && playerTransform != null)
+            {
+                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+                if (distToPlayer <= attackRange * 2f)
+                {
+                    CreateCrystalField();
+                }
+            }
+
+            // Após sentinelInvulnerableDuration, baixa a esfera
+            if (sentinelPhaseTimer >= sentinelInvulnerableDuration)
+            {
+                sentinelVulnerable = true;
+                sentinelPhaseTimer = 0f;
+                Debug.Log("[SENTINELA] Esfera DESCENDO! Janela de vulnerabilidade aberta!");
+            }
+        }
+        else
+        {
+            // FASE: Esfera BAIXA (vulnerável)
+            sentinelTargetHeight = sentinelLowHeight;
+
+            if (health != null) health.isInvulnerable = false;
+
+            // Após sentinelVulnerableWindow, sobe a esfera
+            if (sentinelPhaseTimer >= sentinelVulnerableWindow)
+            {
+                sentinelVulnerable = false;
+                sentinelPhaseTimer = 0f;
+                if (health != null) health.isInvulnerable = true;
+                Debug.Log("[SENTINELA] Esfera SUBINDO! Invulnerável novamente.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Chamado quando o Sentinela é derrotado (10 hits).
+    /// Morte permanente: dropa loot e é destruído.
+    /// </summary>
+    void OnSentinelDefeated()
+    {
+        Debug.Log("[SENTINELA] DERROTADO! Morte permanente!");
+
+        isSweeping = false;
+
+        // Desativa dano das pernas imediatamente
+        if (mimicComponent != null)
+        {
+            mimicComponent.legsDealDamage = false;
+        }
+
+        // Dropar loot
+        EnemyDrops drops = GetComponent<EnemyDrops>()
+                        ?? GetComponentInChildren<EnemyDrops>()
+                        ?? GetComponentInParent<EnemyDrops>();
+        if (drops != null)
+        {
+            drops.OnDeath();
+        }
+
+        // Dropar essência extra (100% do valor acumulado)
+        if (absorbedOreValue > 0 && drops != null && drops.essencePrefab != null)
+        {
+            Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
+            GameObject essenceObj = Instantiate(drops.essencePrefab, spawnPos, Quaternion.identity);
+            EssencePickup essencePickup = essenceObj.GetComponent<EssencePickup>();
+            if (essencePickup != null)
+            {
+                essencePickup.essenceValue = absorbedOreValue;
+            }
+            Rigidbody essenceRb = essenceObj.GetComponent<Rigidbody>();
+            if (essenceRb != null)
+            {
+                essenceRb.linearDamping = 5f;
+                essenceRb.AddForce(Vector3.up * 5f, ForceMode.Impulse);
+            }
+            Debug.Log("[SENTINELA] Devolveu 100% dos cristais: " + absorbedOreValue + " essência");
+        }
+
+        // Restaurar buffs roubados do player
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            PlayerDebuffs playerDebuffs = player.GetComponent<PlayerDebuffs>();
+            if (playerDebuffs != null)
+            {
+                playerDebuffs.RestoreStolenBuffs(gameObject);
+                playerDebuffs.RemoveSlow();
+            }
+        }
+
+        // Morte permanente — destruir após animação
+        StartCoroutine(SentinelDeathSequence());
+    }
+
+    /// <summary>
+    /// Animação de morte do Sentinela: encolhe e desaparece.
+    /// </summary>
+    IEnumerator SentinelDeathSequence()
+    {
+        // Torna invulnerável e esconde health bar
+        if (health != null)
+        {
+            health.isInvulnerable = true;
+            if (health.healthBarSlider != null)
+                health.healthBarSlider.gameObject.SetActive(false);
+        }
+
+        // Para o movimento
+        rb.linearVelocity = Vector3.zero;
+        UpdateMimicVelocity();
+
+        // Desativa pernas gradualmente
+        if (mimicComponent != null)
+        {
+            mimicComponent.SetLegsActive(false);
+        }
+
+        // Animação de encolhimento + flash
+        float deathDuration = 1.5f;
+        float elapsed = 0f;
+        Vector3 startScale = transform.localScale;
+
+        while (elapsed < deathDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / deathDuration;
+            float easedT = t * t;
+
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, easedT);
+
+            if (geoMaterial != null)
+            {
+                float flash = Mathf.Sin(t * Mathf.PI * 8f) * 0.5f + 0.5f;
+                Color deathColor = Color.Lerp(new Color(0.9f, 0.2f, 0.8f, 1f), Color.white, flash * (1f - t));
+                geoMaterial.color = deathColor;
+                geoMaterial.SetColor("_EmissionColor", deathColor * 5f * (1f - t));
+                if (geoMaterial.HasProperty("_BaseColor"))
+                    geoMaterial.SetColor("_BaseColor", deathColor);
+            }
+
+            yield return null;
+        }
+
+        Debug.Log("[SENTINELA] Destruído permanentemente!");
+        Destroy(gameObject);
     }
 
     // ========================================================================
@@ -1753,10 +2102,28 @@ public class Geobionte_AI : MonoBehaviour
 
         if (hitGround)
         {
-            float currentHoverHeight = (currentState == GeobionteState.Transformed && !isSentinel) ? bodyHoverHeight * 0.5f : bodyHoverHeight;
+            float currentHoverHeight;
+            if (currentState == GeobionteState.Transformed && isSentinel)
+            {
+                // Sentinela: usa a altura alvo do ciclo alta/baixa
+                currentHoverHeight = sentinelTargetHeight;
+            }
+            else if (currentState == GeobionteState.Transformed && !isSentinel)
+            {
+                // Bismutado: hover reduzido
+                currentHoverHeight = bodyHoverHeight * 0.5f;
+            }
+            else
+            {
+                // Forma base: hover normal
+                currentHoverHeight = bodyHoverHeight;
+            }
+
             float targetY = groundHit.point.y + currentHoverHeight;
             float yError = targetY - transform.position.y;
-            float yVelocity = Mathf.Clamp(yError * hoverLerpSpeed, -10f, 10f);
+            // Sentinela usa lerp mais suave para a transição alta/baixa
+            float lerpSpeed = isSentinel ? hoverLerpSpeed * 0.5f : hoverLerpSpeed;
+            float yVelocity = Mathf.Clamp(yError * lerpSpeed, -10f, 10f);
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, yVelocity, rb.linearVelocity.z);
         }
         else

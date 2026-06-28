@@ -59,6 +59,14 @@ namespace MimicSpace
         [Tooltip("This must be updates as the Mimin moves to assure great leg placement")]
         public Vector3 velocity;
 
+        // ==================== DANO DE PERNAS (Sentinela) ====================
+        [Header("Dano de Pernas (Sentinela)")]
+        [Tooltip("Se true, as pernas causam dano ao player por proximidade")]
+        [HideInInspector] public bool legsDealDamage = false;
+        [HideInInspector] public int legDamageAmount = 10;
+        [HideInInspector] public float legDamageCooldown = 0.5f;
+        [HideInInspector] public float legDamageRadius = 1.0f;
+
         void Start()
         {
             ResetMimic();
@@ -174,7 +182,15 @@ namespace MimicSpace
                 newLeg = Instantiate(legPrefab, transform.position, Quaternion.identity);
             }
             newLeg.SetActive(true);
-            newLeg.GetComponent<Leg>().Initialize(footPosition, legResolution, maxLegDistance, growCoef, myMimic, lifeTime);
+
+            // Propaga configuração de dano para a perna (Sentinela)
+            Leg legComponent = newLeg.GetComponent<Leg>();
+            legComponent.dealsDamage = legsDealDamage;
+            legComponent.legDamage = legDamageAmount;
+            legComponent.legDamageCooldown = legDamageCooldown;
+            legComponent.legDamageRadius = legDamageRadius;
+
+            legComponent.Initialize(footPosition, legResolution, maxLegDistance, growCoef, myMimic, lifeTime);
             newLeg.transform.SetParent(myMimic.transform);
             
             PlayLegSound(footPosition);
