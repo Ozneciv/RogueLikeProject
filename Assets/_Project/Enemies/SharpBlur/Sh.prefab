@@ -90,9 +90,6 @@ PrefabInstance:
       addedObject: {fileID: 6658018576570740307}
     - targetCorrespondingSourceObject: {fileID: -8098169881513260187, guid: e50082332ad41084cab3ed3dd91cf705, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -1610132883090099434}
-    - targetCorrespondingSourceObject: {fileID: -8098169881513260187, guid: e50082332ad41084cab3ed3dd91cf705, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 3588484501910454750}
   m_SourcePrefab: {fileID: 3150474306388093854, guid: e50082332ad41084cab3ed3dd91cf705, type: 3}
 --- !u!1 &5825432386404738263 stripped
@@ -192,25 +189,10 @@ MonoBehaviour:
   anticipationTime: 0.2
   leadPrediction: 0.5
   retreatDistance: 4
-  dashOpacity: 0.569
-  fadeSpeed: 20
-  trailMaterial: {fileID: 0}
-  ghostLifetime: 0.4
-  ghostSpawnInterval: 0.03
-  ghostInitialAlpha: 0.234
   dashDamage: 15
---- !u!114 &-1610132883090099434
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5825432386404738263}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a1698e91a0149048b82706898abc45f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GhostTrail
+  hologramPrefab: {fileID: 0}
+  hologramMaterial: {fileID: 0}
+  hologramAlpha: 0.6
 --- !u!65 &3588484501910454750
 BoxCollider:
   m_ObjectHideFlags: 0

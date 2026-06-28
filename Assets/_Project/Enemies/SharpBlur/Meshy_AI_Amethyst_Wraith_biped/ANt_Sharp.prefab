@@ -199,9 +199,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8771091787928289351, guid: 98a6dc0a148e40048afbc43116695b9a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5437306787277278715}
-    - targetCorrespondingSourceObject: {fileID: 8771091787928289351, guid: 98a6dc0a148e40048afbc43116695b9a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6527869336085566463}
   m_SourcePrefab: {fileID: -4161369568681901532, guid: 98a6dc0a148e40048afbc43116695b9a, type: 3}
 --- !u!1 &4268998290841704769 stripped
 GameObject:
@@ -318,19 +315,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SharpBlur
   activationDistance: 25
-  attackTriggerDistance: 3
+  attackTriggerDistance: 6
   chaseSpeed: 6
   dashDistance: 9
   dashSpeed: 30
   pauseBetweenDashes: 0.25
   endSequenceRest: 1.2
   anticipationTime: 0.2
-  leadPrediction: 0.5
+  leadPrediction: 0.469
   retreatDistance: 4
   dashDamage: 15
-  hologramPrefab: {fileID: 4268998290841704769}
-  hologramMaterial: {fileID: 2100000, guid: e6b9b44320f4448d9d5e0ee634259966, type: 2}
-  hologramAlpha: 0.23
+  hologramPrefab: {fileID: 4003337562454944380, guid: 92ec80068f9a9234ba6e3dd5d7a80d41, type: 3}
+  hologramMaterial: {fileID: 2100000, guid: 70a32a940b8e3e042a142b4897bfe3f3, type: 2}
+  hologramAlpha: 0.266
 --- !u!65 &5437306787277278715
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -352,15 +349,3 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 2, z: 1}
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &6527869336085566463
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4268998290841704769}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a1698e91a0149048b82706898abc45f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GhostTrail
