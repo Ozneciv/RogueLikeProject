@@ -439,6 +439,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  itemData: {fileID: 11400000, guid: 0cd9f6c1106f5c94da716cb26d915758, type: 2}
   objetoNome: Sapinho
   icon: {fileID: 0}
   descricao: 

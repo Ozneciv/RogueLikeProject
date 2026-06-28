@@ -1691,7 +1691,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
   enemyIdentity: {fileID: 921070318}
   usarTrigger: 0
-  usarDistancia: 1
+  usarDistancia: 0
   distanciaDeteccao: 12
   debugLogs: 1
 --- !u!1 &983045750
@@ -4028,6 +4028,11 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6353667108167919905, guid: 36df8d37a04341e4f8b41d369150e04d, type: 3}
   m_PrefabInstance: {fileID: 1845984741}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1934201450 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 233689325007362467, guid: 1430e281a0db67e469fe83fcfc069ff6, type: 3}
+  m_PrefabInstance: {fileID: 2090868573}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1943778834
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4416,6 +4421,14 @@ PrefabInstance:
       propertyPath: spinSpeed
       value: 500
       objectReference: {fileID: 0}
+    - target: {fileID: 2703508351237985606, guid: 1430e281a0db67e469fe83fcfc069ff6, type: 3}
+      propertyPath: attackPoint
+      value: 
+      objectReference: {fileID: 1934201450}
+    - target: {fileID: 2703508351237985606, guid: 1430e281a0db67e469fe83fcfc069ff6, type: 3}
+      propertyPath: attackEffect
+      value: 
+      objectReference: {fileID: 6389406066330802589, guid: 5ef8d476ac4025a4e85cc5e7c5004889, type: 3}
     - target: {fileID: 5902058234240059472, guid: 1430e281a0db67e469fe83fcfc069ff6, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
