@@ -1,0 +1,32 @@
+using System;
+using System.Collections.Generic;
+
+/// <summary>
+/// Entrada única de item salvo: ID + quantidade.
+/// </summary>
+[Serializable]
+public class ItemSaveEntry
+{
+    public string itemId;
+    public int quantity;
+
+    public ItemSaveEntry() { }
+    public ItemSaveEntry(string id, int qty) { itemId = id; quantity = qty; }
+}
+
+/// <summary>
+/// Dados permanentes do jogador que sobrevivem entre sessões.
+/// Salvos em disco ao fechar o jogo e carregados na inicialização.
+///
+/// Conteúdo:
+///   inventoryMaxSlots        — capacidade de slots comprada na base
+///   baseResources            — itens com returnsToBase=true acumulados ao longo das runs
+///   purchasedUpgradeIndices  — índices dos upgrades de PlayerUpgrades já comprados
+/// </summary>
+[Serializable]
+public class PersistentSaveData
+{
+    public int inventoryMaxSlots = 10;
+    public List<ItemSaveEntry> baseResources = new List<ItemSaveEntry>();
+    public List<int> purchasedUpgradeIndices = new List<int>();
+}

@@ -226,6 +226,9 @@ public class PlayerHealth : MonoBehaviour
         if (playerMovement != null) playerMovement.enabled = false;
         if (playerAttack != null) playerAttack.enabled = false;
         gameObject.layer = LayerMask.NameToLayer("DeadBody");
+
+        // Limpa o inventário de run (descarta itens comuns, mantém recursos de base)
+        SaveManager.instance?.OnPlayerDied(this.gameObject);
         
         // Trava física ao morrer também
         if (rb != null) 

@@ -31,6 +31,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6511754541303866777}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1848438909714516206
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 233689325007362467}
+  m_Layer: 0
+  m_Name: AttackPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &233689325007362467
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1848438909714516206}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5439841382662624795}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2145184145326641733
 GameObject:
   m_ObjectHideFlags: 0
@@ -475,7 +506,7 @@ MonoBehaviour:
   delayDanoRabada: 0.3
   meleeAttackRange: 1.5
   spinDuration: 1.2
-  spinSpeed: 720
+  spinSpeed: 500
   spinDamage: 25
   spinCooldown: 5
   animTriggerSpin: SpinAttack
@@ -539,7 +570,8 @@ Transform:
   m_LocalPosition: {x: -0.129, y: 0.014, z: -0.803}
   m_LocalScale: {x: 0.34708002, y: 0.34708002, z: 0.34708002}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 233689325007362467}
   m_Father: {fileID: 6511754541303866777}
   m_LocalEulerAnglesHint: {x: -6.087, y: -81.747, z: 89.119}
 --- !u!33 &2302955673842146509

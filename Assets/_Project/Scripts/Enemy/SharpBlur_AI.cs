@@ -9,12 +9,17 @@ public class SharpBlur : MonoBehaviour
     private Rigidbody playerRb; 
     private DummyHealth health;
     private Rigidbody rb;
-    private Renderer enemyRenderer;
+    private Animator anim;
 
     [Header("Ativação & Perseguição")]
     public float activationDistance = 25f;
-    public float attackTriggerDistance = 3f; 
     public float chaseSpeed = 6f;
+    
+    [Header("Gatilhos de Ataque (Distâncias)")]
+    [Tooltip("Distância média para iniciar a sequência de Dash")]
+    public float dashTriggerDistance = 8f; 
+    [Tooltip("Distância curta para dar um soco/ataque normal")]
+    public float meleeTriggerDistance = 2.5f;
 
     [Header("Configurações do Dash")]
     public float dashDistance = 9f;
@@ -22,41 +27,36 @@ public class SharpBlur : MonoBehaviour
     public float pauseBetweenDashes = 0.25f;
     public float endSequenceRest = 1.2f;
 
+    [Header("Configurações do Ataque Corpo a Corpo")]
+    public float meleeDuration = 1f; // Tempo que dura a animação do soco
+    public int meleeDamage = 10;
+
     [Header("Refinamentos Inteligencia")]
     public float anticipationTime = 0.2f; 
     [Range(0f, 1f)] public float leadPrediction = 0.5f;
     public float retreatDistance = 4f;
 
-    [Header("Opacidade do Inimigo")]
-    [Range(0f, 1f)] public float dashOpacity = 0.15f; 
-    public float fadeSpeed = 12f;     
-    
-    [Header("Efeito do Rastro Fantasma")]
-    [Tooltip("Material transparente usado para as cópias do rastro")]
-    public Material trailMaterial;
-    [Tooltip("Tempo em segundos que cada fantasma fica no chão antes de sumir por completo")]
-    public float ghostLifetime = 0.4f;
-    [Tooltip("Intervalo de tempo entre a criação de um fantasma e outro durante o dash")]
-    public float ghostSpawnInterval = 0.03f;
-    [Range(0f, 1f)] public float ghostInitialAlpha = 0.5f;
-
     [Header("Dano")]
     public int dashDamage = 15;
 
-    private enum State { Idle, Chasing, Dashing, Resting }
+    [Header("Efeitos Visuais")]
+    [Tooltip("Coloque o Prefab vazio com o script DashHologram aqui")]
+    public GameObject hologramPrefab; 
+    [Tooltip("Coloque o Material transparente/fantasma aqui")]
+    public Material hologramMaterial;
+    [Range(0.1f, 1f)] public float hologramAlpha = 0.6f;
+
+    // Adicionado o estado MeleeAttacking
+    private enum State { Idle, Chasing, Dashing, MeleeAttacking, Resting }
     private State currentState = State.Idle;
-    private Color targetColor;
-    private bool isEmittingTrail = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         health = GetComponent<DummyHealth>();
-        enemyRenderer = GetComponentInChildren<Renderer>();
+        anim = GetComponentInChildren<Animator>();
 
         rb.useGravity = false;
-        
-    
         rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
 
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -65,19 +65,11 @@ public class SharpBlur : MonoBehaviour
             playerTransform = player.transform;
             playerRb = player.GetComponent<Rigidbody>();
         }
-
-        if (enemyRenderer != null)
-            targetColor = enemyRenderer.material.color;
-
-        if (trailMaterial == null && enemyRenderer != null)
-            trailMaterial = enemyRenderer.material;
     }
 
     void Update()
     {
         if (playerTransform == null || (health != null && health.CurrentHealth <= 0)) return;
-
-        HandleVisualFade();
 
         switch (currentState)
         {
@@ -86,12 +78,10 @@ public class SharpBlur : MonoBehaviour
         }
     }
 
-   
     void FixedUpdate()
     {
         if (rb != null)
         {
-    
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
@@ -100,7 +90,10 @@ public class SharpBlur : MonoBehaviour
     void HandleIdle()
     {
         if (Vector3.Distance(transform.position, playerTransform.position) <= activationDistance)
+        {
             currentState = State.Chasing;
+            if (anim != null) anim.SetBool("isChasing", true);
+        }
     }
 
     void HandleChasing()
@@ -109,50 +102,111 @@ public class SharpBlur : MonoBehaviour
         
         LookAtPosition(playerTransform.position, 10f);
 
-        if (distToPlayer <= attackTriggerDistance)
+        // NOVA LÓGICA DE DECISÃO COM ALEATORIEDADE DE PERTO
+        if (distToPlayer <= meleeTriggerDistance)
         {
-            StartCoroutine(TripleDashRoutine());
+            // Sorteia um número de 0 a 100. 
+            // Se cair abaixo de 50 (50% de chance), ele dá o ataque Melee.
+            // Se cair 50 ou mais, ele surpreende e dá o Dash!
+            if (Random.Range(0, 100) < 50)
+            {
+                StartCoroutine(MeleeAttackRoutine());
+            }
+            else
+            {
+                StartCoroutine(DashRoutine());
+            }
+        }
+        else if (distToPlayer <= dashTriggerDistance)
+        {
+            // Se estiver na distância média, ele só usa os dashes
+            StartCoroutine(DashRoutine());
         }
         else
         {
+            // Se estiver longe, continua correndo atrás do player
             Vector3 targetPos = Vector3.MoveTowards(transform.position, playerTransform.position, chaseSpeed * Time.deltaTime);
             rb.MovePosition(targetPos);
         }
     }
 
-    IEnumerator TripleDashRoutine()
+    // NOVA ROTINA: Ataque de perto
+    IEnumerator MeleeAttackRoutine()
     {
-        currentState = State.Dashing;
+        currentState = State.MeleeAttacking;
 
-        for (int i = 0; i < 3; i++)
+        if (anim != null) anim.SetBool("isChasing", false);
+        
+        // Substitua "Melee" pelo nome exato da sua animação de soco/mordida no Animator
+        if (anim != null) anim.Play("Melee", 0, 0f); 
+
+        // Aguarda o tempo do ataque acontecer
+        yield return new WaitForSeconds(meleeDuration / 2f);
+
+        // Verifica se o jogador ainda está perto no momento do impacto para dar o dano
+        if (Vector3.Distance(transform.position, playerTransform.position) <= meleeTriggerDistance + 1f)
         {
-            if (enemyRenderer != null) targetColor.a = dashOpacity;
-            Vector3 targetPredictPos = GetPredictedPlayerPosition();
-            
-            LookAtPosition(targetPredictPos, 20f);
-            yield return new WaitForSeconds(anticipationTime);
-
-            Vector3 dashDirection = (targetPredictPos - transform.position).normalized;
-            dashDirection.y = 0;
-
-            isEmittingTrail = true;
-            StartCoroutine(GenerateTrailRoutine());
-
-            yield return StartCoroutine(ExecuteSingleDash(dashDirection, targetPredictPos));
-            
-            isEmittingTrail = false;
-
-            yield return new WaitForSeconds(pauseBetweenDashes);
+            Debug.Log($"[SharpBlur] acertou o jogador de perto e causou {meleeDamage} de dano.");
         }
 
-        yield return StartCoroutine(RetreatRoutine());
-
-        if (enemyRenderer != null) targetColor.a = 1f;
+        // Termina a segunda metade da animação
+        yield return new WaitForSeconds(meleeDuration / 2f);
 
         currentState = State.Resting;
         yield return new WaitForSeconds(endSequenceRest);
         
         currentState = State.Chasing;
+        if (anim != null) anim.SetBool("isChasing", true);
+    }
+
+    // ANTIGO TripleDashRoutine AGORA É DashRoutine (Quantidade Aleatória)
+    IEnumerator DashRoutine()
+    {
+        currentState = State.Dashing;
+
+        if (anim != null) anim.SetBool("isChasing", false);
+
+        // Escolhe um número aleatório entre 1, 2 e 3 para a quantidade de dashes
+        int numberOfDashes = Random.Range(1, 4);
+
+        for (int i = 0; i < numberOfDashes; i++)
+        {
+            Vector3 targetPredictPos = GetPredictedPlayerPosition();
+            LookAtPosition(targetPredictPos, 20f);
+            
+            Vector3 dashDirection = (targetPredictPos - transform.position).normalized;
+            dashDirection.y = 0;
+            if (dashDirection == Vector3.zero) dashDirection = transform.forward;
+
+            Vector3 targetBasePos = targetPredictPos;
+            targetBasePos.y = transform.position.y; 
+            Vector3 targetDashPos = targetBasePos + (dashDirection * (dashDistance / 2f));
+            Quaternion dashRot = Quaternion.LookRotation(dashDirection);
+
+            if (hologramPrefab != null && hologramMaterial != null)
+            {
+                GameObject holo = Instantiate(hologramPrefab);
+                DashHologram holoScript = holo.GetComponent<DashHologram>();
+                if (holoScript != null)
+                {
+                    holoScript.Init(transform, targetDashPos, dashRot, anticipationTime, hologramMaterial, hologramAlpha);
+                }
+            }
+
+            if (anim != null) anim.Play("Dash", 0, 0f);
+            
+            yield return new WaitForSeconds(anticipationTime);
+            yield return StartCoroutine(ExecuteSingleDash(dashDirection, targetPredictPos));
+            yield return new WaitForSeconds(pauseBetweenDashes);
+        }
+
+        yield return StartCoroutine(RetreatRoutine());
+
+        currentState = State.Resting;
+        yield return new WaitForSeconds(endSequenceRest);
+        
+        currentState = State.Chasing;
+        if (anim != null) anim.SetBool("isChasing", true);
     }
 
     IEnumerator ExecuteSingleDash(Vector3 direction, Vector3 targetBasePos)
@@ -177,19 +231,6 @@ public class SharpBlur : MonoBehaviour
         }
 
         rb.MovePosition(targetDashPos);
-    }
-
-    IEnumerator GenerateTrailRoutine()
-    {
-        while (isEmittingTrail)
-        {
-            GameObject ghostObj = new GameObject("SharpBlur_Ghost");
-            GhostTrail ghostScript = ghostObj.AddComponent<GhostTrail>();
-            
-            ghostScript.Init(transform, ghostLifetime, trailMaterial, ghostInitialAlpha);
-
-            yield return new WaitForSeconds(ghostSpawnInterval);
-        }
     }
 
     IEnumerator RetreatRoutine()
@@ -222,23 +263,16 @@ public class SharpBlur : MonoBehaviour
         return playerPos;
     }
 
-    void HandleVisualFade()
-    {
-        if (enemyRenderer == null) return;
-        Color currentColor = enemyRenderer.material.color;
-        enemyRenderer.material.color = Color.Lerp(currentColor, targetColor, fadeSpeed * Time.deltaTime);
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         if (currentState == State.Dashing && other.CompareTag("Player"))
-            Debug.Log($"[SharpBlur] causou {dashDamage} de dano.");
+            Debug.Log($"[SharpBlur] causou {dashDamage} de dano com o Dash.");
     }
 
     private void OnCollisionEnter(Collision collision)
     {
         if (currentState == State.Dashing && collision.gameObject.CompareTag("Player"))
-            Debug.Log($"[SharpBlur] causou {dashDamage} de dano.");
+            Debug.Log($"[SharpBlur] causou {dashDamage} de dano com o Dash.");
     }
 
     void LookAtPosition(Vector3 target, float rotationSpeed)

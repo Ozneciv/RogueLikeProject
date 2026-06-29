@@ -30,6 +30,13 @@ public class DummyHealth : MonoBehaviour
     [HideInInspector] public bool isBuffed = false;
 
     /// <summary>
+    /// Se > 0, cada hit causa exatamente este valor de dano, independente do dano da arma.
+    /// Usado pelo Geobionte para que 7 hits = 7 HP (1 dano por hit).
+    /// Valor padrão 0 = comportamento normal (usa o dano real da arma).
+    /// </summary>
+    [HideInInspector] public int fixedDamageOverride = 0;
+
+    /// <summary>
     /// Se definido, chama este callback ao invés da lógica padrão de morte (drops + Destroy).
     /// Usado pelo Geobionte para substituir morte por fuga.
     /// Não afeta nenhum inimigo que não defina esse campo (null por padrão).
@@ -41,10 +48,13 @@ public class DummyHealth : MonoBehaviour
     private bool hasBaseColor = false;
     private Renderer dummyRenderer;
 
-    private void Start()
+    private void Awake()
     {
         CurrentHealth = maxHealth;
+    }
 
+    private void Start()
+    {
         dummyRenderer = GetComponentInChildren<Renderer>();
         if (dummyRenderer != null)
         {
@@ -116,6 +126,10 @@ public class DummyHealth : MonoBehaviour
             Debug.Log($"[DummyHealth] {gameObject.name} TakeDamage({damage}) before={CurrentHealth}");
         }
 
+        // Se fixedDamageOverride está ativo, cada hit causa exatamente esse valor
+        if (fixedDamageOverride > 0)
+            damage = fixedDamageOverride;
+
         // Se estiver buffado, recebe dano reduzido (ex: metade)
         if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
 
@@ -145,6 +159,12 @@ public class DummyHealth : MonoBehaviour
             CurrentHealth = 0;
             Die();
         }
+    }
+
+    public void SetHealth(int value)
+    {
+        CurrentHealth = Mathf.Clamp(value, 0, maxHealth);
+        UpdateHealthBar();
     }
 
     void ShowHealthBar()

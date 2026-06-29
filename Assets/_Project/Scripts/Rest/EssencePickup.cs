@@ -15,8 +15,16 @@ public class EssencePickup : MonoBehaviour
     public float attractSpeed = 8f;
     [Tooltip("Distância para começar a atrair")]
     public float attractDistance = 3f;
+    [Tooltip("Offset vertical do ponto de atração (0 = pés, 1.2 = peito)")]
+    public float attractYOffset = 1.2f;
     [Tooltip("Velocidade de rotação visual")]
     public float rotateSpeed = 90f;
+
+    [Header("Flutuação")]
+    [Tooltip("Altura da flutuação (pra cima e pra baixo)")]
+    public float bobHeight = 0.15f;
+    [Tooltip("Velocidade da flutuação")]
+    public float bobSpeed = 2f;
 
     [Header("Configurações")]
     [Tooltip("Tempo antes de poder ser coletada (evita coleta instantânea)")]
@@ -27,10 +35,13 @@ public class EssencePickup : MonoBehaviour
     private Transform playerTransform;
     private bool canBePickedUp = false;
     private float spawnTime;
+    private float baseY;
+    private bool isBeingAttracted = false;
 
     void Start()
     {
         spawnTime = Time.time;
+        baseY = transform.position.y;
 
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -61,16 +72,27 @@ public class EssencePickup : MonoBehaviour
         // Rotação visual
         transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime);
 
-        // Atração magnética para o player
-        if (playerTransform != null)
+        // Checa se o player está perto pra atrair
+        if (!isBeingAttracted && playerTransform != null)
         {
             float dist = Vector3.Distance(transform.position, playerTransform.position);
-            
             if (dist < attractDistance)
             {
-                Vector3 direction = (playerTransform.position - transform.position).normalized;
-                transform.position += direction * attractSpeed * Time.deltaTime;
+                isBeingAttracted = true;
             }
+        }
+
+        if (isBeingAttracted && playerTransform != null)
+        {
+            // Atração magnética - voa direto pro peito do player
+            Vector3 targetPos = playerTransform.position + Vector3.up * attractYOffset;
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, attractSpeed * Time.deltaTime);
+        }
+        else
+        {
+            // Flutuação (bobbing) - só quando está parada no chão
+            float newY = baseY + Mathf.Sin(Time.time * bobSpeed) * bobHeight;
+            transform.position = new Vector3(transform.position.x, newY, transform.position.z);
         }
     }
 

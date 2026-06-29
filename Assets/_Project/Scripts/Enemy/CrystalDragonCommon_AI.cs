@@ -97,6 +97,8 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     public float spinCooldown = 5f;
     [Tooltip("Trigger do Animator para o spin attack")]
     public string animTriggerSpin = "SpinAttack";
+    public GameObject attackEffect;
+    public Transform attackPoint;
 
     // ─────────────────────────────────────────────────────────────
     // Privado
@@ -531,6 +533,10 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         }
 
         // ── Fase 2: Giro 360° com dano ────────────────────────
+        // Dispara o efeito visual de slash no início do giro
+        if (attackEffect != null && attackPoint != null)
+            Attack();
+
         // HashSet evita aplicar dano múltiplas vezes no mesmo alvo
         var atingidos = new System.Collections.Generic.HashSet<GameObject>();
         float elapsed = 0f;
@@ -644,4 +650,13 @@ public class CrystalDragonCommon_AI : MonoBehaviour
         Gizmos.color = new Color(1f, 0.4f, 0f); // laranja
         Gizmos.DrawWireSphere(transform.position, meleeAttackRange);
     }
+        public void Attack()
+    {
+        Instantiate(
+            attackEffect,
+            attackPoint.position,
+            Quaternion.Euler(0f, transform.eulerAngles.y, 0f)
+        );
+    }
+
 }

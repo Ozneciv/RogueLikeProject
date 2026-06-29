@@ -69,26 +69,38 @@ public class CharacteristicItemPickup : MonoBehaviour
 
     void CollectItem(GameObject player)
     {
-        // Tenta encontrar o inventário do player
+        // Tenta encontrar o inventário do player (mesmo padrão do EssencePickup)
         PlayerInventory inventory = player.GetComponent<PlayerInventory>();
         
-        if (inventory != null)
+        // Fallback: busca nos pais (ex: colisor está num filho do Player)
+        if (inventory == null)
         {
-            bool added = inventory.AddItem(itemId, 1);
-            
-            if (!added)
-            {
-                // Inventário cheio — item permanece no chão
-                Debug.Log("[ITEM] Inventário cheio! Não coletou: " + itemName);
-                return; // NÃO destrói o item
-            }
-            
-            Debug.Log("[ITEM] Coletou: " + itemName + " (ID: " + itemId + ")");
+            inventory = player.GetComponentInParent<PlayerInventory>();
         }
-        else
+
+        // Fallback final: busca global (Player é DontDestroyOnLoad)
+        if (inventory == null)
         {
-            Debug.Log("[ITEM] Coletou: " + itemName + " (PlayerInventory não encontrado, apenas log)");
+            inventory = FindObjectOfType<PlayerInventory>();
         }
+        
+        if (inventory == null)
+        {
+            // Sem inventário → item permanece no chão para tentar de novo
+            Debug.LogWarning("[ITEM] PlayerInventory não encontrado! Item permanece no chão: " + itemName);
+            return; // NÃO destrói o item
+        }
+
+        bool added = inventory.AddItem(itemId, 1);
+        
+        if (!added)
+        {
+            // Inventário cheio — item permanece no chão
+            Debug.Log("[ITEM] Inventário cheio! Não coletou: " + itemName);
+            return; // NÃO destrói o item
+        }
+        
+        Debug.Log("[ITEM] Coletou: " + itemName + " (ID: " + itemId + ")");
 
         // VFX/SFX de coleta aqui se quiser
 

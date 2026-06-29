@@ -100,11 +100,11 @@ MonoBehaviour:
   trailDropInterval: 1.5
   trailOffset: 1.5
   crystalPrefabs:
-  - {fileID: 1234396947130864949, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
-  - {fileID: 5773874075916715037, guid: b443081fb7f36044e90f38be50621fdb, type: 3}
-  - {fileID: 6230593887686849060, guid: e7bb87534bad7a04c9626216d8515711, type: 3}
-  - {fileID: 3042150092044236706, guid: 9fa43bc1071a32d4c8bfb218994a1efd, type: 3}
-  - {fileID: 700640002960959754, guid: 6381de00f93d57e48b6d1d51c867f677, type: 3}
+  - {fileID: 8242620846978568234, guid: a6e66e1ae4ca0d64ba1d54b7332c2173, type: 3}
+  - {fileID: 3599961167296391606, guid: 011807a98e473ff489d4351e3ffb6f7a, type: 3}
+  - {fileID: 1480619410411027743, guid: d306b5f2deb0e874fb7b50c83b9b3942, type: 3}
+  - {fileID: 6868172829605524901, guid: 9a96add4a6b5acd43af31606411f0fc6, type: 3}
+  - {fileID: 280414134438346695, guid: 7a086ebdbbd0b6b459fe43f885e298b6, type: 3}
   arcAngle: 120
   crystalsPerArc: 5
   crystalSpawnInterval: 0.5

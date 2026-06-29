@@ -44,11 +44,21 @@ namespace MimicSpace
         public float maxOscillationSpeed;
         float oscillationProgress;
 
-        public Color myColor;
+        [Header("Visuals")]
+        public Color myColor = new Color(0.03f, 0.01f, 0.05f, 1f); // Roxo muito escuro, quase preto
+
+        // ==================== DANO (Sentinela) ====================
+        [Header("Dano (Sentinela)")]
+        [HideInInspector] public bool dealsDamage = false;
+        [HideInInspector] public int legDamage = 10;
+        [HideInInspector] public float legDamageCooldown = 0.5f;
+        [HideInInspector] public float legDamageRadius = 1.0f;
+
+        private Transform playerTransformCached;
+        private float legDamageTimer = 0f;
 
         public void Initialize(Vector3 footPosition, int legResolution, float maxLegDistance, float growCoef, Mimic myMimic, float lifeTime)
         {
-            myColor = new Color(0.15f, 0.05f, 0.2f, 1f); // Roxo escuro para combinar com o corpo
             this.footPosition = footPosition;
             this.legResolution = legResolution;
             this.maxLegDistance = maxLegDistance;
@@ -63,11 +73,19 @@ namespace MimicSpace
 
             Material legMaterial = new Material(shader);
             legMaterial.color = myColor;
-            legMaterial.EnableKeyword("_EMISSION");
-            legMaterial.SetColor("_EmissionColor", myColor * 0.5f);
+            
+            // Remove a emissão para não clarear a cor artificialmente
+            legMaterial.DisableKeyword("_EMISSION");
+            legMaterial.SetColor("_EmissionColor", Color.black);
             
             if (legMaterial.HasProperty("_BaseColor"))
                 legMaterial.SetColor("_BaseColor", myColor);
+                
+            // Tira o reflexo (glossiness/smoothness) que reflete o céu e deixa tudo com um "esfumaçado" cinza
+            if (legMaterial.HasProperty("_Smoothness"))
+                legMaterial.SetFloat("_Smoothness", 0f);
+            if (legMaterial.HasProperty("_Glossiness"))
+                legMaterial.SetFloat("_Glossiness", 0f);
 
             this.legLine.material = legMaterial;
             handles = new Vector3[handlesCount];
@@ -102,8 +120,8 @@ namespace MimicSpace
             foreach(var c in cols) if (c != null) c.enabled = true;
 
             legHeight = Random.Range(legMinHeight, legMaxHeight);
-            rotationSpeed = Random.Range(minRotSpeed, maxRotSpeed); // * (Random.Range(0f, 1f) > 0.5f ? -1 : 1);
-            rotationSign = 1;//(Random.Range(0f, 1f) > 0.5f ? -1 : 1);
+            rotationSpeed = Random.Range(minRotSpeed, maxRotSpeed);
+            rotationSign = 1;
             oscillationSpeed = Random.Range(minOscillationSpeed, maxOscillationSpeed);
             oscillationProgress = 0;
 
@@ -113,6 +131,15 @@ namespace MimicSpace
             isRemoved = false;
             canDie = false;
             isDeployed = false;
+            legDamageTimer = 0f;
+
+            // Cache player reference para dano
+            if (dealsDamage && playerTransformCached == null)
+            {
+                GameObject player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null) playerTransformCached = player.transform;
+            }
+
             StartCoroutine("WaitToDie");
             StartCoroutine("WaitAndDie", lifeTime);
             Sethandles();
@@ -190,6 +217,46 @@ namespace MimicSpace
             Vector3[] points = GetSamplePoints((Vector3[])handles.Clone(), legResolution, progression);
             legLine.positionCount = points.Length;
             legLine.SetPositions(points);
+
+            // Dano de pernas (Sentinela)
+            HandleLegDamage();
+        }
+
+        /// <summary>
+        /// Verifica se o player está próximo do pé da perna e aplica dano com cooldown.
+        /// Usado pelo Geobionte Sentinela como mecânica de combate.
+        /// </summary>
+        void HandleLegDamage()
+        {
+            if (!dealsDamage || !isDeployed) return;
+
+            // Cooldown
+            if (legDamageTimer > 0f)
+            {
+                legDamageTimer -= Time.deltaTime;
+                return;
+            }
+
+            // Cache player se necessário
+            if (playerTransformCached == null)
+            {
+                GameObject player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null) playerTransformCached = player.transform;
+                else return;
+            }
+
+            // Verifica distância do pé da perna ao player
+            float distToPlayer = Vector3.Distance(handles[7], playerTransformCached.position);
+            if (distToPlayer <= legDamageRadius)
+            {
+                PlayerHealth playerHealth = playerTransformCached.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(legDamage, myMimic.gameObject);
+                    legDamageTimer = legDamageCooldown;
+                    Debug.Log("[SENTINELA] Perna acertou o player! Dano: " + legDamage);
+                }
+            }
         }
 
         void Sethandles()
