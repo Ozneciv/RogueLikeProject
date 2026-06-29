@@ -388,13 +388,10 @@ PrefabInstance:
       addedObject: {fileID: 1977504506494343142}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4db25173a703d504fa73d936beba94e6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 5842216138346119736}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4db25173a703d504fa73d936beba94e6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: -3870829055168723551}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4db25173a703d504fa73d936beba94e6, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 4164538886677637820}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4db25173a703d504fa73d936beba94e6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4493680693873101053}
   m_SourcePrefab: {fileID: 100100000, guid: 4db25173a703d504fa73d936beba94e6, type: 3}
 --- !u!1 &8360225513443378965 stripped
 GameObject:
@@ -413,38 +410,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  itemData: {fileID: 11400000, guid: eb468aebeb8071e49a948e858c2ea3bb, type: 2}
   objetoNome: Tinker
   icon: {fileID: 0}
   descricao: 
   foiCatalogado: 0
---- !u!114 &5842216138346119736
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8360225513443378965}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe37b7db57670ce4e8be66679dea8dd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  interactable: {fileID: 0}
---- !u!114 &-3870829055168723551
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8360225513443378965}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
-  collectable: {fileID: 0}
-  glowObject: {fileID: 398657471665777129}
-  pressFUI: {fileID: 1923764433491739554}
 --- !u!65 &4164538886677637820
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -466,6 +436,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 10.05699, y: 11.737827, z: 5.035426}
   m_Center: {x: 1.3802896, y: 1.4116778, z: 2.0177138}
+--- !u!114 &4493680693873101053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8360225513443378965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81838ed9fcc92fa49a447d87ed102ca1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
+  bobSpeed: 2
+  bobHeight: 0.2
+  glowObject: {fileID: 398657471665777129}
+  pressFUI: {fileID: 1923764433491739554}
+  pickupDelay: 0.5
+  lifetime: 60
 --- !u!4 &9173459036367166895 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4db25173a703d504fa73d936beba94e6, type: 3}

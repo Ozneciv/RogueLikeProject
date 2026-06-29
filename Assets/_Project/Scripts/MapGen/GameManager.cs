@@ -78,7 +78,12 @@ public class GameManager : MonoBehaviour
 
     public void RegisterPlayer(GameObject player)
     {
-        if (currentPlayer == null) currentPlayer = player;
+        if (currentPlayer == null)
+        {
+            currentPlayer = player;
+            // Carrega a progressão permanente assim que o player é registrado
+            SaveManager.instance?.LoadPersistentData(currentPlayer);
+        }
         else if (currentPlayer != player) Destroy(player);
     }
 

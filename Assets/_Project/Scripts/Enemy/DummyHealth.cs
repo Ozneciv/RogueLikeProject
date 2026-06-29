@@ -41,10 +41,13 @@ public class DummyHealth : MonoBehaviour
     private bool hasBaseColor = false;
     private Renderer dummyRenderer;
 
-    private void Start()
+    private void Awake()
     {
         CurrentHealth = maxHealth;
+    }
 
+    private void Start()
+    {
         dummyRenderer = GetComponentInChildren<Renderer>();
         if (dummyRenderer != null)
         {
@@ -145,6 +148,12 @@ public class DummyHealth : MonoBehaviour
             CurrentHealth = 0;
             Die();
         }
+    }
+
+    public void SetHealth(int value)
+    {
+        CurrentHealth = Mathf.Clamp(value, 0, maxHealth);
+        UpdateHealthBar();
     }
 
     void ShowHealthBar()

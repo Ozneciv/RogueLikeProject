@@ -76,6 +76,11 @@ public class ItemData : ScriptableObject
     public string enemySource;
 
     [Header("Upgrades e Infusão")]
+    [Tooltip("Se true, este item retorna à base ao morrer e é salvo na progressão permanente.\n" +
+             "Use para recursos usados em upgrades permanentes da base.\n" +
+             "Se false, o item é descartado ao morrer (item de run/infusão comum).")]
+    public bool returnsToBase = false;
+
     [Tooltip("Essência gerada se o item for reciclado (descartado).")]
     public int recycleEssenceValue = 10;
     

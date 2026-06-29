@@ -274,14 +274,17 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f3d430c0ce97e21499dac0041fde39b0, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 5272026468317195487}
+      addedObject: {fileID: 9144537555125751779}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f3d430c0ce97e21499dac0041fde39b0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 929536717633091681}
   m_SourcePrefab: {fileID: 100100000, guid: f3d430c0ce97e21499dac0041fde39b0, type: 3}
 --- !u!1 &460438119971976252 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: f3d430c0ce97e21499dac0041fde39b0, type: 3}
   m_PrefabInstance: {fileID: 766359425009535341}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &5272026468317195487
+--- !u!114 &9144537555125751779
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -290,12 +293,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 460438119971976252}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
+  m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
-  collectable: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  itemData: {fileID: 11400000, guid: 730d38b2c14a4544ca91051482589a41, type: 2}
+  objetoNome: 
+  icon: {fileID: 0}
+  descricao: 
+  foiCatalogado: 0
+--- !u!114 &929536717633091681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 460438119971976252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81838ed9fcc92fa49a447d87ed102ca1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
+  bobSpeed: 2
+  bobHeight: 0.2
   glowObject: {fileID: 4112240017770456005}
   pressFUI: {fileID: 5995338005856648588}
+  pickupDelay: 0.5
+  lifetime: 60
 --- !u!4 &948041442679991942 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f3d430c0ce97e21499dac0041fde39b0, type: 3}

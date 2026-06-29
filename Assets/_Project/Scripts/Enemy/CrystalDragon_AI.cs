@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// IA do Crystal Dragon — patrulha no chão, ataca com spikes, tail sweep e crash heavy dash.
+/// IA do Crystal Dragon — patrulha no chão, ataca com spikes e tail sweep.
+/// O voo é apenas uma animação de baixa altitude sem ataque.
 /// Usa DummyHealth para vida e PlayerHealth para causar dano.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
@@ -26,36 +27,26 @@ public class CrystalDragon_AI : MonoBehaviour
 
     [Header("Movimento")]
     public float groundSpeed = 5f;
-    public float rotationSpeed = 5f;
-    public float dashSpeed = 8f;
+    public float rotationSpeed = 1.0f;
     public float flightCooldown = 8f;
     private float flightCooldownTimer = 0f;
 
     [Header("Ataques")]
     public float spikeRange = 8f;
     public float tailRange = 3f;
-    public float crashTriggerDistance = 4f;
-    [Tooltip("Distância a partir da qual o dragão inicia o comportamento de voo (aproximação)")]
-    public float flightStartDistance = 6f;
-    [Header("Voo")]
+
+    [Header("Voo (animação de baixa altitude)")]
     [Tooltip("Distância para iniciar o voo (m)")]
     public float flightTriggerDistance = 4f;
-    [Tooltip("Tempo de subida até atingir o voo (segundos)")]
+    [Tooltip("Tempo de subida (segundos)")]
     public float flightAscendTime = 0.6f;
-    [Tooltip("Tempo de hang/espera no ar antes do ataque (segundos)")]
-    public float flightHangTime = 0.6f;
-    [Tooltip("Tempo de descida/aterrissagem (segundos)")]
-    public float flightDescendTime = 0.4f;
-    [Tooltip("Velocidade vertical de subida (apenas para sensação de movimento)")]
-    public float flightAscendSpeed = 6f;
-    [Tooltip("Raio do ataque aéreo que aplica stun ao jogador")]
-    public float flightAttackRange = 3f;
-    [Tooltip("Duração do stun aplicado ao jogador (segundos)")]
-    public float flightStunDuration = 2f;
-    [Tooltip("Altura alvo em relação ao player para atingir o pico do voo (metros)")]
-    public float flightPeakHeight = 2f;
-    [Tooltip("Máxima distância horizontal (m) que o dragão pode deslocar-se durante o voo para posicionar-se acima do player")]
-    public float flightMaxHorizontalMove = 2f;
+    [Tooltip("Tempo de hover no ar (segundos)")]
+    public float flightHangTime = 1.0f;
+    [Tooltip("Tempo de descida (segundos)")]
+    public float flightDescendTime = 0.5f;
+    [Tooltip("Altura do voo acima do solo (metros)")]
+    public float flightPeakHeight = 1.5f;
+
     [Header("Tática")]
     [Tooltip("Distância que o dragão tenta manter para usar Crystal Spikes (m)")]
     public float preferredSpikeDistance = 6f;
@@ -75,31 +66,33 @@ public class CrystalDragon_AI : MonoBehaviour
     [Tooltip("Tolerância radial (m) para considerar-se na distância preferida e então orbitar tangencialmente")]
     public float orbitRadialTolerance = 0.6f;
     [Header("Animator")]
-    [Tooltip("Animator opcional do modelo para triggers de voo/crash")]
+    [Tooltip("Animator do modelo — trigger de voo")]
     public Animator modelAnimator;
     public string flightAnimTrigger = "Fly";
-    public string crashAnimTrigger = "Crash";
-    [Tooltip("Prefab do telegraph visual exibido no chão antes do crash (opcional)")]
-    public GameObject crashTelegraphPrefab;
-    [Tooltip("Tempo em segundos do telegraph antes do crash")]
-    public float crashTelegraphTime = 0.5f;
-    public float spikeCooldown = 5f;
-    [Header("Spike Rate")]
+    [Tooltip("Trigger de animação do Tail Sweep")]
+    public string tailSweepAnimTrigger = "TailSweep";
+
+    [Header("Tail Sweep")]
+    [Tooltip("Ângulo total varrido pelo dragão durante o sweep (graus)")]
+    public float tailSweepArcDegrees = 240f;
+    [Tooltip("Duração do arco de rotação do sweep (segundos)")]
+    public float tailSweepDuration = 0.55f;
+    [Tooltip("Pausa de telegraph antes de iniciar o spin (segundos)")]
+    public float tailSweepTelegraph = 0.35f;
+    [Tooltip("Pausa de recovery após o sweep (segundos)")]
+    public float tailSweepRecovery = 0.3f;
     [Tooltip("Cooldown mínimo entre volleys quando na distância ideal (segundos)")]
     public float spikeCooldownMin = 2f;
     [Tooltip("Cooldown máximo entre volleys quando fora da distância ideal (segundos)")]
     public float spikeCooldownMax = 5f;
     public float tailCooldown = 2f;
-    public float chargeTime = 1.2f;
-    public float recoveryTime = 1.5f;
     public int spikeDamage = 8;
     public int tailDamage = 15;
-    public int crashDamage = 15;
     public int spikeCount = 3;
     public float spikeInterval = 0.15f;
-    public float crashUpwardForce = 3f;
-    public float crashForwardForce = 20f;
     public float tailHitRadius = 2.5f;
+    public GameObject attackEffect;
+    public Transform attackPoint;
 
     [Header("Ataque frontal")]
     [Tooltip("Origem das crystal spikes. Se null, usa a posição do próprio inimigo.")]
@@ -134,21 +127,12 @@ public class CrystalDragon_AI : MonoBehaviour
     private Quaternion lastLoggedModelLocalRotation;
     private float currentYaw = 0f;
 
-    // Para restaurar constraints após crash
-    private RigidbodyConstraints previousConstraints = RigidbodyConstraints.None;
-
     private float spikeTimer = 0f;
     private float tailTimer = 0f;
     private bool isCharging = false;
-    private bool isAirDashing = false;
     private bool isFlying = false;
-    private bool isRecovering = false;
-    // Which subsystem is causing the charging state (used to allow flight to interrupt spikes)
     private bool isChargingForSpikes = false;
     private bool isChargingForTail = false;
-    private bool isChargingForCrash = false;
-    private Vector3 crashTarget;
-    // Ensure the initial state allows the first flight without cooldown
     private bool hasFlownOnce = false;
 
     private void Start()
@@ -258,25 +242,7 @@ public class CrystalDragon_AI : MonoBehaviour
 
         if (spikeTimer > 0f) spikeTimer -= Time.deltaTime;
         if (tailTimer > 0f) tailTimer -= Time.deltaTime;
-        // Only decrement flight cooldown after we've performed the first flight
         if (hasFlownOnce && flightCooldownTimer > 0f) flightCooldownTimer -= Time.deltaTime;
-
-        // Diagnostic: if player is within flight trigger range but flight doesn't start, log the blocking reason
-        if (playerTransform != null)
-        {
-            float _diagDist = Vector3.Distance(transform.position, playerTransform.position);
-            if (_diagDist <= flightStartDistance + 0.5f)
-            {
-                if (isCharging || isAirDashing || isRecovering)
-                {
-                    Debug.Log("[CRYSTAL DRAGON] Flight blocked: busy state -> isCharging=" + isCharging + " isAirDashing=" + isAirDashing + " isRecovering=" + isRecovering);
-                }
-                else if (flightCooldownTimer > 0f)
-                {
-                    Debug.Log("[CRYSTAL DRAGON] Flight blocked: cooldown remaining=" + flightCooldownTimer.ToString("F2") + "s");
-                }
-            }
-        }
 
         if (!isActivated)
         {
@@ -295,7 +261,7 @@ public class CrystalDragon_AI : MonoBehaviour
             return;
         }
 
-        if (isCharging || isAirDashing || isRecovering) return;
+        if (isCharging || isFlying) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
@@ -305,10 +271,9 @@ public class CrystalDragon_AI : MonoBehaviour
             return;
         }
 
-        // Allow the first flight even if cooldown timer would otherwise block it
-        if (!isFlying && distanceToPlayer <= flightTriggerDistance && (flightCooldownTimer <= 0f || !hasFlownOnce) && CanStartFlight())
+        if (distanceToPlayer <= flightTriggerDistance && (flightCooldownTimer <= 0f || !hasFlownOnce))
         {
-            StartCoroutine(PerformFlightStun());
+            StartCoroutine(PerformLowFlight());
             return;
         }
 
@@ -321,7 +286,7 @@ public class CrystalDragon_AI : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!isActivated || isCharging || isAirDashing || isRecovering || isFlying) return;
+        if (!isActivated || isCharging || isFlying) return;
         if (health != null && health.CurrentHealth <= 0) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
@@ -410,9 +375,9 @@ public class CrystalDragon_AI : MonoBehaviour
 
         if (direction != Vector3.zero)
         {
-            currentYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            Quaternion targetRotation = Quaternion.Euler(0f, currentYaw, 0f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            float targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            currentYaw = Mathf.LerpAngle(currentYaw, targetYaw, rotationSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
         }
 
         Vector3 velocity = direction * speed;
@@ -548,202 +513,119 @@ public class CrystalDragon_AI : MonoBehaviour
         isChargingForSpikes = false;
     }
 
-    private bool IsPlayerInFrontCone()
-    {
-        Vector3 from = spikeOrigin != null ? spikeOrigin.position : transform.position;
-        Vector3 toPlayer = (playerTransform.position - from).normalized;
-        toPlayer.y = 0f;
-        float angle = Vector3.Angle(transform.forward, toPlayer);
-        float distance = Vector3.Distance(from, playerTransform.position);
-        return angle <= spikeConeAngle && distance <= spikeRange;
-    }
-
     private IEnumerator PerformTailSweep()
     {
         isCharging = true;
         isChargingForTail = true;
         tailTimer = tailCooldown;
 
-        Debug.Log("[CRYSTAL DRAGON] Tail Sweep! Girando e batendo nas laterais.");
+        Debug.Log("[CRYSTAL DRAGON] Tail Sweep! Telegraph.");
         rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
 
-        yield return new WaitForSeconds(0.25f);
+        // Dispara trigger de animação
+        if (modelAnimator != null && !string.IsNullOrEmpty(tailSweepAnimTrigger))
+            modelAnimator.SetTrigger(tailSweepAnimTrigger);
 
-        Collider[] hits = Physics.OverlapSphere(transform.position, tailHitRadius);
-        foreach (Collider hit in hits)
+        // Telegraph — dragão para e "carrega" o giro
+        yield return new WaitForSeconds(tailSweepTelegraph);
+
+        // Arco de rotação física
+        float elapsed = 0f;
+        float startYaw = currentYaw;
+        bool hitDealt = false;
+
+        while (elapsed < tailSweepDuration)
         {
-            if (hit.CompareTag("Player"))
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / tailSweepDuration);
+            currentYaw = startYaw + tailSweepArcDegrees * t;
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+
+            // Verifica hit durante toda a duração do giro
+            if (!hitDealt)
             {
-                PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
-                if (playerHealth != null)
+                Collider[] hits = Physics.OverlapSphere(transform.position, tailHitRadius);
+                foreach (Collider hit in hits)
                 {
-                    playerHealth.TakeDamage(tailDamage, gameObject);
-                    Debug.Log("[CRYSTAL DRAGON] Tail Sweep acertou o player! Dano: " + tailDamage);
+                    if (hit.CompareTag("Player"))
+                    {
+                        PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
+                        if (playerHealth != null)
+                        {
+                            playerHealth.TakeDamage(tailDamage, gameObject);
+                            Debug.Log("[CRYSTAL DRAGON] Tail Sweep acertou o player! Dano: " + tailDamage);
+                        }
+                        hitDealt = true;
+                        break;
+                    }
                 }
             }
+
+            yield return null;
         }
 
-        yield return new WaitForSeconds(0.25f);
+        // Recovery
+        yield return new WaitForSeconds(tailSweepRecovery);
         isCharging = false;
         isChargingForTail = false;
     }
 
-    private IEnumerator PerformCrashCharge()
+ private IEnumerator PerformLowFlight()
     {
+        if (playerTransform == null) yield break;
+
+        isFlying = true;
         isCharging = true;
-        isChargingForCrash = true;
+        hasFlownOnce = true;
+
+        if (health != null) health.isInvulnerable = true;
+
+        Debug.Log("[CRYSTAL DRAGON] Low flight: decolando.");
+
+        if (modelAnimator != null && !string.IsNullOrEmpty(flightAnimTrigger))
+            modelAnimator.SetTrigger(flightAnimTrigger);
+
         rb.linearVelocity = Vector3.zero;
-        Debug.Log("[CRYSTAL DRAGON] Charging Heavy Crash...");
+        rb.useGravity = false;
 
-        yield return new WaitForSeconds(chargeTime);
+        // Subida suave
+        Vector3 startPos = transform.position;
+        Vector3 peakPos = new Vector3(transform.position.x, transform.position.y + flightPeakHeight, transform.position.z);
 
-        crashTarget = new Vector3(playerTransform.position.x, transform.position.y, playerTransform.position.z);
-        Vector3 dashDirection = (crashTarget - transform.position).normalized;
-        dashDirection.y = 0f;
-        if (dashDirection == Vector3.zero) dashDirection = transform.forward;
+        float elapsed = 0f;
+        while (elapsed < flightAscendTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / flightAscendTime));
+            rb.MovePosition(Vector3.Lerp(startPos, peakPos, t));
+            yield return null;
+        }
+        rb.MovePosition(peakPos);
 
+        // Hover no ar
+        yield return new WaitForSeconds(flightHangTime);
+
+        // Descida suave
+        Vector3 landPos = new Vector3(peakPos.x, startPos.y, peakPos.z);
+        elapsed = 0f;
+        while (elapsed < flightDescendTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / flightDescendTime));
+            rb.MovePosition(Vector3.Lerp(peakPos, landPos, t));
+            yield return null;
+        }
+        rb.MovePosition(landPos);
+
+        rb.useGravity = true;
+        rb.linearVelocity = Vector3.zero;
+        isFlying = false;
         isCharging = false;
-        isChargingForCrash = false;
-        isAirDashing = true;
-
-        // Store and enforce freeze rotation to avoid tumbling during crash
-        previousConstraints = rb.constraints;
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
-        rb.angularVelocity = Vector3.zero;
-
-        Vector3 crashVelocity = dashDirection * crashForwardForce + Vector3.up * crashUpwardForce;
-        rb.linearVelocity = crashVelocity;
-
-        Debug.Log("[CRYSTAL DRAGON] Heavy Crash lançado! Constraints set to FreezeRotation.");
-        yield return null;
-    }
-
- private IEnumerator PerformFlightStun()
-{
-    if (playerTransform == null) yield break;
-
-    isCharging = true;
-    isFlying = true;
-
-    if (health != null) health.isInvulnerable = true;
-
-    hasFlownOnce = true;
-    Debug.Log("[CRYSTAL DRAGON] Flight takeoff: ascending to peak above player.");
-
-    if (modelAnimator != null && !string.IsNullOrEmpty(flightAnimTrigger)) 
-        modelAnimator.SetTrigger(flightAnimTrigger);
-
-    // Subida
-    Vector3 startPos = transform.position;
-    Vector3 currentXZ = new Vector3(transform.position.x, 0f, transform.position.z);
-    Vector3 playerXZ = new Vector3(playerTransform.position.x, 0f, playerTransform.position.z);
-    Vector3 horizontalOffset = playerXZ - currentXZ;
-    horizontalOffset = Vector3.ClampMagnitude(horizontalOffset, flightMaxHorizontalMove);
-    Vector3 peakPos = new Vector3(currentXZ.x + horizontalOffset.x, playerTransform.position.y + flightPeakHeight, currentXZ.z + horizontalOffset.z);
-    
-    float elapsed = 0f;
-    while (elapsed < flightAscendTime)
-    {
-        elapsed += Time.deltaTime;
-        float t = Mathf.Clamp01(elapsed / flightAscendTime);
-        Vector3 next = Vector3.Lerp(startPos, peakPos, t);
-        rb.MovePosition(next);
-        yield return null;
-    }
-
-    rb.MovePosition(peakPos);
-    yield return new WaitForSeconds(flightHangTime);
-
-    if (modelAnimator != null && !string.IsNullOrEmpty(crashAnimTrigger)) 
-        modelAnimator.SetTrigger(crashAnimTrigger);
-
-    if (crashTelegraphPrefab != null && playerTransform != null)
-    {
-        Vector3 telePos = new Vector3(playerTransform.position.x, playerTransform.position.y + 0.05f, playerTransform.position.z);
-        GameObject tele = Instantiate(crashTelegraphPrefab, telePos, Quaternion.Euler(90f, 0f, 0f));
-        tele.transform.localScale = Vector3.one * 1f;
-        Destroy(tele, crashTelegraphTime + 0.1f);
-    }
-
-    yield return new WaitForSeconds(crashTelegraphTime);
-
-    // Transição estrita para o AirDash
-    isCharging = false;
-    isChargingForSpikes = false;
-    isChargingForTail = false;
-    isChargingForCrash = false;
-    isAirDashing = true;
-
-    previousConstraints = rb.constraints;
-    rb.constraints = RigidbodyConstraints.FreezeRotation;
-    rb.angularVelocity = Vector3.zero;
-
-    Vector3 target = new Vector3(playerTransform.position.x, playerTransform.position.y, playerTransform.position.z);
-    Vector3 dashDirection = (target - transform.position).normalized;
-    dashDirection.y = Mathf.Min(dashDirection.y, -0.3f);
-
-    Vector3 crashVelocity = dashDirection * crashForwardForce + Vector3.down * crashUpwardForce;
-    rb.linearVelocity = crashVelocity;
-
-    Debug.Log("[CRYSTAL DRAGON] Performing airborne heavy crash towards player.");
-
-    // CORREÇÃO: Failsafe caso o OnCollisionEnter falhe por problemas de malha/Trigger da Unity
-    yield return new WaitForSeconds(1.5f);
-    if (isAirDashing)
-    {
-        Debug.LogWarning("[CRYSTAL DRAGON] Failsafe ativado: Colisão não detectada no tempo limite. Forçando recuperação.");
-        StartCoroutine(CrashRecovery());
-    }
-    }
-    private IEnumerator CrashRecovery()
-    {
-        // 1. Libera imediatamente o estado de colisão e voo
-        isAirDashing = false; 
-        isFlying = false; 
         flightCooldownTimer = flightCooldown;
 
-        Debug.Log("[CRYSTAL DRAGON] Crash complete. Recuperando...");
-        rb.linearVelocity = Vector3.zero; // Para o deslize completamente
-
-        // Espera o tempo de tontura/recuperação do dragão
-        yield return new WaitForSeconds(recoveryTime);
-
-        // 2. CORREÇÃO CRÍTICA: Desliga TODAS as variáveis de carregamento e estado
-        isRecovering = false;
-        isCharging = false; 
-        isChargingForSpikes = false;
-        isChargingForTail = false;
-        isChargingForCrash = false;
-
-        // 3. Restaura a física original de rotação
-        rb.constraints = previousConstraints != RigidbodyConstraints.None ? previousConstraints : RigidbodyConstraints.FreezeRotation;
-        
         if (health != null) health.isInvulnerable = false;
-        Debug.Log("[CRYSTAL DRAGON] Recovery finished. Estado resetado com sucesso! Retornando para órbita.");
+        Debug.Log("[CRYSTAL DRAGON] Low flight completo.");
     }
-
-    private void OnCollisionEnter(Collision collision)
-{
-    // Se ele já colidiu ou não está no meio do Dash, ignora para não reiniciar o cooldown à toa
-    if (!isAirDashing || isRecovering) return; 
-
-    Debug.Log("[CRYSTAL DRAGON] Collision detected with: " + collision.collider.name);
-
-    if (collision.collider.CompareTag("Player"))
-    {
-        PlayerHealth playerHealth = collision.collider.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
-        {
-            playerHealth.TakeDamage(crashDamage);
-            Debug.Log("[CRYSTAL DRAGON] Heavy Crash acertou o player!");
-        }
-    }
-
-    // Para o processo do Failsafe do voo e inicia a recuperação imediatamente
-    StopAllCoroutines(); 
-    StartCoroutine(CrashRecovery());
-}
-
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
@@ -756,20 +638,14 @@ public class CrystalDragon_AI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, tailRange);
 
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, crashTriggerDistance);
+        Gizmos.DrawWireSphere(transform.position, flightTriggerDistance);
     }
-
-    private bool CanStartFlight()
+    public void Attack()
     {
-        // Can't start flight if currently air dashing or recovering
-        if (isAirDashing || isRecovering) return false;
-
-        // If not charging anything, flight can start
-        if (!isCharging) return true;
-
-        // If charging, only allow flight to interrupt spike charging
-        if (isChargingForSpikes && !isChargingForTail && !isChargingForCrash) return true;
-
-        return false;
+    Instantiate(
+        attackEffect,
+        attackPoint.position,
+        attackPoint.rotation
+    );
     }
 }

@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 1814543006137848}
   - component: {fileID: 5632678571611438161}
   - component: {fileID: 4576793942197996138}
+  - component: {fileID: 1337097969390357981}
   m_Layer: 0
   m_Name: Spider
   m_TagString: Untagged
@@ -160,6 +161,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 100
+  debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 0.47589064, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -205,7 +207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  enemyData: {fileID: 0}
+  enemyData: {fileID: 11400000, guid: 5be1c9116906d664d9e674314759d16b, type: 2}
   foiEncontrado: 0
 --- !u!114 &4576793942197996138
 MonoBehaviour:
@@ -236,6 +238,23 @@ MonoBehaviour:
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
+--- !u!114 &1337097969390357981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8934992465927708091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c39072c66833df4b9af927279331bc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
+  enemyIdentity: {fileID: 0}
+  usarTrigger: 1
+  usarDistancia: 0
+  distanciaDeteccao: 12
+  debugLogs: 0
 --- !u!1001 &4100340397033638889
 PrefabInstance:
   m_ObjectHideFlags: 0

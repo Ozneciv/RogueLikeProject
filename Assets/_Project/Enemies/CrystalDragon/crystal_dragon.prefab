@@ -80,9 +80,6 @@ PrefabInstance:
       addedObject: {fileID: 1072473473389772446}
     - targetCorrespondingSourceObject: {fileID: -6689036041284674117, guid: f3b4d4c113294f44d8143ec1cb156db6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -5595744885600940538}
-    - targetCorrespondingSourceObject: {fileID: -6689036041284674117, guid: f3b4d4c113294f44d8143ec1cb156db6, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 2704757279508801515}
     - targetCorrespondingSourceObject: {fileID: -6689036041284674117, guid: f3b4d4c113294f44d8143ec1cb156db6, type: 3}
       insertIndex: -1
@@ -136,6 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 100
+  debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -145,52 +143,6 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
---- !u!114 &-5595744885600940538
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6720486966153642561}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82fa0d635ec0967488d949d9802fc361, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CrystalDragon_AI
-  activationDistance: 20
-  patrolRadius: 6
-  patrolPointTime: 4
-  groundSpeed: 5
-  rotationSpeed: 5
-  dashSpeed: 8
-  flightCooldown: 6
-  spikeRange: 8
-  tailRange: 3
-  crashTriggerDistance: 4
-  spikeCooldown: 4
-  tailCooldown: 2
-  chargeTime: 1.2
-  recoveryTime: 1.5
-  spikeDamage: 8
-  tailDamage: 15
-  crashDamage: 15
-  spikeCount: 3
-  spikeInterval: 0.15
-  crashUpwardForce: 3
-  crashForwardForce: 20
-  tailHitRadius: 2.5
-  spikeOrigin: {fileID: 0}
-  spikeConeAngle: 35
-  crystalSpikeProjectilePrefab: {fileID: 0}
-  spikeProjectileSpeed: 20
-  spikeProjectileLifetime: 4
-  spikeProjectileVerticalOffset: 0.4
-  spikeProjectilesPerVolley: 3
-  spikeVolleySpreadAngle: 20
-  modelLocalEulerOffset: {x: 0, y: 180, z: 0}
-  forceApplyModelOffset: 1
-  preserveModelWorldUpright: 1
-  modelWorldEulerOffset: {x: -90, y: 0, z: 0}
 --- !u!114 &2704757279508801515
 MonoBehaviour:
   m_ObjectHideFlags: 0
