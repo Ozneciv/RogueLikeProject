@@ -24,6 +24,19 @@ public class CrystalTuner : MonoBehaviour
     public float flyHeight = 1.5f;
     public float heightCorrectionSpeed = 5.0f;
 
+    [Header("Luz de Conexão")]
+    [Tooltip("Point Light associada ao sintonizador.")]
+    public Light connectionLight;
+    public float minLightIntensity = 0.5f;
+    public float maxLightIntensity = 3.0f;
+    public float lightPulseSpeed = 5.0f;
+
+    [Header("Rotação Visual")]
+    [Tooltip("Objeto visual que irá girar. Se nulo, tentará achar um filho chamado 'Crystal Tunner', 'Mesh1' ou o primeiro filho válido.")]
+    public Transform visualChild;
+    public float idleSpinSpeed = 30f;
+    public float activeSpinSpeed = 180f;
+
     // --- Privados ---
     private Transform playerTransform;
     private Transform beamOrigin;
@@ -75,12 +88,37 @@ public class CrystalTuner : MonoBehaviour
         beamOrigin = (center != null) ? center : transform;
         if (center == null)
             Debug.LogWarning("[CrystalTuner] Filho 'Center' não encontrado. Usando o pivô.");
+
+        if (connectionLight == null)
+            connectionLight = GetComponentInChildren<Light>(true);
+
+        if (connectionLight != null)
+            connectionLight.enabled = false;
+
+        if (visualChild == null)
+        {
+            visualChild = transform.Find("Crystal Tunner") ?? transform.Find("Mesh1");
+            if (visualChild == null && transform.childCount > 0)
+            {
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    Transform child = transform.GetChild(i);
+                    if (child.name != "HealthBar_Canvas" && child.name != "Point Light" && child.name != "Center")
+                    {
+                        visualChild = child;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     void Update()
     {
         HandleBuffs();
         UpdateAllBeams();
+        UpdateConnectionLight();
+        UpdateVisualRotation();
 
         // Registro no bestiário por proximidade
         if (!registradoNoBestiario && playerTransform != null)
@@ -94,6 +132,31 @@ public class CrystalTuner : MonoBehaviour
                     BestiarioManager.instancia.Registrar(id);
             }
         }
+    }
+
+    void UpdateConnectionLight()
+    {
+        if (connectionLight == null) return;
+
+        bool hasTargets = targets.Count > 0;
+        
+        if (connectionLight.enabled != hasTargets)
+            connectionLight.enabled = hasTargets;
+
+        if (hasTargets)
+        {
+            float t = Mathf.PingPong(Time.time * lightPulseSpeed, 1f);
+            connectionLight.intensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, t);
+        }
+    }
+
+    void UpdateVisualRotation()
+    {
+        if (visualChild == null) return;
+
+        bool hasTargets = targets.Count > 0;
+        float currentSpeed = hasTargets ? activeSpinSpeed : idleSpinSpeed;
+        visualChild.Rotate(Vector3.up, currentSpeed * Time.deltaTime, Space.Self);
     }
 
     void FixedUpdate()
@@ -170,11 +233,8 @@ public class CrystalTuner : MonoBehaviour
 
     void FindNewTargets()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, connectRange, enemyLayer);
-
-        // Fallback para prefabs com layer incorreta: ainda permite encontrar inimigos válidos via DummyHealth.
-        if (hits.Length == 0)
-            hits = Physics.OverlapSphere(transform.position, connectRange);
+        // Busca em todas as camadas para garantir encontrar inimigos em qualquer camada (como a Aranha na camada Default)
+        Collider[] hits = Physics.OverlapSphere(transform.position, connectRange);
 
         // Ordena por distância
         System.Array.Sort(hits, (a, b) =>
@@ -316,6 +376,8 @@ public class CrystalTuner : MonoBehaviour
         GetTargetComponent<Cristalus_AI>(target)?.SetBuff(true);
         GetTargetComponent<Geobionte_AI>(target)?.SetBuff(true);
         GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Golem_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Spider_AI>(target)?.SetBuff(true);
     }
 
     void RemoveBuffs(GameObject target)
@@ -331,11 +393,36 @@ public class CrystalTuner : MonoBehaviour
         GetTargetComponent<Cristalus_AI>(target)?.SetBuff(false);
         GetTargetComponent<Geobionte_AI>(target)?.SetBuff(false);
         GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Golem_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Spider_AI>(target)?.SetBuff(false);
+    }
+
+    void OnDisable()
+    {
+        for (int i = targets.Count - 1; i >= 0; i--)
+        {
+            var td = targets[i];
+            if (td.obj != null)
+            {
+                RemoveBuffs(td.obj);
+            }
+            if (td.beam != null)
+            {
+                Destroy(td.beam.gameObject);
+            }
+        }
+        targets.Clear();
     }
 
     void OnDestroy()
     {
         foreach (var td in targets)
-            RemoveBuffs(td.obj);
+        {
+            if (td.obj != null)
+                RemoveBuffs(td.obj);
+            if (td.beam != null)
+                Destroy(td.beam.gameObject);
+        }
+        targets.Clear();
     }
 }

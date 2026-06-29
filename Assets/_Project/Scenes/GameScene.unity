@@ -489,6 +489,8 @@ MonoBehaviour:
   - {fileID: 5229581802073466358, guid: cad025b8fb426a74f9b442c6b8691e2b, type: 3}
   - {fileID: 6303555823580562968, guid: e8545541cb8afb6468a4888842d4c6fb, type: 3}
   - {fileID: 2803324335526979050, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+  - {fileID: 7854125682695297877, guid: b0d3d6a0f806e4f42904ddb9710d30e3, type: 3}
+  - {fileID: 9192292880141030860, guid: 65bac7cb0f41ead4a943cba5dab0e681, type: 3}
   transitionRoomPrefabs:
   - {fileID: 2203966546174670674, guid: 4df9ad30417e9ed4fb9847fcaae8ac3a, type: 3}
   - {fileID: 8036747435783641409, guid: 3a63c06855d564f41b482bd284f9f3e3, type: 3}
@@ -504,6 +506,13 @@ MonoBehaviour:
   extraLoadDelay: 0
   roomFloorY: 0
   overlapTolerance: 0.5
+  useNavMesh: 1
+  useNavMeshConstraint: 1
+  navMeshSlope: 60
+  navMeshStepHeight: 1
+  navMeshAgentRadius: 0.2
+  navMeshVoxelSize: 0.0687
+  navMeshMinRegionArea: 2
 --- !u!4 &1112906433
 Transform:
   m_ObjectHideFlags: 0

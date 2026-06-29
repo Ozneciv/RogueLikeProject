@@ -320,6 +320,10 @@ public class RoomController : MonoBehaviour
 
         GameObject newEnemy = Instantiate(prefab, spawnPos, prefab.transform.rotation);
 
+        // Garante que o inimigo não caia do mapa (contenção pelo NavMesh global)
+        if (newEnemy.GetComponent<NavMeshBoundaryConstraint>() == null)
+            newEnemy.AddComponent<NavMeshBoundaryConstraint>();
+
         // Integração especial: passa os limites de área para a MagicStone (usa a primeira área como referência)
         MagicStone_AI magicStone = newEnemy.GetComponent<MagicStone_AI>();
         if (magicStone != null)

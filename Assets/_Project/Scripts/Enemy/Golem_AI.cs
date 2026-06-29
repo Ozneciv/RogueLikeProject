@@ -60,6 +60,11 @@ public class Golem_AI : MonoBehaviour
     private float meleeTimer = 0f;
     private float stunTimer = 0f;
     private int meleeCombo = 0; // Para usar stun em combos
+    private bool isBuffed = false;
+
+    public bool IsAttacking => isAttacking;
+    public bool IsCastingStun => isCastingStun;
+    public bool IsActivated => isActivated;
 
     void Start()
     {
@@ -225,6 +230,7 @@ public class Golem_AI : MonoBehaviour
         // Posição alvo = posição atual do player
         Vector3 targetPosition = new Vector3(playerTransform.position.x, 0.05f, playerTransform.position.z);
 
+
         // Spawn do marcador de aviso (telegrafagem)
         GameObject marker = null;
         if (stunMarkerPrefab != null)
@@ -288,16 +294,19 @@ public class Golem_AI : MonoBehaviour
     /// </summary>
     public void SetBuff(bool active)
     {
-        if (active)
+        if (active && !isBuffed)
         {
+            isBuffed = true;
             moveSpeed *= 1.3f;
             stunCooldown *= 0.7f;
             Debug.Log("[GOLEM] BUFFED! Velocidade +30%, Cooldown do Stun -30%");
         }
-        else
+        else if (!active && isBuffed)
         {
+            isBuffed = false;
             moveSpeed /= 1.3f;
             stunCooldown /= 0.7f;
+            Debug.Log("[GOLEM] UNBUFFED! Velocidade e Cooldown restaurados");
         }
     }
 
