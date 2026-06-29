@@ -30,7 +30,10 @@ public class EptinhoMenuController : MonoBehaviour
 
     void Start()
     {
-        menuUI.SetActive(false);
+        if (menuUI != null)
+        {
+            menuUI.SetActive(false);
+        }
     }
 
     void Update()

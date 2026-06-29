@@ -3,13 +3,45 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Singleton que registra todos os ItemData do jogo para busca rápida por itemId.
-/// Adicione este componente a um GameObject persistente na cena (ex: GameManager).
-/// Arraste todos os ScriptableObjects de ItemData para a lista "allItems" no Inspector.
+/// Persiste entre cenas via DontDestroyOnLoad.
+/// 
+/// SETUP:
+///   1. Adicione a um GameObject na cena inicial (ou será criado automaticamente).
+///   2. Arraste todos os ScriptableObjects de ItemData para a lista "allItems" no Inspector.
+///   3. Se a lista estiver vazia, tenta carregar de Resources/ItemData/ automaticamente.
 /// </summary>
 public class ItemDatabase : MonoBehaviour
 {
-    public static ItemDatabase Instance { get; private set; }
-
+    private static ItemDatabase _instance;
+    public static ItemDatabase Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<ItemDatabase>();
+                if (_instance == null)
+                {
+                    GameObject prefab = Resources.Load<GameObject>("ItemDatabase");
+                    if (prefab != null)
+                    {
+                        GameObject dbObj = Instantiate(prefab);
+                        dbObj.name = "ItemDatabase_Auto";
+                        _instance = dbObj.GetComponent<ItemDatabase>();
+                        Debug.Log("[ITEM DATABASE] Recriado automaticamente via prefab do Resources.");
+                    }
+                    else
+                    {
+                        GameObject dbObj = new GameObject("ItemDatabase_Auto");
+                        _instance = dbObj.AddComponent<ItemDatabase>();
+                        Debug.Log("[ITEM DATABASE] Recriado automaticamente sob demanda (Vazio).");
+                    }
+                }
+            }
+            return _instance;
+        }
+        private set { _instance = value; }
+    }
     [Header("Todos os Itens do Jogo")]
     [Tooltip("Arraste todos os ScriptableObjects de ItemData aqui")]
     public List<ItemData> allItems = new List<ItemData>();
@@ -25,8 +57,33 @@ public class ItemDatabase : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // Garante que TODOS os itens presentes na pasta Resources sejam mesclados à base,
+        // mesmo que o prefab instanciado esteja desatualizado (com apenas 4 itens por exemplo).
+        ItemData[] loaded = Resources.LoadAll<ItemData>("");
+        if (loaded.Length > 0)
+        {
+            foreach (var item in loaded)
+            {
+                if (item != null && !allItems.Contains(item))
+                {
+                    allItems.Add(item);
+                }
+            }
+            Debug.Log($"[ITEM DATABASE] Mesclou {loaded.Length} itens do Resources. Total agora: {allItems.Count}");
+        }
 
         // Constrói dicionário para busca rápida por itemId
+        RebuildLookup();
+    }
+
+    /// <summary>
+    /// Reconstrói o dicionário de busca. Chamado no Awake e pode ser chamado
+    /// se novos itens forem adicionados em runtime.
+    /// </summary>
+    public void RebuildLookup()
+    {
         itemLookup.Clear();
         foreach (var item in allItems)
         {

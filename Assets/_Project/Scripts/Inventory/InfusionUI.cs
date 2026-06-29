@@ -110,6 +110,12 @@ public class InfusionUI : MonoBehaviour
     {
         selectedItemId = itemId;
         
+        if (ItemDatabase.Instance == null)
+        {
+            Debug.LogWarning("[INFUSION UI] ItemDatabase.Instance é null! Não é possível mostrar dados do item.");
+            return;
+        }
+
         ItemData data = ItemDatabase.Instance.GetItemData(itemId);
         if (data == null) return;
 
@@ -120,7 +126,7 @@ public class InfusionUI : MonoBehaviour
             StartCoroutine(PulseEffect(itemIcon.transform, 1.3f, 0.2f));
         }
 
-        if (itemTitle != null) itemTitle.text = $"<spacing=2>{data.itemName.ToUpper()}</spacing>";
+        if (itemTitle != null) itemTitle.text = data.itemName.ToUpper();
         
         if (itemRarity != null)
         {
@@ -211,6 +217,17 @@ public class InfusionUI : MonoBehaviour
     private void OnBtnInfundirClicked()
     {
         if (string.IsNullOrEmpty(selectedItemId)) return;
+
+        // Reconexão de segurança
+        if (infusionManager == null)
+            infusionManager = FindFirstObjectByType<InfusionManager>();
+
+        if (infusionManager == null)
+        {
+            Debug.LogWarning("[INFUSION UI] InfusionManager não encontrado! Botão Infundir ignorado.");
+            return;
+        }
+
         bool sucesso = infusionManager.InfuseItem(selectedItemId);
         if (sucesso)
         {
@@ -222,6 +239,17 @@ public class InfusionUI : MonoBehaviour
     private void OnBtnReciclarClicked()
     {
         if (string.IsNullOrEmpty(selectedItemId)) return;
+
+        // Reconexão de segurança
+        if (infusionManager == null)
+            infusionManager = FindFirstObjectByType<InfusionManager>();
+
+        if (infusionManager == null)
+        {
+            Debug.LogWarning("[INFUSION UI] InfusionManager não encontrado! Botão Reciclar ignorado.");
+            return;
+        }
+
         bool sucesso = infusionManager.RecycleItem(selectedItemId);
         if (sucesso)
         {
