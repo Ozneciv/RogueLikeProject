@@ -829,12 +829,11 @@ public class LevelGenerator : MonoBehaviour
         settings.overrideVoxelSize   = true;
         settings.voxelSize           = navMeshVoxelSize;
         settings.minRegionArea       = navMeshMinRegionArea;
-
-        // 2. Coleta TODA a geometria render da cena (todas as salas instanciadas)
+        // 2. Coleta TODA a geometria de colisores da cena (todas as salas instanciadas)
         var sources = new List<NavMeshBuildSource>();
         var markups = new List<NavMeshBuildMarkup>();
         NavMeshBuilder.CollectSources(
-            null, ~0, NavMeshCollectGeometry.RenderMeshes,
+            null, ~0, NavMeshCollectGeometry.PhysicsColliders,
             0, false, markups, false, sources
         );
 

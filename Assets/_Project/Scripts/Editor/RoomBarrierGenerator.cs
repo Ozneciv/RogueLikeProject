@@ -96,6 +96,15 @@ public class RoomBarrierGenerator : EditorWindow
                     barrier.transform.localPosition = Vector3.zero;
                     barrier.transform.localRotation = Quaternion.identity;
 
+                    // Corrige o scale herdado para que a escala no mundo seja sempre (1, 1, 1).
+                    // Evita que as portas fiquem gigantescas se o prefab/modelo estiver em escala não-padrão (ex: Blender 0.01x / 100x).
+                    Vector3 lossy = cp.transform.lossyScale;
+                    barrier.transform.localScale = new Vector3(
+                        lossy.x > 0 ? 1f / lossy.x : 1f,
+                        lossy.y > 0 ? 1f / lossy.y : 1f,
+                        lossy.z > 0 ? 1f / lossy.z : 1f
+                    );
+
                     // Converte Y=0 mundo para local do CP para posicionar no chão
                     float worldFloorY = 0f; // chão sempre em Y=0
                     float cpWorldY = cp.transform.position.y;

@@ -67,7 +67,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomTriggerProxy
   roomController: {fileID: 254635890343087026}
---- !u!1 &4502477150711160420
+--- !u!1 &7468929209566918263
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -75,8 +75,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8860786329165050608}
-  - component: {fileID: 1314968172673800203}
+  - component: {fileID: 1877978491977775670}
+  - component: {fileID: 6837043503732666034}
   m_Layer: 0
   m_Name: Barrier_CP_EXIT
   m_TagString: Untagged
@@ -84,28 +84,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!4 &8860786329165050608
+--- !u!4 &1877978491977775670
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4502477150711160420}
+  m_GameObject: {fileID: 7468929209566918263}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.869665, y: 1.0000001, z: 0.8278152}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2885099675760511027}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &1314968172673800203
+--- !u!65 &6837043503732666034
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4502477150711160420}
+  m_GameObject: {fileID: 7468929209566918263}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -119,60 +119,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 12, y: 5, z: 0.4}
-  m_Center: {x: 0, y: 2.5, z: 0}
---- !u!1 &5732011318786757311
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4264641831002178068}
-  - component: {fileID: 6450665723893741481}
-  m_Layer: 0
-  m_Name: Barrier_CP_Entrance
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &4264641831002178068
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5732011318786757311}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 4875591653808123421}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &6450665723893741481
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5732011318786757311}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 12, y: 5, z: 0.4}
-  m_Center: {x: 0, y: 2.5, z: 0}
+  m_Center: {x: 0, y: -66.64674, z: 0}
 --- !u!1 &8357395002222784038
 GameObject:
   m_ObjectHideFlags: 0
@@ -199,12 +146,65 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 78.727234, y: 72.826744, z: 7.2428217}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 92310863216537170}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &9193743793584865140
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7480092877137243734}
+  - component: {fileID: 7351847186427816443}
+  m_Layer: 0
+  m_Name: Barrier_CP_Entrance
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &7480092877137243734
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9193743793584865140}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.827815, y: 1, z: 0.8696652}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4875591653808123421}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &7351847186427816443
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9193743793584865140}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 12, y: 5, z: 0.4}
+  m_Center: {x: 0, y: -66.64674, z: 0}
 --- !u!1001 &6020201381618522779
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -313,10 +313,10 @@ PrefabInstance:
       addedObject: {fileID: 2486368191173891568}
     - targetCorrespondingSourceObject: {fileID: 1163504872715695238, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4264641831002178068}
+      addedObject: {fileID: 7480092877137243734}
     - targetCorrespondingSourceObject: {fileID: 8900770498141278888, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8860786329165050608}
+      addedObject: {fileID: 1877978491977775670}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 6449200655628119667, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       insertIndex: -1
@@ -371,8 +371,8 @@ MonoBehaviour:
   spawnDelay: 1.5
   spawnHeightOffset: 2
   doors:
-  - {fileID: 5732011318786757311}
-  - {fileID: 4502477150711160420}
+  - {fileID: 9193743793584865140}
+  - {fileID: 7468929209566918263}
   showSpawnLog: 1
 --- !u!4 &2885099675760511027 stripped
 Transform:
