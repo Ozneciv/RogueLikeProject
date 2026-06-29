@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4995056429174385562}
   - component: {fileID: 4638547236897368676}
   - component: {fileID: 2066785828032786038}
+  - component: {fileID: 4230374487766933739}
   m_Layer: 0
   m_Name: InventorySystem
   m_TagString: Untagged
@@ -118,3 +119,15 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &4230374487766933739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2022024193477726497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c00357530d5078248a53ffa09bad7a77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PersistentObject

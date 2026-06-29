@@ -206,6 +206,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 253ae9ff0c8bd5a43aa584ad64b9b4d1, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 1151388028547126963, guid: 253ae9ff0c8bd5a43aa584ad64b9b4d1, type: 3}
       propertyPath: m_LocalPosition.y
       value: -0.31
@@ -331,11 +335,16 @@ MonoBehaviour:
   moveSpeed: 6
   trailDropInterval: 1.5
   trailOffset: 1.5
-  crystalPrefab: {fileID: 1234396947130864949, guid: 5160905cc8a1a014d9d24eacb8dfbf13, type: 3}
+  crystalPrefabs:
+  - {fileID: 1234396947130864949, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
+  - {fileID: 5773874075916715037, guid: b443081fb7f36044e90f38be50621fdb, type: 3}
+  - {fileID: 6230593887686849060, guid: e7bb87534bad7a04c9626216d8515711, type: 3}
+  - {fileID: 3042150092044236706, guid: 9fa43bc1071a32d4c8bfb218994a1efd, type: 3}
+  - {fileID: 700640002960959754, guid: 6381de00f93d57e48b6d1d51c867f677, type: 3}
   arcAngle: 120
   crystalsPerArc: 5
   crystalSpawnInterval: 0.5
-  arcOverlapThreshold: 6
+  arcOverlapThreshold: 10
   playerMovementTolerance: 2
   minRepositionAngle: 90
 --- !u!114 &2199149859530074480

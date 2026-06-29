@@ -17,7 +17,7 @@ public class Cristalus_AI : MonoBehaviour
     private float trailTimer = 0f;
 
     [Header("Arco Cristalino")]
-    public GameObject crystalPrefab;
+    public GameObject[] crystalPrefabs; // Os colchetes [] indicam que agora é uma lista!
     public float arcAngle = 120f;
     public int crystalsPerArc = 5;
     public float crystalSpawnInterval = 0.5f;
@@ -26,6 +26,12 @@ public class Cristalus_AI : MonoBehaviour
     [Header("Reposicionamento")]
     public float playerMovementTolerance = 2.0f;
     public float minRepositionAngle = 90f;
+
+    // Variaveis Crystal Tunner
+    private bool isBuffed = false;
+    private float originalMoveSpeed;
+    private float originalTrailDropInterval;
+    private float originalCrystalSpawnInterval;
 
     private enum State { Idle, Approaching, CastingArc, Repositioning }
     private State currentState = State.Idle;
@@ -183,10 +189,21 @@ public class Cristalus_AI : MonoBehaviour
 
     GameObject SpawnCrystal(Vector3 position)
     {
-        if (crystalPrefab == null) return null;
-        return Instantiate(crystalPrefab, position, Quaternion.identity);
-    }
+   
+        if (crystalPrefabs == null || crystalPrefabs.Length == 0) return null;
 
+
+        int randomIndex = Random.Range(0, crystalPrefabs.Length);
+        
+
+        GameObject selectedPrefab = crystalPrefabs[randomIndex];
+
+   
+        if (selectedPrefab == null) return null;
+
+
+        return Instantiate(selectedPrefab, position, Quaternion.identity);
+    }
 
     void LookAtTarget(Vector3 target, float rotationSpeed)
     {
@@ -196,6 +213,29 @@ public class Cristalus_AI : MonoBehaviour
         {
             Quaternion rot = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, rot, rotationSpeed * Time.deltaTime);
+        }
+    }
+
+    // Buff do Crystal Tuner
+    public void SetBuff(bool active)
+    {
+        if (active && !isBuffed)
+        {
+            isBuffed = true;
+            originalMoveSpeed = moveSpeed;
+            originalTrailDropInterval = trailDropInterval;
+            originalCrystalSpawnInterval = crystalSpawnInterval;
+
+            moveSpeed *= 1.5f;    //            
+            trailDropInterval *= 0.6f;    
+            crystalSpawnInterval *= 0.6f;
+        }
+        else if (!active && isBuffed)
+        {
+            isBuffed = false;
+            moveSpeed = originalMoveSpeed;
+            trailDropInterval = originalTrailDropInterval;
+            crystalSpawnInterval = originalCrystalSpawnInterval;
         }
     }
 

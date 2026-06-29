@@ -62,7 +62,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3196694218016787064}
-  - component: {fileID: 2801521072796768245}
   m_Layer: 0
   m_Name: 4way
   m_TagString: Untagged
@@ -86,54 +85,6 @@ Transform:
   - {fileID: 4457083306664048454}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2801521072796768245
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3541687057159095552}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c3de5da2575fa14c868522b314ae650, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RoomController
-  isSafeRoom: 0
-  doorsAreLocked: 0
-  roomIndex: 1
-  mobMenorPrefabs:
-  - {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
-  - {fileID: 1155010451884850368, guid: 17526d5d2a1393e438fd19d86fdfed1c, type: 3}
-  atiradorPrefabs:
-  - {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
-  - {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
-  tanquePrefabs:
-  - {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
-  - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
-  - {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
-  elitePrefabs:
-  - {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
-  - {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
-  minWaves: 1
-  maxWaves: 3
-  timeBetweenWaves: 2
-  minEnemiesPerWave: 6
-  mobCapFraction: 0.7
-  spawnAreas:
-  - {fileID: 1159682098552176737}
-  spawnIndicatorPrefab: {fileID: 0}
-  spawnDelay: 1.5
-  spawnHeightOffset: 2
-  doors:
-  - {fileID: 3606432384953656015}
-  - {fileID: 6277210180361184692}
-  - {fileID: 7081775387191381957}
-  - {fileID: 3942118859496351755}
-  - {fileID: 5722897921913287981}
-  - {fileID: 6321054809823778487}
-  - {fileID: 4987022453595352389}
-  - {fileID: 3136766204471872308}
-  showSpawnLog: 1
 --- !u!1 &3606432384953656015
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,7 +302,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be858095e6d743a48b76e00e16cf536b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomTriggerProxy
-  roomController: {fileID: 2801521072796768245}
+  roomController: {fileID: 0}
 --- !u!1 &5722897921913287981
 GameObject:
   m_ObjectHideFlags: 0
@@ -558,8 +509,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.01308424, y: 0.013157556, z: 0.0053386022}
-  m_Center: {x: -0.00017134793, y: -0.00037503947, z: -0.0023306953}
+  m_Size: {x: 0.01308424, y: 0.013157556, z: 0.0054975934}
+  m_Center: {x: -0.00017134793, y: -0.00037503947, z: 0.0011406585}
 --- !u!1 &7081775387191381957
 GameObject:
   m_ObjectHideFlags: 0
@@ -701,15 +652,18 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d94579d20926135428465448fcd98433, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8598850718931776839}
+      addedObject: {fileID: 8900694329052686426}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d94579d20926135428465448fcd98433, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6622651144130912977}
   m_SourcePrefab: {fileID: 100100000, guid: d94579d20926135428465448fcd98433, type: 3}
 --- !u!1 &3932043845943487996 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d94579d20926135428465448fcd98433, type: 3}
   m_PrefabInstance: {fileID: 4201863788342137005}
   m_PrefabAsset: {fileID: 0}
---- !u!64 &8598850718931776839
-MeshCollider:
+--- !u!65 &8900694329052686426
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -726,10 +680,57 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 7027636043351174211, guid: d94579d20926135428465448fcd98433, type: 3}
+  serializedVersion: 3
+  m_Size: {x: 0.01909951, y: 0.019110344, z: 0.0020226883}
+  m_Center: {x: 0.000006034851, y: 0.000008399965, z: -0.0023588648}
+--- !u!114 &6622651144130912977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3932043845943487996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c3de5da2575fa14c868522b314ae650, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoomController
+  isSafeRoom: 0
+  doorsAreLocked: 0
+  roomIndex: 1
+  mobMenorPrefabs:
+  - {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
+  - {fileID: 1155010451884850368, guid: 17526d5d2a1393e438fd19d86fdfed1c, type: 3}
+  atiradorPrefabs:
+  - {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
+  - {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
+  tanquePrefabs:
+  - {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
+  - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
+  - {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
+  elitePrefabs:
+  - {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
+  - {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
+  minWaves: 1
+  maxWaves: 3
+  timeBetweenWaves: 2
+  minEnemiesPerWave: 6
+  mobCapFraction: 0.7
+  spawnAreas:
+  - {fileID: 1159682098552176737}
+  spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
+  spawnDelay: 1.5
+  spawnHeightOffset: 2
+  doors:
+  - {fileID: 3606432384953656015}
+  - {fileID: 6277210180361184692}
+  - {fileID: 7081775387191381957}
+  - {fileID: 3942118859496351755}
+  - {fileID: 5722897921913287981}
+  - {fileID: 6321054809823778487}
+  - {fileID: 4987022453595352389}
+  - {fileID: 3136766204471872308}
+  showSpawnLog: 1
 --- !u!4 &4457083306664048454 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d94579d20926135428465448fcd98433, type: 3}

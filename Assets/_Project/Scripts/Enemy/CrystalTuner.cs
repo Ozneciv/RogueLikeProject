@@ -288,6 +288,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
         target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(true);
         target.GetComponent<CrystalWatcher_AI>()?.SetBuff(true);
+        target.GetComponent<Cristalus_AI>()?.SetBuff(true);
         target.GetComponent<Geobionte_AI>()?.SetBuff(true);
     }
 
@@ -301,6 +302,7 @@ public class CrystalTuner : MonoBehaviour
         target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
         target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(false);
         target.GetComponent<CrystalWatcher_AI>()?.SetBuff(false);
+        target.GetComponent<Cristalus_AI>()?.SetBuff(false);
         target.GetComponent<Geobionte_AI>()?.SetBuff(false);
     }
 

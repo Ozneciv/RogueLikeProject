@@ -4,10 +4,11 @@ public class SonicCrystal : MonoBehaviour
 {
     [Header("Configurações de Status")]
 
-    public float slowAmount = 0.5f; 
+    public float slowAmount = 1f; 
     public float slowDuration = 2f;
-    public float knockbackForce = 8f;
-    public float lifeTime = 15f; 
+    public float knockbackForce = 70f;
+    public float lifeTime = 3f; 
+
 
     [Header("Efeitos Visuais")]
     [Tooltip("Prefab de Particle System")]
@@ -47,6 +48,10 @@ void ApplyEffects(GameObject player)
 
 
 }
+
+
+
+
 
     public void SelfDestruct()
     {
