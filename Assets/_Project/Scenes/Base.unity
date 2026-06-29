@@ -1184,6 +1184,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2da0c512f12947e489f739169773d7ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TMP_InputField
+--- !u!1001 &1657060625
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 426774791167415998, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2803324335526979050, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
+      propertyPath: m_Name
+      value: DoubleQuadRoom
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 91cf7c7a9a061e24d8c3b5c3b8823318, type: 3}
 --- !u!1 &1810723701
 GameObject:
   m_ObjectHideFlags: 0
@@ -3747,3 +3804,4 @@ SceneRoots:
   - {fileID: 5643171052087133151}
   - {fileID: 2670315658592751807}
   - {fileID: 612133956905285774}
+  - {fileID: 1657060625}
