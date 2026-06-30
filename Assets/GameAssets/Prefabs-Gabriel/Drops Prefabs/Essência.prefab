@@ -158,6 +158,8 @@ MonoBehaviour:
   attractSpeed: 8
   attractDistance: 3
   rotateSpeed: 90
+  bobHeight: 0
+  bobSpeed: 0.5
   pickupDelay: 0.3
   lifetime: 30
 --- !u!135 &-4466636303145795423

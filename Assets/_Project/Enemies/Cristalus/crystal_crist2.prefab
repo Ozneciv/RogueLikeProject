@@ -1,0 +1,120 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &388379719842973427
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 23.288855
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.06
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 38.020332
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      propertyPath: m_Name
+      value: crystal_crist2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4904216124989366031}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -6318622889860718819}
+  m_SourcePrefab: {fileID: 100100000, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+--- !u!1 &694298290060655522 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: fcde561013053cd46be985d2cfac51d4, type: 3}
+  m_PrefabInstance: {fileID: 388379719842973427}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4904216124989366031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 694298290060655522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e9d2665f8dd4b8459c63c6d7f43bf93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SonicCrystal
+  slowAmount: 1
+  slowDuration: 2
+  knockbackForce: 70
+  lifeTime: 3
+  breakEffectPrefab: {fileID: 7318078104736055304, guid: 903a5110c1fe43f409c259ad7e9dd16b, type: 3}
+--- !u!65 &-6318622889860718819
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 694298290060655522}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.5, y: 2, z: 2}
+  m_Center: {x: 0, y: 1, z: 0}

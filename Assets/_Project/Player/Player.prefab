@@ -1776,6 +1776,11 @@ MonoBehaviour:
   percentageText: {fileID: 0}
   damageMultiplier: 1
   damageTakenMultiplier: 1
+  canHeal: 1
+  hasDoubleLoot: 0
+  hasVampirism: 0
+  hasNecrosis: 0
+  lastKillTime: 0
 --- !u!114 &2877796600527432851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1971,6 +1976,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InfusionManager
   inflationAlpha: 0.1
+  infusedItems: []
 --- !u!114 &2622090170748288850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3851,6 +3857,9 @@ MonoBehaviour:
   defaultRange: 2
   daggerRange: 6
   swordRange: 7
+  hitImpactVariations:
+  - {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
+  - {fileID: 5926973241947854841, guid: a42a16372567d9548af804044f68ea52, type: 3}
   hitImpactPrefab: {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
   attackAnimationSpeed: 1
   defaultDamages: 0a0000000f0000001e000000
@@ -3883,7 +3892,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesOffensive
   baseDamageMultiplier: 1
   attackSpeedMelee: 1
-  critChance: 5
+  critChance: 38.3
   critMultiplier: 1.5
   weaponRangeMelee: 1
   weaponRangeProjectile: 10

@@ -199,6 +199,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8771091787928289351, guid: 98a6dc0a148e40048afbc43116695b9a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5437306787277278715}
+    - targetCorrespondingSourceObject: {fileID: 8771091787928289351, guid: 98a6dc0a148e40048afbc43116695b9a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4781713666066581098}
   m_SourcePrefab: {fileID: -4161369568681901532, guid: 98a6dc0a148e40048afbc43116695b9a, type: 3}
 --- !u!1 &4268998290841704769 stripped
 GameObject:
@@ -315,19 +318,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SharpBlur
   activationDistance: 25
-  attackTriggerDistance: 6
   chaseSpeed: 6
+  dashTriggerDistance: 8
+  meleeTriggerDistance: 2.5
   dashDistance: 9
   dashSpeed: 30
   pauseBetweenDashes: 0.25
   endSequenceRest: 1.2
+  meleeDuration: 1
+  meleeDamage: 10
   anticipationTime: 0.2
-  leadPrediction: 0.469
+  leadPrediction: 0.541
   retreatDistance: 4
   dashDamage: 15
   hologramPrefab: {fileID: 4003337562454944380, guid: 92ec80068f9a9234ba6e3dd5d7a80d41, type: 3}
   hologramMaterial: {fileID: 2100000, guid: 70a32a940b8e3e042a142b4897bfe3f3, type: 2}
-  hologramAlpha: 0.266
+  hologramAlpha: 0.1
 --- !u!65 &5437306787277278715
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -349,3 +355,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 2, z: 1}
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &4781713666066581098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4268998290841704769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
+  essencePrefab: {fileID: 0}
+  essenceAmount: 10
+  essenceVariation: 3
+  globalDropChance: 0.3
+  itemAmount: 1
+  lootPool: []
+  spawnHeight: 0.5
+  spawnRadius: 0.5
+  launchForce: 3
