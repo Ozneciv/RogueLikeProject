@@ -8,26 +8,28 @@ public class PlayerInteraction : MonoBehaviour
 
     void Start()
     {
-        pressFUI.SetActive(false);
+        if (pressFUI != null) pressFUI.SetActive(false);
     }
 
     void OnTriggerEnter(Collider other)
     {
-        Interactable item = other.GetComponent<Interactable>();
+        // Itens com ItemPickup se gerenciam sozinhos (glow + F-key) â€” ignorar aqui
+        if (other.GetComponent<ItemPickup>() != null) return;
 
+        Interactable item = other.GetComponent<Interactable>();
         if (item != null && !item.foiCatalogado)
         {
             itemAtual = item;
-            pressFUI.SetActive(true);
+            if (pressFUI != null) pressFUI.SetActive(true);
         }
     }
 
     void OnTriggerExit(Collider other)
     {
-        if (other.GetComponent<Interactable>())
+        if (other.GetComponent<Interactable>() == itemAtual)
         {
             itemAtual = null;
-            pressFUI.SetActive(false);
+            if (pressFUI != null) pressFUI.SetActive(false);
         }
     }
 
@@ -35,8 +37,8 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (itemAtual != null && Input.GetKeyDown(KeyCode.F))
         {
-            CatalogoManager.instancia.Catalogar(itemAtual);
-            pressFUI.SetActive(false);
+            CatalogoManager.instancia?.Catalogar(itemAtual);
+            if (pressFUI != null) pressFUI.SetActive(false);
             itemAtual = null;
         }
     }
@@ -80,7 +82,7 @@ public class PlayerInteraction : MonoBehaviour
 //        }
 //    }
 
-//    // Chamada pelo botão do pop up (no UI Button)
+//    // Chamada pelo botï¿½o do pop up (no UI Button)
 //    public void AbrirMenu()
 //    {
 //        if (objetoAtual != null)

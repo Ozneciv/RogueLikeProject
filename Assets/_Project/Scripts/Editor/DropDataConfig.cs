@@ -409,6 +409,54 @@ public class DropDataConfig : ScriptableObject
             essenceCost = 420f
         });
 
+        // ════════════════════════════════════════════════════════════════
+        // 🐉 CRYSTAL DRAGON (4 items: T1-T4)
+        // ════════════════════════════════════════════════════════════════
+
+        // Crystal Dragon T1
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "dragon_scale_t1",
+            itemName = "Escama de Dragão (T1)",
+            enemyName = "Crystal Dragon",
+            tier = 1,
+            attributes = new List<string> { "CritMultiplier" },
+            essenceCost = 60f
+        });
+
+        // Crystal Dragon T2
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "dragon_claw_t2",
+            itemName = "Garra de Dragão (T2)",
+            enemyName = "Crystal Dragon",
+            tier = 2,
+            attributes = new List<string> { "CritMultiplier", "BaseDamageMultiplier" },
+            essenceCost = 180f
+        });
+
+        // Crystal Dragon T3
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "dragon_fang_t3",
+            itemName = "Presa de Cristal (T3)",
+            enemyName = "Crystal Dragon",
+            tier = 3,
+            attributes = new List<string> { "CritMultiplier", "BaseDamageMultiplier", "Piercing" },
+            essenceCost = 300f
+        });
+
+        // Crystal Dragon T4 - Projéteis perfuram inimigos e ganham velocidade extra ao cruzar alvos
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "dragon_crystal_t4",
+            itemName = "Cristal do Dragão (T4)",
+            enemyName = "Crystal Dragon",
+            tier = 4,
+            attributes = new List<string> { "CritMultiplier", "BaseDamageMultiplier", "Piercing", "Special_DragonFlight" },
+            essenceCost = 420f
+        });
+
         Debug.Log($"[DROP CONFIG] Gerados {allItems.Count} items!");
     }
 }

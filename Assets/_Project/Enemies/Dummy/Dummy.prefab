@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7892979464117595547}
   - component: {fileID: 5098479531169077153}
   - component: {fileID: 301778215056202242}
+  - component: {fileID: 4042279547691008063}
   m_Layer: 6
   m_Name: Dummy
   m_TagString: Dummy
@@ -132,6 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 2000
+  debugLogDamage: 0
   healthBarSlider: {fileID: 6575476071282512931}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -153,10 +155,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Dummy
-  icon: {fileID: 0}
-  descricao: "Descri\xE7\xE3o aqui"
+  enemyData: {fileID: 11400000, guid: 26d0706f81fca6c46a693c0a14020a96, type: 2}
   foiEncontrado: 0
+--- !u!114 &4042279547691008063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1086662407212499298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c39072c66833df4b9af927279331bc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
+  enemyIdentity: {fileID: 0}
+  usarTrigger: 1
+  usarDistancia: 0
+  distanciaDeteccao: 12
+  debugLogs: 0
 --- !u!1 &1791491929440790419
 GameObject:
   m_ObjectHideFlags: 0

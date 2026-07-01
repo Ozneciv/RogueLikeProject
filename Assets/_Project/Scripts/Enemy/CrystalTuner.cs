@@ -24,6 +24,19 @@ public class CrystalTuner : MonoBehaviour
     public float flyHeight = 1.5f;
     public float heightCorrectionSpeed = 5.0f;
 
+    [Header("Luz de Conexão")]
+    [Tooltip("Point Light associada ao sintonizador.")]
+    public Light connectionLight;
+    public float minLightIntensity = 0.5f;
+    public float maxLightIntensity = 3.0f;
+    public float lightPulseSpeed = 5.0f;
+
+    [Header("Rotação Visual")]
+    [Tooltip("Objeto visual que irá girar. Se nulo, tentará achar um filho chamado 'Crystal Tunner', 'Mesh1' ou o primeiro filho válido.")]
+    public Transform visualChild;
+    public float idleSpinSpeed = 30f;
+    public float activeSpinSpeed = 180f;
+
     // --- Privados ---
     private Transform playerTransform;
     private Transform beamOrigin;
@@ -42,6 +55,26 @@ public class CrystalTuner : MonoBehaviour
         public LineRenderer beam;
     }
 
+    private static T GetTargetComponent<T>(GameObject obj) where T : Component
+    {
+        if (obj == null) return null;
+        return obj.GetComponent<T>() ?? obj.GetComponentInParent<T>();
+    }
+
+    private GameObject ResolveTargetRoot(Collider hit)
+    {
+        if (hit == null) return null;
+
+        DummyHealth health = hit.GetComponent<DummyHealth>() ?? hit.GetComponentInParent<DummyHealth>();
+        if (health != null)
+            return health.gameObject;
+
+        if (hit.attachedRigidbody != null)
+            return hit.attachedRigidbody.gameObject;
+
+        return hit.gameObject;
+    }
+
     private bool registradoNoBestiario = false;
 
     // ──────────────────────────────────────────────
@@ -55,12 +88,37 @@ public class CrystalTuner : MonoBehaviour
         beamOrigin = (center != null) ? center : transform;
         if (center == null)
             Debug.LogWarning("[CrystalTuner] Filho 'Center' não encontrado. Usando o pivô.");
+
+        if (connectionLight == null)
+            connectionLight = GetComponentInChildren<Light>(true);
+
+        if (connectionLight != null)
+            connectionLight.enabled = false;
+
+        if (visualChild == null)
+        {
+            visualChild = transform.Find("Crystal Tunner") ?? transform.Find("Mesh1");
+            if (visualChild == null && transform.childCount > 0)
+            {
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    Transform child = transform.GetChild(i);
+                    if (child.name != "HealthBar_Canvas" && child.name != "Point Light" && child.name != "Center")
+                    {
+                        visualChild = child;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     void Update()
     {
         HandleBuffs();
         UpdateAllBeams();
+        UpdateConnectionLight();
+        UpdateVisualRotation();
 
         // Registro no bestiário por proximidade
         if (!registradoNoBestiario && playerTransform != null)
@@ -74,6 +132,31 @@ public class CrystalTuner : MonoBehaviour
                     BestiarioManager.instancia.Registrar(id);
             }
         }
+    }
+
+    void UpdateConnectionLight()
+    {
+        if (connectionLight == null) return;
+
+        bool hasTargets = targets.Count > 0;
+        
+        if (connectionLight.enabled != hasTargets)
+            connectionLight.enabled = hasTargets;
+
+        if (hasTargets)
+        {
+            float t = Mathf.PingPong(Time.time * lightPulseSpeed, 1f);
+            connectionLight.intensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, t);
+        }
+    }
+
+    void UpdateVisualRotation()
+    {
+        if (visualChild == null) return;
+
+        bool hasTargets = targets.Count > 0;
+        float currentSpeed = hasTargets ? activeSpinSpeed : idleSpinSpeed;
+        visualChild.Rotate(Vector3.up, currentSpeed * Time.deltaTime, Space.Self);
     }
 
     void FixedUpdate()
@@ -150,7 +233,8 @@ public class CrystalTuner : MonoBehaviour
 
     void FindNewTargets()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, connectRange, enemyLayer);
+        // Busca em todas as camadas para garantir encontrar inimigos em qualquer camada (como a Aranha na camada Default)
+        Collider[] hits = Physics.OverlapSphere(transform.position, connectRange);
 
         // Ordena por distância
         System.Array.Sort(hits, (a, b) =>
@@ -161,11 +245,12 @@ public class CrystalTuner : MonoBehaviour
         {
             if (targets.Count >= maxTargets) break;
 
-            GameObject candidate = hit.gameObject;
+            GameObject candidate = ResolveTargetRoot(hit);
+            if (candidate == null) continue;
             if (candidate == gameObject) continue;
-            if (candidate.GetComponent<CrystalTuner>() != null) continue;
-            if (candidate.GetComponent<HomingHazard>() != null) continue;
-            if (candidate.GetComponent<DummyHealth>() == null && candidate.GetComponent<ShardSwarmHealth>() == null) continue;
+            if (GetTargetComponent<CrystalTuner>(candidate) != null) continue;
+            if (GetTargetComponent<HomingHazard>(candidate) != null) continue;
+            if (GetTargetComponent<DummyHealth>(candidate) == null && GetTargetComponent<ShardSwarmHealth>(candidate) == null) continue;
 
             // Já é alvo?
             bool alreadyTargeted = false;
@@ -281,34 +366,63 @@ public class CrystalTuner : MonoBehaviour
     void ApplyBuffs(GameObject target)
     {
         if (target == null) return;
-        target.GetComponent<TotemSpawner>()?.SetBuff(true);
-        target.GetComponent<MagicStone_AI>()?.SetBuff(true);
-        target.GetComponent<ShardSwarm_AI>()?.SetBuff(true);
-        target.GetComponent<GoblinAI_Transform>()?.SetBuff(true);
-        target.GetComponent<DummyHealth>()?.SetBuffedStatus(true);
-        target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(true);
-        target.GetComponent<CrystalWatcher_AI>()?.SetBuff(true);
-        target.GetComponent<Cristalus_AI>()?.SetBuff(true);
-        target.GetComponent<Geobionte_AI>()?.SetBuff(true);
+        GetTargetComponent<TotemSpawner>(target)?.SetBuff(true);
+        GetTargetComponent<MagicStone_AI>(target)?.SetBuff(true);
+        GetTargetComponent<ShardSwarm_AI>(target)?.SetBuff(true);
+        GetTargetComponent<GoblinAI_Transform>(target)?.SetBuff(true);
+        GetTargetComponent<DummyHealth>(target)?.SetBuffedStatus(true);
+        GetTargetComponent<ShardSwarmHealth>(target)?.SetBuffedStatus(true);
+        GetTargetComponent<CrystalWatcher_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Cristalus_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Geobionte_AI>(target)?.SetBuff(true);
+        GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Golem_AI>(target)?.SetBuff(true);
+        GetTargetComponent<Spider_AI>(target)?.SetBuff(true);
     }
 
     void RemoveBuffs(GameObject target)
     {
         if (target == null) return;
-        target.GetComponent<TotemSpawner>()?.SetBuff(false);
-        target.GetComponent<MagicStone_AI>()?.SetBuff(false);
-        target.GetComponent<ShardSwarm_AI>()?.SetBuff(false);
-        target.GetComponent<GoblinAI_Transform>()?.SetBuff(false);
-        target.GetComponent<DummyHealth>()?.SetBuffedStatus(false);
-        target.GetComponent<ShardSwarmHealth>()?.SetBuffedStatus(false);
-        target.GetComponent<CrystalWatcher_AI>()?.SetBuff(false);
-        target.GetComponent<Cristalus_AI>()?.SetBuff(false);
-        target.GetComponent<Geobionte_AI>()?.SetBuff(false);
+        GetTargetComponent<TotemSpawner>(target)?.SetBuff(false);
+        GetTargetComponent<MagicStone_AI>(target)?.SetBuff(false);
+        GetTargetComponent<ShardSwarm_AI>(target)?.SetBuff(false);
+        GetTargetComponent<GoblinAI_Transform>(target)?.SetBuff(false);
+        GetTargetComponent<DummyHealth>(target)?.SetBuffedStatus(false);
+        GetTargetComponent<ShardSwarmHealth>(target)?.SetBuffedStatus(false);
+        GetTargetComponent<CrystalWatcher_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Cristalus_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Geobionte_AI>(target)?.SetBuff(false);
+        GetTargetComponent<CrystalDragonCommon_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Golem_AI>(target)?.SetBuff(false);
+        GetTargetComponent<Spider_AI>(target)?.SetBuff(false);
+    }
+
+    void OnDisable()
+    {
+        for (int i = targets.Count - 1; i >= 0; i--)
+        {
+            var td = targets[i];
+            if (td.obj != null)
+            {
+                RemoveBuffs(td.obj);
+            }
+            if (td.beam != null)
+            {
+                Destroy(td.beam.gameObject);
+            }
+        }
+        targets.Clear();
     }
 
     void OnDestroy()
     {
         foreach (var td in targets)
-            RemoveBuffs(td.obj);
+        {
+            if (td.obj != null)
+                RemoveBuffs(td.obj);
+            if (td.beam != null)
+                Destroy(td.beam.gameObject);
+        }
+        targets.Clear();
     }
 }

@@ -351,13 +351,10 @@ PrefabInstance:
       addedObject: {fileID: 7166344457765460968}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3134599547636450703}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 970907107233608823}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 8854041786306624339}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4917211348280647882}
   m_SourcePrefab: {fileID: 100100000, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}
 --- !u!1 &5792087848057019593 stripped
 GameObject:
@@ -398,38 +395,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  itemData: {fileID: 11400000, guid: 5ccc39d9a5e268748a49fb6769c4dc4b, type: 2}
   objetoNome: Cristal
   icon: {fileID: 0}
   descricao: "Descri\xE7\xE3o aqui"
   foiCatalogado: 0
---- !u!114 &3134599547636450703
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5792087848057019593}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe37b7db57670ce4e8be66679dea8dd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ItemCollectable
-  interactable: {fileID: 0}
---- !u!114 &970907107233608823
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5792087848057019593}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
-  collectable: {fileID: 0}
-  glowObject: {fileID: 6656413064628245791}
-  pressFUI: {fileID: 5694365123057039300}
 --- !u!65 &8854041786306624339
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -451,6 +421,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 6.033742, y: 2.6676633, z: 5.9234724}
   m_Center: {x: 0.096904635, y: 1.3338212, z: 0.073907375}
+--- !u!114 &4917211348280647882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5792087848057019593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81838ed9fcc92fa49a447d87ed102ca1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
+  bobSpeed: 2
+  bobHeight: 0.2
+  glowObject: {fileID: 6656413064628245791}
+  pressFUI: {fileID: 5694365123057039300}
+  pickupDelay: 0.5
+  lifetime: 60
 --- !u!4 &6569187909926897267 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 806b5bd2edcd4c642a7a890e4ee27ade, type: 3}

@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 1896805146778848305}
   - component: {fileID: 4662248567249524153}
   - component: {fileID: 5031780529464456820}
+  - component: {fileID: 2726038420584316830}
+  - component: {fileID: 8451392313934486798}
   m_Layer: 6
   m_Name: CrystalWatcher
   m_TagString: Enemy
@@ -99,6 +101,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 100
+  debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 0.45882353, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -156,6 +159,37 @@ MonoBehaviour:
   rotationSpeed: 30
   laserRange: 30
   laserWidth: 0.5
+--- !u!114 &2726038420584316830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6393874332621996799}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
+  enemyData: {fileID: 11400000, guid: df717b022f539af4c999ecd44688ff3e, type: 2}
+  foiEncontrado: 0
+--- !u!114 &8451392313934486798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6393874332621996799}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c39072c66833df4b9af927279331bc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
+  enemyIdentity: {fileID: 0}
+  usarTrigger: 1
+  usarDistancia: 0
+  distanciaDeteccao: 12
+  debugLogs: 0
 --- !u!1001 &8518726971011576219
 PrefabInstance:
   m_ObjectHideFlags: 0

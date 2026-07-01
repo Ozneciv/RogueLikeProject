@@ -21,6 +21,10 @@ public class RoomTriggerProxy : MonoBehaviour
         if (roomController == null)
             roomController = GetComponentInParent<RoomController>();
 
+        // Se ainda for nulo (ex: RoomController está em um filho irmão como "LakeRoom"), busca nos filhos do pai
+        if (roomController == null && transform.parent != null)
+            roomController = transform.parent.GetComponentInChildren<RoomController>();
+
         if (roomController == null)
             Debug.LogError($"[RoomTriggerProxy] '{gameObject.name}': RoomController não encontrado! " +
                            "Arraste o RoomController no campo do Inspector.");

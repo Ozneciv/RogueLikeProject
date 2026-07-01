@@ -171,6 +171,9 @@ public class BismuthCrystalField : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
 
+        // Não aplica slow no próprio Geobionte que criou o campo
+        if (ownerBismutado != null && other.gameObject == ownerBismutado.gameObject) return;
+
         playerDebuffs = other.GetComponent<PlayerDebuffs>();
         if (playerDebuffs == null)
         {
