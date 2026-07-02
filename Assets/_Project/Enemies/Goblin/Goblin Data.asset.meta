@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/_Project/Enemies/Goblin/Goblin Data.asset.meta
-guid: aaa48858f7964fb49bb13a9cebcb7288
-========
-guid: bfe7d74ca1cc7f747bd0803cb5a544e9
->>>>>>>> VicenzoWS:Assets/_Project/Enviroment/Map/New map/SafeRoom/Materials/SPACESHIP.mat.meta
+guid: 13d939a691fc3cf45b1efd98cd67a0e6
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 11400000

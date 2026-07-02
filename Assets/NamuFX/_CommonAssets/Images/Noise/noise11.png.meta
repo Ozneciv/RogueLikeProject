@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/NamuFX/_CommonAssets/Images/Noise/noise11.png.meta
-guid: 5fcfff8483b70d34495a6fe6d56d2a6e
-========
-guid: 9c73419740f22fe49b896ef713f6cd23
->>>>>>>> VicenzoWS:Assets/MeshyImports/Meshy_Model_20260629_000846/Meshy_AI_Vigilant_0629030836_texture_normal.png.meta
+guid: f8fc9847cfcd37140bab2447bff875fc
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}

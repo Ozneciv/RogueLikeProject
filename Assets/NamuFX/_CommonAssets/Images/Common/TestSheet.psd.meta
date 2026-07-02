@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/NamuFX/_CommonAssets/Images/Common/TestSheet.psd.meta
-guid: 8743837883add5d41a29b7bbbb90c392
-========
-guid: e2048c7dc73e5df439352d13eef4acac
->>>>>>>> VicenzoWS:Assets/_Project/Enviroment/Map/New map/SafeRoom/Materials/Meshy_AI_Vigilant_0629030527_texture.png.meta
+guid: bc9534b4c8189bf40bcea60354487c18
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
