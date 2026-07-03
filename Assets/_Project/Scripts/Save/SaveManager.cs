@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -29,6 +30,31 @@ public class SaveManager : MonoBehaviour
 
     private const string SaveFileName = "player_progress.json";
     private string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+
+    // ─── CACHE DE DADOS PERSISTENTES (acessível pelo CraftingManager) ────────
+    private PersistentSaveData _cachedData;
+
+    /// <summary>
+    /// Dados persistentes em memória. Carregados do disco no LoadPersistentData.
+    /// O CraftingManager e EquipmentManager leem/escrevem aqui.
+    /// </summary>
+    public PersistentSaveData CachedData
+    {
+        get
+        {
+            if (_cachedData == null)
+                _cachedData = new PersistentSaveData();
+            return _cachedData;
+        }
+    }
+
+    // ─── EVENTOS ─────────────────────────────────────────────────────────────
+
+    /// <summary>Disparado quando baseResources muda (adicionar/remover recurso).</summary>
+    public static event Action OnBaseResourcesChanged;
+
+    /// <summary>Disparado quando equipamentos craftados/equipados mudam.</summary>
+    public static event Action OnEquipmentChanged;
 
     // ─── CICLO DE VIDA ────────────────────────────────────────────────────────
 
@@ -88,6 +114,13 @@ public class SaveManager : MonoBehaviour
             }
         }
 
+        // Mescla baseResources do cache (itens adicionados via AddResourceToBase)
+        foreach (var cached in CachedData.baseResources)
+        {
+            if (!data.baseResources.Exists(e => e.itemId == cached.itemId))
+                data.baseResources.Add(new ItemSaveEntry(cached.itemId, cached.quantity));
+        }
+
         PlayerUpgrades upgrades = player.GetComponent<PlayerUpgrades>();
         if (upgrades != null)
         {
@@ -99,11 +132,16 @@ public class SaveManager : MonoBehaviour
             }
         }
 
+        // Persiste equipamentos craftados/equipados
+        data.craftedEquipmentIds = new List<string>(CachedData.craftedEquipmentIds);
+        data.equippedEquipmentIds = new List<string>(CachedData.equippedEquipmentIds);
+
         string json = JsonUtility.ToJson(data, prettyPrint: true);
         File.WriteAllText(SaveFilePath, json);
         Debug.Log($"[SAVE] Progressão salva → {SaveFilePath} | " +
                   $"{data.baseResources.Count} recursos | " +
-                  $"{data.purchasedUpgradeIndices.Count} upgrades");
+                  $"{data.purchasedUpgradeIndices.Count} upgrades | " +
+                  $"{data.craftedEquipmentIds.Count} equipamentos");
     }
 
     /// <summary>
@@ -131,6 +169,9 @@ public class SaveManager : MonoBehaviour
             return;
         }
 
+        // Carrega dados no cache para acesso direto pelo CraftingManager/EquipmentManager
+        _cachedData = data;
+
         PlayerInventory inventory = player.GetComponent<PlayerInventory>();
         if (inventory != null)
         {
@@ -149,7 +190,8 @@ public class SaveManager : MonoBehaviour
 
         Debug.Log($"[SAVE] Progressão carregada | " +
                   $"{data.baseResources.Count} recursos de base | " +
-                  $"{data.purchasedUpgradeIndices.Count} upgrades re-aplicados");
+                  $"{data.purchasedUpgradeIndices.Count} upgrades | " +
+                  $"{data.craftedEquipmentIds.Count} equipamentos");
     }
 
     // ─── SETOR 2 — LIMPEZA DE RUN (morte) ────────────────────────────────────
@@ -188,5 +230,143 @@ public class SaveManager : MonoBehaviour
             inventory.RemoveItem(id, inventory.GetItemCount(id));
 
         Debug.Log($"[SAVE] Morte: {toDiscard.Count} item(s) de run descartado(s). Recursos de base preservados.");
+    }
+
+    // ─── SETOR 3 — HELPERS PARA BASE RESOURCES (usado pelo CraftingManager) ──
+
+    /// <summary>
+    /// Adiciona um recurso diretamente à Bolsa Sintética (baseResources).
+    /// Usado pelo sistema de coleta quando ItemData.returnsToBase == true.
+    /// Salva automaticamente em disco após adicionar.
+    /// </summary>
+    public void AddResourceToBase(string itemId, int amount = 1)
+    {
+        if (string.IsNullOrEmpty(itemId) || amount <= 0) return;
+
+        ItemSaveEntry existing = CachedData.baseResources.Find(e => e.itemId == itemId);
+        if (existing != null)
+        {
+            existing.quantity += amount;
+        }
+        else
+        {
+            CachedData.baseResources.Add(new ItemSaveEntry(itemId, amount));
+        }
+
+        Debug.Log($"[SAVE] +{amount} {itemId} adicionado à Bolsa Sintética. " +
+                  $"Total: {GetBaseResourceCount(itemId)}");
+
+        OnBaseResourcesChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Remove um recurso da Bolsa Sintética (baseResources).
+    /// Usado pelo CraftingManager ao craftar receitas.
+    /// Retorna true se removido com sucesso.
+    /// </summary>
+    public bool RemoveResourceFromBase(string itemId, int amount = 1)
+    {
+        if (string.IsNullOrEmpty(itemId) || amount <= 0) return false;
+
+        ItemSaveEntry existing = CachedData.baseResources.Find(e => e.itemId == itemId);
+        if (existing == null || existing.quantity < amount)
+        {
+            Debug.LogWarning($"[SAVE] Não há {amount}x {itemId} na Bolsa Sintética.");
+            return false;
+        }
+
+        existing.quantity -= amount;
+        if (existing.quantity <= 0)
+            CachedData.baseResources.Remove(existing);
+
+        Debug.Log($"[SAVE] -{amount} {itemId} removido da Bolsa Sintética.");
+        OnBaseResourcesChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// Retorna a quantidade de um item na Bolsa Sintética.
+    /// </summary>
+    public int GetBaseResourceCount(string itemId)
+    {
+        if (string.IsNullOrEmpty(itemId)) return 0;
+        ItemSaveEntry entry = CachedData.baseResources.Find(e => e.itemId == itemId);
+        return entry != null ? entry.quantity : 0;
+    }
+
+    /// <summary>
+    /// Retorna todos os recursos da Bolsa Sintética.
+    /// </summary>
+    public List<ItemSaveEntry> GetAllBaseResources()
+    {
+        return new List<ItemSaveEntry>(CachedData.baseResources);
+    }
+
+    // ─── SETOR 4 — HELPERS PARA EQUIPMENT (usado pelo EquipmentManager) ──────
+
+    /// <summary>
+    /// Adiciona um equipamento craftado à lista de persistência.
+    /// </summary>
+    public void AddCraftedEquipment(string equipmentId)
+    {
+        if (string.IsNullOrEmpty(equipmentId)) return;
+        CachedData.craftedEquipmentIds.Add(equipmentId);
+        Debug.Log($"[SAVE] Equipment craftado adicionado: {equipmentId}");
+        OnEquipmentChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Marca um equipamento como equipado.
+    /// </summary>
+    public void SetEquipmentEquipped(string equipmentId, bool equipped)
+    {
+        if (string.IsNullOrEmpty(equipmentId)) return;
+
+        if (equipped && !CachedData.equippedEquipmentIds.Contains(equipmentId))
+        {
+            CachedData.equippedEquipmentIds.Add(equipmentId);
+        }
+        else if (!equipped)
+        {
+            CachedData.equippedEquipmentIds.Remove(equipmentId);
+        }
+
+        Debug.Log($"[SAVE] Equipment {equipmentId} equipado={equipped}");
+        OnEquipmentChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Retorna quantas cópias de um equipamento o jogador possui (craftou).
+    /// </summary>
+    public int GetCraftedEquipmentCount(string equipmentId)
+    {
+        int count = 0;
+        foreach (string id in CachedData.craftedEquipmentIds)
+            if (id == equipmentId) count++;
+        return count;
+    }
+
+    /// <summary>
+    /// Verifica se um equipamento está equipado.
+    /// </summary>
+    public bool IsEquipmentEquipped(string equipmentId)
+    {
+        return CachedData.equippedEquipmentIds.Contains(equipmentId);
+    }
+
+    /// <summary>
+    /// Retorna a lista de IDs de equipamentos craftados.
+    /// </summary>
+    public List<string> GetAllCraftedEquipmentIds()
+    {
+        return new List<string>(CachedData.craftedEquipmentIds);
+    }
+
+    /// <summary>
+    /// Retorna a lista de IDs de equipamentos equipados.
+    /// </summary>
+    public List<string> GetAllEquippedEquipmentIds()
+    {
+        return new List<string>(CachedData.equippedEquipmentIds);
     }
 }
