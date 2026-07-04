@@ -256,6 +256,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9ed5929e3f8c30e4eb4ac3872b7fae15, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5303528467312566948}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9ed5929e3f8c30e4eb4ac3872b7fae15, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8099924873858570262}
   m_SourcePrefab: {fileID: 100100000, guid: 9ed5929e3f8c30e4eb4ac3872b7fae15, type: 3}
 --- !u!4 &2726445423327364179 stripped
 Transform:
@@ -302,7 +305,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  enemyData: {fileID: 0}
+  enemyData: {fileID: 11400000, guid: fe37803ba34c2e642bd1d3e5fa5aba1e, type: 2}
   foiEncontrado: 0
 --- !u!54 &5842324002681870713
 Rigidbody:
@@ -343,23 +346,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7359cd2f2f4ee24a8d03facb119f257, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GoblinAI_Transform
-  jogador: {fileID: 0}
-  prefabBomba: {fileID: 304376307803806856, guid: 9e29b2645f47be5428948c205e9134aa, type: 3}
-  pontoDeArremesso: {fileID: 8440605928173324434}
-  distanciaFuga: 6
-  distanciaAtaque: 12
-  distanciaMaxBusca: 28
-  velocidadePerseguicao: 7
-  velocidadeFuga: 11
-  velocidadeStrafe: 4
-  aceleracao: 12
-  forcaArremesso: 12
-  forcaArco: 6
-  intervaloAtaque: 2.8
-  distanciaMelee: 2.5
-  danoMelee: 20
-  cooldownMelee: 1.5
-  raioHitMelee: 1.8
+  player: {fileID: 0}
+  bombPrefab: {fileID: 304376307803806856, guid: 9e29b2645f47be5428948c205e9134aa, type: 3}
+  throwPoint: {fileID: 8440605928173324434}
+  fleeDistance: 6
+  throwDistance: 12
+  chaseDistance: 28
+  chaseSpeed: 7
+  fleeSpeed: 11
+  strafeSpeed: 4
+  acceleration: 12
+  throwForce: 12
+  throwArcForce: 6
+  throwCooldown: 2.8
+  cancelThrowDistance: 4
+  meleeDistance: 2.5
+  meleeDamage: 20
+  meleeCooldown: 1.5
+  meleeHitRadius: 1.8
   strafeChangeDuration: 1.2
 --- !u!114 &5303528467312566948
 MonoBehaviour:
@@ -374,6 +378,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   maxHealth: 100
+  debugLogDamage: 0
   healthBarSlider: {fileID: 6228831577645147432}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -383,6 +388,23 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+--- !u!114 &8099924873858570262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3359006950562635497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c39072c66833df4b9af927279331bc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectorDeInimigo
+  enemyIdentity: {fileID: 0}
+  usarTrigger: 1
+  usarDistancia: 0
+  distanciaDeteccao: 12
+  debugLogs: 0
 --- !u!4 &4317072006533897328 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1852576806548013000, guid: 9ed5929e3f8c30e4eb4ac3872b7fae15, type: 3}

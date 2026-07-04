@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using UnityEngine.UI;
@@ -10,9 +11,12 @@ public class GameManager : MonoBehaviour
     [Header("Referências Globais")]
     public GameObject loadingScreenCanvas;
     public Slider loadingBar;
+    public float minimumLoadingTime = 2.0f; // Tempo mínimo de carregamento em segundos
     
     [HideInInspector]
     public GameObject currentPlayer;
+
+    private bool isLevelReady = false;
 
     private void Awake()
     {
@@ -27,7 +31,37 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        FindLoadingReferences();
+
         if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(false);
+    }
+
+    public void FindLoadingReferences()
+    {
+        // Try to automatically find the loading canvas if it's null
+        if (loadingScreenCanvas == null)
+        {
+            GameObject go = GameObject.Find("LoadingScreenCanvas");
+            if (go == null) go = GameObject.Find("LoadingScreen");
+            if (go == null) go = GameObject.Find("Canvas_Loading");
+            
+            if (go != null)
+            {
+                loadingScreenCanvas = go;
+            }
+        }
+
+        // Keep the loading canvas alive across scene changes
+        if (loadingScreenCanvas != null)
+        {
+            DontDestroyOnLoad(loadingScreenCanvas);
+            
+            // Try to find the slider if not assigned
+            if (loadingBar == null)
+            {
+                loadingBar = loadingScreenCanvas.GetComponentInChildren<Slider>(true);
+            }
+        }
     }
 
     // --- NOVA LÓGICA DE CENA ---
@@ -47,8 +81,15 @@ public class GameManager : MonoBehaviour
                 GameObject baseSpawn = GameObject.Find("Base_SpawnPoint");
                 if (baseSpawn != null)
                 {
+                    // FIX: Desativa o NavMeshAgent antes de mover para evitar conflito de posição
+                    NavMeshAgent agent = currentPlayer.GetComponent<NavMeshAgent>();
+                    if (agent != null) agent.enabled = false;
+
                     currentPlayer.transform.position = baseSpawn.transform.position;
                     currentPlayer.transform.rotation = baseSpawn.transform.rotation;
+
+                    // Reativa o agente na Base (que tem NavMesh assado)
+                    if (agent != null) agent.enabled = true;
                 }
                 else
                 {
@@ -78,7 +119,12 @@ public class GameManager : MonoBehaviour
 
     public void RegisterPlayer(GameObject player)
     {
-        if (currentPlayer == null) currentPlayer = player;
+        if (currentPlayer == null)
+        {
+            currentPlayer = player;
+            // Carrega a progressão permanente assim que o player é registrado
+            SaveManager.instance?.LoadPersistentData(currentPlayer);
+        }
         else if (currentPlayer != player) Destroy(player);
     }
 
@@ -112,12 +158,14 @@ public class GameManager : MonoBehaviour
 
     public void ReturnToBase()
     {
+        FindLoadingReferences();
         if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(true);
         SceneManager.LoadScene("BaseLab");
     }
 
     private IEnumerator LoadLevelAsync(string sceneName)
     {
+        FindLoadingReferences();
         if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(true);
 
         if (currentPlayer != null)
@@ -126,27 +174,83 @@ public class GameManager : MonoBehaviour
             if (playerMovement != null) playerMovement.enabled = false;
         }
 
+        // Reset the ready flag before loading
+        isLevelReady = false;
+
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);
+        
+        // 1. Wait until scene loads (takes up to 50% of the bar)
         while (!operation.isDone)
         {
             float progress = Mathf.Clamp01(operation.progress / 0.9f);
-            if (loadingBar != null) loadingBar.value = progress;
+            if (loadingBar != null) loadingBar.value = progress * 0.5f;
             yield return null;
         }
 
+        // 2. Generate level immediately so the player snaps to the correct floor/spawn point
         LevelGenerator levelGen = FindObjectOfType<LevelGenerator>();
-        if (levelGen != null) levelGen.GenerateLevel();
+        if (levelGen != null)
+        {
+            levelGen.GenerateLevel();
+            
+            // 3. Wait until the LevelGenerator calls OnLevelReady and sets isLevelReady = true
+            float timer = 0f;
+            while (!isLevelReady)
+            {
+                timer += Time.deltaTime;
+                if (loadingBar != null)
+                {
+                    // Smoothly animate the loading bar from 50% to 95% while waiting for generation
+                    loadingBar.value = Mathf.Lerp(0.5f, 0.95f, timer / 2f);
+                }
+                yield return null;
+            }
+        }
+        else
+        {
+            isLevelReady = true; // Fallback if no generator
+        }
+
+        if (loadingBar != null) loadingBar.value = 1f;
+
+        // Brief delay for visual completion
+        yield return new WaitForSeconds(0.2f);
+
+        // 4. Hide loading screen and enable player movement
+        if (loadingScreenCanvas != null)
+        {
+            loadingScreenCanvas.SetActive(false);
+        }
+
+        if (currentPlayer != null)
+        {
+            PlayerM playerMovement = currentPlayer.GetComponent<PlayerM>();
+            if (playerMovement != null) playerMovement.enabled = true;
+
+            // Smoothly fade in the level
+            ScreenFader fader = currentPlayer.GetComponentInChildren<ScreenFader>();
+            if (fader != null) StartCoroutine(fader.FadeIn());
+        }
     }
 
     public void OnLevelReady(Transform spawnPoint)
     {
         if (currentPlayer != null && spawnPoint != null)
         {
+            // FIX: Desativa o NavMeshAgent antes de teleportar para evitar
+            // conflito com a mudança brusca de transform.position.
+            NavMeshAgent agent = currentPlayer.GetComponent<NavMeshAgent>();
+            if (agent != null) agent.enabled = false;
+
             currentPlayer.transform.position = spawnPoint.position;
             currentPlayer.transform.rotation = spawnPoint.rotation;
+
+            // Reativa o agente — o NavMesh já foi assado em runtime pelo LevelGenerator
+            if (agent != null) agent.enabled = true;
             
+            // Keep player movement disabled during the loading wait
             PlayerM playerMovement = currentPlayer.GetComponent<PlayerM>();
-            if (playerMovement != null) playerMovement.enabled = true;
+            if (playerMovement != null) playerMovement.enabled = false;
             
             // Conecta Mercador e UI da fase
             PlayerHealth pHealth = currentPlayer.GetComponent<PlayerHealth>();
@@ -158,7 +262,8 @@ public class GameManager : MonoBehaviour
             MerchantUIController merchantUI = FindObjectOfType<MerchantUIController>(true);
             if (merchantUI != null) merchantUI.ConnectPlayer(pHealth);
         }
-        
-        if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(false);
+
+        // Notify GameManager that the level is ready and player has been teleported!
+        isLevelReady = true;
     }
 }

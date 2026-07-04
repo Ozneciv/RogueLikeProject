@@ -40,6 +40,10 @@ public class InventoryUI : MonoBehaviour
     private TextMeshProUGUI headerText;
     private InventoryTooltip tooltip;
     private List<InventorySlotUI> slots = new List<InventorySlotUI>();
+    private ScrollRect scrollRect;
+    private RectTransform contentRect;
+    private RectTransform scrollViewRect;
+    private Scrollbar verticalScrollbar;
 
     // Estado
     private bool isOpen = false;
@@ -50,6 +54,9 @@ public class InventoryUI : MonoBehaviour
     private static readonly Color PANEL_BORDER = new Color(0.35f, 0.30f, 0.55f, 0.7f);
     private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1f);
     private static readonly Color HEADER_ACCENT = new Color(0.6f, 0.45f, 0.90f, 1f);
+
+    // Máximo de linhas visíveis sem scroll
+    private const int MAX_VISIBLE_ROWS = 2;
 
     void Awake()
     {
@@ -385,17 +392,43 @@ public class InventoryUI : MonoBehaviour
         headerText.text = "INVENTÁRIO  <color=#" + ColorUtility.ToHtmlStringRGB(HEADER_ACCENT) + ">"
             + occupiedSlots + "/" + maxSlots + "</color>";
 
-        // === Container da Grade ===
+        // === ScrollView container ===
+        float maxVisibleGridHeight = MAX_VISIBLE_ROWS * (slotSize + slotSpacing) - slotSpacing;
+        float scrollViewHeight = Mathf.Min(gridHeight, maxVisibleGridHeight);
+
+        // Recalcula tamanho do painel baseado na área visível
+        totalHeight = scrollViewHeight + panelPadding * 2 + headerHeight;
+        panelRect.sizeDelta = new Vector2(totalWidth, totalHeight);
+
+        // ScrollView
+        GameObject scrollViewObj = new GameObject("ScrollView");
+        scrollViewObj.transform.SetParent(panelObject.transform, false);
+        scrollViewObj.layer = uiLayer;
+
+        scrollViewRect = scrollViewObj.AddComponent<RectTransform>();
+        scrollViewRect.anchorMin = new Vector2(0.5f, 0.5f);
+        scrollViewRect.anchorMax = new Vector2(0.5f, 0.5f);
+        scrollViewRect.pivot = new Vector2(0.5f, 0.5f);
+        scrollViewRect.sizeDelta = new Vector2(gridWidth, scrollViewHeight);
+        scrollViewRect.anchoredPosition = new Vector2(0f, -headerHeight / 2f);
+
+        scrollViewObj.AddComponent<CanvasRenderer>();
+        Image scrollViewMask = scrollViewObj.AddComponent<Image>();
+        scrollViewMask.color = new Color(0, 0, 0, 0.01f); // quase invisível, necessário pro mask
+        scrollViewMask.raycastTarget = true;
+        scrollViewObj.AddComponent<Mask>().showMaskGraphic = false;
+
+        // Content (o grid real que rola)
         GameObject gridObj = new GameObject("SlotGrid");
-        gridObj.transform.SetParent(panelObject.transform, false);
+        gridObj.transform.SetParent(scrollViewObj.transform, false);
         gridObj.layer = uiLayer;
 
-        RectTransform gridRect = gridObj.AddComponent<RectTransform>();
-        gridRect.anchorMin = new Vector2(0.5f, 0.5f);
-        gridRect.anchorMax = new Vector2(0.5f, 0.5f);
-        gridRect.pivot = new Vector2(0.5f, 0.5f);
-        gridRect.sizeDelta = new Vector2(gridWidth, gridHeight);
-        gridRect.anchoredPosition = new Vector2(0f, -headerHeight / 2f);
+        contentRect = gridObj.AddComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0.5f, 1f);
+        contentRect.anchorMax = new Vector2(0.5f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.sizeDelta = new Vector2(gridWidth, gridHeight);
+        contentRect.anchoredPosition = Vector2.zero;
 
         GridLayoutGroup gridLayout = gridObj.AddComponent<GridLayoutGroup>();
         gridLayout.cellSize = new Vector2(slotSize, slotSize);
@@ -405,6 +438,28 @@ public class InventoryUI : MonoBehaviour
         gridLayout.childAlignment = TextAnchor.UpperLeft;
         gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         gridLayout.constraintCount = columns;
+
+        ContentSizeFitter fitter = gridObj.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        // ScrollRect
+        scrollRect = scrollViewObj.AddComponent<ScrollRect>();
+        scrollRect.content = contentRect;
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = 20f;
+        scrollRect.viewport = scrollViewRect;
+
+        // === Scrollbar Vertical ===
+        bool needsScroll = rows > MAX_VISIBLE_ROWS;
+        CreateScrollbar(panelObject.transform, uiLayer, scrollViewHeight, headerHeight);
+        scrollRect.verticalScrollbar = verticalScrollbar;
+        scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+        if (verticalScrollbar != null)
+        {
+            verticalScrollbar.gameObject.SetActive(needsScroll);
+        }
 
         // === Tooltip (criado uma vez, reutilizado) ===
         GameObject tooltipObj = new GameObject("InventoryTooltip");
@@ -451,35 +506,121 @@ public class InventoryUI : MonoBehaviour
         }
         slots.Clear();
 
-        // Encontra o grid container
-        Transform gridTransform = panelObject.transform.Find("SlotGrid");
+        // Encontra o grid container (agora dentro do ScrollView)
+        Transform scrollViewTransform = panelObject.transform.Find("ScrollView");
+        if (scrollViewTransform == null)
+        {
+            Debug.LogError("[INVENTORY UI] ScrollView não encontrado para rebuild!");
+            return;
+        }
+
+        Transform gridTransform = scrollViewTransform.Find("SlotGrid");
         if (gridTransform == null)
         {
             Debug.LogError("[INVENTORY UI] SlotGrid não encontrado para rebuild!");
             return;
         }
 
-        // Recalcula tamanho do painel
+        // Recalcula tamanhos
         int rows = Mathf.CeilToInt((float)newCount / columns);
         float gridWidth = columns * (slotSize + slotSpacing) - slotSpacing;
         float gridHeight = rows * (slotSize + slotSpacing) - slotSpacing;
         float panelPadding = 20f;
         float headerHeight = 44f;
+        float maxVisibleGridHeight = MAX_VISIBLE_ROWS * (slotSize + slotSpacing) - slotSpacing;
+        float scrollViewHeight = Mathf.Min(gridHeight, maxVisibleGridHeight);
 
-        // Atualiza tamanho do painel
-        panelRect.sizeDelta = new Vector2(
-            gridWidth + panelPadding * 2,
-            gridHeight + panelPadding * 2 + headerHeight
-        );
+        // Atualiza tamanho do painel (mantém tamanho máximo fixo)
+        float totalWidth = gridWidth + panelPadding * 2;
+        float totalHeight = scrollViewHeight + panelPadding * 2 + headerHeight;
+        panelRect.sizeDelta = new Vector2(totalWidth, totalHeight);
 
-        // Atualiza tamanho do grid
-        RectTransform gridRect = gridTransform as RectTransform;
-        gridRect.sizeDelta = new Vector2(gridWidth, gridHeight);
+        // Atualiza tamanho do scroll view
+        if (scrollViewRect != null)
+        {
+            scrollViewRect.sizeDelta = new Vector2(gridWidth, scrollViewHeight);
+        }
+
+        // Atualiza tamanho do content (grid real)
+        if (contentRect != null)
+        {
+            contentRect.sizeDelta = new Vector2(gridWidth, gridHeight);
+        }
+
+        // Mostra/esconde scrollbar
+        bool needsScroll = rows > MAX_VISIBLE_ROWS;
+        if (verticalScrollbar != null)
+        {
+            verticalScrollbar.gameObject.SetActive(needsScroll);
+        }
 
         // Cria novos slots
         BuildSlots(gridTransform, newCount);
 
         Debug.Log("[INVENTORY UI] Slots reconstruídos: " + newCount + " (" + columns + "x" + rows + ")");
+    }
+
+    void CreateScrollbar(Transform parent, int layer, float scrollViewHeight, float headerHeight)
+    {
+        float scrollbarWidth = 6f;
+        float panelPadding = 20f;
+
+        // Container da scrollbar
+        GameObject scrollbarObj = new GameObject("VerticalScrollbar");
+        scrollbarObj.transform.SetParent(parent, false);
+        scrollbarObj.layer = layer;
+
+        RectTransform scrollbarRect = scrollbarObj.AddComponent<RectTransform>();
+        scrollbarRect.anchorMin = new Vector2(1f, 0.5f);
+        scrollbarRect.anchorMax = new Vector2(1f, 0.5f);
+        scrollbarRect.pivot = new Vector2(1f, 0.5f);
+        scrollbarRect.sizeDelta = new Vector2(scrollbarWidth, scrollViewHeight);
+        scrollbarRect.anchoredPosition = new Vector2(-panelPadding / 2f, -headerHeight / 2f);
+
+        scrollbarObj.AddComponent<CanvasRenderer>();
+        Image scrollbarBg = scrollbarObj.AddComponent<Image>();
+        scrollbarBg.color = new Color(0.15f, 0.12f, 0.22f, 0.5f);
+        scrollbarBg.raycastTarget = true;
+
+        // Sliding Area
+        GameObject slidingArea = new GameObject("SlidingArea");
+        slidingArea.transform.SetParent(scrollbarObj.transform, false);
+        slidingArea.layer = layer;
+
+        RectTransform slidingRect = slidingArea.AddComponent<RectTransform>();
+        slidingRect.anchorMin = Vector2.zero;
+        slidingRect.anchorMax = Vector2.one;
+        slidingRect.sizeDelta = Vector2.zero;
+        slidingRect.anchoredPosition = Vector2.zero;
+
+        // Handle (a barrinha que se move)
+        GameObject handle = new GameObject("Handle");
+        handle.transform.SetParent(slidingArea.transform, false);
+        handle.layer = layer;
+
+        RectTransform handleRect = handle.AddComponent<RectTransform>();
+        handleRect.anchorMin = Vector2.zero;
+        handleRect.anchorMax = new Vector2(1f, 0.3f);
+        handleRect.sizeDelta = Vector2.zero;
+        handleRect.anchoredPosition = Vector2.zero;
+
+        handle.AddComponent<CanvasRenderer>();
+        Image handleImg = handle.AddComponent<Image>();
+        handleImg.color = new Color(0.6f, 0.45f, 0.90f, 0.6f);
+        handleImg.raycastTarget = true;
+
+        // Componente Scrollbar
+        verticalScrollbar = scrollbarObj.AddComponent<Scrollbar>();
+        verticalScrollbar.handleRect = handleRect;
+        verticalScrollbar.targetGraphic = handleImg;
+        verticalScrollbar.direction = Scrollbar.Direction.BottomToTop;
+
+        // Cores do handle no hover
+        ColorBlock colors = verticalScrollbar.colors;
+        colors.normalColor = new Color(0.6f, 0.45f, 0.90f, 0.6f);
+        colors.highlightedColor = new Color(0.7f, 0.55f, 1f, 0.8f);
+        colors.pressedColor = new Color(0.5f, 0.35f, 0.80f, 0.9f);
+        verticalScrollbar.colors = colors;
     }
 
     void CreateCloseButton(Transform parent, int layer)

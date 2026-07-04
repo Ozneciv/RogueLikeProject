@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class StartRunDoor : MonoBehaviour
 {
@@ -10,22 +11,64 @@ public class StartRunDoor : MonoBehaviour
         if (other.CompareTag("Player") && !isLoading)
         {
             isLoading = true;
-            Debug.Log("Jogador tocou a porta! Iniciando a run...");
+            Debug.Log("Jogador tocou a porta! Iniciando transição da run com fade...");
 
             // Desativa o collider da porta para evitar problemas
             GetComponent<Collider>().enabled = false; 
 
-            // --- A MUDANÇA ESTÁ AQUI ---
-            // Em vez de usar uma variável do Inspector, chamamos diretamente
-            // a instância "imortal" e "única" do GameManager.
-            if (GameManager.instance != null)
+            PlayerM playerMovement = other.GetComponent<PlayerM>();
+            if (playerMovement != null)
             {
-                GameManager.instance.LoadGameLevel();
+                playerMovement.StartCoroutine(DoStartRunTransition(playerMovement));
             }
             else
             {
-                Debug.LogError("GameManager.instance não encontrado! O jogo não pode começar.");
+                // Fallback direct load if PlayerM is missing
+                if (GameManager.instance != null) GameManager.instance.LoadGameLevel();
             }
+        }
+    }
+
+    private IEnumerator DoStartRunTransition(PlayerM player)
+    {
+        // 1. Disable player movement controls and reset velocity
+        player.enabled = false;
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+        }
+
+        if (player.animator != null)
+        {
+            player.animator.SetFloat("Speed", 0f);
+        }
+
+        // 2. Find ScreenFader (on player or in the scene)
+        ScreenFader fader = player.GetComponentInChildren<ScreenFader>();
+        if (fader == null)
+        {
+            fader = FindObjectOfType<ScreenFader>();
+        }
+
+        if (fader != null)
+        {
+            // Fade Out (screen goes black smoothly)
+            yield return player.StartCoroutine(fader.FadeOut());
+        }
+        else
+        {
+            Debug.LogWarning("[StartRunDoor] ScreenFader not found. Transitioning instantly.");
+        }
+
+        // 3. Call GameManager to load the level asynchronously (which will show the loading canvas on black screen)
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.LoadGameLevel();
+        }
+        else
+        {
+            Debug.LogError("GameManager.instance não encontrado! O jogo não pode começar.");
         }
     }
 }

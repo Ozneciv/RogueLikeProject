@@ -1393,6 +1393,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactble
+  itemData: {fileID: 0}
   objetoNome: Cristal
   icon: {fileID: 21300000, guid: 2e5428247abf67c4ab479d0567340465, type: 3}
   descricao: hjbjkk
@@ -1685,6 +1686,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactble
+  itemData: {fileID: 0}
   objetoNome: Cristal2
   icon: {fileID: 21300000, guid: 2e5428247abf67c4ab479d0567340465, type: 3}
   descricao: hjbjkk
@@ -1820,7 +1822,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.000016918832}
+  m_AnchoredPosition: {x: 0, y: 0.000012457665}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &494046970
@@ -2017,7 +2019,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1215587348}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.9999999
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2419,6 +2421,32 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1987765269138243887, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
   m_PrefabInstance: {fileID: 1879280209}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &630199964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 630199949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfb6371bbe908ad4fb4af21b7e35f91c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveManager
+--- !u!114 &630199965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 630199949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a65bbe800014fc429d5677c9a782c79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemDatabase
+  allItems:
+  - {fileID: 11400000, guid: 0cd9f6c1106f5c94da716cb26d915758, type: 2}
 --- !u!1 &667467583
 GameObject:
   m_ObjectHideFlags: 0
@@ -2501,7 +2529,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2026875972}
   m_HandleRect: {fileID: 2026875971}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -2890,7 +2918,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.000016918832}
+  m_AnchoredPosition: {x: 0, y: 0.000012457665}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &789798781
@@ -6443,7 +6471,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1384872828}
   m_HandleRect: {fileID: 1384872827}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -7262,6 +7290,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 630199960}
+    - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 630199964}
+    - targetCorrespondingSourceObject: {fileID: 7231555619393039300, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 630199965}
   m_SourcePrefab: {fileID: 100100000, guid: 9556265f7eea6674fb52416226a64cdb, type: 3}
 --- !u!1 &1936037157
 GameObject:
@@ -7872,7 +7906,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 310594208}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.9999999
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

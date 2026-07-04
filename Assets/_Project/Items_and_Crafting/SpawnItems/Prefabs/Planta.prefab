@@ -264,16 +264,13 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5be9f04ec2068c34d8544af86cc79cf9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4214814849788278777}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5be9f04ec2068c34d8544af86cc79cf9, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 4941303550683534327}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5be9f04ec2068c34d8544af86cc79cf9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -2390880463283880904}
+      addedObject: {fileID: -4919047975587745751}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5be9f04ec2068c34d8544af86cc79cf9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -4919047975587745751}
+      addedObject: {fileID: 6762389949380079192}
   m_SourcePrefab: {fileID: 100100000, guid: 5be9f04ec2068c34d8544af86cc79cf9, type: 3}
 --- !u!4 &1448761888207339218 stripped
 Transform:
@@ -285,21 +282,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5be9f04ec2068c34d8544af86cc79cf9, type: 3}
   m_PrefabInstance: {fileID: 1410101945389390137}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4214814849788278777
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2256543031484785768}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb738e82d881afc4387fc615d24720c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetectorDoItem
-  collectable: {fileID: 0}
-  glowObject: {fileID: 2570350282924566460}
-  pressFUI: {fileID: 4111339894914804973}
 --- !u!114 &4941303550683534327
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -312,23 +294,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd11e621ae213ca4f9038f44b151f845, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  itemData: {fileID: 11400000, guid: ebc75972bcc0618418b444d1af7dcec6, type: 2}
   objetoNome: Planta
   icon: {fileID: 0}
   descricao: 
   foiCatalogado: 0
---- !u!114 &-2390880463283880904
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2256543031484785768}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe37b7db57670ce4e8be66679dea8dd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ItemCollectable
-  interactable: {fileID: 0}
 --- !u!65 &-4919047975587745751
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -350,6 +320,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.5694561, y: 2.6360657, z: 0.93784523}
   m_Center: {x: -0.07331371, y: 0.81803286, z: -0.031077385}
+--- !u!114 &6762389949380079192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2256543031484785768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81838ed9fcc92fa49a447d87ed102ca1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
+  bobSpeed: 2
+  bobHeight: 0.2
+  glowObject: {fileID: 2570350282924566460}
+  pressFUI: {fileID: 4111339894914804973}
+  pickupDelay: 0.5
+  lifetime: 60
 --- !u!1001 &3416787527171185389
 PrefabInstance:
   m_ObjectHideFlags: 0

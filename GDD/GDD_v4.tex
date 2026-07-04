@@ -456,9 +456,10 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
     \item[Comportamento:]
     \begin{itemize}
         \item Aproxima-se do jogador até o range de salto (\texttt{leapRange = 5m}).
-        \item \textbf{Leap Attack:} Salta em trajetória livre com força de impulso (\texttt{leapForce = 12}); dano por \textit{OverlapSphere} ao aterrissar (\texttt{leapDamage = 10}).
-        \item \textbf{Recuo Tático:} 30\% de chance de saltar para trás após um hit bem-sucedido, dificultando a punição.
-        \item \textbf{VFX:} After-images via \texttt{SpiderDashVFX} durante o salto.
+        \item \textbf{Passo Procedural:} Movimenta-se usando um ciclo de pernas procedural 100\% dinâmico, suportando padrões de caminhada alternados (\textit{Tripod Gait} de 6 pernas ou \textit{Wave Gait} sequencial).
+        \item \textbf{Leap Attack:} Salta em trajetória livre com força de impulso (\texttt{leapForce = 12}); causa dano por \textit{OverlapSphere} ao aterrissar (\texttt{leapDamage = 10}). Durante o salto, suas garras/mandíbulas se abrem e fecham proceduralmente.
+        \item \textbf{Recuo Tático:} 30\% de chance de saltar para trás após um hit bem-sucedido, dificultando a punição do jogador.
+        \item \textbf{VFX:} Rastro de fantasmas visual (\textit{after-images}) via \texttt{SpiderDashVFX} durante o pulo de ataque.
     \end{itemize}
     \item[Stats:] Velocidade \texttt{6} --- Dano \texttt{10} --- Cooldown do salto \texttt{2s} --- Cooldown de recuo \texttt{5s}
 \end{description}
@@ -495,16 +496,21 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
 \end{figure}
 
 \begin{description}
-    \item[Lore:] A consolidação máxima da estrutura mineral do bioma. Lento demais para ser ignorado, poderoso o suficiente para encerrar qualquer descuido.
+    \item[Lore:] A consolidação máxima da estrutura mineral do bioma. Lento demais para ser ignorado, poderoso o suficiente para terminar qualquer descuido.
     \item[Comportamento:]
     \begin{itemize}
-        \item Move-se lentamente em direção ao jogador (\texttt{moveSpeed = 2}).
-        \item \textbf{Melee:} A \texttt{3m} de distância, golpeia com wind-up telegrafado (\texttt{dano = 35}).
-        \item \textbf{Combo Stun:} Após \textbf{2 acertos de melee}, ativa um stun em área (\texttt{raio = 4m}) na posição do jogador, precedido por marcador visual de \texttt{0.3s}.
+        \item \textbf{Animação Procedural:} Move-se lentamente em direção ao jogador (\texttt{moveSpeed = 2}), com oscilações pesadas, inércia de corpo, spine corcunda e inclinações de quadril simuladas proceduralmente.
+        \item \textbf{Melee (Ataque Rotatório):} A \texttt{3m} de distância, golpeia com wind-up telegrafado. Os braços inclinam-se para dentro e giram em rotações simétricas opostas.
+        \begin{itemize}
+            \item \textbf{Convergência das Mãos:} Os braços convergem inclinando-se para baixo ($30^\circ$) e para dentro ($20^\circ$) nas extremidades das mãos, garantindo que o golem atinja o jogador (que é mais baixo e menor).
+            \item \textbf{Limite de Rotação:} Sem buff, o ataque melee realiza apenas meio giro ($180^\circ$ de varredura). Sob o efeito do buff do Sintonizador, os braços executam 2 giros completos ($720^\circ$ de rotação contínua).
+        \end{itemize}
+        \item \textbf{Combo Stun:} Após \textbf{2 acertos de melee}, ativa um stun em área (\texttt{raio = 4m}) na posição do jogador.
         \item \textbf{Stun Proativo:} Se o cooldown do melee estiver ativo e o jogador estiver em \texttt{10m}, usa o stun como ataque primário.
+        \item \textbf{VFX do Stun:} Efeito URP-emissivo moderno que projeta anéis de impacto expansivos e translúcidos, 4 rachaduras angulares no terreno que crescem para fora, um pilar de energia central com contração de largura, e partículas em três camadas (faíscas velozes, pedregulhos de cristal com gravidade, e poeira expansiva rente ao chão).
     \end{itemize}
     \item[Stats:] Dano melee \texttt{35} --- Cooldown melee \texttt{3s} --- Stun \texttt{1.5s} --- Cooldown stun \texttt{12s}
-    \item[Buff do Sintonizador:] Velocidade +30\%, cooldown do stun $\times$0.7.
+    \item[Buff do Sintonizador:] Velocidade +30\%, cooldown do stun $\times$0.7, e ataque giratório com 2 voltas completas ($720^\circ$). \textit{Nota: Ao destruir o Sintonizador que o acompanha, o Golem é instantaneamente desbuffado, revertendo imediatamente sua velocidade, cooldowns, cor da barra de vida (de ciano para vermelho) e limitando seu ataque giratório de volta para os $180^\circ$ padrão.}
 \end{description}
 
 % -------------------------------------------------------------------------
@@ -588,7 +594,12 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
         \item Voa a \texttt{1.5m} de altura e posiciona-se próximo aos aliados.
         \item Foge do jogador se ele entrar em \texttt{8m}.
         \item Conecta-se a até \textbf{3 inimigos simultâneos} dentro de \texttt{20m} com feixes visuais ondulados (Perlin noise), concedendo buffs individualizados por tipo.
-        \item \textbf{Alta prioridade de eliminação:} enquanto ativo, todos os aliados conectados operam em capacidade ampliada.
+        \item \textbf{Feedback de Conexão:}
+        \begin{itemize}
+            \item \textbf{Point Light:} Possui uma luz que se ativa apenas quando conectado a aliados, variando e pulsando sua intensidade continuamente. Desativa-se quando não há alvos conectados.
+            \item \textbf{Rotação do Modelo:} O corpo de cristal gira continuamente. Em estado ocioso (\textit{idle}), rotaciona lentamente a $30^\circ/\text{s}$. Quando ativado e transmitindo buffs, acelera a rotação para $180^\circ/\text{s}$.
+        \end{itemize}
+        \item \textbf{Morte/Desativação Limpa:} Ao morrer ou ser desativado, o Sintonizador remove imediatamente os buffs de todos os seus alvos, destrói os feixes de conexão, desativa sua Point Light e interrompe a aceleração de rotação.
     \end{itemize}
     \item[Stats:] Máx. alvos \texttt{3} --- Range \texttt{20m} --- Velocidade \texttt{4.5} --- Fuga abaixo de \texttt{8m}
 \end{description}

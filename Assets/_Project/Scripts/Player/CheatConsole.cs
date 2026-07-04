@@ -23,10 +23,38 @@ public class CheatConsole : MonoBehaviour
         movementScript = GetComponent<PlayerM>();
         attackScript = GetComponent<PrimaryAttackKnife>();
 
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponentInChildren<Animator>();
+        }
+
+        if (consoleInput == null)
+        {
+            FindConsoleInput();
+        }
+
         // Garante que comece invisível
         if (consoleInput != null)
         {
             consoleInput.gameObject.SetActive(false);
+        }
+    }
+
+    private void FindConsoleInput()
+    {
+        TMP_InputField[] inputs = Resources.FindObjectsOfTypeAll<TMP_InputField>();
+        foreach (var input in inputs)
+        {
+            if (input.name == "CheatConsole_Input" && input.gameObject.scene.isLoaded)
+            {
+                consoleInput = input;
+                break;
+            }
+        }
+
+        if (consoleInput == null)
+        {
+            Debug.LogWarning("🔍 CHEAT: Não foi possível encontrar 'CheatConsole_Input' na cena ativa atual.");
         }
     }
 
@@ -36,6 +64,10 @@ public class CheatConsole : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Slash) || Input.GetKeyDown(KeyCode.KeypadDivide))
         {
             Debug.Log("🔍 CHEAT: Tecla Barra '/' pressionada!");
+            if (consoleInput == null)
+            {
+                FindConsoleInput();
+            }
             if (!isConsoleActive) ToggleConsole();
             return;
         }
@@ -126,9 +158,43 @@ public class CheatConsole : MonoBehaviour
                 Debug.LogError("🚨 CHEAT ERROR: O comando rodou, mas você não arrastou o Animator para o script CheatConsole!");
             }
         }
+        else if (string.Equals(command, "killall", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Comando KILLALL Recebido! Eliminando todos os inimigos...");
+
+            // Busca e mata todos os DummyHealth ativos
+            DummyHealth[] dummies = Object.FindObjectsByType<DummyHealth>(FindObjectsSortMode.None);
+            int count = 0;
+            foreach (DummyHealth dummy in dummies)
+            {
+                if (dummy != null)
+                {
+                    // Evita matar o jogador por engano se o script estiver no jogador (não está, mas por segurança)
+                    if (dummy.CompareTag("Player")) continue;
+                    
+                    dummy.isInvulnerable = false;
+                    dummy.TakeDamage(999999);
+                    count++;
+                }
+            }
+
+            // Busca e mata todos os ShardSwarmHealth ativos
+            ShardSwarmHealth[] swarms = Object.FindObjectsByType<ShardSwarmHealth>(FindObjectsSortMode.None);
+            foreach (ShardSwarmHealth swarm in swarms)
+            {
+                if (swarm != null)
+                {
+                    swarm.isInvulnerable = false;
+                    swarm.SetHealth(0);
+                    count++;
+                }
+            }
+
+            Debug.Log($"💻 CHEAT: {count} inimigos eliminados com sucesso.");
+        }
         else
         {
-            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é igual a EPTA.");
+            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é igual a EPTA ou killall.");
         }
 
         // Depois de tentar o cheat, fecha o console pro jogo voltar ao normal

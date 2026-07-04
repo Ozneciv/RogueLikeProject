@@ -1,10 +1,28 @@
 using UnityEngine;
 
+/// <summary>
+/// Script de interação física com a Mesa de Trabalho na cena da Base.
+/// Detecta proximidade do jogador e abre a UI de Crafting ao pressionar T.
+///
+/// SETUP NA CENA:
+///   1. Adicione este script ao GameObject da mesa de trabalho
+///   2. Adicione um BoxCollider com isTrigger = true ao objeto
+///   3. Arraste o GameObject do prompt visual "T" para pressTUI
+///   4. O CraftingUI é encontrado automaticamente (singleton)
+///
+/// DEPENDÊNCIAS:
+///   - CraftingUI.Instance (tela de crafting — criada automaticamente)
+///   - Player deve ter a tag "Player"
+/// </summary>
 public class CraftingTableInteraction : MonoBehaviour
 {
     [Header("UI References")]
-    public GameObject pressTUI;        // UI_T_Key prompt (world space, filho da crafting table)
-    public GameObject craftingTableUI;  // Painel da CraftingTableUI (Screen Space)
+    [Tooltip("Prompt visual 'Pressione T' (world space, filho da crafting table)")]
+    public GameObject pressTUI;
+
+    [Header("Fallback")]
+    [Tooltip("Painel legado da CraftingTableUI. Se CraftingUI.Instance existir, este é ignorado.")]
+    public GameObject craftingTableUI;
 
     private bool playerPerto = false;
 
@@ -30,7 +48,11 @@ public class CraftingTableInteraction : MonoBehaviour
         playerPerto = false;
         if (pressTUI != null)
             pressTUI.SetActive(false);
-        if (craftingTableUI != null)
+
+        // Fecha o crafting ao sair da área
+        if (CraftingUI.Instance != null && CraftingUI.Instance.IsOpen())
+            CraftingUI.Instance.CloseCrafting();
+        else if (craftingTableUI != null)
             craftingTableUI.SetActive(false);
     }
 
@@ -40,18 +62,31 @@ public class CraftingTableInteraction : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.T))
         {
-            if (craftingTableUI != null)
+            // Usa o novo CraftingUI se disponível
+            if (CraftingUI.Instance != null)
+            {
+                if (CraftingUI.Instance.IsOpen())
+                    CraftingUI.Instance.CloseCrafting();
+                else
+                    CraftingUI.Instance.OpenCrafting();
+            }
+            // Fallback para o painel legado
+            else if (craftingTableUI != null)
+            {
                 craftingTableUI.SetActive(!craftingTableUI.activeSelf);
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (craftingTableUI != null && craftingTableUI.activeSelf)
+            if (CraftingUI.Instance != null && CraftingUI.Instance.IsOpen())
+                CraftingUI.Instance.CloseCrafting();
+            else if (craftingTableUI != null && craftingTableUI.activeSelf)
                 craftingTableUI.SetActive(false);
         }
 
         // Billboard: pressTUI sempre virado para a câmera
-        if (pressTUI != null && pressTUI.activeSelf)
+        if (pressTUI != null && pressTUI.activeSelf && Camera.main != null)
         {
             pressTUI.transform.forward = Camera.main.transform.forward;
         }
