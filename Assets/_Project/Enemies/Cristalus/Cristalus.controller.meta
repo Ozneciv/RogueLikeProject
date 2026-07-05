@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/_Project/Enemies/CrystalTunner/Crystal Tuner Data.asset.meta
-guid: 98ad2b0dd9889fb4ba222ed9f9015374
-NativeFormatImporter:
-  externalObjects: {}
-  mainObjectFileID: 11400000
-========
 guid: 44c09c567c528ec44b41aa9deefd15d0
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 9100000
->>>>>>>> VicenzoWS:Assets/_Project/Enemies/Cristalus/Cristalus.controller.meta
   userData: 
   assetBundleName: 
   assetBundleVariant: 
