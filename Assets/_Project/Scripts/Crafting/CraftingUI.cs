@@ -5,27 +5,33 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Interface de usuário do sistema de Crafting.
-/// Singleton — criado programaticamente (mesmo padrão do InventoryUI.cs).
+/// Singleton — deve ser colocado em um GameObject na cena da Base.
 ///
-/// LAYOUT:
+/// ARQUITETURA:
+///   Este script NÃO cria elementos visuais por código.
+///   Todas as referências de UI são expostas via [SerializeField] para que
+///   o artista monte o layout no Canvas do Unity e arraste os elementos aqui.
+///
+///   Os únicos GameObjects criados em runtime são os slots de receita
+///   (RecipeSlotUI), pois eles são dinâmicos e se auto-constroem.
+///
+/// LAYOUT ESPERADO NO CANVAS:
 ///   ┌─────────────────────────────────────────────────┐
 ///   │  MESA DE TRABALHO                          [X]  │
 ///   ├────────────────────┬────────────────────────────┤
 ///   │  Lista de Receitas │  Detalhes da Receita       │
-///   │  ┌──────────────┐  │  Nome: Expansão de Inv.    │
-///   │  │ Receita 1  ✓ │  │  Ingredientes:             │
-///   │  ├──────────────┤  │    5/5 Shard Splinter      │
-///   │  │ Receita 2  ✗ │  │    3/3 Magic Dust          │
-///   │  ├──────────────┤  │  Resultado:                │
-///   │  │ Receita 3  ✗ │  │    +5 Slots de Inventário  │
-///   │  └──────────────┘  │  [   CRAFTAR   ]           │
+///   │  (recipesContainer)│  Nome / Ingredientes       │
+///   │                    │  Resultado                 │
+///   │                    │  [   CRAFTAR   ]           │
 ///   ├────────────────────┴────────────────────────────┤
-///   │  MELHORIAS CRAFTADAS                            │
-///   │  ┌────────────┐ ┌────────────┐                  │
-///   │  │ Melhoria 1 │ │ Melhoria 2 │                  │
-///   │  │ [Equipar]  │ │[Desequipar]│                  │
-///   │  └────────────┘ └────────────┘                  │
+///   │  MELHORIAS CRAFTADAS (equipmentContainer)       │
+///   │  [Melhoria 1] [Melhoria 2] ...                 │
 ///   └─────────────────────────────────────────────────┘
+///
+/// SETUP NO EDITOR:
+///   1. Monte o layout acima no Canvas da Unity.
+///   2. Arraste cada elemento para o campo correspondente no Inspector.
+///   3. O script cuida de toda a lógica automaticamente.
 ///
 /// DEPENDÊNCIAS:
 ///   - CraftingManager.Instance  (lógica de craft)
@@ -37,51 +43,70 @@ public class CraftingUI : MonoBehaviour
 {
     public static CraftingUI Instance { get; private set; }
 
-    // Referências internas
-    private Canvas craftingCanvas;
-    private GameObject canvasObject;
-    private GameObject panelObject;
-    private RectTransform panelRect;
+    // ─── REFERÊNCIAS DO EDITOR (arrastar no Inspector) ──────────────────────
 
-    // Seção de receitas
-    private Transform recipesContainer;
+    [Header("Painel Principal")]
+    [Tooltip("O GameObject raiz do painel de crafting (será ativado/desativado)")]
+    [SerializeField] private GameObject panelObject;
+
+    [Header("Lista de Receitas")]
+    [Tooltip("Transform pai onde os slots de receita serão instanciados")]
+    [SerializeField] private Transform recipesContainer;
+
+    [Header("Painel de Detalhes")]
+    [Tooltip("Texto que exibe o nome da receita selecionada")]
+    [SerializeField] private TextMeshProUGUI detailNameText;
+
+    [Tooltip("Texto que exibe a descrição da receita selecionada")]
+    [SerializeField] private TextMeshProUGUI detailDescText;
+
+    [Tooltip("Texto que exibe a lista de ingredientes (com quantidades)")]
+    [SerializeField] private TextMeshProUGUI ingredientsText;
+
+    [Tooltip("Texto que exibe o resultado da receita")]
+    [SerializeField] private TextMeshProUGUI resultText;
+
+    [Header("Botão de Craftar")]
+    [Tooltip("Botão que executa o craft da receita selecionada")]
+    [SerializeField] private Button craftButton;
+
+    [Tooltip("Texto dentro do botão de craft (ex: 'CRAFTAR' ou 'MATERIAIS INSUFICIENTES')")]
+    [SerializeField] private TextMeshProUGUI craftButtonText;
+
+    [Header("Seção de Equipamentos")]
+    [Tooltip("Transform pai onde os slots de melhorias craftadas serão instanciados")]
+    [SerializeField] private Transform equipmentContainer;
+
+    [Header("Botão de Fechar")]
+    [Tooltip("Botão X para fechar a tela de crafting")]
+    [SerializeField] private Button closeButton;
+
+    [Header("Configurações dos Slots de Receita")]
+    [Tooltip("Largura de cada slot de receita na lista")]
+    [SerializeField] private float recipeSlotWidth = 230f;
+
+    [Tooltip("Altura de cada slot de receita na lista")]
+    [SerializeField] private float recipeSlotHeight = 52f;
+
+    // ─── ESTADO INTERNO ─────────────────────────────────────────────────────
+
+    private bool isOpen = false;
+    private CraftingRecipe selectedRecipe;
     private List<RecipeSlotUI> recipeSlots = new List<RecipeSlotUI>();
-
-    // Seção de detalhes
-    private TextMeshProUGUI detailNameText;
-    private TextMeshProUGUI detailDescText;
-    private TextMeshProUGUI ingredientsText;
-    private TextMeshProUGUI resultText;
-    private Button craftButton;
-    private TextMeshProUGUI craftButtonText;
-
-    // Seção de equipamentos
-    private Transform equipmentContainer;
     private List<GameObject> equipmentSlotObjects = new List<GameObject>();
 
-    // Estado
-    private bool isOpen = false;
-    private bool uiBuilt = false;
-    private CraftingRecipe selectedRecipe;
+    // ─── CORES (usadas apenas nos slots dinâmicos de equipamento) ────────────
 
-    // Cores do painel (tema escuro/roxo consistente com InventoryUI)
-    private static readonly Color PANEL_BG = new Color(0.05f, 0.05f, 0.09f, 0.95f);
-    private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1f);
-    private static readonly Color ACCENT = new Color(0.6f, 0.45f, 0.90f, 1f);
-    private static readonly Color SECTION_BG = new Color(0.08f, 0.08f, 0.12f, 0.9f);
-    private static readonly Color BTN_CRAFT_ENABLED = new Color(0.25f, 0.70f, 0.30f, 1f);
-    private static readonly Color BTN_CRAFT_DISABLED = new Color(0.3f, 0.3f, 0.3f, 0.6f);
     private static readonly Color BTN_EQUIP = new Color(0.3f, 0.55f, 0.85f, 1f);
     private static readonly Color BTN_UNEQUIP = new Color(0.7f, 0.35f, 0.35f, 1f);
+    private static readonly Color BTN_CRAFT_ENABLED = new Color(0.25f, 0.70f, 0.30f, 1f);
+    private static readonly Color BTN_CRAFT_DISABLED = new Color(0.3f, 0.3f, 0.3f, 0.6f);
 
-    // Dimensões
-    private const float PANEL_WIDTH = 700f;
-    private const float PANEL_HEIGHT = 520f;
-    private const float RECIPE_SLOT_HEIGHT = 52f;
-    private const float EQUIPMENT_SLOT_SIZE = 110f;
+    // ─── CICLO DE VIDA ──────────────────────────────────────────────────────
 
     void Awake()
     {
+        // Singleton
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -94,13 +119,25 @@ public class CraftingUI : MonoBehaviour
 
     void Start()
     {
-        CreateCraftingUI();
-        panelObject.SetActive(false);
-        uiBuilt = true;
+        // Garante que o painel comece fechado
+        if (panelObject != null)
+            panelObject.SetActive(false);
+
+        // Vincula o botão de craftar
+        if (craftButton != null)
+            craftButton.onClick.AddListener(OnCraftButtonClicked);
+
+        // Vincula o botão de fechar
+        if (closeButton != null)
+            closeButton.onClick.AddListener(CloseCrafting);
+
+        // Estado inicial do painel de detalhes
+        ClearDetails();
     }
 
     void OnEnable()
     {
+        // Inscreve nos eventos para atualizar a UI em tempo real
         CraftingManager.OnCraftCompleted += OnCraftCompleted;
         SaveManager.OnBaseResourcesChanged += RefreshUI;
         EquipmentManager.OnEquipmentStateChanged += RefreshEquipmentSection;
@@ -109,6 +146,7 @@ public class CraftingUI : MonoBehaviour
 
     void OnDisable()
     {
+        // Remove inscrições para evitar memory leaks
         CraftingManager.OnCraftCompleted -= OnCraftCompleted;
         SaveManager.OnBaseResourcesChanged -= RefreshUI;
         EquipmentManager.OnEquipmentStateChanged -= RefreshEquipmentSection;
@@ -118,28 +156,29 @@ public class CraftingUI : MonoBehaviour
     void OnDestroy()
     {
         if (Instance == this)
-        {
             Instance = null;
-            if (canvasObject != null) Destroy(canvasObject);
-        }
     }
 
     void Update()
     {
+        // Permite fechar com Escape
         if (isOpen && Input.GetKeyDown(KeyCode.Escape))
         {
             CloseCrafting();
         }
     }
 
-    // ─── API PÚBLICA ─────────────────────────────────────────────────────────
+    // ─── API PÚBLICA (chamada pelo CraftingTableInteraction) ────────────────
 
     /// <summary>Abre a tela de crafting.</summary>
     public void OpenCrafting()
     {
         if (isOpen) return;
         isOpen = true;
-        panelObject.SetActive(true);
+
+        if (panelObject != null)
+            panelObject.SetActive(true);
+
         selectedRecipe = null;
 
         Cursor.visible = true;
@@ -154,7 +193,9 @@ public class CraftingUI : MonoBehaviour
     {
         if (!isOpen) return;
         isOpen = false;
-        panelObject.SetActive(false);
+
+        if (panelObject != null)
+            panelObject.SetActive(false);
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
@@ -165,19 +206,31 @@ public class CraftingUI : MonoBehaviour
     /// <summary>Retorna se a UI está aberta.</summary>
     public bool IsOpen() => isOpen;
 
-    // ─── REFRESH ─────────────────────────────────────────────────────────────
+    // ─── REFRESH GERAL ──────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Atualiza todas as seções da UI.
+    /// Chamado ao abrir e quando os recursos da bolsa mudam.
+    /// </summary>
     private void RefreshUI()
     {
-        if (!uiBuilt || CraftingManager.Instance == null) return;
+        if (CraftingManager.Instance == null) return;
 
         RefreshRecipeList();
         RefreshDetails();
         RefreshEquipmentSection();
     }
 
+    // ─── LISTA DE RECEITAS (Grade Dinâmica) ─────────────────────────────────
+
+    /// <summary>
+    /// Limpa e recria os slots de receita no recipesContainer.
+    /// Cada slot é um GameObject vazio com RecipeSlotUI anexado.
+    /// </summary>
     private void RefreshRecipeList()
     {
+        if (recipesContainer == null || CraftingManager.Instance == null) return;
+
         List<CraftingRecipe> recipes = CraftingManager.Instance.GetAllRecipes();
 
         // Limpa slots antigos
@@ -187,91 +240,147 @@ public class CraftingUI : MonoBehaviour
         }
         recipeSlots.Clear();
 
-        // Cria novos slots
+        // Cria um slot para cada receita
         foreach (var recipe in recipes)
         {
+            // Cria um GameObject vazio com RectTransform
             GameObject slotObj = new GameObject("RecipeSlot_" + recipe.recipeId);
             slotObj.transform.SetParent(recipesContainer, false);
 
+            // Anexa o componente RecipeSlotUI (ele constrói seus próprios visuais)
             RecipeSlotUI slot = slotObj.AddComponent<RecipeSlotUI>();
-            slot.Initialize(OnRecipeSelected, 230f, RECIPE_SLOT_HEIGHT);
 
+            // Inicializa com callback de seleção e dimensões
+            slot.Initialize(OnRecipeSelected, recipeSlotWidth, recipeSlotHeight);
+
+            // Define os dados da receita e se pode ser craftada
             bool canCraft = CraftingManager.Instance.CanCraft(recipe);
             slot.SetRecipe(recipe, canCraft);
+
+            // Marca o slot selecionado (se houver)
             slot.SetSelected(selectedRecipe == recipe);
 
             recipeSlots.Add(slot);
         }
     }
 
+    // ─── PAINEL DE DETALHES ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Atualiza o painel central com os detalhes da receita selecionada.
+    /// </summary>
     private void RefreshDetails()
     {
         if (selectedRecipe == null)
         {
-            detailNameText.text = "Selecione uma receita";
-            detailDescText.text = "";
-            ingredientsText.text = "";
-            resultText.text = "";
-            craftButton.interactable = false;
-            craftButtonText.text = "CRAFTAR";
-            craftButton.GetComponent<Image>().color = BTN_CRAFT_DISABLED;
+            ClearDetails();
             return;
         }
 
-        detailNameText.text = selectedRecipe.recipeName;
-        detailDescText.text = selectedRecipe.description;
+        // Nome e descrição
+        if (detailNameText != null)
+            detailNameText.text = selectedRecipe.recipeName;
 
-        // Ingredientes
-        string ingText = "<b>Ingredientes:</b>\n";
-        foreach (var ing in selectedRecipe.ingredients)
+        if (detailDescText != null)
+            detailDescText.text = selectedRecipe.description;
+
+        // Ingredientes — mostra quantidade disponível vs necessária
+        if (ingredientsText != null)
         {
-            int available = CraftingManager.Instance.GetAvailableAmount(ing.itemId);
-            string itemName = ing.itemId;
+            string ingText = "<b>Ingredientes:</b>\n";
 
-            // Tenta pegar nome bonito do ItemDatabase
-            if (ItemDatabase.Instance != null)
+            foreach (var ing in selectedRecipe.ingredients)
             {
-                ItemData itemData = ItemDatabase.Instance.GetItemData(ing.itemId);
-                if (itemData != null)
-                    itemName = itemData.itemName;
-            }
+                int available = CraftingManager.Instance.GetAvailableAmount(ing.itemId);
 
-            string color = available >= ing.quantity ? "#4AE04A" : "#E04A4A";
-            ingText += $"  <color={color}>{available}/{ing.quantity}</color> {itemName}\n";
-        }
-        ingredientsText.text = ingText;
-
-        // Resultado
-        switch (selectedRecipe.resultType)
-        {
-            case CraftingResultType.Equipment:
-                if (selectedRecipe.resultEquipment != null)
-                {
-                    var eq = selectedRecipe.resultEquipment;
-                    resultText.text = $"<b>Resultado:</b>\n  {eq.equipmentName}\n  <color=#9B7FD4>{GetEffectDescription(eq)}</color>";
-                }
-                break;
-            case CraftingResultType.Item:
-                string resultName = selectedRecipe.resultItemId;
+                // Tenta pegar o nome bonito do ItemDatabase
+                string itemName = ing.itemId;
                 if (ItemDatabase.Instance != null)
                 {
-                    ItemData rd = ItemDatabase.Instance.GetItemData(selectedRecipe.resultItemId);
-                    if (rd != null) resultName = rd.itemName;
+                    ItemData itemData = ItemDatabase.Instance.GetItemData(ing.itemId);
+                    if (itemData != null)
+                        itemName = itemData.itemName;
                 }
-                resultText.text = $"<b>Resultado:</b>\n  {resultName}";
-                break;
+
+                // Verde se tem material suficiente, vermelho se não
+                string color = available >= ing.quantity ? "#4AE04A" : "#E04A4A";
+                ingText += $"  <color={color}>{available}/{ing.quantity}</color> {itemName}\n";
+            }
+
+            ingredientsText.text = ingText;
         }
 
-        // Botão de craft
-        bool canCraft = CraftingManager.Instance.CanCraft(selectedRecipe);
-        craftButton.interactable = canCraft;
-        craftButton.GetComponent<Image>().color = canCraft ? BTN_CRAFT_ENABLED : BTN_CRAFT_DISABLED;
-        craftButtonText.text = canCraft ? "CRAFTAR" : "MATERIAIS INSUFICIENTES";
+        // Resultado
+        if (resultText != null)
+        {
+            switch (selectedRecipe.resultType)
+            {
+                case CraftingResultType.Equipment:
+                    if (selectedRecipe.resultEquipment != null)
+                    {
+                        var eq = selectedRecipe.resultEquipment;
+                        resultText.text = $"<b>Resultado:</b>\n  {eq.equipmentName}\n  <color=#9B7FD4>{GetEffectDescription(eq)}</color>";
+                    }
+                    break;
+
+                case CraftingResultType.Item:
+                    string resultName = selectedRecipe.resultItemId;
+                    if (ItemDatabase.Instance != null)
+                    {
+                        ItemData rd = ItemDatabase.Instance.GetItemData(selectedRecipe.resultItemId);
+                        if (rd != null) resultName = rd.itemName;
+                    }
+                    resultText.text = $"<b>Resultado:</b>\n  {resultName}";
+                    break;
+            }
+        }
+
+        // Botão de craft — habilita ou desabilita
+        if (craftButton != null)
+        {
+            bool canCraft = CraftingManager.Instance.CanCraft(selectedRecipe);
+            craftButton.interactable = canCraft;
+
+            Image btnImage = craftButton.GetComponent<Image>();
+            if (btnImage != null)
+                btnImage.color = canCraft ? BTN_CRAFT_ENABLED : BTN_CRAFT_DISABLED;
+
+            if (craftButtonText != null)
+                craftButtonText.text = canCraft ? "CRAFTAR" : "MATERIAIS INSUFICIENTES";
+        }
     }
 
+    /// <summary>
+    /// Limpa o painel de detalhes quando nenhuma receita está selecionada.
+    /// </summary>
+    private void ClearDetails()
+    {
+        if (detailNameText != null) detailNameText.text = "Selecione uma receita";
+        if (detailDescText != null) detailDescText.text = "";
+        if (ingredientsText != null) ingredientsText.text = "";
+        if (resultText != null) resultText.text = "";
+
+        if (craftButton != null)
+        {
+            craftButton.interactable = false;
+
+            Image btnImage = craftButton.GetComponent<Image>();
+            if (btnImage != null)
+                btnImage.color = BTN_CRAFT_DISABLED;
+        }
+
+        if (craftButtonText != null)
+            craftButtonText.text = "CRAFTAR";
+    }
+
+    // ─── SEÇÃO DE EQUIPAMENTOS ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Atualiza a seção de melhorias craftadas (equipar/desequipar).
+    /// </summary>
     private void RefreshEquipmentSection()
     {
-        if (!uiBuilt || EquipmentManager.Instance == null) return;
+        if (equipmentContainer == null || EquipmentManager.Instance == null) return;
 
         // Limpa slots antigos
         foreach (var obj in equipmentSlotObjects)
@@ -280,7 +389,7 @@ public class CraftingUI : MonoBehaviour
         }
         equipmentSlotObjects.Clear();
 
-        // Cria slots para cada equipamento craftado
+        // Cria slots para cada equipamento que o jogador possui
         List<EquipmentData> owned = EquipmentManager.Instance.GetOwnedEquipment();
 
         foreach (var equip in owned)
@@ -291,19 +400,23 @@ public class CraftingUI : MonoBehaviour
         }
     }
 
-    // ─── CALLBACKS ───────────────────────────────────────────────────────────
+    // ─── CALLBACKS ──────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Chamado quando o jogador clica em um slot de receita.
+    /// Atualiza a seleção visual e o painel de detalhes.
+    /// </summary>
     private void OnRecipeSelected(CraftingRecipe recipe)
     {
         selectedRecipe = recipe;
 
-        // Atualiza seleção visual
+        // Desmarca todos os slots
         foreach (var slot in recipeSlots)
         {
             slot.SetSelected(false);
         }
 
-        // Encontra e marca o slot selecionado
+        // Marca o slot da receita selecionada
         if (CraftingManager.Instance != null)
         {
             var recipes = CraftingManager.Instance.GetAllRecipes();
@@ -320,6 +433,10 @@ public class CraftingUI : MonoBehaviour
         RefreshDetails();
     }
 
+    /// <summary>
+    /// Chamado pelo botão "CRAFTAR".
+    /// Executa o craft da receita atualmente selecionada.
+    /// </summary>
     private void OnCraftButtonClicked()
     {
         if (selectedRecipe == null || CraftingManager.Instance == null) return;
@@ -330,13 +447,20 @@ public class CraftingUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Chamado pelo evento CraftingManager.OnCraftCompleted.
+    /// Atualiza toda a UI após um craft bem-sucedido.
+    /// </summary>
     private void OnCraftCompleted(CraftingRecipe recipe)
     {
         RefreshUI();
     }
 
-    // ─── HELPERS ─────────────────────────────────────────────────────────────
+    // ─── HELPERS ────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Retorna uma descrição legível do efeito de um equipamento.
+    /// </summary>
     private string GetEffectDescription(EquipmentData equip)
     {
         switch (equip.effectType)
@@ -360,359 +484,25 @@ public class CraftingUI : MonoBehaviour
         }
     }
 
-    // ─── CRIAÇÃO DA UI ───────────────────────────────────────────────────────
-
-    private void CreateCraftingUI()
-    {
-        // Canvas próprio persistente
-        canvasObject = new GameObject("CraftingUI_Canvas");
-        craftingCanvas = canvasObject.AddComponent<Canvas>();
-        craftingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        craftingCanvas.sortingOrder = 110; // Acima do inventário
-        var scaler = canvasObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        canvasObject.AddComponent<GraphicRaycaster>();
-        DontDestroyOnLoad(canvasObject);
-
-        // Painel principal
-        panelObject = new GameObject("CraftingPanel");
-        panelObject.transform.SetParent(craftingCanvas.transform, false);
-
-        panelRect = panelObject.AddComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
-
-        Image panelBg = panelObject.AddComponent<Image>();
-        panelBg.color = PANEL_BG;
-        panelBg.raycastTarget = true;
-
-        // Borda do painel
-        CreateBorder(panelObject.transform);
-
-        // Acento superior
-        CreateTopAccent(panelObject.transform);
-
-        // Header
-        CreateHeader(panelObject.transform);
-
-        // Área de conteúdo dividida em duas colunas
-        CreateRecipeListSection(panelObject.transform);
-        CreateDetailSection(panelObject.transform);
-
-        // Seção de equipamentos (abaixo)
-        CreateEquipmentSection(panelObject.transform);
-
-        // Botão de fechar
-        CreateCloseButton(panelObject.transform);
-
-        Debug.Log("[CRAFTING] UI criada.");
-    }
-
-    private void CreateBorder(Transform parent)
-    {
-        GameObject borderObj = new GameObject("PanelBorder");
-        borderObj.transform.SetParent(parent, false);
-        RectTransform r = borderObj.AddComponent<RectTransform>();
-        r.anchorMin = Vector2.zero;
-        r.anchorMax = Vector2.one;
-        r.sizeDelta = new Vector2(4f, 4f);
-        borderObj.AddComponent<CanvasRenderer>();
-        Image img = borderObj.AddComponent<Image>();
-        img.color = new Color(0.35f, 0.30f, 0.55f, 0.7f);
-        img.type = Image.Type.Sliced;
-        img.fillCenter = false;
-        img.raycastTarget = false;
-    }
-
-    private void CreateTopAccent(Transform parent)
-    {
-        GameObject obj = new GameObject("TopAccent");
-        obj.transform.SetParent(parent, false);
-        RectTransform r = obj.AddComponent<RectTransform>();
-        r.anchorMin = new Vector2(0.05f, 1f);
-        r.anchorMax = new Vector2(0.95f, 1f);
-        r.pivot = new Vector2(0.5f, 1f);
-        r.sizeDelta = new Vector2(0f, 3f);
-        obj.AddComponent<CanvasRenderer>();
-        Image img = obj.AddComponent<Image>();
-        img.color = ACCENT;
-        img.raycastTarget = false;
-    }
-
-    private void CreateHeader(Transform parent)
-    {
-        GameObject obj = new GameObject("Header");
-        obj.transform.SetParent(parent, false);
-        RectTransform r = obj.AddComponent<RectTransform>();
-        r.anchorMin = new Vector2(0f, 1f);
-        r.anchorMax = new Vector2(1f, 1f);
-        r.pivot = new Vector2(0.5f, 1f);
-        r.anchoredPosition = new Vector2(0f, -6f);
-        r.sizeDelta = new Vector2(-40f, 36f);
-        obj.AddComponent<CanvasRenderer>();
-        TextMeshProUGUI txt = obj.AddComponent<TextMeshProUGUI>();
-        txt.text = "MESA DE TRABALHO";
-        txt.fontSize = 18f;
-        txt.fontStyle = FontStyles.Bold;
-        txt.color = HEADER_COLOR;
-        txt.alignment = TextAlignmentOptions.Center;
-        txt.raycastTarget = false;
-    }
-
-    private void CreateRecipeListSection(Transform parent)
-    {
-        // Container da lista de receitas (lado esquerdo)
-        GameObject listPanel = new GameObject("RecipeListPanel");
-        listPanel.transform.SetParent(parent, false);
-        RectTransform r = listPanel.AddComponent<RectTransform>();
-        r.anchorMin = new Vector2(0f, 0.28f);
-        r.anchorMax = new Vector2(0.38f, 0.92f);
-        r.offsetMin = new Vector2(12f, 0f);
-        r.offsetMax = new Vector2(0f, -8f);
-
-        listPanel.AddComponent<CanvasRenderer>();
-        Image bg = listPanel.AddComponent<Image>();
-        bg.color = SECTION_BG;
-        bg.raycastTarget = true;
-
-        // Label
-        GameObject labelObj = new GameObject("RecipesLabel");
-        labelObj.transform.SetParent(listPanel.transform, false);
-        RectTransform lr = labelObj.AddComponent<RectTransform>();
-        lr.anchorMin = new Vector2(0f, 1f);
-        lr.anchorMax = new Vector2(1f, 1f);
-        lr.pivot = new Vector2(0.5f, 1f);
-        lr.sizeDelta = new Vector2(0f, 22f);
-        lr.anchoredPosition = new Vector2(0f, -2f);
-        labelObj.AddComponent<CanvasRenderer>();
-        TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
-        labelText.text = "RECEITAS";
-        labelText.fontSize = 11f;
-        labelText.fontStyle = FontStyles.Bold;
-        labelText.color = ACCENT;
-        labelText.alignment = TextAlignmentOptions.Center;
-        labelText.raycastTarget = false;
-
-        // ScrollView para as receitas
-        GameObject scrollObj = new GameObject("RecipeScroll");
-        scrollObj.transform.SetParent(listPanel.transform, false);
-        RectTransform sr = scrollObj.AddComponent<RectTransform>();
-        sr.anchorMin = new Vector2(0f, 0f);
-        sr.anchorMax = new Vector2(1f, 1f);
-        sr.offsetMin = new Vector2(4f, 4f);
-        sr.offsetMax = new Vector2(-4f, -26f);
-
-        scrollObj.AddComponent<CanvasRenderer>();
-        Image scrollMask = scrollObj.AddComponent<Image>();
-        scrollMask.color = new Color(0, 0, 0, 0.01f);
-        scrollObj.AddComponent<Mask>().showMaskGraphic = false;
-
-        // Content
-        GameObject contentObj = new GameObject("RecipeContent");
-        contentObj.transform.SetParent(scrollObj.transform, false);
-        RectTransform cr = contentObj.AddComponent<RectTransform>();
-        cr.anchorMin = new Vector2(0f, 1f);
-        cr.anchorMax = new Vector2(1f, 1f);
-        cr.pivot = new Vector2(0.5f, 1f);
-        cr.sizeDelta = new Vector2(0f, 0f);
-
-        VerticalLayoutGroup vlg = contentObj.AddComponent<VerticalLayoutGroup>();
-        vlg.spacing = 4f;
-        vlg.padding = new RectOffset(2, 2, 2, 2);
-        vlg.childForceExpandWidth = true;
-        vlg.childForceExpandHeight = false;
-        vlg.childControlHeight = false;
-        vlg.childControlWidth = true;
-
-        ContentSizeFitter fitter = contentObj.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        // ScrollRect
-        ScrollRect scroll = scrollObj.AddComponent<ScrollRect>();
-        scroll.content = cr;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-        scroll.scrollSensitivity = 20f;
-
-        recipesContainer = contentObj.transform;
-    }
-
-    private void CreateDetailSection(Transform parent)
-    {
-        // Container dos detalhes (lado direito)
-        GameObject detailPanel = new GameObject("DetailPanel");
-        detailPanel.transform.SetParent(parent, false);
-        RectTransform r = detailPanel.AddComponent<RectTransform>();
-        r.anchorMin = new Vector2(0.40f, 0.28f);
-        r.anchorMax = new Vector2(1f, 0.92f);
-        r.offsetMin = new Vector2(0f, 0f);
-        r.offsetMax = new Vector2(-12f, -8f);
-
-        detailPanel.AddComponent<CanvasRenderer>();
-        Image bg = detailPanel.AddComponent<Image>();
-        bg.color = SECTION_BG;
-        bg.raycastTarget = false;
-
-        // Nome da receita
-        detailNameText = CreateTextElement(detailPanel.transform, "DetailName",
-            new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -8f), new Vector2(-16f, 28f), 16f, FontStyles.Bold, HEADER_COLOR);
-
-        // Descrição
-        detailDescText = CreateTextElement(detailPanel.transform, "DetailDesc",
-            new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -38f), new Vector2(-16f, 32f), 11f, FontStyles.Italic,
-            new Color(0.7f, 0.68f, 0.78f, 1f));
-
-        // Ingredientes
-        ingredientsText = CreateTextElement(detailPanel.transform, "Ingredients",
-            new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -76f), new Vector2(-16f, 90f), 12f, FontStyles.Normal,
-            new Color(0.85f, 0.83f, 0.92f, 1f));
-        ingredientsText.richText = true;
-
-        // Resultado
-        resultText = CreateTextElement(detailPanel.transform, "Result",
-            new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -172f), new Vector2(-16f, 50f), 12f, FontStyles.Normal,
-            new Color(0.85f, 0.83f, 0.92f, 1f));
-        resultText.richText = true;
-
-        // Botão de Craftar
-        GameObject btnObj = new GameObject("CraftButton");
-        btnObj.transform.SetParent(detailPanel.transform, false);
-        RectTransform br = btnObj.AddComponent<RectTransform>();
-        br.anchorMin = new Vector2(0.1f, 0f);
-        br.anchorMax = new Vector2(0.9f, 0f);
-        br.pivot = new Vector2(0.5f, 0f);
-        br.anchoredPosition = new Vector2(0f, 12f);
-        br.sizeDelta = new Vector2(0f, 38f);
-
-        btnObj.AddComponent<CanvasRenderer>();
-        Image btnBg = btnObj.AddComponent<Image>();
-        btnBg.color = BTN_CRAFT_DISABLED;
-        btnBg.raycastTarget = true;
-
-        craftButton = btnObj.AddComponent<Button>();
-        craftButton.onClick.AddListener(OnCraftButtonClicked);
-        craftButton.interactable = false;
-
-        // Texto do botão
-        GameObject btnTextObj = new GameObject("CraftBtnText");
-        btnTextObj.transform.SetParent(btnObj.transform, false);
-        RectTransform btr = btnTextObj.AddComponent<RectTransform>();
-        btr.anchorMin = Vector2.zero;
-        btr.anchorMax = Vector2.one;
-        btr.sizeDelta = Vector2.zero;
-        btnTextObj.AddComponent<CanvasRenderer>();
-        craftButtonText = btnTextObj.AddComponent<TextMeshProUGUI>();
-        craftButtonText.text = "CRAFTAR";
-        craftButtonText.fontSize = 14f;
-        craftButtonText.fontStyle = FontStyles.Bold;
-        craftButtonText.color = Color.white;
-        craftButtonText.alignment = TextAlignmentOptions.Center;
-        craftButtonText.raycastTarget = false;
-
-        // Inicializa com "selecione uma receita"
-        detailNameText.text = "Selecione uma receita";
-        detailDescText.text = "";
-        ingredientsText.text = "";
-        resultText.text = "";
-    }
-
-    private void CreateEquipmentSection(Transform parent)
-    {
-        // Seção de melhorias (parte inferior)
-        GameObject equipPanel = new GameObject("EquipmentPanel");
-        equipPanel.transform.SetParent(parent, false);
-        RectTransform r = equipPanel.AddComponent<RectTransform>();
-        r.anchorMin = new Vector2(0f, 0f);
-        r.anchorMax = new Vector2(1f, 0.26f);
-        r.offsetMin = new Vector2(12f, 8f);
-        r.offsetMax = new Vector2(-12f, -2f);
-
-        equipPanel.AddComponent<CanvasRenderer>();
-        Image bg = equipPanel.AddComponent<Image>();
-        bg.color = SECTION_BG;
-        bg.raycastTarget = false;
-
-        // Label
-        GameObject labelObj = new GameObject("EquipmentLabel");
-        labelObj.transform.SetParent(equipPanel.transform, false);
-        RectTransform lr = labelObj.AddComponent<RectTransform>();
-        lr.anchorMin = new Vector2(0f, 1f);
-        lr.anchorMax = new Vector2(1f, 1f);
-        lr.pivot = new Vector2(0.5f, 1f);
-        lr.sizeDelta = new Vector2(0f, 20f);
-        lr.anchoredPosition = new Vector2(0f, -2f);
-        labelObj.AddComponent<CanvasRenderer>();
-        TextMeshProUGUI label = labelObj.AddComponent<TextMeshProUGUI>();
-        label.text = "MELHORIAS CRAFTADAS";
-        label.fontSize = 11f;
-        label.fontStyle = FontStyles.Bold;
-        label.color = ACCENT;
-        label.alignment = TextAlignmentOptions.Center;
-        label.raycastTarget = false;
-
-        // ScrollView horizontal para equipamentos
-        GameObject scrollObj = new GameObject("EquipScroll");
-        scrollObj.transform.SetParent(equipPanel.transform, false);
-        RectTransform sr = scrollObj.AddComponent<RectTransform>();
-        sr.anchorMin = new Vector2(0f, 0f);
-        sr.anchorMax = new Vector2(1f, 1f);
-        sr.offsetMin = new Vector2(4f, 4f);
-        sr.offsetMax = new Vector2(-4f, -24f);
-
-        scrollObj.AddComponent<CanvasRenderer>();
-        Image scrollMask = scrollObj.AddComponent<Image>();
-        scrollMask.color = new Color(0, 0, 0, 0.01f);
-        scrollObj.AddComponent<Mask>().showMaskGraphic = false;
-
-        GameObject contentObj = new GameObject("EquipContent");
-        contentObj.transform.SetParent(scrollObj.transform, false);
-        RectTransform cr = contentObj.AddComponent<RectTransform>();
-        cr.anchorMin = new Vector2(0f, 0f);
-        cr.anchorMax = new Vector2(0f, 1f);
-        cr.pivot = new Vector2(0f, 0.5f);
-        cr.sizeDelta = new Vector2(0f, 0f);
-
-        HorizontalLayoutGroup hlg = contentObj.AddComponent<HorizontalLayoutGroup>();
-        hlg.spacing = 8f;
-        hlg.padding = new RectOffset(4, 4, 4, 4);
-        hlg.childForceExpandWidth = false;
-        hlg.childForceExpandHeight = true;
-        hlg.childControlWidth = false;
-
-        ContentSizeFitter fitter = contentObj.AddComponent<ContentSizeFitter>();
-        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        ScrollRect scroll = scrollObj.AddComponent<ScrollRect>();
-        scroll.content = cr;
-        scroll.horizontal = true;
-        scroll.vertical = false;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-
-        equipmentContainer = contentObj.transform;
-    }
-
+    /// <summary>
+    /// Cria um slot visual para uma melhoria craftada na seção de equipamentos.
+    /// Este é o único elemento criado via código, pois a quantidade de melhorias é dinâmica.
+    /// </summary>
     private GameObject CreateEquipmentSlot(EquipmentData equip)
     {
         bool isEquipped = EquipmentManager.Instance.IsEquipped(equip.equipmentId);
 
+        // Container do slot
         GameObject slotObj = new GameObject("EquipSlot_" + equip.equipmentId);
         RectTransform r = slotObj.AddComponent<RectTransform>();
-        r.sizeDelta = new Vector2(EQUIPMENT_SLOT_SIZE, 0f);
+        r.sizeDelta = new Vector2(110f, 0f);
 
         slotObj.AddComponent<CanvasRenderer>();
         Image bg = slotObj.AddComponent<Image>();
         bg.color = new Color(0.12f, 0.12f, 0.18f, 0.95f);
         bg.raycastTarget = false;
 
-        // Nome
+        // Nome da melhoria
         GameObject nameObj = new GameObject("Name");
         nameObj.transform.SetParent(slotObj.transform, false);
         RectTransform nr = nameObj.AddComponent<RectTransform>();
@@ -731,7 +521,7 @@ public class CraftingUI : MonoBehaviour
         nameText.raycastTarget = false;
         nameText.enableWordWrapping = true;
 
-        // Efeito
+        // Texto do efeito
         GameObject effectObj = new GameObject("Effect");
         effectObj.transform.SetParent(slotObj.transform, false);
         RectTransform er = effectObj.AddComponent<RectTransform>();
@@ -789,70 +579,5 @@ public class CraftingUI : MonoBehaviour
         btnText.raycastTarget = false;
 
         return slotObj;
-    }
-
-    private void CreateCloseButton(Transform parent)
-    {
-        GameObject btnObj = new GameObject("CloseButton");
-        btnObj.transform.SetParent(parent, false);
-        RectTransform r = btnObj.AddComponent<RectTransform>();
-        r.anchorMin = new Vector2(1f, 1f);
-        r.anchorMax = new Vector2(1f, 1f);
-        r.pivot = new Vector2(1f, 1f);
-        r.anchoredPosition = new Vector2(-8f, -8f);
-        r.sizeDelta = new Vector2(28f, 28f);
-
-        btnObj.AddComponent<CanvasRenderer>();
-        Image bg = btnObj.AddComponent<Image>();
-        bg.color = new Color(0.8f, 0.2f, 0.2f, 0.7f);
-
-        Button btn = btnObj.AddComponent<Button>();
-        btn.onClick.AddListener(CloseCrafting);
-
-        ColorBlock colors = btn.colors;
-        colors.normalColor = new Color(0.8f, 0.2f, 0.2f, 0.7f);
-        colors.highlightedColor = new Color(1f, 0.3f, 0.3f, 0.9f);
-        colors.pressedColor = new Color(0.6f, 0.1f, 0.1f, 1f);
-        btn.colors = colors;
-
-        GameObject xObj = new GameObject("X");
-        xObj.transform.SetParent(btnObj.transform, false);
-        RectTransform xr = xObj.AddComponent<RectTransform>();
-        xr.anchorMin = Vector2.zero;
-        xr.anchorMax = Vector2.one;
-        xr.sizeDelta = Vector2.zero;
-        xObj.AddComponent<CanvasRenderer>();
-        TextMeshProUGUI x = xObj.AddComponent<TextMeshProUGUI>();
-        x.text = "X";
-        x.fontSize = 16f;
-        x.color = Color.white;
-        x.alignment = TextAlignmentOptions.Center;
-        x.raycastTarget = false;
-    }
-
-    private TextMeshProUGUI CreateTextElement(Transform parent, string name,
-        Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot,
-        Vector2 anchoredPos, Vector2 sizeDelta,
-        float fontSize, FontStyles style, Color color)
-    {
-        GameObject obj = new GameObject(name);
-        obj.transform.SetParent(parent, false);
-        RectTransform r = obj.AddComponent<RectTransform>();
-        r.anchorMin = anchorMin;
-        r.anchorMax = anchorMax;
-        r.pivot = pivot;
-        r.anchoredPosition = anchoredPos;
-        r.sizeDelta = sizeDelta;
-        r.offsetMin = new Vector2(12f, r.offsetMin.y);
-        r.offsetMax = new Vector2(-12f, r.offsetMax.y);
-        obj.AddComponent<CanvasRenderer>();
-        TextMeshProUGUI txt = obj.AddComponent<TextMeshProUGUI>();
-        txt.fontSize = fontSize;
-        txt.fontStyle = style;
-        txt.color = color;
-        txt.alignment = TextAlignmentOptions.TopLeft;
-        txt.raycastTarget = false;
-        txt.enableWordWrapping = true;
-        return txt;
     }
 }

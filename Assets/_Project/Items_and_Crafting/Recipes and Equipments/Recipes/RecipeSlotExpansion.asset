@@ -17,10 +17,10 @@ MonoBehaviour:
   description: "Combina fragmentos de geodo e fibra para expandir o invent\xE1rio"
   icon: {fileID: 8981785834386775319, guid: a7e845fda03b75d4c95cff240117215b, type: 3}
   ingredients:
-  - itemId: geodo
-    quantity: 5
-  - itemId: fibra
-    quantity: 3
+  - itemId: Crystal
+    quantity: 1
+  - itemId: Tinker
+    quantity: 1
   resultType: 1
   resultItemId: 
   resultEquipment: {fileID: 11400000, guid: e6bb061b1fefb3b4ca04e7409f28e78f, type: 2}
