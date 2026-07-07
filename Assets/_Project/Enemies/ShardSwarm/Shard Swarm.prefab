@@ -468,22 +468,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f11cf1329f8e0124b807f64b4b65d502, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShardSwarm_AI
-  shards: []
-  orbitRadius: 1.5
-  orbitSpeed: 2
-  activationDistance: 10
+  shardSwarmPrefab: {fileID: 0}
+  generation: 0
+  splitCount: 4
+  childScale: 0.45
+  splitSpawnRadius: 1.5
   moveSpeed: 5
   rotationSpeed: 8
   attackRange: 5
-  retreatDistance: 8
+  activationDistance: 10
+  orbitRadius: 1.5
+  orbitSpeed: 2
   attackCooldown: 2
-  damagePerShard: 5
-  combinedDamage: 20
+  contactDamage: 20
   attackDuration: 0.5
-  splitThresholdPercent: 0.3
-  splitSpawnOffset: 3
-  canSplit: 1
-  reformHealPercent: 0.1
   deathExplosionRadius: 3
   deathExplosionDamage: 15
   deathExplosionVFX: {fileID: 0}
@@ -510,6 +508,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &684567685902536809
 MonoBehaviour:
   m_ObjectHideFlags: 0

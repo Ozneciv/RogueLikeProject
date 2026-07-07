@@ -103,23 +103,10 @@ public class SaveManager : MonoBehaviour
 
         PlayerInventory inventory = player.GetComponent<PlayerInventory>();
         if (inventory != null)
-        {
             data.inventoryMaxSlots = inventory.MaxSlots;
 
-            foreach (var kvp in inventory.GetAllItems())
-            {
-                ItemData itemData = ItemDatabase.Instance?.GetItemData(kvp.Key);
-                if (itemData != null && itemData.returnsToBase)
-                    data.baseResources.Add(new ItemSaveEntry(kvp.Key, kvp.Value));
-            }
-        }
-
-        // Mescla baseResources do cache (itens adicionados via AddResourceToBase)
-        foreach (var cached in CachedData.baseResources)
-        {
-            if (!data.baseResources.Exists(e => e.itemId == cached.itemId))
-                data.baseResources.Add(new ItemSaveEntry(cached.itemId, cached.quantity));
-        }
+        // Bolsa Sintética — fonte única é o CachedData (itens chegam via AddResourceToBase)
+        data.baseResources = new List<ItemSaveEntry>(CachedData.baseResources);
 
         PlayerUpgrades upgrades = player.GetComponent<PlayerUpgrades>();
         if (upgrades != null)
@@ -174,12 +161,8 @@ public class SaveManager : MonoBehaviour
 
         PlayerInventory inventory = player.GetComponent<PlayerInventory>();
         if (inventory != null)
-        {
             inventory.SetMaxSlots(data.inventoryMaxSlots);
-
-            foreach (var entry in data.baseResources)
-                inventory.AddItem(entry.itemId, entry.quantity);
-        }
+        // baseResources vivem no CachedData — não vão para o PlayerInventory
 
         PlayerUpgrades upgrades = player.GetComponent<PlayerUpgrades>();
         if (upgrades != null)
@@ -187,7 +170,8 @@ public class SaveManager : MonoBehaviour
             foreach (int idx in data.purchasedUpgradeIndices)
                 upgrades.BuyUpgrade(idx);
         }
-
+        // Notifica a Bolsa Sintética para atualizar com os dados carregados do disco
+        OnBaseResourcesChanged?.Invoke();
         Debug.Log($"[SAVE] Progressão carregada | " +
                   $"{data.baseResources.Count} recursos de base | " +
                   $"{data.purchasedUpgradeIndices.Count} upgrades | " +
@@ -229,7 +213,8 @@ public class SaveManager : MonoBehaviour
         foreach (string id in toDiscard)
             inventory.RemoveItem(id, inventory.GetItemCount(id));
 
-        Debug.Log($"[SAVE] Morte: {toDiscard.Count} item(s) de run descartado(s). Recursos de base preservados.");
+        SavePersistentData(); // Persiste a Bolsa Sintética imediatamente
+        Debug.Log($"[SAVE] Morte: {toDiscard.Count} item(s) de run descartado(s). Recursos de base salvos.");
     }
 
     // ─── SETOR 3 — HELPERS PARA BASE RESOURCES (usado pelo CraftingManager) ──
