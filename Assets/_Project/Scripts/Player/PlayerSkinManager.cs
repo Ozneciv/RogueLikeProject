@@ -358,8 +358,19 @@ public class PlayerSkinManager : MonoBehaviour
             if (equippedWeapon != null)
             {
                 equippedWeapon.transform.SetParent(rightHandBone);
-                equippedWeapon.transform.localPosition = weaponManager.daggerOffsetPosition;
-                equippedWeapon.transform.localRotation = Quaternion.Euler(weaponManager.daggerOffsetRotation);
+                
+                WeaponOffset offsetData = equippedWeapon.GetComponent<WeaponOffset>();
+                if (offsetData != null)
+                {
+                    equippedWeapon.transform.localPosition = offsetData.equipPosition;
+                    equippedWeapon.transform.localRotation = Quaternion.Euler(offsetData.equipRotation);
+                }
+                else
+                {
+                    equippedWeapon.transform.localPosition = Vector3.zero;
+                    equippedWeapon.transform.localRotation = Quaternion.identity;
+                }
+                
                 equippedWeapon.SetActive(true); // Force weapon active!
                 Debug.Log($"[PlayerSkinManager] Re-parented equipped weapon '{equippedWeapon.name}' to new right hand.");
             }
