@@ -30,5 +30,7 @@ public class PersistentSaveData
     public List<ItemSaveEntry> baseResources = new List<ItemSaveEntry>();
     public List<int> purchasedUpgradeIndices = new List<int>();
     public string selectedSkinID = "astronaut";
+    public List<string> craftedEquipmentIds = new List<string>();
+    public List<string> equippedEquipmentIds = new List<string>();
 }
 
