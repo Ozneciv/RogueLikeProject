@@ -99,6 +99,12 @@ public class SaveManager : MonoBehaviour
             }
         }
 
+        PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
+        if (skinManager != null)
+        {
+            data.selectedSkinID = skinManager.ActiveSkinID;
+        }
+
         string json = JsonUtility.ToJson(data, prettyPrint: true);
         File.WriteAllText(SaveFilePath, json);
         Debug.Log($"[SAVE] Progressão salva → {SaveFilePath} | " +
@@ -145,6 +151,12 @@ public class SaveManager : MonoBehaviour
         {
             foreach (int idx in data.purchasedUpgradeIndices)
                 upgrades.BuyUpgrade(idx);
+        }
+
+        PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
+        if (skinManager != null)
+        {
+            skinManager.SetSkin(data.selectedSkinID);
         }
 
         Debug.Log($"[SAVE] Progressão carregada | " +

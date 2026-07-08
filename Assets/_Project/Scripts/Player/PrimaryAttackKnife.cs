@@ -54,6 +54,10 @@ public class PrimaryAttackKnife : MonoBehaviour
     private int comboStep = 0;
     private bool canAttack = true;
     private Coroutine comboResetCoroutine;
+    private Coroutine backupAttackCoroutine;
+    private bool eventFiredEnableHitbox = false;
+    private bool eventFiredDisableHitbox = false;
+    private bool eventFiredOpenWindow = false;
     private List<Collider> enemiesHitInThisAttack;
 
     private void Start()
@@ -79,49 +83,132 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     private void Update()
     {
-        // Aplicar weapon range scale dinamicamente
-        if (playerAttributes != null && currentHitbox != null)
+        try
         {
-            if (Mathf.Abs(playerAttributes.weaponRangeMelee - lastAppliedWeaponRange) > 0.01f)
+            // Pressione L para imprimir diagnósticos de ataque no console do Unity
+            if (Input.GetKeyDown(KeyCode.L))
             {
-                ApplyWeaponRangeScale();
-                lastAppliedWeaponRange = playerAttributes.weaponRangeMelee;
+                Debug.LogWarning($"=== DIAGNÓSTICO DE ATAQUE ===");
+                Debug.LogWarning($"[PrimaryAttackKnife] Script Ativo: {enabled}, Objeto: {gameObject.name}, Ativo na Hierarquia: {gameObject.activeInHierarchy}");
+                Debug.LogWarning($"[PrimaryAttackKnife] Animator associado: {(animator != null ? animator.name : "null")}, Animator Ativo: {(animator != null ? animator.isActiveAndEnabled.ToString() : "false")}");
+                Debug.LogWarning($"[PrimaryAttackKnife] Controller: {(animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}");
+                Debug.LogWarning($"[PrimaryAttackKnife] canAttack: {canAttack}, hasWeapon: {hasWeapon}, isAttacking: {isAttacking}");
+                Debug.LogWarning($"[PrimaryAttackKnife] hitbox: {(currentHitbox != null ? currentHitbox.name : "null")}, hitboxEnabled: {(currentHitbox != null ? currentHitbox.enabled.ToString() : "false")}");
+            }
+
+            // Aplicar weapon range scale dinamicamente
+            if (playerAttributes != null && currentHitbox != null)
+            {
+                if (Mathf.Abs(playerAttributes.weaponRangeMelee - lastAppliedWeaponRange) > 0.01f)
+                {
+                    ApplyWeaponRangeScale();
+                    lastAppliedWeaponRange = playerAttributes.weaponRangeMelee;
+                }
+            }
+
+            // Manter attack speed durante combo
+            if (isAttacking && playerAttributes != null && animator != null && animator.isActiveAndEnabled)
+            {
+                float targetSpeed = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
+                if (Mathf.Abs(animator.speed - targetSpeed) > 0.01f)
+                {
+                    animator.speed = targetSpeed;
+                }
+            }
+
+            if ((Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0)) && canAttack)
+            {
+                if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+                PerformNextAttack();
             }
         }
-
-        // Manter attack speed durante combo
-        if (isAttacking && playerAttributes != null && animator != null)
+        catch (System.Exception)
         {
-            float targetSpeed = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
-            if (Mathf.Abs(animator.speed - targetSpeed) > 0.01f)
-            {
-                animator.speed = targetSpeed;
-            }
-        }
-
-        if ((Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0)) && canAttack && hasWeapon)
-        {
-            if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
-            PerformNextAttack();
+            // Evita crashar o loop de update se referências estiverem se restabelecendo
         }
     }
 
     private void PerformNextAttack()
     {
-        isAttacking = true;
-        canAttack = false;
-        comboStep++;
+        try
+        {
+            if (animator == null)
+            {
+                Debug.LogWarning("[PrimaryAttackKnife] Animator is null! Finding animator dynamically...");
+                animator = GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
+                
+                if (animator == null)
+                {
+                    Debug.LogError("[PrimaryAttackKnife] Critical: Animator not found! Aborting attack sequence.");
+                    canAttack = true;
+                    isAttacking = false;
+                    return;
+                }
+            }
 
-        animator.SetInteger("ComboStep", comboStep);
-        animator.SetTrigger("Attack");
+            isAttacking = true;
+            canAttack = false;
+            comboStep++;
 
-        // Aplicar Attack Speed
+            animator.SetInteger("ComboStep", comboStep);
+            animator.SetTrigger("Attack");
+
+            // Aplicar Attack Speed
+            if (playerAttributes != null)
+            {
+                animator.speed = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
+            }
+
+            if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+            comboResetCoroutine = StartCoroutine(ResetComboAfterTime());
+
+            // Inicia a corrotina de backup caso a animação do modelo não tenha eventos configurados (ex: Goku/custom)
+            if (backupAttackCoroutine != null) StopCoroutine(backupAttackCoroutine);
+            backupAttackCoroutine = StartCoroutine(BackupAttackSequenceCoroutine());
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[PrimaryAttackKnife] Error during PerformNextAttack: {ex.Message}");
+            canAttack = true;
+            isAttacking = false;
+        }
+    }
+
+    private System.Collections.IEnumerator BackupAttackSequenceCoroutine()
+    {
+        eventFiredEnableHitbox = false;
+        eventFiredDisableHitbox = false;
+        eventFiredOpenWindow = false;
+
+        // Fator de escala da velocidade de ataque (quanto mais rápido o ataque, menor o delay)
+        float speedMultiplier = 1f;
         if (playerAttributes != null)
         {
-            animator.speed = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
+            speedMultiplier = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
+        }
+        // Evitar divisão por zero ou velocidades negativas
+        if (speedMultiplier <= 0f) speedMultiplier = 1f;
+
+        // 1. Aguarda para ativar o colisor de dano (o swing do golpe acontece por volta de 0.15s)
+        yield return new WaitForSeconds(0.15f / speedMultiplier);
+        if (!eventFiredEnableHitbox)
+        {
+            EnableHitbox();
         }
 
-        comboResetCoroutine = StartCoroutine(ResetComboAfterTime());
+        // 2. Aguarda a duração ativa do golpe (por volta de 0.2s)
+        yield return new WaitForSeconds(0.2f / speedMultiplier);
+        if (!eventFiredDisableHitbox)
+        {
+            DisableHitbox();
+        }
+
+        // 3. Libera o próximo clique de ataque (por volta de 0.1s após desativar o hitbox)
+        yield return new WaitForSeconds(0.1f / speedMultiplier);
+        if (!eventFiredOpenWindow)
+        {
+            OpenAttackWindow();
+        }
     }
 
     public void RegisterHit(Collider enemyCollider)
@@ -206,9 +293,10 @@ public class PrimaryAttackKnife : MonoBehaviour
         }
     }
 
-    // Eventos de Animação
+    // Eventos de Animação (ou chamados pela corrotina de backup)
     public void EnableHitbox()
     {
+        eventFiredEnableHitbox = true;
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
         if (currentHitbox != null) currentHitbox.enabled = true;
@@ -216,12 +304,14 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void DisableHitbox()
     {
+        eventFiredDisableHitbox = true;
         isHitboxActive = false;
         if (currentHitbox != null) currentHitbox.enabled = false;
     }
 
     public void OpenAttackWindow()
     {
+        eventFiredOpenWindow = true;
         canAttack = true;
     }
 
@@ -252,19 +342,25 @@ public class PrimaryAttackKnife : MonoBehaviour
     // Aplicar escala de weapon range ao collider
     private void ApplyWeaponRangeScale()
     {
-        if (currentHitbox == null || playerAttributes == null) return;
-
-        BoxCollider boxCollider = currentHitbox as BoxCollider;
-        if (boxCollider != null)
+        try
         {
-            // Escalar apenas o eixo Y (para frente da arma) - como alongar uma adaga em espada
-            Vector3 newSize = new Vector3(
-                currentOriginalSize.x,  // Largura: mantém original
-                currentOriginalSize.y * playerAttributes.weaponRangeMelee,  // Comprimento: escala
-                currentOriginalSize.z   // Profundidade: mantém original
-            );
-            boxCollider.size = newSize;
-            Debug.Log($"🎯 Weapon Range aplicado! Size Y: {currentOriginalSize.y:F2} → {newSize.y:F2} ({playerAttributes.weaponRangeMelee}x)");
+            if (currentHitbox == null || playerAttributes == null) return;
+
+            BoxCollider boxCollider = currentHitbox as BoxCollider;
+            if (boxCollider != null)
+            {
+                // Escalar apenas o eixo Y (para frente da arma) - como alongar uma adaga em espada
+                Vector3 newSize = new Vector3(
+                    currentOriginalSize.x,  // Largura: mantém original
+                    currentOriginalSize.y * playerAttributes.weaponRangeMelee,  // Comprimento: escala
+                    currentOriginalSize.z   // Profundidade: mantém original
+                );
+                boxCollider.size = newSize;
+                Debug.Log($"🎯 Weapon Range aplicado! Size Y: {currentOriginalSize.y:F2} → {newSize.y:F2} ({playerAttributes.weaponRangeMelee}x)");
+            }
+        }
+        catch (System.Exception)
+        {
         }
     }
 

@@ -1,8 +1,10 @@
 {
   "dependencies": {
+    "com.tripo3d.unitybridge": "file:C:/Users/vicen/Downloads/Tripo3d_Unity_Bridge-latest/Tripo3d_Unity_Bridge",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.cloud.gltfast": "6.14.1",
+    "com.unity.formats.fbx": "5.1.6",
     "com.unity.ide.rider": "3.0.38",
     "com.unity.ide.visualstudio": "2.0.23",
     "com.unity.inputsystem": "1.14.2",

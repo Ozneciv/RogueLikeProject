@@ -54,6 +54,16 @@ public class PlayerM : MonoBehaviour
 
     private void Update()
     {
+        // Pressione K para imprimir diagnósticos de movimentação no console do Unity
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            Debug.LogWarning($"=== DIAGNÓSTICO DE MOVIMENTAÇÃO ===");
+            Debug.LogWarning($"[PlayerM] Script Ativo: {enabled}, Objeto: {gameObject.name}, Ativo na Hierarquia: {gameObject.activeInHierarchy}");
+            Debug.LogWarning($"[PlayerM] Animator associado: {(animator != null ? animator.name : "null")}, Animator Ativo: {(animator != null ? animator.isActiveAndEnabled.ToString() : "false")}");
+            Debug.LogWarning($"[PlayerM] Controller: {(animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}");
+            Debug.LogWarning($"[PlayerM] moveDirection: {moveDirection}, grounded: {grounded}, linearVelocity: {rb.linearVelocity}");
+        }
+
         if (groundCheck != null) grounded = Physics.CheckSphere(groundCheck.position, groundRadius, whatIsGround);
 
         MyInput();
@@ -131,30 +141,37 @@ public class PlayerM : MonoBehaviour
 
     private void UpdateAnimations()
     {
-        if (animator == null) return;
+        if (animator == null || !animator.isActiveAndEnabled) return;
         
-        bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
-
-        // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---
-        if (inDamageWindow)
+        try
         {
-            // AQUI ESTÁ A MUDANÇA: O código agora obedece o valor do Inspector
-            animator.speed = hitboxAnimSpeed; 
+            bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
 
-            // Se você quer que as pernas parem de mexer visualmente se o moveSpeed for 0:
-            if (hitboxMoveSpeed < 0.1f)
+            // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---
+            if (inDamageWindow)
             {
-                animator.SetFloat("Speed", 0f);
+                // AQUI ESTÁ A MUDANÇA: O código agora obedece o valor do Inspector
+                animator.speed = hitboxAnimSpeed; 
+
+                // Se você quer que as pernas parem de mexer visualmente se o moveSpeed for 0:
+                if (hitboxMoveSpeed < 0.1f)
+                {
+                    animator.SetFloat("Speed", 0f);
+                }
+            }
+            else
+            {
+                // Velocidade normal fora do impacto
+                animator.speed = 1f; 
+
+                // Lógica normal de pernas correndo/paradas
+                float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
+                animator.SetFloat("Speed", velocityMagnitude > 0.1f ? 1f : 0f);
             }
         }
-        else
+        catch (System.Exception)
         {
-            // Velocidade normal fora do impacto
-            animator.speed = 1f; 
-
-            // Lógica normal de pernas correndo/paradas
-            float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-            animator.SetFloat("Speed", velocityMagnitude > 0.1f ? 1f : 0f);
+            // Evita crashar o loop se referências estiverem se reestabelecendo
         }
     }
 }

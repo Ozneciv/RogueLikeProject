@@ -1617,6 +1617,7 @@ GameObject:
   - component: {fileID: 2263118546089513548}
   - component: {fileID: 2622090170748288850}
   - component: {fileID: 5033722188782685222}
+  - component: {fileID: 1286581841674779122}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1746,7 +1747,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 571b93da10439c74fb151b19ad14d66e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player_WeaponManager
-  rightHand: {fileID: 1845917321114070400}
+  rightHand: {fileID: 7952616563520327378}
   daggerOffsetPosition: {x: -0.25, y: 0.1, z: 0}
   daggerOffsetRotation: {x: 270, y: 0, z: 90}
   attackScript: {fileID: 399265535294509767}
@@ -1834,8 +1835,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesDefensive
   armorRegen: 10
-  dodgeChance: 55
-  damageNegation: 39.2
+  dodgeChance: 0
+  damageNegation: 0
   thorns: 0
   dashCooldownMultiplier: 1
   dashCounts: 1
@@ -2014,6 +2015,46 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &1286581841674779122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef70bd733b756634ea015e06b704950f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSkinManager
+  skins:
+  - skinID: astronaut
+    skinName: "Astronauta Padr\xE3o"
+    isPrefab: 0
+    skinPrefab: {fileID: 0}
+    existingChildObjects:
+    - {fileID: 6284554266325809849}
+    - {fileID: 554181802919065538}
+    localPositionOffset: {x: 0, y: 0, z: 0}
+    localRotationOffset: {x: 0, y: 0, z: 0}
+    localScale: {x: 0, y: 0, z: 0}
+    injectModelOffset: 1
+    lockYOffset: 1
+    lockRootRotation: 0
+  - skinID: Goku
+    skinName: Goku Base
+    isPrefab: 1
+    skinPrefab: {fileID: 3736023079869175283, guid: 1cbf7f7d96e6c2d41a00bdfd64ee67b7, type: 3}
+    existingChildObjects: []
+    localPositionOffset: {x: 0, y: 0, z: 0}
+    localRotationOffset: {x: 0, y: 0, z: 0}
+    localScale: {x: 2.5, y: 2.5, z: 2.5}
+    injectModelOffset: 1
+    lockYOffset: 1
+    lockRootRotation: 0
+  defaultSkinID: astronaut
+  activeSkinID: 
+  mainAnimatorController: {fileID: 0}
 --- !u!1 &3037435734811326214
 GameObject:
   m_ObjectHideFlags: 0
@@ -3812,6 +3853,7 @@ GameObject:
   - component: {fileID: 399265535294509767}
   - component: {fileID: 1627733104494296859}
   - component: {fileID: 5301761075157900069}
+  - component: {fileID: 4903610608914846769}
   m_Layer: 8
   m_Name: astronaut
   m_TagString: Untagged
@@ -3925,6 +3967,21 @@ MonoBehaviour:
   bounceCount: 0
   multiShotChance: 0
   spread: 0
+--- !u!114 &4903610608914846769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6284554266325809849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f8df381442e1b64981b1eadb6d4af8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSkinReferences
+  animator: {fileID: 3618305479678570340}
+  rightHand: {fileID: 1845917321114070400}
+  handHitbox: {fileID: 3140321211315949011}
 --- !u!1 &6320494353973819877
 GameObject:
   m_ObjectHideFlags: 0
