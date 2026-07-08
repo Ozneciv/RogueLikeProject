@@ -117,4 +117,4 @@ MonoBehaviour:
   slowDuration: 2
   knockbackForce: 70
   lifeTime: 3
-  breakEffectPrefab: {fileID: 7318078104736055304, guid: 4c4055bf4bbb1f24ba49aa9f20078b1c, type: 3}
+  breakEffectPrefab: {fileID: 7318078104736055304, guid: 903a5110c1fe43f409c259ad7e9dd16b, type: 3}

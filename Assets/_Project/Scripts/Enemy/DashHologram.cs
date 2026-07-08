@@ -9,19 +9,28 @@ public class DashHologram : MonoBehaviour
     private Material hologramMaterial;
     
     private float alpha;
-    private float fadeSpeed;
 
     public void Init(Transform target, Vector3 futurePos, Quaternion futureRot, float lifetime, Material mat, float initialAlpha)
     {
-        // IMPORTANTE: Cria uma cópia única do material para este holograma.
-        // Assim, o esmaecimento afeta apenas este "fantasma" e não o arquivo original.
+        // Cria uma cópia única do material para este holograma
         hologramMaterial = new Material(mat);
-
         alpha = initialAlpha;
-        // Calcula a velocidade do fade para que o Alpha chegue a 0 exatamente quando o 'lifetime' acabar
-        fadeSpeed = initialAlpha / lifetime;
 
-        // Captura as malhas do monstro (mantendo a lógica que resolveu o problema do tamanho)
+        // 1. Aplica o valor FIXO de Alpha no material logo na criação (acontece só uma vez!)
+        if (hologramMaterial.HasProperty("_Color"))
+        {
+            Color col = hologramMaterial.color;
+            col.a = alpha;
+            hologramMaterial.color = col;
+        }
+        else if (hologramMaterial.HasProperty("_BaseColor"))
+        {
+            Color col = hologramMaterial.GetColor("_BaseColor");
+            col.a = alpha;
+            hologramMaterial.SetColor("_BaseColor", col);
+        }
+
+        // Captura as malhas do monstro
         Renderer[] renderers = target.GetComponentsInChildren<Renderer>();
 
         foreach (var r in renderers)
@@ -49,39 +58,18 @@ public class DashHologram : MonoBehaviour
         transform.position = futurePos;
         transform.rotation = futureRot;
 
-        // Removeu o 'Destroy(gameObject, lifetime)' daqui, 
-        // pois agora o objeto se destrói sozinho quando o Alpha chega a zero.
+        // 2. Como o alpha não muda mais, o próprio Unity destrói o objeto após o tempo acabar
+        Destroy(gameObject, lifetime);
     }
 
     void Update()
     {
         if (hologramMaterial == null) return;
 
-        // 1. Reduz o Alpha progressivamente com base no tempo
-        alpha -= fadeSpeed * Time.deltaTime;
+        // O código de redução de alpha e o Destroy foram removidos daqui.
+        // O holograma mantém a mesma transparência do início ao fim.
 
-        // 2. Se ficou totalmente invisível, destrói o holograma e para a execução
-        if (alpha <= 0)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        // 3. Aplica o novo valor de Alpha no material (funciona em Shaders Standard e URP)
-        if (hologramMaterial.HasProperty("_Color"))
-        {
-            Color col = hologramMaterial.color;
-            col.a = alpha;
-            hologramMaterial.color = col;
-        }
-        else if (hologramMaterial.HasProperty("_BaseColor"))
-        {
-            Color col = hologramMaterial.GetColor("_BaseColor");
-            col.a = alpha;
-            hologramMaterial.SetColor("_BaseColor", col);
-        }
-
-        // 4. Desenha as malhas na tela
+        // 3. Desenha as malhas na tela
         for (int i = 0; i < meshes.Count; i++)
         {
             Vector3 worldPos = transform.position + (transform.rotation * positions[i]);

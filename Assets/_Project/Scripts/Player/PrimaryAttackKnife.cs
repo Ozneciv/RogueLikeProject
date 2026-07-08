@@ -33,6 +33,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float defaultRange = 2f;
     public float daggerRange = 5f;
     public float swordRange = 7f;
+    public float axeRange = 7.5f; 
 
     [Header("VFX")]
     [Tooltip("Arraste aqui suas variações de VFX (o original e o Slash). O script vai sortear um deles a cada hit!")]
@@ -42,11 +43,14 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     [Header("Settings")]
     public float attackAnimationSpeed = 1.0f;
+    public float defaultAttackSpeed = 1.0f; // Para resetar a velocidade padrão
+    public float axeAttackSpeed = 0.6f; // Velocidade reduzida e pesada para o machado
 
     [Header("Weapon Damages")]
     public int[] defaultDamages = { 10, 15, 30 };
     public int[] daggerDamages = { 25, 35, 60 };
     public int[] swordDamages = { 30, 40, 75 };
+    public int[] axeDamages = { 45, 60, 110 }; // Dano pesado de impacto para o Machado
     private int[] currentDamages;
 
     [Header("Combo Settings")]
@@ -369,6 +373,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         currentDamages = defaultDamages;
         currentRange = defaultRange;
+        attackAnimationSpeed = defaultAttackSpeed; // Retorna à velocidade padrão
         currentHitbox = handHitbox;
 
         if (handHitbox != null)
@@ -388,6 +393,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         currentDamages = daggerDamages;
         currentRange = daggerRange;
+        attackAnimationSpeed = defaultAttackSpeed; // Retorna à velocidade padrão
         equippedWeaponHitbox = daggerHitbox;
         currentHitbox = equippedWeaponHitbox;
 
@@ -411,7 +417,34 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         currentDamages = swordDamages;
         currentRange = swordRange;
+        attackAnimationSpeed = defaultAttackSpeed; // Retorna à velocidade padrão
         equippedWeaponHitbox = swordHitbox;
+        currentHitbox = equippedWeaponHitbox;
+
+        if (equippedWeaponHitbox != null)
+        {
+            BoxCollider boxCollider = equippedWeaponHitbox as BoxCollider;
+            if (boxCollider != null)
+            {
+                originalWeaponHitboxSize = boxCollider.size;
+                currentOriginalSize = originalWeaponHitboxSize;
+            }
+        }
+
+        if (handHitbox != null) handHitbox.enabled = false;
+        hasWeapon = true;
+
+        ApplyWeaponRangeScale();
+    }
+
+
+    public void EquipAxeWeapon(Collider axeHitbox)
+    {
+        currentDamages = axeDamages; 
+        currentRange = axeRange; 
+        attackAnimationSpeed = axeAttackSpeed; 
+        
+        equippedWeaponHitbox = axeHitbox;
         currentHitbox = equippedWeaponHitbox;
 
         if (equippedWeaponHitbox != null)

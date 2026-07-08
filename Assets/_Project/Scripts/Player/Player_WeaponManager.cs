@@ -3,41 +3,65 @@ using UnityEngine;
 public class Player_WeaponManager : MonoBehaviour
 {
     public Transform rightHand;
-    public Vector3 daggerOffsetPosition;
-    public Vector3 daggerOffsetRotation;
-    
     public PrimaryAttackKnife attackScript;
+    
+    [Header("Animação")]
+    public Animator playerAnimator; 
+    private RuntimeAnimatorController defaultAnimatorController;
 
-    public void EquipDagger(GameObject dagger)
+    void Start()
     {
-        dagger.transform.SetParent(rightHand);
 
-        dagger.transform.localPosition = daggerOffsetPosition;
-        dagger.transform.localRotation = Quaternion.Euler(daggerOffsetRotation);
+        if (playerAnimator != null)
+        {
+            defaultAnimatorController = playerAnimator.runtimeAnimatorController;
+        }
+    }
 
-        // Desativa os componentes de quando o item estava no chão
-        dagger.GetComponent<Collider>().enabled = false;
-        dagger.GetComponent<Dagger_Pickup>().enabled = false;
+    public void EquipDagger(GameObject weapon)
+    {
+        WeaponOffset offsetData = weapon.GetComponent<WeaponOffset>();
         
-        if (dagger.GetComponent<Rigidbody>() != null)
-        {
-            dagger.GetComponent<Rigidbody>().isKinematic = true;
-        }
+        if (offsetData == null) return;
 
-        // --- MUDANÇA AQUI ---
-        // Procura pelo script de flutuação e o desativa.
-        ItemFloat floatScript = dagger.GetComponent<ItemFloat>();
-        if (floatScript != null)
-        {
-            floatScript.enabled = false;
-        }
-        // --- FIM DA MUDANÇA ---
+        weapon.transform.SetParent(rightHand);
+        weapon.transform.localPosition = offsetData.equipPosition;
+        weapon.transform.localRotation = Quaternion.Euler(offsetData.equipRotation);
 
-        if (attackScript != null)
+        
+        if (playerAnimator != null)
         {
-            attackScript.EquipDaggerWeapon(dagger.GetComponent<Collider>());
-        }
+            if (offsetData.weaponAnimatorOverride != null)
+            {
+                
+                playerAnimator.runtimeAnimatorController = offsetData.weaponAnimatorOverride;
+                Debug.Log("Moveset alterado para: " + weapon.name);
+            }
+            else
+            {
 
-        Debug.Log("Adaga equipada com sucesso!");
+                playerAnimator.runtimeAnimatorController = defaultAnimatorController;
+            }
+        }
+        // -------------------------------------------------------
+
+        Collider weaponCollider = weapon.GetComponent<Collider>();
+        if (weaponCollider != null) weaponCollider.enabled = false; 
+
+        if (weapon.GetComponent<Rigidbody>() != null) weapon.GetComponent<Rigidbody>().isKinematic = true;
+
+        ItemFloat floatScript = weapon.GetComponent<ItemFloat>();
+        if (floatScript != null) floatScript.enabled = false;
+
+        Dagger_Pickup daggerPickup = weapon.GetComponent<Dagger_Pickup>();
+        if (daggerPickup != null) daggerPickup.enabled = false;
+
+        if (attackScript != null && weaponCollider != null)
+        {
+            if (offsetData.weaponType == WeaponType.Dagger)
+                attackScript.EquipDaggerWeapon(weaponCollider);
+            else if (offsetData.weaponType == WeaponType.Axe)
+                attackScript.EquipAxeWeapon(weaponCollider);
+        }
     }
 }
