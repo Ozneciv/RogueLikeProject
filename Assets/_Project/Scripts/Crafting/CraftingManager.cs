@@ -64,11 +64,28 @@ public class CraftingManager : MonoBehaviour
         Debug.Log($"[CRAFTING] CraftingManager inicializado com {allRecipes.Count} receitas.");
     }
 
+    // ─── HELPERS INTERNOS ─────────────────────────────────────────────────────
+
+    private PlayerInventory GetPlayerInventory()
+    {
+        GameObject player = GameManager.instance?.currentPlayer;
+        return player != null ? player.GetComponent<PlayerInventory>() : null;
+    }
+
+    /// <summary>Soma o total de um ingrediente no inventário de run + Bolsa Sintética.</summary>
+    private int GetTotalIngredientCount(string itemId)
+    {
+        int fromBag = SaveManager.instance != null ? SaveManager.instance.GetBaseResourceCount(itemId) : 0;
+        PlayerInventory inv = GetPlayerInventory();
+        int fromRun = inv != null ? inv.GetItemCount(itemId) : 0;
+        return fromBag + fromRun;
+    }
+
     // ─── API PRINCIPAL ────────────────────────────────────────────────────────
 
     /// <summary>
     /// Verifica se o jogador possui todos os ingredientes necessários
-    /// para uma receita na Bolsa Sintética (baseResources).
+    /// somando inventário de run + Bolsa Sintética.
     /// </summary>
     public bool CanCraft(CraftingRecipe recipe)
     {
@@ -76,7 +93,7 @@ public class CraftingManager : MonoBehaviour
 
         foreach (var ingredient in recipe.ingredients)
         {
-            int available = SaveManager.instance.GetBaseResourceCount(ingredient.itemId);
+            int available = GetTotalIngredientCount(ingredient.itemId);
             if (available < ingredient.quantity)
                 return false;
         }
@@ -111,14 +128,33 @@ public class CraftingManager : MonoBehaviour
             return false;
         }
 
-        // 1. Consome ingredientes da Bolsa Sintética
+        // 1. Consome ingredientes — inventário de run primeiro, depois Bolsa Sintética
+        PlayerInventory inv = GetPlayerInventory();
         foreach (var ingredient in recipe.ingredients)
         {
-            bool removed = SaveManager.instance.RemoveResourceFromBase(ingredient.itemId, ingredient.quantity);
-            if (!removed)
+            int needed = ingredient.quantity;
+
+            // Consome do inventário de run primeiro
+            if (inv != null)
             {
-                Debug.LogError($"[CRAFTING] Erro ao remover ingrediente {ingredient.itemId}! Craft abortado.");
-                return false;
+                int inRun = inv.GetItemCount(ingredient.itemId);
+                if (inRun > 0)
+                {
+                    int consumeFromRun = Mathf.Min(inRun, needed);
+                    inv.RemoveItem(ingredient.itemId, consumeFromRun);
+                    needed -= consumeFromRun;
+                }
+            }
+
+            // Consome o restante da Bolsa Sintética
+            if (needed > 0)
+            {
+                bool removed = SaveManager.instance.RemoveResourceFromBase(ingredient.itemId, needed);
+                if (!removed)
+                {
+                    Debug.LogError($"[CRAFTING] Erro ao remover ingrediente {ingredient.itemId} da SyntBag! Craft abortado.");
+                    return false;
+                }
             }
         }
 
@@ -158,10 +194,11 @@ public class CraftingManager : MonoBehaviour
     /// Retorna a quantidade disponível de um ingrediente na Bolsa Sintética.
     /// Útil para a UI mostrar "3/5" ao lado de cada ingrediente.
     /// </summary>
+    /// <summary>Retorna o total disponível somando inventário de run + Bolsa Sintética.</summary>
     public int GetAvailableAmount(string itemId)
     {
         if (SaveManager.instance == null) return 0;
-        return SaveManager.instance.GetBaseResourceCount(itemId);
+        return GetTotalIngredientCount(itemId);
     }
 
     /// <summary>

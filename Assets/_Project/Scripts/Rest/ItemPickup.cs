@@ -89,24 +89,34 @@ public class ItemPickup : MonoBehaviour
 
     /// <summary>
     /// Executa a coleta:
-    ///   1. Adiciona ao PlayerInventory via itemId do ItemData
-    ///   2. Registra no CatalogoManager (popup do Eptinho)
-    ///   3. Destrói o GameObject
-    /// Aborta sem destruir se o inventário estiver cheio.
+    ///   • returnsToBase == true  → Bolsa Sintética via SaveManager (persistente)
+    ///   • returnsToBase == false → Inventário de run via PlayerInventory (temporário)
+    /// Aborta sem destruir se o inventário de run estiver cheio.
     /// </summary>
     private void TryCollect(GameObject player)
     {
         if (interactable == null || interactable.foiCatalogado) return;
 
-        // 1. Tenta adicionar ao inventário (requer ItemData no Interactable)
         if (interactable.itemData == null)
         {
             Debug.LogWarning($"[ITEM] '{gameObject.name}' não tem ItemData no Interactable! " +
                              "Configure o campo 'Item Data' no Inspector do prefab.");
+            return;  // não destrói o item enquanto estiver mal configurado
+        }
+        else if (interactable.itemData.returnsToBase)
+        {
+            // Recurso permanente — vai direto para a Bolsa Sintética
+            if (SaveManager.instance != null)
+                SaveManager.instance.AddResourceToBase(interactable.itemData.itemId, 1);
+            else
+            {
+                Debug.LogWarning("[ITEM] SaveManager não encontrado! Recurso perdido: " + interactable.NomeDisplay);
+                return;  // não destrói o item se não puder registrar
+            }
         }
         else
         {
-            // GetComponentInParent garante que acha mesmo se o collider for filho do player
+            // Item de run — vai para o inventário temporário
             PlayerInventory inventory = player.GetComponentInParent<PlayerInventory>();
             if (inventory == null) inventory = player.GetComponent<PlayerInventory>();
 
@@ -116,7 +126,7 @@ public class ItemPickup : MonoBehaviour
                 if (!added)
                 {
                     Debug.Log("[ITEM] Inventário cheio! Não coletou: " + interactable.NomeDisplay);
-                    return; // Item permanece no chão
+                    return;
                 }
             }
             else
@@ -125,7 +135,7 @@ public class ItemPickup : MonoBehaviour
             }
         }
 
-        // 2. Registra no Catálogo do Eptinho (dispara o popup)
+        // Registra no Catálogo do Eptinho (dispara o popup)
         if (CatalogoManager.instancia != null)
             CatalogoManager.instancia.Catalogar(interactable);
 
