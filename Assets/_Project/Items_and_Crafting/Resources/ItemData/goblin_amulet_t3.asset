@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: goblin_amulet_t3
   itemName: Amuleto Goblin (T3)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6ca1706a1d34398498580d040857e480, type: 3}
   tier: 2
   enemySource: Goblin
   recycleEssenceValue: 120

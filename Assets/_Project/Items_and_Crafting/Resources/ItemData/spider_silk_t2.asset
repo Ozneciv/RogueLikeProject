@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: spider_silk_t2
   itemName: "Gl\xE2ndula de Teia (T2)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f3df3f245f6be9a4da7c534a8f22054c, type: 3}
   tier: 1
   enemySource: Spider
   recycleEssenceValue: 72

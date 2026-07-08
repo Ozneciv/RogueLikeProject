@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: golem_heart_t4
   itemName: "Cora\xE7\xE3o de Granito (T4)"
   description: "Efeito \xDAnico T4: GolemHeart"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 1b71d9e8aac469040b6a9563e296b99e, type: 3}
   tier: 3
   enemySource: Golem
   recycleEssenceValue: 168

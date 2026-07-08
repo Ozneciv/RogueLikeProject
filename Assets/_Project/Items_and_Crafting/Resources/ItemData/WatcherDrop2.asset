@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: 02cw
   itemName: Lente do Vigia
   description: O cristalino que cobre o olho do Vigia.
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: fa53db19190aea648bb45d6b81d17a27, type: 3}
   tier: 1
   enemySource: Crystal Watcher
   recycleEssenceValue: 15
