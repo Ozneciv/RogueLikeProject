@@ -31,6 +31,23 @@ public class InventoryUI : MonoBehaviour
     [Tooltip("Espaçamento entre slots")]
     public float slotSpacing = 6f;
 
+    [Tooltip("Exibe um modelo 3D rotativo do jogador no inventário.")]
+    public bool showPlayerPreview = true;
+
+    [Header("Prefab-Based UI (Optional)")]
+    [Tooltip("Ative para usar a interface baseada em Prefabs desenhada na Unity. Se desativado, o inventário será gerado dinamicamente por script (Modo Provisório).")]
+    public bool useCustomPrefabUI = false;
+    [Tooltip("Painel principal da UI do Inventário no Prefab.")]
+    public GameObject customPanel;
+    [Tooltip("Transform que contém o Grid Layout Group do Prefab.")]
+    public Transform customGridParent;
+    [Tooltip("Prefab do Slot customizado.")]
+    public GameObject customSlotPrefab;
+    [Tooltip("Texto do cabeçalho customizado (TMP).")]
+    public TextMeshProUGUI customHeaderText;
+    [Tooltip("Tooltip customizado flutuante.")]
+    public InventoryTooltip customTooltip;
+
     // Referências internas
     private PlayerInventory playerInventory;
     private Canvas inventoryCanvas;
@@ -44,6 +61,7 @@ public class InventoryUI : MonoBehaviour
     private RectTransform contentRect;
     private RectTransform scrollViewRect;
     private Scrollbar verticalScrollbar;
+    private RawImage previewRawImage;
 
     // Estado
     private bool isOpen = false;
@@ -60,15 +78,26 @@ public class InventoryUI : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log($"[INVENTORY UI Awake] Entrou. name: {gameObject.name} (ID: {gameObject.GetInstanceID()}). Instance atual: {(Instance != null ? Instance.gameObject.name + " (ID: " + Instance.gameObject.GetInstanceID() + ")" : "null")}");
+
+        // Limpa referência estática "suja" caso o objeto da Unity tenha sido destruído
+        if (Instance != null && Instance.gameObject == null)
+        {
+            Debug.Log("[INVENTORY UI Awake] Detectada referência estática a objeto destruído. Limpando Instance...");
+            Instance = null;
+        }
+
         // Singleton: se já existe um InventoryUI, destroi este duplicado
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning($"[INVENTORY UI Awake] AUTO-DESTRUIÇÃO DETECTADA! Destruindo {gameObject.name} (ID: {gameObject.GetInstanceID()}) porque Instance já é {Instance.gameObject.name} (ID: {Instance.gameObject.GetInstanceID()})");
             Destroy(gameObject);
             return;
         }
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        Debug.Log($"[INVENTORY UI Awake] {gameObject.name} (ID: {gameObject.GetInstanceID()}) registrado com sucesso como Instance.");
     }
 
     void Start()
@@ -142,8 +171,16 @@ public class InventoryUI : MonoBehaviour
             playerInventory.onInventoryChanged.RemoveListener(RefreshUI);
         }
 
-        // Encontra o inventário do Player (pode ser DontDestroyOnLoad)
-        playerInventory = FindObjectOfType<PlayerInventory>();
+        // Tenta se conectar à instância persistente oficial (veterana) se ela existir
+        if (PlayerPersistence.instance != null)
+        {
+            playerInventory = PlayerPersistence.instance.GetComponent<PlayerInventory>();
+        }
+        else
+        {
+            // Fallback para quando inicia direto de uma cena de teste sem o Loader
+            playerInventory = FindFirstObjectByType<PlayerInventory>();
+        }
 
         if (playerInventory == null)
         {
@@ -153,7 +190,7 @@ public class InventoryUI : MonoBehaviour
         {
             // Se inscreve para mudanças no inventário
             playerInventory.onInventoryChanged.AddListener(RefreshUI);
-            Debug.Log("[INVENTORY UI] Conectado ao PlayerInventory.");
+            Debug.Log("[INVENTORY UI] Conectado ao PlayerInventory oficial.");
         }
     }
 
@@ -162,6 +199,7 @@ public class InventoryUI : MonoBehaviour
         // Toggle com a tecla configurada
         if (Input.GetKeyDown(toggleKey))
         {
+            Debug.Log($"[INVENTORY UI] Tecla de atalho detectada ({toggleKey}). isOpen atual: {isOpen}.");
             if (isOpen)
                 CloseInventory();
             else
@@ -191,11 +229,23 @@ public class InventoryUI : MonoBehaviour
         isOpen = true;
         panelObject.SetActive(true);
 
+        // Ativa o preview 3D do player
+        if (showPlayerPreview && PlayerPreviewManager.Instance != null)
+        {
+            PlayerPreviewManager.Instance.Activate();
+        }
+
         // Mostra cursor para interagir com a UI
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
         RefreshUI();
+
+        // Sincroniza com a Bolsa Sintética
+        if (SyntheticBagUI.Instance != null && !SyntheticBagUI.Instance.IsOpen())
+        {
+            SyntheticBagUI.Instance.OpenBag();
+        }
 
         Debug.Log("[INVENTORY UI] Inventário aberto");
     }
@@ -210,6 +260,12 @@ public class InventoryUI : MonoBehaviour
         isOpen = false;
         panelObject.SetActive(false);
 
+        // Desativa o preview 3D do player
+        if (showPlayerPreview && PlayerPreviewManager.Instance != null)
+        {
+            PlayerPreviewManager.Instance.Deactivate();
+        }
+
         // Esconde cursor e trava para gameplay
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
@@ -222,6 +278,12 @@ public class InventoryUI : MonoBehaviour
         if (telaDeUpgrades != null) 
         {
             telaDeUpgrades.ClosePanel();
+        }
+
+        // Sincroniza com a Bolsa Sintética
+        if (SyntheticBagUI.Instance != null && SyntheticBagUI.Instance.IsOpen())
+        {
+            SyntheticBagUI.Instance.CloseBag();
         }
 
         Debug.Log("[INVENTORY UI] Inventário fechado");
@@ -285,12 +347,92 @@ public class InventoryUI : MonoBehaviour
 
     void CreateInventoryUI()
     {
+        /* 
+         * =================================================================================
+         * COMO ATIVAR A INTERFACE CUSTOMIZADA POR PREFAB DEPOIS:
+         * 1. No Inspector do prefab 'InventorySystem', marque a caixa 'Use Custom Prefab UI' como TRUE.
+         * 2. Se desejar, arraste manualmente as referências para:
+         *    - Custom Panel (o GameObject do seu painel de inventário)
+         *    - Custom Grid Parent (o GameObject com o Grid Layout Group onde os slots vão ficar)
+         *    - Custom Slot Prefab (o prefab do seu slot individual, ex: InventorySlotPrefab.prefab)
+         *    - Custom Header Text (o texto TMP para o título)
+         *    - Custom Tooltip (o tooltip pré-desenhado)
+         * 3. Caso não arraste nada, o código tentará encontrar os filhos chamados 'InventoryPanel', 
+         *    'SlotGrid' e o prefab de slot em 'Resources/InventorySlotPrefab'.
+         * =================================================================================
+         */
+        if (useCustomPrefabUI)
+        {
+            // Tenta auto-detectar referências caso estejam vazias para facilitar
+            if (customPanel == null)
+            {
+                Transform panelT = transform.Find("InventoryPanel");
+                if (panelT != null) customPanel = panelT.gameObject;
+            }
+
+            if (customPanel != null)
+            {
+                if (customGridParent == null) customGridParent = customPanel.transform.Find("SlotGrid");
+                if (customHeaderText == null)
+                {
+                    Transform headerT = customPanel.transform.Find("Inventário");
+                    if (headerT != null) customHeaderText = headerT.GetComponent<TextMeshProUGUI>();
+                }
+
+                if (customSlotPrefab == null)
+                {
+                    customSlotPrefab = Resources.Load<GameObject>("InventorySlotPrefab");
+                }
+
+                panelObject = customPanel;
+                panelRect = panelObject.GetComponent<RectTransform>();
+                headerText = customHeaderText;
+                tooltip = customTooltip;
+
+                if (tooltip != null)
+                {
+                    Canvas rootCanvas = panelObject.GetComponentInParent<Canvas>();
+                    if (rootCanvas == null) rootCanvas = FindFirstObjectByType<Canvas>();
+                    tooltip.Initialize(rootCanvas);
+                }
+
+                // O gridParent será o container do Prefab
+                int slotsCount = playerInventory != null ? playerInventory.MaxSlots : 10;
+                if (customGridParent != null)
+                {
+                    // Garante que o SlotGrid tenha o componente Grid Layout Group para alinhar os slots
+                    GridLayoutGroup customGridGroup = customGridParent.GetComponent<GridLayoutGroup>();
+                    if (customGridGroup == null)
+                    {
+                        customGridGroup = customGridParent.gameObject.AddComponent<GridLayoutGroup>();
+                        customGridGroup.cellSize = new Vector2(slotSize, slotSize);
+                        customGridGroup.spacing = new Vector2(slotSpacing, slotSpacing);
+                        customGridGroup.startCorner = GridLayoutGroup.Corner.UpperLeft;
+                        customGridGroup.startAxis = GridLayoutGroup.Axis.Horizontal;
+                        customGridGroup.childAlignment = TextAnchor.UpperLeft;
+                        customGridGroup.constraint = GridLayoutGroup.Constraint.Flexible;
+                        Debug.LogWarning("[INVENTORY UI] Grid Layout Group estava ausente em SlotGrid. Adicionado e configurado automaticamente.");
+                    }
+
+                    BuildSlots(customGridParent, slotsCount);
+                }
+
+                uiBuilt = true;
+                return;
+            }
+        }
+
         // Cria Canvas próprio persistente (como EconomyHUD faz)
         canvasObject = new GameObject("InventoryUI_Canvas");
         inventoryCanvas = canvasObject.AddComponent<Canvas>();
         inventoryCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         inventoryCanvas.sortingOrder = 100;
-        canvasObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        
+        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
         canvasObject.AddComponent<GraphicRaycaster>();
         DontDestroyOnLoad(canvasObject);
 
@@ -311,7 +453,8 @@ public class InventoryUI : MonoBehaviour
         float gridHeight = rows * (slotSize + slotSpacing) - slotSpacing;
         float panelPadding = 20f;
         float headerHeight = 44f;
-        float totalWidth = gridWidth + panelPadding * 2;
+        float previewWidth = showPlayerPreview ? 180f : 0f;
+        float totalWidth = gridWidth + panelPadding * 2 + previewWidth;
         float totalHeight = gridHeight + panelPadding * 2 + headerHeight;
 
         // === Painel Principal ===
@@ -324,7 +467,7 @@ public class InventoryUI : MonoBehaviour
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
         panelRect.sizeDelta = new Vector2(totalWidth, totalHeight);
-        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.anchoredPosition = new Vector2(-220f, -20f);
 
         // Background do painel
         panelObject.AddComponent<CanvasRenderer>();
@@ -410,13 +553,62 @@ public class InventoryUI : MonoBehaviour
         scrollViewRect.anchorMax = new Vector2(0.5f, 0.5f);
         scrollViewRect.pivot = new Vector2(0.5f, 0.5f);
         scrollViewRect.sizeDelta = new Vector2(gridWidth, scrollViewHeight);
-        scrollViewRect.anchoredPosition = new Vector2(0f, -headerHeight / 2f);
+        
+        // Desloca o ScrollView para a direita se houver o preview do jogador na esquerda
+        float scrollXOffset = showPlayerPreview ? (previewWidth / 2f) : 0f;
+        scrollViewRect.anchoredPosition = new Vector2(scrollXOffset, -headerHeight / 2f);
 
         scrollViewObj.AddComponent<CanvasRenderer>();
         Image scrollViewMask = scrollViewObj.AddComponent<Image>();
         scrollViewMask.color = new Color(0, 0, 0, 0.01f); // quase invisível, necessário pro mask
         scrollViewMask.raycastTarget = true;
         scrollViewObj.AddComponent<Mask>().showMaskGraphic = false;
+
+        // Cria o RawImage para renderizar o Player 3D se ativo
+        if (showPlayerPreview)
+        {
+            GameObject previewObj = new GameObject("PlayerPreviewRawImage");
+            previewObj.transform.SetParent(panelObject.transform, false);
+            previewObj.layer = uiLayer;
+
+            RectTransform previewRect = previewObj.AddComponent<RectTransform>();
+            previewRect.anchorMin = new Vector2(0f, 0.5f);
+            previewRect.anchorMax = new Vector2(0f, 0.5f);
+            previewRect.pivot = new Vector2(0f, 0.5f);
+            // Posiciona no canto esquerdo com preenchimento
+            previewRect.anchoredPosition = new Vector2(panelPadding, -headerHeight / 2f);
+            previewRect.sizeDelta = new Vector2(previewWidth - 20f, scrollViewHeight);
+
+            previewObj.AddComponent<CanvasRenderer>();
+            previewRawImage = previewObj.AddComponent<RawImage>();
+            previewRawImage.color = Color.white;
+
+            // Borda estética para a moldura do preview
+            GameObject previewBorderObj = new GameObject("PreviewBorder");
+            previewBorderObj.transform.SetParent(previewObj.transform, false);
+            previewBorderObj.layer = uiLayer;
+
+            RectTransform borderRect = previewBorderObj.AddComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.sizeDelta = Vector2.zero;
+            borderRect.anchoredPosition = Vector2.zero;
+
+            previewBorderObj.AddComponent<CanvasRenderer>();
+            Image borderImg = previewBorderObj.AddComponent<Image>();
+            borderImg.color = PANEL_BORDER;
+            borderImg.type = Image.Type.Sliced;
+            borderImg.fillCenter = false;
+
+            // Inicializa o PlayerPreviewManager
+            PlayerPreviewManager previewManager = FindFirstObjectByType<PlayerPreviewManager>();
+            if (previewManager == null)
+            {
+                GameObject pmObj = new GameObject("PlayerPreviewManager");
+                previewManager = pmObj.AddComponent<PlayerPreviewManager>();
+            }
+            previewManager.SetupPreview(previewRawImage);
+        }
 
         // Content (o grid real que rola)
         GameObject gridObj = new GameObject("SlotGrid");
@@ -485,11 +677,20 @@ public class InventoryUI : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            GameObject slotObj = new GameObject("Slot_" + i);
-            slotObj.transform.SetParent(gridParent, false);
-            slotObj.layer = gameObject.layer;
+            GameObject slotObj;
+            if (customSlotPrefab != null)
+            {
+                slotObj = Instantiate(customSlotPrefab, gridParent);
+            }
+            else
+            {
+                slotObj = new GameObject("Slot_" + i);
+                slotObj.transform.SetParent(gridParent, false);
+                slotObj.layer = gameObject.layer;
+            }
 
-            InventorySlotUI slot = slotObj.AddComponent<InventorySlotUI>();
+            InventorySlotUI slot = slotObj.GetComponent<InventorySlotUI>();
+            if (slot == null) slot = slotObj.AddComponent<InventorySlotUI>();
             slot.Initialize(tooltip, slotSize);
 
             slots.Add(slot);
@@ -505,6 +706,15 @@ public class InventoryUI : MonoBehaviour
                 Destroy(slot.gameObject);
         }
         slots.Clear();
+
+        if (customPanel != null)
+        {
+            if (customGridParent != null)
+            {
+                BuildSlots(customGridParent, newCount);
+            }
+            return;
+        }
 
         // Encontra o grid container (agora dentro do ScrollView)
         Transform scrollViewTransform = panelObject.transform.Find("ScrollView");

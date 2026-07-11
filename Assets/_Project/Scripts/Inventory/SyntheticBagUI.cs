@@ -32,6 +32,18 @@ public class SyntheticBagUI : MonoBehaviour
     [Tooltip("Espaçamento entre slots")]
     public float slotSpacing = 6f;
 
+    [Header("Prefab-Based UI (Optional)")]
+    [Tooltip("Ative para usar a interface baseada em Prefabs desenhada na Unity. Se desativado, o inventário será gerado dinamicamente por script (Modo Provisório).")]
+    public bool useCustomPrefabUI = false;
+    [Tooltip("Painel principal da Bolsa Sintética no Prefab.")]
+    public GameObject customPanel;
+    [Tooltip("Transform que contém o Grid Layout Group da Bolsa no Prefab.")]
+    public Transform customGridParent;
+    [Tooltip("Prefab do Slot customizado.")]
+    public GameObject customSlotPrefab;
+    [Tooltip("Texto do cabeçalho customizado (TMP).")]
+    public TextMeshProUGUI customHeaderText;
+
     // ─── Referências internas ─────────────────────────────────────────────────
     private Canvas      bagCanvas;
     private GameObject  canvasObject;
@@ -45,10 +57,10 @@ public class SyntheticBagUI : MonoBehaviour
     private bool isOpen   = false;
     private bool uiBuilt  = false;
 
-    // ─── Paleta (placeholder — será substituída pelo design definitivo) ───────
-    private static readonly Color PANEL_BG     = new Color(0.06f, 0.08f, 0.06f, 0.93f);
-    private static readonly Color PANEL_BORDER = new Color(0.30f, 0.60f, 0.30f, 0.75f);
-    private static readonly Color HEADER_COLOR = new Color(0.55f, 0.95f, 0.55f, 1.00f);
+    // ─── Paleta (unificada com o Inventário de Run) ───────────────────────────
+    private static readonly Color PANEL_BG     = new Color(0.06f, 0.06f, 0.10f, 0.92f);
+    private static readonly Color PANEL_BORDER = new Color(0.35f, 0.30f, 0.55f, 0.70f);
+    private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1.00f);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Unity callbacks
@@ -56,9 +68,25 @@ public class SyntheticBagUI : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Debug.Log($"[BAG UI Awake] Entrou. name: {gameObject.name} (ID: {gameObject.GetInstanceID()}). Instance atual: {(Instance != null ? Instance.gameObject.name + " (ID: " + Instance.gameObject.GetInstanceID() + ")" : "null")}");
+
+        // Limpa referência estática "suja" caso o objeto da Unity tenha sido destruído
+        if (Instance != null && Instance.gameObject == null)
+        {
+            Debug.Log("[BAG UI Awake] Detectada referência estática a objeto destruído. Limpando Instance...");
+            Instance = null;
+        }
+
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning($"[BAG UI Awake] AUTO-DESTRUIÇÃO DETECTADA! Destruindo {gameObject.name} (ID: {gameObject.GetInstanceID()}) porque Instance já é {Instance.gameObject.name} (ID: {Instance.gameObject.GetInstanceID()})");
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        Debug.Log($"[BAG UI Awake] {gameObject.name} (ID: {gameObject.GetInstanceID()}) registrado com sucesso como Instance.");
     }
 
     void Start()
@@ -87,6 +115,7 @@ public class SyntheticBagUI : MonoBehaviour
 
         if (Input.GetKeyDown(toggleKey))
         {
+            Debug.Log($"[BAG UI] Tecla de atalho detectada ({toggleKey}). isOpen atual: {isOpen}.");
             if (isOpen) CloseBag();
             else        OpenBag();
         }
@@ -107,6 +136,37 @@ public class SyntheticBagUI : MonoBehaviour
         RefreshUI();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible   = true;
+
+        // Posiciona a Bolsa ao lado direito do painel customizado de Inventário (se houver) para evitar sobreposição
+        if (customPanel == null && panelObject != null)
+        {
+            RectTransform bagRect = panelObject.GetComponent<RectTransform>();
+            if (bagRect != null)
+            {
+                if (InventoryUI.Instance != null && InventoryUI.Instance.useCustomPrefabUI && InventoryUI.Instance.customPanel != null)
+                {
+                    RectTransform invRect = InventoryUI.Instance.customPanel.GetComponent<RectTransform>();
+                    if (invRect != null)
+                    {
+                        // Posiciona exatamente à direita do painel do inventário + 20px de espaçamento
+                        float offset = (invRect.rect.width / 2f) + (bagRect.rect.width / 2f) + 20f;
+                        bagRect.anchoredPosition = new Vector2(invRect.anchoredPosition.x + offset, invRect.anchoredPosition.y);
+                    }
+                }
+                else
+                {
+                    // Fallback para quando o inventário também é por código
+                    bagRect.anchoredPosition = new Vector2(220f, -20f);
+                }
+            }
+        }
+
+        // Sincroniza com o Inventário de Run
+        if (InventoryUI.Instance != null && !InventoryUI.Instance.IsOpen())
+        {
+            InventoryUI.Instance.OpenInventory();
+        }
+
         Debug.Log("[BAG UI] Bolsa Sintética aberta.");
     }
 
@@ -118,6 +178,13 @@ public class SyntheticBagUI : MonoBehaviour
         if (tooltip != null) tooltip.Hide();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible   = false;
+
+        // Sincroniza com o Inventário de Run
+        if (InventoryUI.Instance != null && InventoryUI.Instance.IsOpen())
+        {
+            InventoryUI.Instance.CloseInventory();
+        }
+
         Debug.Log("[BAG UI] Bolsa Sintética fechada.");
     }
 
@@ -141,10 +208,13 @@ public class SyntheticBagUI : MonoBehaviour
 
         // Atualiza header
         if (headerText != null)
-            headerText.text = $"◆ BOLSA SINTÉTICA  <color=#7FBF7F>{resources.Count}</color> tipo(s)";
+            headerText.text = $"BOLSA SINTÉTICA  <color=#9F8FDF>{resources.Count}</color> tipo(s)";
+
+        Transform gridParent = customGridParent != null ? customGridParent : (slotGrid != null ? slotGrid.transform : null);
+        if (gridParent == null) return;
 
         // Destroi slots antigos
-        foreach (Transform child in slotGrid.transform)
+        foreach (Transform child in gridParent)
             Destroy(child.gameObject);
         slots.Clear();
 
@@ -155,24 +225,37 @@ public class SyntheticBagUI : MonoBehaviour
                 ? ItemDatabase.Instance.GetItemData(entry.itemId)
                 : null;
 
-            GameObject slotObj = new GameObject("Slot_" + entry.itemId);
-            slotObj.transform.SetParent(slotGrid.transform, false);
-            slotObj.layer = canvasObject.layer;
+            GameObject slotObj;
+            if (customSlotPrefab != null)
+            {
+                slotObj = Instantiate(customSlotPrefab, gridParent);
+            }
+            else
+            {
+                slotObj = new GameObject("Slot_" + entry.itemId);
+                slotObj.transform.SetParent(gridParent, false);
+                slotObj.layer = canvasObject != null ? canvasObject.layer : gameObject.layer;
+            }
 
-            InventorySlotUI slot = slotObj.AddComponent<InventorySlotUI>();
+            InventorySlotUI slot = slotObj.GetComponent<InventorySlotUI>();
+            if (slot == null) slot = slotObj.AddComponent<InventorySlotUI>();
             slot.Initialize(tooltip, slotSize);
             slot.SetItem(entry.itemId, entry.quantity, itemData);
             slots.Add(slot);
         }
 
-        // Redimensiona o grid para caber os slots
-        ResizeGrid(resources.Count);
+        // Redimensiona o grid para caber os slots (apenas se for gerado por código)
+        if (customPanel == null)
+        {
+            ResizeGrid(resources.Count);
+        }
 
         Debug.Log($"[BAG UI] Atualizada — {resources.Count} recurso(s) exibido(s).");
     }
 
     private void ResizeGrid(int count)
     {
+        if (slotGrid == null) return;
         RectTransform gridRect = slotGrid.GetComponent<RectTransform>();
         if (gridRect == null) return;
 
@@ -196,6 +279,25 @@ public class SyntheticBagUI : MonoBehaviour
 
     private void CreateBagUI()
     {
+        /*
+         * =================================================================================
+         * COMO ATIVAR A INTERFACE DA BOLSA POR PREFAB DEPOIS:
+         * 1. No Inspector do prefab 'InventorySystem', marque a caixa 'Use Custom Prefab UI' como TRUE.
+         * 2. Arraste manualmente as referências para:
+         *    - Custom Panel (o GameObject do seu painel da Bolsa Sintética)
+         *    - Custom Grid Parent (o GameObject com o Grid Layout Group onde os slots vão ficar)
+         *    - Custom Slot Prefab (o prefab do seu slot individual, ex: InventorySlotPrefab.prefab)
+         *    - Custom Header Text (o texto TMP para o título)
+         * =================================================================================
+         */
+        if (useCustomPrefabUI && customPanel != null)
+        {
+            panelObject = customPanel;
+            headerText = customHeaderText;
+            uiBuilt = true;
+            return;
+        }
+
         // === Canvas persistente ===
         canvasObject = new GameObject("SyntheticBag_Canvas");
         canvasObject.transform.SetParent(transform, false);
@@ -209,8 +311,6 @@ public class SyntheticBagUI : MonoBehaviour
         scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight  = 0.5f;
-
-        canvasObject.AddComponent<GraphicRaycaster>();
 
         // Garante EventSystem
         if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
@@ -234,7 +334,7 @@ public class SyntheticBagUI : MonoBehaviour
         panelRect.anchorMin       = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax       = new Vector2(0.5f, 0.5f);
         panelRect.pivot           = new Vector2(0.5f, 0.5f);
-        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.anchoredPosition = new Vector2(220f, -20f);
 
         float initW = columns * (slotSize + slotSpacing) + slotSpacing + 32f;
         panelRect.sizeDelta = new Vector2(initW, 300f);

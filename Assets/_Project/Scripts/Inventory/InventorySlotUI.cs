@@ -10,11 +10,11 @@ using TMPro;
 /// </summary>
 public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    // Referências internas (criadas por código)
-    private Image backgroundImage;
-    private Image borderImage;
-    private Image iconImage;
-    private TextMeshProUGUI quantityText;
+    [Header("Componentes (Opcional - Prefab)")]
+    public Image backgroundImage;
+    public Image borderImage;
+    public Image iconImage;
+    public TextMeshProUGUI quantityText;
 
     // Dados do slot
     private string currentItemId;
@@ -34,11 +34,18 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private bool isHovered = false;
 
     /// <summary>
-    /// Inicializa o slot criando todos os elementos visuais
+    /// Inicializa o slot criando todos os elementos visuais ou usando referências existentes do Prefab
     /// </summary>
     public void Initialize(InventoryTooltip tooltipRef, float slotSize)
     {
         tooltip = tooltipRef;
+
+        // Se já tiver as referências do Prefab atribuídas, não cria nada por código!
+        if (backgroundImage != null && borderImage != null && iconImage != null && quantityText != null)
+        {
+            SetEmpty();
+            return;
+        }
 
         int uiLayer = gameObject.layer;
 
@@ -48,7 +55,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         backgroundImage.raycastTarget = true;
 
         RectTransform rect = GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(slotSize, slotSize);
+        if (rect != null) rect.sizeDelta = new Vector2(slotSize, slotSize);
 
         // === Borda ===
         GameObject borderObj = new GameObject("SlotBorder");
@@ -65,7 +72,6 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         borderImage = borderObj.AddComponent<Image>();
         borderImage.color = SLOT_EMPTY_BORDER;
         borderImage.raycastTarget = false;
-        // Fazemos a borda ser um outline usando sprite sliced
         borderImage.type = Image.Type.Sliced;
         borderImage.fillCenter = false;
         borderImage.pixelsPerUnitMultiplier = 1f;

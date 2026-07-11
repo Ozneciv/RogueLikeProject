@@ -11,13 +11,13 @@ public class InventoryTooltip : MonoBehaviour
     private RectTransform tooltipRect;
     private CanvasGroup canvasGroup;
 
-    // Elementos internos
-    private TextMeshProUGUI nameText;
-    private TextMeshProUGUI descriptionText;
-    private TextMeshProUGUI tierText;
-    private TextMeshProUGUI quantityText;
-    private Image separatorLine;
-    private Image tierIndicator;
+    [Header("Componentes (Opcional - Prefab)")]
+    public TextMeshProUGUI nameText;
+    public TextMeshProUGUI descriptionText;
+    public TextMeshProUGUI tierText;
+    public TextMeshProUGUI quantityText;
+    public Image separatorLine;
+    public Image tierIndicator;
 
     // Configurações
     private static readonly float TOOLTIP_WIDTH = 260f;
@@ -33,16 +33,24 @@ public class InventoryTooltip : MonoBehaviour
     public void Initialize(Canvas canvas)
     {
         parentCanvas = canvas;
-        int uiLayer = gameObject.layer;
 
-        // === Container Principal ===
-        tooltipRect = gameObject.AddComponent<RectTransform>();
-        tooltipRect.sizeDelta = new Vector2(TOOLTIP_WIDTH, 160f);
-        tooltipRect.pivot = new Vector2(0f, 1f); // Pivot no topo-esquerda
+        tooltipRect = GetComponent<RectTransform>();
+        if (tooltipRect == null) tooltipRect = gameObject.AddComponent<RectTransform>();
 
-        canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        
         canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = false;
+
+        // Se já tiver as referências do Prefab atribuídas, não cria nada por código!
+        if (nameText != null)
+        {
+            return;
+        }
+
+        int uiLayer = gameObject.layer;
         canvasGroup.interactable = false;
 
         // === Background ===
