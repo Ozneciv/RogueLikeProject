@@ -89,7 +89,10 @@ public class Geobionte_AI : MonoBehaviour
 
     private OreNode targetOre;
     private bool hasFused = false; // Flag por ciclo (reset após derrota)
-    private int bismutadoDefeatCount = 0; // Quantas vezes foi derrotado como Bismutado
+
+    [Header("Debug / Teste")]
+    [Tooltip("Quantas derrotas como Bismutado já ocorreram. Defina como 2 para virar Sentinela na próxima derrota (fusionsToSentinel=3). Valor é sobrescrito pelo RunManager no Start se existir.")]
+    [SerializeField] private int bismutadoDefeatCount = 0; // Quantas vezes foi derrotado como Bismutado
     private float oreStallTimer = 0f; // Timer para forçar absorção se ficar perto do cristal
 
     // ==================== PREVENÇÃO (Impedimento de Fusão) ====================
@@ -190,6 +193,14 @@ public class Geobionte_AI : MonoBehaviour
     [Tooltip("Raio de proximidade para dano de perna")]
     public float sentinelLegDamageRadius = 1.0f;
 
+    [Header("Sentinela — Slam")]
+    [Tooltip("Dano do slam da esfera ao atingir o chão")]
+    public int sentinelSlamDamage = 15;
+    [Tooltip("Raio do dano do slam (ao redor do ponto de impacto)")]
+    public float sentinelSlamRadius = 3f;
+    [Tooltip("Velocidade de descida do slam (rápida)")]
+    public float sentinelSlamSpeed = 20f;
+
     [Header("Sentinela — Campo de Cristais")]
     [Tooltip("Cooldown entre criações de campo de cristais (usado pelo Sentinela)")]
     public float fieldCooldown = 6f;
@@ -204,6 +215,8 @@ public class Geobionte_AI : MonoBehaviour
     private bool sentinelVulnerable = false; // Esfera está baixa/vulnerável?
     private float sentinelPhaseTimer = 0f; // Timer do ciclo alta/baixa
     private float sentinelTargetHeight; // Altura alvo atual da esfera
+    private bool sentinelIsSlaming = false; // Está executando o slam?
+    private bool sentinelSlamHitPlayer = false; // O slam acertou o player?
 
     // ==================== VISUAL — MESH ====================
 
@@ -300,6 +313,13 @@ public class Geobionte_AI : MonoBehaviour
 
         // Configurar visual
         SetupVisual();
+
+        // ====== PROGRESSÃO MULTI-FASE: Ler progresso do RunManager ======
+        if (RunManager.instance != null)
+        {
+            bismutadoDefeatCount = RunManager.instance.geobionteDefeatCount;
+            Debug.Log("[GEOBIONTE] Progresso carregado do RunManager: " + bismutadoDefeatCount + "/" + fusionsToSentinel + " derrotas");
+        }
 
         // FORMA BASE: não atacável
         // DummyHealth fica invulnerável e escondemos a health bar
@@ -399,6 +419,9 @@ public class Geobionte_AI : MonoBehaviour
         // Se já foi impedido, não busca mais minério
         if (isPrevented) return;
 
+        // PROGRESSÃO MULTI-FASE: Se já absorveu um cristal nesta fase, não busca mais
+        if (RunManager.instance != null && RunManager.instance.geobionteAbsorbedThisLevel) return;
+
         // Verifica proximidade do player para ativar
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distToPlayer < activationDistance)
@@ -418,7 +441,7 @@ public class Geobionte_AI : MonoBehaviour
                 }
             }
 
-            // Só busca minério se ainda não fundiu
+            // Só busca minério se ainda não fundiu neste ciclo
             if (!hasFused)
             {
                 FindNearestOre();
@@ -786,6 +809,13 @@ public class Geobionte_AI : MonoBehaviour
         ChangeState(GeobionteState.Fusing);
         hasFused = true;
 
+        // PROGRESSÃO MULTI-FASE: Marca que já absorveu nesta fase
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.geobionteAbsorbedThisLevel = true;
+            Debug.Log("[GEOBIONTE] Absorção marcada no RunManager para esta fase (Round " + RunManager.instance.currentLevel + ")");
+        }
+
         // Para o movimento
         rb.linearVelocity = Vector3.zero;
         UpdateMimicVelocity();
@@ -928,10 +958,31 @@ public class Geobionte_AI : MonoBehaviour
         if (health != null && health.CurrentHealth <= 0) return;
         if (isSweeping) return; // Não se move durante o golpe
 
-        // Sentinela fica parado — combate é baseado nas pernas e ciclo de esfera
+        // Sentinela: perseguição lenta + para durante slam/vulnerabilidade
         if (isSentinel)
         {
-            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            // Não se move durante o slam ou quando está stunado (vulnerável)
+            if (sentinelIsSlaming || sentinelVulnerable)
+            {
+                rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+                UpdateMimicVelocity();
+                return;
+            }
+
+            // Perseguição lenta em direção ao player
+            float sentinelDist = Vector3.Distance(transform.position, playerTransform.position);
+            if (sentinelDist > sentinelLegRadius * 0.5f)
+            {
+                Vector3 direction = (playerTransform.position - transform.position).normalized;
+                direction.y = 0;
+                float speed = hasSpeedBuff ? chaseSpeed * 0.65f : chaseSpeed * 0.5f;
+                Vector3 targetVelocity = direction * speed;
+                rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+            }
+            else
+            {
+                rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            }
             UpdateMimicVelocity();
             return;
         }
@@ -1286,6 +1337,13 @@ public class Geobionte_AI : MonoBehaviour
         bismutadoDefeatCount++;
         Debug.Log("[BISMUTADO] Derrotado! Derrota #" + bismutadoDefeatCount + "/" + fusionsToSentinel);
 
+        // PROGRESSÃO MULTI-FASE: Salva progresso no RunManager
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.geobionteDefeatCount = bismutadoDefeatCount;
+            Debug.Log("[GEOBIONTE] Progresso salvo no RunManager: " + bismutadoDefeatCount + "/" + fusionsToSentinel);
+        }
+
         // 1. Dropar loot
         EnemyDrops drops = GetComponent<EnemyDrops>()
                         ?? GetComponentInChildren<EnemyDrops>()
@@ -1338,7 +1396,7 @@ public class Geobionte_AI : MonoBehaviour
         }
         else
         {
-            // Reverter ao Geobionte padrão e buscar novo minério
+            // PROGRESSÃO MULTI-FASE: Reverter ao Geobionte passivo (já usou a absorção desta fase)
             StartCoroutine(RevertToBaseSequence());
         }
     }
@@ -1414,19 +1472,12 @@ public class Geobionte_AI : MonoBehaviour
         sweepTimer = 0f;
         isSweeping = false;
 
-        // Procura por minérios na sala novamente
-        FindNearestOre();
-        if (targetOre != null)
-        {
-            EnterSeekingOre();
-        }
-        else
-        {
-            ChangeState(GeobionteState.Idle);
-            PickNewWanderDirection();
-        }
+        // PROGRESSÃO MULTI-FASE: Não busca novo minério — já absorveu nesta fase
+        // O Geobionte volta ao Idle passivo até a próxima fase
+        ChangeState(GeobionteState.Idle);
+        PickNewWanderDirection();
 
-        Debug.Log("[GEOBIONTE] Revertido ao padrão! Derrota " + bismutadoDefeatCount + "/" + fusionsToSentinel + ". Buscando novo minério...");
+        Debug.Log("[GEOBIONTE] Revertido ao padrão! Derrota " + bismutadoDefeatCount + "/" + fusionsToSentinel + ". Aguardando próxima fase para absorver novamente.");
     }
 
     // ========================================================================
@@ -1547,8 +1598,9 @@ public class Geobionte_AI : MonoBehaviour
     /// <summary>
     /// Lógica de combate do Sentinela:
     /// - Esfera fica alta (invulnerável) por sentinelInvulnerableDuration segundos
-    /// - Depois desce (vulnerável) por sentinelVulnerableWindow segundos
-    /// - Ciclo repete até derrota
+    /// - Depois faz SLAM: desce rápido e tenta acertar o player
+    /// - Se acertar: dano + knockback, volta a subir sem ficar stunado
+    /// - Se errar: fica stunado (vulnerável) por sentinelVulnerableWindow segundos
     /// - Pernas dão dano automaticamente (gerenciado pelo Leg.cs)
     /// - Campo de cristais é criado periodicamente
     /// </summary>
@@ -1559,15 +1611,19 @@ public class Geobionte_AI : MonoBehaviour
         // Timer do campo de cristais
         if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
 
-        // Rotação lenta para olhar o player
-        HandleRotation();
+        // Rotação lenta para olhar o player (não rotaciona durante slam/stun)
+        if (!sentinelIsSlaming && !sentinelVulnerable)
+            HandleRotation();
+
+        // Se está executando o slam, a coroutine SentinelSlam controla tudo
+        if (sentinelIsSlaming) return;
 
         // Ciclo de esfera alta/baixa
         sentinelPhaseTimer += Time.deltaTime;
 
         if (!sentinelVulnerable)
         {
-            // FASE: Esfera ALTA (invulnerável)
+            // FASE: Esfera ALTA (invulnerável) — anda e cria campos de cristais
             sentinelTargetHeight = sentinelHighHeight;
 
             if (health != null) health.isInvulnerable = true;
@@ -1582,17 +1638,17 @@ public class Geobionte_AI : MonoBehaviour
                 }
             }
 
-            // Após sentinelInvulnerableDuration, baixa a esfera
+            // Após sentinelInvulnerableDuration, inicia o SLAM
             if (sentinelPhaseTimer >= sentinelInvulnerableDuration)
             {
-                sentinelVulnerable = true;
                 sentinelPhaseTimer = 0f;
-                Debug.Log("[SENTINELA] Esfera DESCENDO! Janela de vulnerabilidade aberta!");
+                Debug.Log("[SENTINELA] Preparando SLAM!");
+                StartCoroutine(SentinelSlam());
             }
         }
         else
         {
-            // FASE: Esfera BAIXA (vulnerável)
+            // FASE: Esfera BAIXA (stunado/vulnerável — slam errou o player)
             sentinelTargetHeight = sentinelLowHeight;
 
             if (health != null) health.isInvulnerable = false;
@@ -1603,9 +1659,253 @@ public class Geobionte_AI : MonoBehaviour
                 sentinelVulnerable = false;
                 sentinelPhaseTimer = 0f;
                 if (health != null) health.isInvulnerable = true;
-                Debug.Log("[SENTINELA] Esfera SUBINDO! Invulnerável novamente.");
+                Debug.Log("[SENTINELA] Saiu do stun! Esfera SUBINDO! Invulnerável novamente.");
             }
         }
+    }
+
+    /// <summary>
+    /// Coroutine de slam do Sentinela:
+    /// 1. Breve pausa de preparação (0.3s)
+    /// 2. Esfera desce rapidamente até sentinelLowHeight
+    /// 3. Ao chegar, verifica se o player está no raio de impacto
+    /// 4. Se acertou: dano + knockback, esfera sobe imediatamente
+    /// 5. Se errou: Sentinela fica stunado (vulnerável)
+    /// </summary>
+    IEnumerator SentinelSlam()
+    {
+        sentinelIsSlaming = true;
+        sentinelSlamHitPlayer = false;
+
+        // Torna invulnerável durante o slam (transição)
+        if (health != null) health.isInvulnerable = true;
+
+        // Para o movimento durante o slam
+        rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+        UpdateMimicVelocity();
+
+        // === FASE 1: Preparação (breve pausa + indicador visual) ===
+        Debug.Log("[SENTINELA] SLAM — Preparando descida!");
+
+        // Cria indicador de área no chão (onde o slam vai cair)
+        GameObject slamIndicator = null;
+        Material indicatorMat = null;
+        {
+            slamIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            slamIndicator.name = "SlamIndicator";
+            Collider indicatorCol = slamIndicator.GetComponent<Collider>();
+            if (indicatorCol != null) Destroy(indicatorCol);
+
+            // Posiciona no chão abaixo do Sentinela
+            Vector3 indicatorPos = transform.position;
+            RaycastHit groundHit;
+            if (Physics.Raycast(transform.position, Vector3.down, out groundHit, 20f))
+                indicatorPos.y = groundHit.point.y + 0.05f;
+            else
+                indicatorPos.y = 0.05f;
+
+            slamIndicator.transform.position = indicatorPos;
+            slamIndicator.transform.localScale = new Vector3(sentinelSlamRadius * 2f, 0.05f, sentinelSlamRadius * 2f);
+
+            // Material vermelho pulsante
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
+            indicatorMat = new Material(shader);
+            Color warnColor = new Color(1f, 0.2f, 0.1f, 0.3f);
+            indicatorMat.color = warnColor;
+
+            // Transparência
+            if (shader != null && shader.name.Contains("Universal"))
+            {
+                indicatorMat.SetFloat("_Surface", 1);
+                indicatorMat.SetFloat("_Blend", 0);
+                indicatorMat.SetFloat("_ZWrite", 0);
+                indicatorMat.SetFloat("_AlphaClip", 0);
+                indicatorMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                indicatorMat.DisableKeyword("_ALPHATEST_ON");
+                indicatorMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                indicatorMat.SetColor("_BaseColor", warnColor);
+            }
+            else
+            {
+                indicatorMat.SetFloat("_Mode", 3);
+                indicatorMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                indicatorMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                indicatorMat.SetInt("_ZWrite", 0);
+                indicatorMat.EnableKeyword("_ALPHABLEND_ON");
+                indicatorMat.renderQueue = 3000;
+            }
+
+            indicatorMat.EnableKeyword("_EMISSION");
+            indicatorMat.SetColor("_EmissionColor", warnColor * 2f);
+            slamIndicator.GetComponent<Renderer>().material = indicatorMat;
+        }
+
+        // Pausa de preparação com pulsação do indicador
+        float prepDuration = 0.4f;
+        float prepElapsed = 0f;
+        while (prepElapsed < prepDuration)
+        {
+            prepElapsed += Time.deltaTime;
+            float pulse = Mathf.Sin(prepElapsed * Mathf.PI * 6f) * 0.15f + 0.35f;
+            if (indicatorMat != null)
+            {
+                Color pulseColor = new Color(1f, 0.2f, 0.1f, pulse);
+                indicatorMat.color = pulseColor;
+                if (indicatorMat.HasProperty("_BaseColor"))
+                    indicatorMat.SetColor("_BaseColor", pulseColor);
+            }
+            yield return null;
+        }
+
+        // === FASE 2: Descida rápida (slam) ===
+        Debug.Log("[SENTINELA] SLAM — DESCENDO!");
+
+        // Muda o target height para baixo — o HandleBodyHover vai mover a esfera
+        // Mas queremos uma descida RÁPIDA, então vamos forçar a velocidade Y
+        sentinelTargetHeight = sentinelLowHeight;
+        float slamDuration = 0.3f; // Tempo máximo de descida
+        float slamElapsed = 0f;
+
+        while (slamElapsed < slamDuration)
+        {
+            slamElapsed += Time.deltaTime;
+            // Força velocidade de descida rápida
+            rb.linearVelocity = new Vector3(0, -sentinelSlamSpeed, 0);
+            yield return null;
+        }
+
+        // Para a velocidade vertical
+        rb.linearVelocity = new Vector3(0, 0, 0);
+
+        // === FASE 3: Impacto — verifica se acertou o player ===
+        if (playerTransform != null)
+        {
+            // Usa distância horizontal (ignora Y) para verificar se o player está na zona de impacto
+            Vector2 slamPos2D = new Vector2(transform.position.x, transform.position.z);
+            Vector2 playerPos2D = new Vector2(playerTransform.position.x, playerTransform.position.z);
+            float horizontalDist = Vector2.Distance(slamPos2D, playerPos2D);
+
+            if (horizontalDist <= sentinelSlamRadius)
+            {
+                // ACERTOU o player!
+                sentinelSlamHitPlayer = true;
+                PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(sentinelSlamDamage, gameObject);
+                    Debug.Log("[SENTINELA] SLAM ACERTOU o player! Dano: " + sentinelSlamDamage);
+                }
+
+                // Knockback: empurra o player para longe
+                Rigidbody playerRb = playerTransform.GetComponent<Rigidbody>();
+                if (playerRb != null)
+                {
+                    Vector3 knockDir = (playerTransform.position - transform.position).normalized;
+                    knockDir.y = 0.3f; // Leve elevação
+                    playerRb.AddForce(knockDir * 12f, ForceMode.Impulse);
+                }
+            }
+            else
+            {
+                Debug.Log("[SENTINELA] SLAM ERROU! Player estava a " + horizontalDist.ToString("F1") + "m (raio: " + sentinelSlamRadius + "m)");
+            }
+        }
+
+        // === FASE 4: Efeito visual de impacto (onda de choque) ===
+        StartCoroutine(SlamImpactVFX());
+
+        // Limpa o indicador
+        if (slamIndicator != null) Destroy(slamIndicator);
+        if (indicatorMat != null) Destroy(indicatorMat);
+
+        // === FASE 5: Resultado do slam ===
+        sentinelIsSlaming = false;
+
+        if (sentinelSlamHitPlayer)
+        {
+            // Acertou → Sentinela NÃO fica stunado, esfera sobe imediatamente
+            sentinelVulnerable = false;
+            sentinelPhaseTimer = 0f;
+            sentinelTargetHeight = sentinelHighHeight;
+            if (health != null) health.isInvulnerable = true;
+            Debug.Log("[SENTINELA] Slam acertou! Voltando para fase alta sem stun.");
+        }
+        else
+        {
+            // Errou → Sentinela fica STUNADO (vulnerável)
+            sentinelVulnerable = true;
+            sentinelPhaseTimer = 0f;
+            sentinelTargetHeight = sentinelLowHeight;
+            if (health != null) health.isInvulnerable = false;
+            Debug.Log("[SENTINELA] Slam errou! STUNADO por " + sentinelVulnerableWindow + " segundos!");
+        }
+    }
+
+    /// <summary>
+    /// Efeito visual de onda de choque ao redor do ponto de impacto do slam.
+    /// Um anel que se expande rapidamente e desaparece.
+    /// </summary>
+    IEnumerator SlamImpactVFX()
+    {
+        // Cria anel de impacto no chão
+        GameObject ringObj = new GameObject("SlamImpactRing");
+        LineRenderer ringLR = ringObj.AddComponent<LineRenderer>();
+
+        // Material do anel
+        Shader ringShader = Shader.Find("Sprites/Default");
+        if (ringShader == null) ringShader = Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply");
+        if (ringShader == null) ringShader = Shader.Find("Standard");
+        Material ringMat = new Material(ringShader);
+        ringLR.material = ringMat;
+        ringLR.startWidth = 0.5f;
+        ringLR.endWidth = 0.5f;
+        ringLR.useWorldSpace = true;
+        ringLR.loop = true;
+
+        // Posição do impacto (no chão)
+        Vector3 impactPos = transform.position;
+        RaycastHit gHit;
+        if (Physics.Raycast(transform.position, Vector3.down, out gHit, 20f))
+            impactPos.y = gHit.point.y + 0.1f;
+        else
+            impactPos.y = 0.1f;
+
+        int segments = 32;
+        ringLR.positionCount = segments;
+
+        // Animação: anel expande de 0 até sentinelSlamRadius * 1.5 em 0.4s
+        float vfxDuration = 0.4f;
+        float vfxElapsed = 0f;
+
+        while (vfxElapsed < vfxDuration)
+        {
+            vfxElapsed += Time.deltaTime;
+            float t = vfxElapsed / vfxDuration;
+
+            float currentRadius = Mathf.Lerp(0.5f, sentinelSlamRadius * 1.5f, t);
+            float alpha = Mathf.Lerp(0.8f, 0f, t);
+
+            Color ringColor = new Color(1f, 0.3f, 0.1f, alpha);
+            ringMat.color = ringColor;
+
+            ringLR.startWidth = Mathf.Lerp(0.5f, 0.1f, t);
+            ringLR.endWidth = ringLR.startWidth;
+
+            Vector3[] ringPositions = new Vector3[segments];
+            for (int i = 0; i < segments; i++)
+            {
+                float angle = (float)i / segments * Mathf.PI * 2f;
+                ringPositions[i] = impactPos + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * currentRadius;
+            }
+            ringLR.SetPositions(ringPositions);
+
+            yield return null;
+        }
+
+        // Limpa
+        if (ringObj != null) Destroy(ringObj);
+        if (ringMat != null) Destroy(ringMat);
     }
 
     /// <summary>
@@ -2073,6 +2373,9 @@ public class Geobionte_AI : MonoBehaviour
     void HandleBodyHover()
     {
         if (mimicComponent == null) return;
+
+        // Durante o slam, a coroutine SentinelSlam controla a velocity Y diretamente
+        if (sentinelIsSlaming) return;
 
         Collider[] cols = GetComponentsInChildren<Collider>();
         foreach(var c in cols) c.enabled = false;
