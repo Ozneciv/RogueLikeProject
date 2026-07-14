@@ -39,6 +39,21 @@ public class RunManager : MonoBehaviour
     /// <summary>Round atual da run (1 = primeiro nível, totalLevels = boss). Persiste entre cenas via DontDestroyOnLoad.</summary>
     [HideInInspector] public int currentLevel = 1;
 
+    // ==================== GEOBIONTE — PROGRESSO MULTI-FASE ====================
+
+    /// <summary>
+    /// Quantas vezes o Geobionte já foi derrotado como Bismutado durante esta run (0–3).
+    /// Ao atingir fusionsToSentinel (3), o Geobionte evolui para Sentinela.
+    /// Persiste entre cenas via DontDestroyOnLoad.
+    /// </summary>
+    [HideInInspector] public int geobionteDefeatCount = 0;
+
+    /// <summary>
+    /// Se o Geobionte já absorveu um cristal NESTA fase (round).
+    /// Impede absorção dupla na mesma fase. Resetado ao avançar de fase.
+    /// </summary>
+    [HideInInspector] public bool geobionteAbsorbedThisLevel = false;
+
     // =====================================================
 
     void Awake()
@@ -67,6 +82,11 @@ public class RunManager : MonoBehaviour
     {
         currentRoomNumber = 1;
         currentLevel = 1;
+
+        // Reset do progresso do Geobionte
+        geobionteDefeatCount = 0;
+        geobionteAbsorbedThisLevel = false;
+
         Debug.Log("[RunManager] 🆕 Nova run iniciada. Sala 1 | Round 1.");
     }
 
@@ -82,7 +102,11 @@ public class RunManager : MonoBehaviour
     public void AdvanceLevel()
     {
         currentLevel = Mathf.Min(currentLevel + 1, totalLevels);
-        Debug.Log($"[RunManager] ▶️ Round {currentLevel}/{totalLevels} | Boss? {isBossRound}");
+
+        // Permite o Geobionte absorver um novo cristal na próxima fase
+        geobionteAbsorbedThisLevel = false;
+
+        Debug.Log($"[RunManager] ▶️ Round {currentLevel}/{totalLevels} | Boss? {isBossRound} | Geobionte derrotas: {geobionteDefeatCount}/3");
     }
 
     /// <summary>
