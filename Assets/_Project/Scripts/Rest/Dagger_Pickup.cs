@@ -34,14 +34,23 @@ public class Dagger_Pickup: MonoBehaviour
     {
         if (playerIsNear && Input.GetKeyDown(KeyCode.F))
         {
-            // Pega o script do jogador e chama a função para equipar a adaga
+            Debug.Log($"[Dagger_Pickup] Tecla F pressionada. playerObject: {(playerObject != null ? playerObject.name : "null")}");
             if (playerObject != null)
             {
-                playerObject.GetComponent<Player_WeaponManager>().EquipDagger(this.gameObject);
+                Player_WeaponManager wm = playerObject.GetComponent<Player_WeaponManager>();
+                if (wm != null)
+                {
+                    Debug.Log("[Dagger_Pickup] Solicitando EquipDagger ao Player_WeaponManager.");
+                    wm.EquipDagger(this.gameObject);
+                }
+                else
+                {
+                    Debug.LogError("[Dagger_Pickup] Falha: Player_WeaponManager não encontrado no playerObject!");
+                }
             }
             else
             {
-                Debug.LogWarning("playerObject is null in Update. OnTriggerEnter might not have fired.");
+                Debug.LogWarning("[Dagger_Pickup] playerObject está nulo no Update, não é possível equipar.");
             }
         }
     }

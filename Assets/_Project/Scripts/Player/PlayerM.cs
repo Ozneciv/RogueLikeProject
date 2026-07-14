@@ -119,8 +119,16 @@ public class PlayerM : MonoBehaviour
 
         if (inDamageWindow)
         {
-            // Aplicação direta (sem inércia) para controle preciso durante o golpe
-            rb.linearVelocity = new Vector3(targetVelocity.x, currentVelocity.y, targetVelocity.z);
+            if (moveDirection != Vector3.zero)
+            {
+                // Aplicação direta (sem inércia) para controle preciso durante o golpe
+                rb.linearVelocity = new Vector3(targetVelocity.x, currentVelocity.y, targetVelocity.z);
+            }
+            else
+            {
+                // Se não há input, deixa a inércia (do lunge) desacelerar suavemente
+                rb.linearVelocity = Vector3.Lerp(currentVelocity, new Vector3(0f, currentVelocity.y, 0f), 5f * Time.fixedDeltaTime);
+            }
         }
         else
         {
@@ -145,6 +153,12 @@ public class PlayerM : MonoBehaviour
         
         try
         {
+            // Se o player estiver no meio de um ataque, o script de ataque (PrimaryAttackKnife) assume controle absoluto das velocidades e parâmetros
+            if (attackScript != null && attackScript.isAttacking)
+            {
+                return;
+            }
+
             bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
 
             // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---

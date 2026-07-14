@@ -329,11 +329,21 @@ public class PlayerSkinManager : MonoBehaviour
                 // Disable Root Motion to prevent physics conflicts
                 anim.applyRootMotion = false;
 
-                // Force main RuntimeAnimatorController to sync state machine
-                if (mainAnimatorController != null)
+                // Force main RuntimeAnimatorController (or weapon override) to sync state machine
+                RuntimeAnimatorController controllerToApply = mainAnimatorController;
+                if (equippedWeapon != null)
                 {
-                    anim.runtimeAnimatorController = mainAnimatorController;
-                    Debug.Log($"[PlayerSkinManager] Synced main Animator Controller onto '{anim.gameObject.name}'");
+                    WeaponOffset offsetData = equippedWeapon.GetComponent<WeaponOffset>();
+                    if (offsetData != null && offsetData.weaponAnimatorOverride != null)
+                    {
+                        controllerToApply = offsetData.weaponAnimatorOverride;
+                    }
+                }
+
+                if (controllerToApply != null)
+                {
+                    anim.runtimeAnimatorController = controllerToApply;
+                    Debug.Log($"[PlayerSkinManager] Synced Animator Controller '{controllerToApply.name}' onto '{anim.gameObject.name}'");
                 }
 
                 // Route animation events safely on the exact GameObject that holds the Animator
@@ -470,7 +480,11 @@ public class PlayerSkinManager : MonoBehaviour
             {
                 weaponManager.rightHand = newRightHand;
             }
-            Debug.Log("[PlayerSkinManager] Bound RightHand Bone to Player_WeaponManager");
+            if (newAnimator != null)
+            {
+                weaponManager.playerAnimator = newAnimator;
+            }
+            Debug.Log("[PlayerSkinManager] Bound RightHand Bone and Animator to Player_WeaponManager");
         }
 
         // CheatConsole

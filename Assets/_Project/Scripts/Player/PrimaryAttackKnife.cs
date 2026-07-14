@@ -44,19 +44,60 @@ public class PrimaryAttackKnife : MonoBehaviour
     [Header("Settings")]
     public float attackAnimationSpeed = 1.0f;
     public float defaultAttackSpeed = 1.0f; // Para resetar a velocidade padrão
-    public float axeAttackSpeed = 0.6f; // Velocidade reduzida e pesada para o machado
+    public float axeAttackSpeed = 0.85f; // Velocidade reduzida e pesada para o machado
+
+    [Header("Combo Speed Modifiers (Fine Tuning)")]
+    [Tooltip("Multiplicador de velocidade para o Hit 1")]
+    public float hit1SpeedMultiplier = 1.0f;
+    [Tooltip("Multiplicador de velocidade para o Hit 2")]
+    public float hit2SpeedMultiplier = 0.7f; // Reduzido por padrão!
+    [Tooltip("Multiplicador de velocidade para o Hit 3")]
+    public float hit3SpeedMultiplier = 1.0f;
+    [Tooltip("Multiplicador de velocidade para o Hit 4")]
+    public float hit4SpeedMultiplier = 1.0f;
 
     [Header("Weapon Damages")]
     public int[] defaultDamages = { 10, 15, 30 };
     public int[] daggerDamages = { 25, 35, 60 };
     public int[] swordDamages = { 30, 40, 75 };
-    public int[] axeDamages = { 45, 60, 110 }; // Dano pesado de impacto para o Machado
+    public int[] axeDamages = { 45, 60, 110, 150 }; // Dano pesado de impacto para o Machado (4 Combos!)
     private int[] currentDamages;
 
     [Header("Combo Settings")]
+    [Tooltip("Tempo limite do combo com as mãos vazias")]
+    public float defaultComboResetTime = 1.2f;
+    [Tooltip("Tempo limite do combo com a Adaga")]
+    public float daggerComboResetTime = 1.2f;
+    [Tooltip("Tempo limite do combo com a Espada")]
+    public float swordComboResetTime = 1.2f;
+    [Tooltip("Tempo limite do combo com o Machado")]
+    public float axeComboResetTime = 1.8f;
+
+    [HideInInspector]
     public float comboResetTime = 1.2f;
     private int comboStep = 0;
+
+    [Header("Backup Animation Timing Settings (When no Animation Events exist)")]
+    [Tooltip("Delay (em segundos) para ativar o colisor de dano da Adaga")]
+    public float daggerHitDelay = 0.15f;
+    [Tooltip("Duração (em segundos) que o colisor da Adaga fica ativo")]
+    public float daggerHitDuration = 0.2f;
+
+    [Tooltip("Delay (em segundos) para ativar o colisor de dano do Machado")]
+    public float axeHitDelay = 0.35f;
+    [Tooltip("Duração (em segundos) que o colisor do Machado fica ativo")]
+    public float axeHitDuration = 0.3f;
+
+    [Tooltip("Delay (em segundos) para ativar o colisor de dano padrão")]
+    public float defaultHitDelay = 0.15f;
+    [Tooltip("Duração (em segundos) que o colisor padrão fica ativo")]
+    public float defaultHitDuration = 0.2f;
+
+    private float currentHitDelay = 0.15f;
+    private float currentHitDuration = 0.2f;
     private bool canAttack = true;
+    public bool CanAttack => canAttack;
+    private bool hasBufferedAttack = false;
     private Coroutine comboResetCoroutine;
     private Coroutine backupAttackCoroutine;
     private bool eventFiredEnableHitbox = false;
@@ -66,6 +107,7 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     private void Start()
     {
+        defaultAttackSpeed = attackAnimationSpeed; // Salva a velocidade customizada do Inspector (como a da Adaga) antes de qualquer troca
         enemiesHitInThisAttack = new List<Collider>();
         EquipDefaultWeapon();
         hasWeapon = false;
@@ -110,20 +152,59 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
-            // Manter attack speed durante combo
+            // Manter attack speed durante combo (incluindo os multiplicadores específicos de cada passo do combo do machado)
             if (isAttacking && playerAttributes != null && animator != null && animator.isActiveAndEnabled)
             {
-                float targetSpeed = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
+                float stepSpeedMult = 1.0f;
+                
+                // Verifica se a arma equipada é o Machado
+                Player_WeaponManager wm = GetComponent<Player_WeaponManager>();
+                bool isAxe = false;
+                if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
+                {
+                    WeaponOffset offsetData = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+                    if (offsetData != null && offsetData.weaponType == WeaponType.Axe)
+                    {
+                        isAxe = true;
+                    }
+                }
+
+                if (isAxe)
+                {
+                    if (comboStep == 1) stepSpeedMult = hit1SpeedMultiplier;
+                    else if (comboStep == 2) stepSpeedMult = hit2SpeedMultiplier;
+                    else if (comboStep == 3) stepSpeedMult = hit3SpeedMultiplier;
+                    else if (comboStep == 4) stepSpeedMult = hit4SpeedMultiplier;
+                }
+
+                float targetSpeed = attackAnimationSpeed * playerAttributes.attackSpeedMelee * stepSpeedMult;
                 if (Mathf.Abs(animator.speed - targetSpeed) > 0.01f)
                 {
                     animator.speed = targetSpeed;
                 }
             }
 
-            if ((Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0)) && canAttack)
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
             {
-                if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
-                PerformNextAttack();
+                if (hasWeapon)
+                {
+                    if (canAttack)
+                    {
+                        if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+                        PerformNextAttack();
+                    }
+                    else if (isAttacking)
+                    {
+                        // Só permitimos bufferizar se NÃO estivermos no último hit do combo.
+                        // O último golpe não deve enfileirar o reinício do combo (golpe 1) automaticamente.
+                        int maxComboSteps = (currentDamages != null) ? currentDamages.Length : 3;
+                        if (comboStep < maxComboSteps)
+                        {
+                            hasBufferedAttack = true;
+                            Debug.Log("[PrimaryAttackKnife] Input buffered for next combo step.");
+                        }
+                    }
+                }
             }
         }
         catch (System.Exception)
@@ -150,17 +231,78 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
+            // Garante que o colisor esteja desativado ao iniciar um novo golpe para evitar hitboxes fantasmas residuais
+            isHitboxActive = false;
+            if (currentHitbox != null) currentHitbox.enabled = false;
+
             isAttacking = true;
             canAttack = false;
             comboStep++;
 
+            // Loop do combo de volta para o primeiro hit se passar do limite de ataques
+            int maxComboSteps = (currentDamages != null) ? currentDamages.Length : 3;
+            if (comboStep > maxComboSteps)
+            {
+                comboStep = 1;
+            }
+
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
 
-            // Aplicar Attack Speed
+            // --- LUNGE FORWARD FOR ATTACKS ---
+            if (playerRb == null) playerRb = GetComponent<Rigidbody>();
+            if (playerRb != null)
+            {
+                float lungeForce = 3.5f; // lunge padrão
+                Player_WeaponManager wm = GetComponent<Player_WeaponManager>();
+                if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
+                {
+                    WeaponOffset offsetData = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+                    if (offsetData != null)
+                    {
+                        if (offsetData.weaponType == WeaponType.Axe)
+                        {
+                            lungeForce = 7.5f; // Machado lunge mais forte e pesado
+                        }
+                        else if (offsetData.weaponType == WeaponType.Dagger)
+                        {
+                            lungeForce = 5f; // Adaga lunge médio rápido
+                        }
+                    }
+                }
+
+                // Aplica impulso na direção frontal do jogador
+                Vector3 lungeDir = transform.forward;
+                playerRb.linearVelocity = new Vector3(lungeDir.x * lungeForce, playerRb.linearVelocity.y, lungeDir.z * lungeForce);
+                Debug.Log($"[PrimaryAttackKnife] Lunge aplicado com força {lungeForce} na direção {lungeDir}");
+            }
+
+            // Aplicar Attack Speed multiplicada pela velocidade específica de cada passo do combo (apenas para o Machado)
             if (playerAttributes != null)
             {
-                animator.speed = attackAnimationSpeed * playerAttributes.attackSpeedMelee;
+                float stepSpeedMult = 1.0f;
+                
+                // Verifica se a arma equipada é o Machado
+                Player_WeaponManager wm = GetComponent<Player_WeaponManager>();
+                bool isAxe = false;
+                if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
+                {
+                    WeaponOffset offsetData = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+                    if (offsetData != null && offsetData.weaponType == WeaponType.Axe)
+                    {
+                        isAxe = true;
+                    }
+                }
+
+                if (isAxe)
+                {
+                    if (comboStep == 1) stepSpeedMult = hit1SpeedMultiplier;
+                    else if (comboStep == 2) stepSpeedMult = hit2SpeedMultiplier;
+                    else if (comboStep == 3) stepSpeedMult = hit3SpeedMultiplier;
+                    else if (comboStep == 4) stepSpeedMult = hit4SpeedMultiplier;
+                }
+
+                animator.speed = attackAnimationSpeed * playerAttributes.attackSpeedMelee * stepSpeedMult;
             }
 
             if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
@@ -193,15 +335,15 @@ public class PrimaryAttackKnife : MonoBehaviour
         // Evitar divisão por zero ou velocidades negativas
         if (speedMultiplier <= 0f) speedMultiplier = 1f;
 
-        // 1. Aguarda para ativar o colisor de dano (o swing do golpe acontece por volta de 0.15s)
-        yield return new WaitForSeconds(0.15f / speedMultiplier);
+        // 1. Aguarda para ativar o colisor de dano (ajustável no Inspector)
+        yield return new WaitForSeconds(currentHitDelay / speedMultiplier);
         if (!eventFiredEnableHitbox)
         {
             EnableHitbox();
         }
 
-        // 2. Aguarda a duração ativa do golpe (por volta de 0.2s)
-        yield return new WaitForSeconds(0.2f / speedMultiplier);
+        // 2. Aguarda a duração ativa do golpe (ajustável no Inspector)
+        yield return new WaitForSeconds(currentHitDuration / speedMultiplier);
         if (!eventFiredDisableHitbox)
         {
             DisableHitbox();
@@ -316,17 +458,36 @@ public class PrimaryAttackKnife : MonoBehaviour
     public void OpenAttackWindow()
     {
         eventFiredOpenWindow = true;
-        canAttack = true;
+        
+        if (hasBufferedAttack)
+        {
+            hasBufferedAttack = false;
+            Debug.Log("[PrimaryAttackKnife] Consumindo ataque buffered.");
+            if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+            PerformNextAttack();
+        }
+        else
+        {
+            canAttack = true;
+        }
     }
 
     // Reset Combo
     public void ResetCombo()
     {
+        // Se a janela de ataque estiver fechada (canAttack == false), significa que o jogador
+        // já emendou o próximo golpe do combo e a nova animação está iniciando/fazendo blend.
+        // Ignoramos este reset para evitar que eventos de animação antigos cortem o combo ativo.
+        if (!canAttack) return;
+
         isAttacking = false;
         isHitboxActive = false;
+        hasBufferedAttack = false;
         comboStep = 0;
         animator.SetInteger("ComboStep", 0);
         canAttack = true;
+
+        if (currentHitbox != null) currentHitbox.enabled = false;
 
         // Resetar velocidade da animação
         if (animator != null)
@@ -374,6 +535,9 @@ public class PrimaryAttackKnife : MonoBehaviour
         currentDamages = defaultDamages;
         currentRange = defaultRange;
         attackAnimationSpeed = defaultAttackSpeed; // Retorna à velocidade padrão
+        comboResetTime = defaultComboResetTime;
+        currentHitDelay = defaultHitDelay;
+        currentHitDuration = defaultHitDuration;
         currentHitbox = handHitbox;
 
         if (handHitbox != null)
@@ -394,6 +558,9 @@ public class PrimaryAttackKnife : MonoBehaviour
         currentDamages = daggerDamages;
         currentRange = daggerRange;
         attackAnimationSpeed = defaultAttackSpeed; // Retorna à velocidade padrão
+        comboResetTime = daggerComboResetTime;
+        currentHitDelay = daggerHitDelay;
+        currentHitDuration = daggerHitDuration;
         equippedWeaponHitbox = daggerHitbox;
         currentHitbox = equippedWeaponHitbox;
 
@@ -418,6 +585,9 @@ public class PrimaryAttackKnife : MonoBehaviour
         currentDamages = swordDamages;
         currentRange = swordRange;
         attackAnimationSpeed = defaultAttackSpeed; // Retorna à velocidade padrão
+        comboResetTime = swordComboResetTime;
+        currentHitDelay = defaultHitDelay; // Usa padrão para espada
+        currentHitDuration = defaultHitDuration;
         equippedWeaponHitbox = swordHitbox;
         currentHitbox = equippedWeaponHitbox;
 
@@ -440,9 +610,19 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void EquipAxeWeapon(Collider axeHitbox)
     {
+        // Garante que o array tenha pelo menos 4 elementos no runtime (sobrescrevendo serializações antigas de 3 elementos da Unity)
+        if (axeDamages == null || axeDamages.Length < 4)
+        {
+            axeDamages = new int[] { 45, 60, 110, 150 };
+            Debug.LogWarning("[PrimaryAttackKnife] Corrigido tamanho de axeDamages em runtime para 4 elementos para liberar o quarto combo.");
+        }
+
         currentDamages = axeDamages; 
         currentRange = axeRange; 
         attackAnimationSpeed = axeAttackSpeed; 
+        comboResetTime = axeComboResetTime;
+        currentHitDelay = axeHitDelay;
+        currentHitDuration = axeHitDuration;
         
         equippedWeaponHitbox = axeHitbox;
         currentHitbox = equippedWeaponHitbox;

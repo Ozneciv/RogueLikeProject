@@ -130,6 +130,23 @@ public class CraftingUI : MonoBehaviour
         {
             CloseCrafting();
         }
+
+        // CHEAT DEBUG: Pressionando P com a UI aberta adiciona todos os recursos para testes rápidos de craft!
+        if (isOpen && Input.GetKeyDown(KeyCode.P))
+        {
+            if (ItemDatabase.Instance != null && SaveManager.instance != null)
+            {
+                foreach (var item in ItemDatabase.Instance.allItems)
+                {
+                    if (item != null && item.returnsToBase)
+                    {
+                        SaveManager.instance.AddResourceToBase(item.itemId, 20);
+                    }
+                }
+                RefreshUI();
+                Debug.Log("[DEBUG CHEAT] Adicionados 20 de cada recurso de base!");
+            }
+        }
     }
 
     // ─── API PÚBLICA ─────────────────────────────────────────────────────────

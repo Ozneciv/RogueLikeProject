@@ -32,7 +32,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{\textbf{PROJETO: SEM TÍTULO} - Game Design Document}
-\lhead{v4.0 - Balance \& Lore Update}
+\lhead{v5.0 - Lore, Combat \& Customization Update}
 \cfoot{\thepage}
 
 \title{\textbf{ENTERTAINMENT GAME PROJECT}\\ \large Game Design Document (GDD)}
@@ -60,8 +60,8 @@ O jogo deve transmitir a sensação de \textbf{isolamento claustrofóbico} em um
 % =========================================================================
 \chapter{Narrativa e Universo}
 
-\section{O Protagonista: O Engenheiro}
-O jogador assume o papel de um funcionário de baixo escalão de uma corporação de logística interplanetária. Seu trabalho consistia em viagens de rotina entre colônias seguras e já catalogadas, realizando manutenção em maquinário pesado.
+\section{O Protagonista: O Engenheiro Catalogador}
+O jogador assume o papel de um funcionário de baixo escalão de uma corporação intergaláctica de logística e mapeamento. Seu trabalho não possui caráter militar ou de combate; ele é um engenheiro e pesquisador de campo encarregado de viagens de rotina entre colônias já catalogadas e seguras, prestando manutenção em maquinários de exploração e coletando amostras científicas.
 
 \begin{figure}[hbt!]
     \centering
@@ -92,25 +92,36 @@ O jogador assume o papel de um funcionário de baixo escalão de uma corporaçã
 \end{itemize}
 
 \section{O Incidente: A Rota Desviada}
-A nave de transporte seguia uma rota hiperespacial segura e tediosa. O único companheiro do engenheiro é \textbf{Eptinho}, um Corgi hiperativo com seu próprio traje espacial.
+A nave de transporte seguia uma rota hiperespacial segura e tediosa. O único companheiro do engenheiro é \textbf{Eptinho}, um Corgi hiperativo que atua como copiloto e analista de dados.
 \begin{itemize}
-    \item \textbf{O Erro:} Durante um momento de distração, Eptinho perseguiu um reflexo no painel de controle, desengatando o piloto automático e alterando as coordenadas para um setor proibido dos mapas estelares.
-    \item \textbf{O Cinturão da Morte:} A nave emergiu do hiperespaço diretamente dentro do campo gravitacional de um planeta não catalogado, cercado por um cinturão de asteroides caótico. Nenhuma nave jamais atravessou esse cinturão intacta. A sobrevivência do Engenheiro à queda foi estatisticamente impossível — um milagre de pura sorte que destruiu completamente \textit{A Nave}, espalhando seus destroços pela superfície.
+    \item \textbf{O Erro:} Durante um momento de distração mútua no cockpit, Eptinho perseguiu um reflexo nas telas do painel de controle, desengatando o piloto automático e alterando as coordenadas de salto hiperespacial para um setor proibido dos mapas estelares.
+    \item \textbf{O Cinturão de Asteroides:} A nave emergiu do hiperespaço diretamente dentro do campo gravitacional de um planeta hostil não catalogado, cercado por um cinturão de detritos caótico. Nenhuma nave jamais atravessou esse cinturão intacta. A colisão destruiu completamente a nave, espalhando seus destroços pela superfície.
 \end{itemize}
 
-\section{O Planeta: A Entidade Viva}
-Este mundo não é apenas um lugar; é um organismo. Tudo nele — a atmosfera, a fauna, a flora e o solo — faz parte de uma única consciência.
+\section{O Planeta Consciente: Parasitismo e Rejeição}
+Este mundo não é apenas um lugar; é um ecossistema inteligente, governado por uma força consciente que age como um parasita biológico. Utilizando a energia cristalina de seu núcleo, o planeta consegue submeter, mutar e controlar toda a matéria orgânica e mineral na sua superfície.
 \begin{itemize}
-    \item \textbf{A Lei da Absorção:} Neste planeta, nada morre verdadeiramente. A matéria orgânica é decomposta, absorvida pelo núcleo e reintegrada em novas formas de vida. É um ciclo perfeito de reciclagem biológica.
-    \item \textbf{A Anomalia (O Jogador):} O Engenheiro é feito de uma biologia alienígena a este ecossistema. O planeta tenta absorvê-lo quando ele cai, mas falha. O sistema imunológico planetário não consegue "digerir" a complexidade humana.
-    \item \textbf{O Ciclo de Renascimento:} Quando o jogador "morre", o planeta tenta desfazê-lo, mas acaba apenas reconstruindo-o no ponto de entrada (a queda), rejeitando-o como um corpo estranho. O jogador renasce não porque é especial, mas porque é \textbf{indigesto}.
+    \item \textbf{A Lei da Assimilação:} Tudo o que cai no planeta é digerido e reintegrado à consciência planetária. É um ciclo perfeito de simbiose e reciclagem.
+    \item \textbf{O Ciclo de Rejeição (Indigestão):} Quando o Engenheiro morre, o solo o absorve. Porém, devido ao seu sangue e à sua biologia humana totalmente estranha àquele ecossistema, o planeta falha em digeri-lo. Incapaz de assimilá-lo, o sistema imunológico do planeta o reconstrói e o expele de volta no ponto de queda. O jogador renasce porque é \textbf{indigesto} para o planeta.
+    \item \textbf{A Zona Esterilizada (Base):} O local da queda da nave serve como base segura porque o combustível e os reatores vazados esterilizaram quimicamente o solo ao redor, criando um casulo neutro onde a biologia consciente do planeta não consegue se aproximar ou digerir os destroços.
+    \item \textbf{O Roubo de Peças (Objetivo da Run):} Criaturas nativas sob o controle do planeta invadiram os destroços da nave e roubaram peças vitais (como baterias térmicas, placas de reator e núcleos de energia), espalhando-as pelos biomas. O Engenheiro deve adentrar os setores perigosos para derrotar essas criaturas, recuperar as peças e consertar a nave para escapar.
+    \item \textbf{O Sequestro do Poder Planetário (Infusões):} Para aprimorar suas ferramentas comuns em armas letais, o Engenheiro **se apossa da própria característica de mutação do planeta**. Canalizando a energia de transmutação natural das pedras e cristais alienígenas colhidos do solo, ele força seu traje a fundir esses fragmentos biológicos às suas ferramentas humanas, criando infusões poderosas (as ``Partes do Corpo'').
 \end{itemize}
 
-\section{A Mecânica do Inventário (A Bolsa)}
+\section{Os Chefes de Bioma: Guardiões da Estabilidade}
+Ao final de cada setor/bioma, o jogador deve enfrentar um Chefe. Narrativamente, estes chefes são **Avatares de Transição** criados pelo próprio planeta.
+\begin{itemize}
+    \item \textbf{Guardiões da Fronteira:} Eles concentram uma quantidade massiva da energia de infusão e transmutação do núcleo, atuando como verdadeiras barreiras físicas entre as diferentes regiões do planeta.
+    \item \textbf{Prevenção de Caos:} Sua função ecológica essencial é impedir o trânsito livre de fauna e flora entre biomas distintos. Sem estes guardiões guardando as fronteiras, os biomas se misturariam livremente, fundindo ecossistemas incompatíveis e gerando aberrações biológicas abissais e instáveis que ameaçariam a integridade da consciência do próprio planeta.
+\end{itemize}
+
+\section{A Mecânica do Inventário (A Bolsa Sintética)}
 Como o planeta absorve tudo o que toca, qualquer equipamento deixado no chão é consumido em segundos.
 \begin{itemize}
     \item \textbf{Por que perdemos o Loot:} Ao morrer (ser dissolvido), as armas e modificações externas são comidas pelo planeta.
     \item \textbf{Por que mantemos os Recursos:} A bolsa de coleta do Engenheiro é feita de um polímero sintético inerte hermeticamente fechado. É o único lugar seguro. Tudo o que está \textbf{dentro} da bolsa (minerais, recursos, insetos) sobrevive à reconstrução. O que está \textbf{fora} (armas na mão, armadura) é perdido.
+    \item \textbf{Bolsa Sintética (Inventário de Run):} Mecanicamente, o jogador dispõe de um inventário em grade de 10 slots padrão (expansíveis via upgrades na Base). Essa bolsa armazena de forma segura os minérios e itens coletados durante a \textit{run}. Ao abrir o inventário (tecla \texttt{Tab}), os slots mostram ícones, quantidades acumuladas e molduras coloridas indicando a raridade do material (Branco para Comum, Verde para Incomum, Azul para Raro, Dourado para Lendário) com suporte a dicas flutuantes (\textit{tooltips}) de informação.
+    \item \textbf{Destino pós-Run:} Ao concluir com sucesso ou morrer na rodada, os recursos protegidos na bolsa sintética são integrados ao inventário permanente da Base, permitindo a compra de melhorias definitivas na Bancada de Reparos.
 \end{itemize}
 
 \section{Eptinho: O Copiloto e Analista de Dados}
@@ -414,6 +425,17 @@ O jogador não possui armas militares. Ele luta com o que tem na maleta de ferra
     \end{itemize}
 \end{description}
 
+\section{Sistema de Combate e Cadência de Combos (Janelas de Ataque)}
+Para dar maior peso tático e recompensar o ritmo do jogador, o combate com armas de curto alcance (como o Machado de Bismuto e a Adaga) utiliza um sistema de \textbf{Input Buffering} e \textbf{Janelas de Ataque} precisas:
+
+\begin{itemize}
+    \item \textbf{Input Buffering (Fila de Cliques):} Ao apertar o botão de ataque durante o meio de um movimento de swing, o clique é armazenado temporariamente (\texttt{hasBufferedAttack = true}) no script \texttt{PrimaryAttackKnife.cs} em vez de ser ignorado.
+    \item \textbf{Janela de Abertura (Recovery Frame):} O buffer de input só é consumido e o próximo hit do combo disparado quando a animação atual atinge o evento de animação \texttt{OpenAttackWindow}. Se o jogador não realizar cliques extras durante a janela de recuperação, o combo expira e o jogador retorna ao estado de repouso (Idle).
+    \item \textbf{Proteção contra Spam (Combo Finisher Lock):} No último golpe de cada combo (ex: Hit 3 da Adaga ou Hit 4 do Machado), o sistema de buffering é desativado (\texttt{comboStep == maxComboSteps}). Isso impede que o jogador spammeie o botão no finalizador e acabe disparando o Hit 1 do combo seguinte automaticamente por resquício de cliques, exigindo uma intenção de clique fresca para recomeçar.
+    \item \textbf{Isolamento de Estado (Prevenção de Corrida / Lunge):} O avanço frontal físico (Lunge) dado pelo jogador aumenta a velocidade de seu Rigidbody. Para evitar que o script de movimento (\texttt{PlayerM.cs}) detecte essa velocidade de avanço e force uma animação de corrida (\textit{Running}) cortando o combo, o script de animação da movimentação é desativado durante todo o processo ativo do ataque (\texttt{isAttacking == true}).
+    \item \textbf{Evitando Conflito de Blends:} O evento \texttt{ResetCombo} no final do clipe é protegido por uma validação que impede o reset do combo caso a janela de ataque do próximo hit já tenha sido acionada (\texttt{if (!canAttack) return;}), contornando falhas causadas pela transição cruzada (\textit{crossfade}) das animações.
+\end{itemize}
+
 % =========================================================================
 % CAPÍTULO 6: BESTIÁRIO DE INIMIGOS
 % =========================================================================
@@ -576,6 +598,68 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
     \item[Buff do Sintonizador:] Carregamento $\div$2, rotação do laser +50\% (\texttt{45°/s}).
 \end{description}
 
+% -------------------------------------------------------------------------
+\subsection{Geobionte (\textit{Geobionte\_AI}) --- Elite de Fusão}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.45\textwidth]{Inimigo_Geobionte.png}
+    \caption{Geobionte: Criatura simbiótica que se funde a minérios para se transformar.}
+\end{figure}
+
+\begin{description}
+    \item[Lore:] Uma forma larval mineral do planeta. Passivo e vulnerável por si só, busca ativamente se fundir aos depósitos de Bismuto e Cristal do cenário para erguer uma couraça impenetrável de combate.
+    \item[Comportamento:]
+    \begin{itemize}
+        \item \textbf{Estado Idle:} Vaga passivamente pelo cenário de forma inofensiva e é imune a ataques diretos nesse estado.
+        \item \textbf{Seeking Ore (Gargalo de Combate):} Ao avistar o jogador, corre em direção ao minério mais próximo (\texttt{oreSearchRadius = 500m}). Durante essa travessia, o jogador tem uma janela estratégica de oportunidade: se atingir o Geobionte 7 vezes (\texttt{preventionMaxHP}), interrompe sua fusão, forçando-o a fugir para um canto e despawnar.
+        \item \textbf{Fusão (Transformed):} Se atingir o minério com sucesso, funde-se em uma animação de \texttt{1.5s}, crescendo de escala e assumindo a forma de um Cubo de Bismuto gigante sobre pernas procedurais.
+        \item \textbf{Combate Bismutado:} Persegue o jogador a velocidade \texttt{4} e executa um golpe horizontal giratório (varredura AoE com indicador visual vermelho de perigo, \texttt{sweepDamage = 8}) a cada \texttt{6s}.
+        \item \textbf{Sentinela (Mini-boss):} Caso realize fusões sucessivas ou seja derrotado múltiplas vezes, o Geobionte evolui para a forma Sentinela, ganhando pernas alongadas e um campo gerador de debuff que reduz os atributos do jogador.
+    \end{itemize}
+    \item[Stats:] Fuga: Velocidade \texttt{8} --- Cubo: Velocidade \texttt{4} --- Dano do Sweep \texttt{8} --- Cooldown \texttt{6s}
+\end{description}
+
+% -------------------------------------------------------------------------
+\subsection{Dragão de Cristal (\textit{CrystalDragon\_AI}) --- Comum Híbrido Pesado}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.45\textwidth]{cristal_dragon.png}
+    \caption{Dragão de Cristal: Combate pesado com investidas aéreas parabólicas e disparos frontais.}
+\end{figure}
+
+\begin{description}
+    \item[Lore:] Fusão grotesca de réptil orgânico e escamas cristalizadas rígidas. Devido ao seu grande peso, é incapaz de voos prolongados, usando suas asas apenas para avanços e investidas desastradas de impacto.
+    \item[Comportamento:]
+    \begin{itemize}
+        \item \textbf{Combate Terrestre:} Persegue o jogador usando \texttt{NavMeshAgent} a velocidade \texttt{5}.
+        \item \textbf{Espinhos de Cristal (Ranged):} Se estiver à distância e de frente para o jogador, dispara 3 projéteis de cristal retos (\texttt{dano = 8} cada).
+        \item \textbf{Tail Sweep (Melee Flanqueamento):} Se o jogador tentar circular suas laterais ou traseira, desfere um golpe de cauda circular rápido (\texttt{dano = 15}, cooldown \texttt{2s}).
+        \item \textbf{Investida Aérea (Heavy Crash):} Se a distância ao jogador for menor que \texttt{4m} e o cooldown de voo estiver zerado, desliga o NavMesh, ativa física de Rigidbody e projeta-se no ar a velocidade \texttt{8} em um arco parabólico travado na última posição do jogador.
+        \item \textbf{Crash Recovery (Vulnerabilidade):} Ao colidir com o solo ou paredes durante a investida, causa \texttt{15} de dano em área com knockback massivo e fica completamente atordoado/imóvel por \texttt{2s}, abrindo uma excelente janela de punição.
+    \end{itemize}
+    \item[Stats:] Velocidade Terrestre \texttt{5} --- Velocidade de Voo \texttt{8} --- Dano do Pulo \texttt{15} --- Cooldown Voo \texttt{8s}
+\end{description}
+
+% -------------------------------------------------------------------------
+\subsection{SharpBlur (\textit{SharpBlur\_AI}) --- Elite Ágil}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.45\textwidth]{Inimigo_SharpBlur.png}
+    \caption{SharpBlur: Caçador ágil que utiliza zigue-zagues de alta velocidade com hologramas e golpes rápidos.}
+\end{figure}
+
+\begin{description}
+    \item[Lore:] Uma anomalia física condensada em Érebo. Suas células cristalinas vibram em altíssima frequência, permitindo-lhe realizar impulsos espaciais que deixam rastros visuais de si mesmo no trajeto.
+    \item[Comportamento:]
+    \begin{itemize}
+        \item Detecta o jogador a \texttt{25m} e persegue a velocidade \texttt{6} sem gravidade ativa.
+        \item \textbf{Zigue-Zague Holográfico (Dash):} A \texttt{8m} de distância, projeta-se em zigue-zague ultra veloz a velocidade \texttt{30} em direção ao jogador, deixando para trás clones transparentes emissores (\texttt{hologramMaterial} e \texttt{hologramAlpha = 0.6f}) que causam \texttt{15} de dano por contato físico.
+        \item \textbf{Soco Rápido (Melee):} Ao se aproximar a menos de \texttt{2.5m}, desfere um soco físico concentrado (\texttt{dano = 10}, wind-up rápido de \texttt{0.2s}).
+        \item \textbf{Predição de Movimento:} O script de IA calcula a trajetória do jogador (\texttt{leadPrediction = 0.5f}) para arremessar seu soco e dashes no local para onde o jogador está se movendo, dificultando esquivas simples.
+    \end{itemize}
+    \item[Stats:] Velocidade de Busca \texttt{6} --- Velocidade de Dash \texttt{30} --- Dano Melee \texttt{10} --- Dano Dash \texttt{15}
+\end{description}
+
 % =========================================================================
 \section{Inimigos de Suporte e Controle}
 
@@ -636,18 +720,37 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
     Aranha               & Mob Menor (1 pt)          & \texttt{Spider\_AI} \\
     Goblin               & Atirador (4 pts)          & \texttt{GoblinAI\_Transform} \\
     Golem                & Tanque (4 pts)            & \texttt{Golem\_AI} \\
+    Dragão de Cristal    & Comum Híbrido (4 pts)     & \texttt{CrystalDragon\_AI} \\
     Sintonizador         & Suporte (5 pts)           & \texttt{CrystalTuner} \\
     Totem                & Estrutura (6 pts)         & \texttt{TotemSpawner} \\
     Pedra Mágica         & Elite (10 pts)            & \texttt{MagicStone\_AI} \\
     Enxame de Cristais   & Elite (10 pts)            & \texttt{ShardSwarm\_AI} \\
     Vigia de Cristal     & Elite (10 pts)            & \texttt{CrystalWatcher\_AI} \\
+    Geobionte            & Elite de Fusão (10 pts)   & \texttt{Geobionte\_AI} \\
+    SharpBlur            & Elite Ágil (10 pts)       & \texttt{SharpBlur\_AI} \\
     \hline
 \end{tabular}
 \end{center}
 
-\begin{itemize}
-    \item \textbf{Chefe do Bioma 1:} (a ser definido).
-\end{itemize}
+\section{Chefe do Bioma 1 (A ser Nomeado)}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Chefe_Bioma1.png}
+    \caption{Chefe do Bioma 1: O elo de transição cristalina e refrativa.}
+\end{figure}
+
+\begin{description}
+    \item[Lore e Aparência:]
+    Um colossal avatar humanóide composto por uma estrutura de silício e minérios cristalinos. Visualmente, possui uma estética que assemelha-se ao alienígena \textit{Cromático} (da franquia \textit{Ben 10}), com um corpo de rocha roxa/escura intercalado com pontas de cristais emissores e translúcidos. Por ser o Guardião de Fronteira do primeiro setor, sua fisionomia atua como o meio-termo estético e biológico perfeito entre o Bioma Cristalizado (atual) e o Bioma Adjacente de Transição (próximo), mesclando elementos minerais e geológicos de ambos em sua anatomia.
+
+    \item[Comportamento Base (A ser detalhado pela equipe):]
+    \begin{itemize}
+        \item \textbf{Manipulação Terrestre:} O chefe altera o mundo ao redor para atacar o jogador. Ergue de forma dinâmica pilares de cristal que servem como barreiras e projeta sequências de espinhos afiados que emergem do chão em direção ao alvo.
+        \item \textbf{Invisibilidade por Refração:} Utilizando suas propriedades de cristal translúcido, o chefe consegue refratar a luz ambiente para ficar completamente invisível por curtos períodos de tempo. O jogador deve se guiar pelo som de seus passos e por pequenas distorções de luz e refração física na tela.
+        \item \textbf{Invocação de Servos:} Capaz de gerar e comandar pequenos lacaios e servos cristalinos que atacam em grupo e atuam como escudo para o chefe.
+        \item \textbf{Mecanismo de Fases:} A batalha é dividida em fases progressivas de perigo. Ao perder vida, sua estrutura se torna mais instável, aumentando a agressividade das manipulações do solo, a velocidade de refração/invisibilidade e o volume de servos invocados.
+    \end{itemize}
+\end{description}
 
 % =========================================================================
 % CAPÍTULO 7: BIOMAS E EXPLORAÇÃO
@@ -660,7 +763,7 @@ O planeta é dividido em zonas distintas, mas o jogador só conhece a área da q
 \begin{itemize}
     \item \textbf{Visual:} Vastos campos abertos, cores frias (ciano, roxo), formações geológicas afiadas.
     \item \textbf{Inimigos:} Formas de vida baseadas em silício e cristal. Rápidos e cortantes. (Ver Capítulo~\ref{cap:bestiario} para detalhes de cada classe.)
-    \item \textbf{Chefe:} (?)
+    \item \textbf{Chefe:} Chefe do Bioma 1 (A ser Nomeado --- Ver Capítulo~\ref{cap:bestiario} para detalhes).
 \end{itemize}
 
 \section{2. [DADOS CORROMPIDOS]}
@@ -683,6 +786,18 @@ Entre as runs, o jogador retorna aos destroços da \textit{Nave}. É o único lo
     \item \textbf{Bancada de Reparos:} Onde o jogador gasta os minerais que trouxe na bolsa para melhorar seu traje (Vida/Armadura) e a eficiência de suas ferramentas.
     \item \textbf{O Canil:} Onde Eptinho vive. Interagir com ele pode dar dicas sobre o próximo bioma ou ``Buffs de Moral'' (Sorte).
     \item \textbf{Objetivo Final:} Consertar os propulsores principais para escapar da gravidade do planeta.
+\end{itemize}
+
+\section{O Pod de Customização e Sistema de Skins}
+Localizado nos alojamentos da Base (Nave Destruída), há uma cabine cilíndrica de customização (o Pod). Ao entrar na zona de detecção e pressionar a tecla \texttt{T}, abre-se um painel de seleção de skins de alta tecnologia.
+
+Para que as skins (Goku, Astronauta Padrão, Astro Novo, etc.) possam ser trocadas dinamicamente sem quebrar as referências dos scripts do Player (como movimentação, vida e combate), o projeto separa a lógica comportamental da representação gráfica:
+
+\begin{itemize}
+    \item \textbf{Player Objeto Pai:} Mantém todos os componentes de lógica e estado do jogo (como \texttt{PlayerM}, \texttt{PlayerHealth}, \texttt{PrimaryAttackKnife}, \texttt{Player\_WeaponManager}).
+    \item \textbf{Modelo Visual Filho:} Cada skin possui um prefab próprio com o componente \texttt{PlayerSkinReferences.cs} acoplado à sua raiz, que aponta de forma explícita para o \texttt{Animator} da skin, o osso da mão direita (\texttt{Right Hand}) e a hitbox de ataque corporal (\texttt{Hand Hitbox}).
+    \item \textbf{Injeção em Tempo de Execução:} O gerenciador de skins (\texttt{PlayerSkinManager.cs}) ativa a skin selecionada, oculta o visual da skin anterior (ocultando os renderizadores em vez de desativar os scripts), injeta dinamicamente o \texttt{RuntimeAnimatorController} ativo e o script de roteamento de eventos de animação (\texttt{PlayerAnimationEvents.cs}) no novo modelo, reestabelecendo todas as conexões necessárias.
+    \item \textbf{Persistência:} A escolha da skin é salva permanentemente via o sistema de salvamento do jogo, garantindo que o Engenheiro inicie a próxima run ou sessão utilizando o visual selecionado.
 \end{itemize}
 
 % =========================================================================

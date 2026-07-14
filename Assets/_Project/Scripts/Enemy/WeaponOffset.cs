@@ -13,5 +13,5 @@ public class WeaponOffset : MonoBehaviour
 
     [Header("Animações (Moveset)")]
 
-    public AnimatorOverrideController weaponAnimatorOverride; 
+    public RuntimeAnimatorController weaponAnimatorOverride; 
 }
