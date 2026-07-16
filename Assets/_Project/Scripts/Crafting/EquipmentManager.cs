@@ -58,16 +58,19 @@ public class EquipmentManager : MonoBehaviour
 
     void Start()
     {
-        // Tenta carregar definições do Resources se a lista estiver vazia
-        if (allEquipmentDefinitions.Count == 0)
+        // Garante que todas as definições no Resources sejam carregadas e mescladas
+        EquipmentData[] loaded = Resources.LoadAll<EquipmentData>("");
+        if (loaded.Length > 0)
         {
-            EquipmentData[] loaded = Resources.LoadAll<EquipmentData>("");
-            if (loaded.Length > 0)
+            foreach (var equip in loaded)
             {
-                allEquipmentDefinitions.AddRange(loaded);
-                BuildLookup();
-                Debug.Log($"[EQUIPMENT] {loaded.Length} definições carregadas do Resources.");
+                if (equip != null && !allEquipmentDefinitions.Contains(equip))
+                {
+                    allEquipmentDefinitions.Add(equip);
+                }
             }
+            BuildLookup();
+            Debug.Log($"[EQUIPMENT] Mesclou {loaded.Length} definições do Resources. Total: {allEquipmentDefinitions.Count}");
         }
 
         // Re-aplica efeitos de equipamentos equipados (após carregar o save)
@@ -284,6 +287,63 @@ public class EquipmentManager : MonoBehaviour
                 if (regenStats != null)
                     regenStats.ModifyAttribute("ArmorRegen", data.effectValue, false);
                 break;
+
+            case EquipmentEffectType.RangeBoost:
+                PlayerAttributesOffensive rangeStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (rangeStats != null)
+                {
+                    rangeStats.ModifyAttribute("WeaponRangeMelee", data.effectValue, true);
+                    rangeStats.ModifyAttribute("WeaponRangeProjectile", data.effectValue, true);
+                }
+                break;
+
+            case EquipmentEffectType.DodgeChanceBoost:
+                PlayerAttributesDefensive dodgeStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dodgeStats != null)
+                    dodgeStats.ModifyAttribute("DodgeChance", data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.CritMultiplierBoost:
+                PlayerAttributesOffensive critMultStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (critMultStats != null)
+                    critMultStats.ModifyAttribute("CritMultiplier", data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.KnockbackBoost:
+                PlayerAttributesOffensive knockStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (knockStats != null)
+                    knockStats.ModifyAttribute("Knockback", data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.AttackSpeedBoost:
+                PlayerAttributesOffensive atkSpeedStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (atkSpeedStats != null)
+                    atkSpeedStats.ModifyAttribute("AttackSpeedMelee", data.effectValue, true);
+                break;
+
+            case EquipmentEffectType.HealthRegenBoost:
+                PlayerAttributesDefensive hpRegenStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (hpRegenStats != null)
+                    hpRegenStats.ModifyAttribute("HealthRegen", data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.DashCooldownBoost:
+                PlayerAttributesDefensive dashCDStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dashCDStats != null)
+                    dashCDStats.ModifyAttribute("DashCooldownMultiplier", data.effectValue, true);
+                break;
+
+            case EquipmentEffectType.DashCountsBoost:
+                PlayerAttributesDefensive dashCountStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dashCountStats != null)
+                    dashCountStats.ModifyAttribute("DashCounts", data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.DashInvulnerabilityBoost:
+                PlayerAttributesDefensive dashInvStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dashInvStats != null)
+                    dashInvStats.ModifyAttribute("DashInvulnerability", data.effectValue, false);
+                break;
         }
     }
 
@@ -340,6 +400,63 @@ public class EquipmentManager : MonoBehaviour
                 PlayerAttributesDefensive regenStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
                 if (regenStats != null)
                     regenStats.ModifyAttribute("ArmorRegen", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.RangeBoost:
+                PlayerAttributesOffensive rangeStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (rangeStats != null)
+                {
+                    rangeStats.ModifyAttribute("WeaponRangeMelee", 1f / data.effectValue, true);
+                    rangeStats.ModifyAttribute("WeaponRangeProjectile", 1f / data.effectValue, true);
+                }
+                break;
+
+            case EquipmentEffectType.DodgeChanceBoost:
+                PlayerAttributesDefensive dodgeStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dodgeStats != null)
+                    dodgeStats.ModifyAttribute("DodgeChance", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.CritMultiplierBoost:
+                PlayerAttributesOffensive critMultStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (critMultStats != null)
+                    critMultStats.ModifyAttribute("CritMultiplier", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.KnockbackBoost:
+                PlayerAttributesOffensive knockStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (knockStats != null)
+                    knockStats.ModifyAttribute("Knockback", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.AttackSpeedBoost:
+                PlayerAttributesOffensive atkSpeedStats = player.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (atkSpeedStats != null)
+                    atkSpeedStats.ModifyAttribute("AttackSpeedMelee", 1f / data.effectValue, true);
+                break;
+
+            case EquipmentEffectType.HealthRegenBoost:
+                PlayerAttributesDefensive hpRegenStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (hpRegenStats != null)
+                    hpRegenStats.ModifyAttribute("HealthRegen", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.DashCooldownBoost:
+                PlayerAttributesDefensive dashCDStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dashCDStats != null)
+                    dashCDStats.ModifyAttribute("DashCooldownMultiplier", 1f / data.effectValue, true);
+                break;
+
+            case EquipmentEffectType.DashCountsBoost:
+                PlayerAttributesDefensive dashCountStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dashCountStats != null)
+                    dashCountStats.ModifyAttribute("DashCounts", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.DashInvulnerabilityBoost:
+                PlayerAttributesDefensive dashInvStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (dashInvStats != null)
+                    dashInvStats.ModifyAttribute("DashInvulnerability", -data.effectValue, false);
                 break;
         }
     }

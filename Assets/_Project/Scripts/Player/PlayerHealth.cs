@@ -54,6 +54,9 @@ public class PlayerHealth : MonoBehaviour
     private int playerLayer;
     private bool diedFallingForward = false;
 
+    private float armorRegenAccumulator = 0f;
+    private float healthRegenAccumulator = 0f;
+
     void Start()
     {
         playerLayer = gameObject.layer;
@@ -408,24 +411,40 @@ public class PlayerHealth : MonoBehaviour
             stunImmunityTimer -= Time.deltaTime;
         }
         
-    // === REGENERAÇÃO DE ARMADURA ===
+        // === REGENERAÇÃO DE ARMADURA ===
         if (!isDead && currentArmor < maxArmor && playerAttributes != null)
         {
-            float regenAmount = armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
-            int previousArmor = currentArmor;
-            currentArmor += Mathf.RoundToInt(regenAmount);
-            
-            if (currentArmor > maxArmor)
-                currentArmor = maxArmor;
-            
-            // Log a cada segundo (aproximadamente)
-            if (Time.frameCount % 60 == 0 && currentArmor != previousArmor)
+            armorRegenAccumulator += armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
+            if (armorRegenAccumulator >= 1.0f)
             {
-                float regenPerSecond = armorRegenRate * playerAttributes.armorRegen;
-                Debug.Log($"🛡️ ARMOR REGEN! {previousArmor} → {currentArmor} | Taxa: {regenPerSecond:F1} pts/s");
-            }
+                int intRegen = Mathf.FloorToInt(armorRegenAccumulator);
+                int previousArmor = currentArmor;
+                currentArmor = Mathf.Min(maxArmor, currentArmor + intRegen);
+                armorRegenAccumulator -= intRegen;
                 
-            UpdateArmorBar();
+                // Log a cada segundo (aproximadamente)
+                if (Time.frameCount % 60 == 0 && currentArmor != previousArmor)
+                {
+                    float regenPerSecond = armorRegenRate * playerAttributes.armorRegen;
+                    Debug.Log($"🛡️ ARMOR REGEN! {previousArmor} → {currentArmor} | Taxa: {regenPerSecond:F1} pts/s");
+                }
+                    
+                UpdateArmorBar();
+            }
+        }
+
+        // === REGENERAÇÃO DE VIDA ===
+        if (!isDead && currentHealth < maxHealth && playerAttributes != null && playerAttributes.healthRegen > 0f)
+        {
+            healthRegenAccumulator += playerAttributes.healthRegen * Time.deltaTime;
+            if (healthRegenAccumulator >= 1.0f)
+            {
+                int intRegen = Mathf.FloorToInt(healthRegenAccumulator);
+                currentHealth = Mathf.Min(maxHealth, currentHealth + intRegen);
+                healthRegenAccumulator -= intRegen;
+                
+                UpdateHealthBar();
+            }
         }
 
         // === NECROSE (Pacto do Parasita) ===

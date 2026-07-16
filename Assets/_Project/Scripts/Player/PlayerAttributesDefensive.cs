@@ -22,6 +22,9 @@ public class PlayerAttributesDefensive : MonoBehaviour
     [Tooltip("Dano devolvido ao atacante quando jogador é atingido por contato físico")]
     public int thorns = 0;
     
+    [Tooltip("Regeneração de vida por segundo (valor somado, ex: 1 = 1 vida por segundo)")]
+    public float healthRegen = 0f;
+    
     // ========== ATRIBUTOS DE MOBILIDADE (3.3) ==========
     [Header("Mobility Attributes")]
     [Tooltip("Multiplicador de tempo de recarga do Dash. 1.0 = normal, 0.5 = metade do tempo")]
@@ -46,6 +49,9 @@ public class PlayerAttributesDefensive : MonoBehaviour
             // Defensivos
             case "armorregen":
                 armorRegen = isMultiplier ? armorRegen * value : armorRegen + value;
+                break;
+            case "healthregen":
+                healthRegen = isMultiplier ? healthRegen * value : healthRegen + value;
                 break;
             case "dodgechance":
             case "dodge":
@@ -89,6 +95,7 @@ public class PlayerAttributesDefensive : MonoBehaviour
         {
             // Defensivos
             case "armorregen": return armorRegen;
+            case "healthregen": return healthRegen;
             case "dodgechance":
             case "dodge": return dodgeChance;
             case "damagenegation":

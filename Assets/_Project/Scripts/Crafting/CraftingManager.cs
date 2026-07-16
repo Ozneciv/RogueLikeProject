@@ -50,15 +50,18 @@ public class CraftingManager : MonoBehaviour
 
     void Start()
     {
-        // Tenta carregar receitas do Resources se a lista estiver vazia
-        if (allRecipes.Count == 0)
+        // Garante que todas as receitas no Resources sejam carregadas e mescladas
+        CraftingRecipe[] loaded = Resources.LoadAll<CraftingRecipe>("");
+        if (loaded.Length > 0)
         {
-            CraftingRecipe[] loaded = Resources.LoadAll<CraftingRecipe>("");
-            if (loaded.Length > 0)
+            foreach (var recipe in loaded)
             {
-                allRecipes.AddRange(loaded);
-                Debug.Log($"[CRAFTING] {loaded.Length} receitas carregadas do Resources.");
+                if (recipe != null && !allRecipes.Contains(recipe))
+                {
+                    allRecipes.Add(recipe);
+                }
             }
+            Debug.Log($"[CRAFTING] Mesclou {loaded.Length} receitas do Resources. Total: {allRecipes.Count}");
         }
 
         Debug.Log($"[CRAFTING] CraftingManager inicializado com {allRecipes.Count} receitas.");
