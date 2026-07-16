@@ -119,6 +119,16 @@ public class BaseSectorTransition : MonoBehaviour
         // 8. Re-enable player movement
         player.enabled = true;
 
+        // Apply temporary speed boost if boots are equipped
+        if (EquipmentManager.Instance != null && EquipmentManager.Instance.IsEquipped("equip_aprimoramento_bota"))
+        {
+            PlayerAttributesDefensive defStats = player.GetComponent<PlayerAttributesDefensive>();
+            if (defStats != null)
+            {
+                defStats.temporarySpeedBoost = 0.5f; // +50% speed boost that decays over time
+            }
+        }
+
         // Set cooldown (1.5 seconds) to prevent instant back-and-forth triggering
         nextAllowedTransitionTime = Time.time + 1.5f;
 

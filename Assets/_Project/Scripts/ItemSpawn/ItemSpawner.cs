@@ -12,14 +12,14 @@ public class ItemSpawnData
 
 public class ItemSpawner : MonoBehaviour
 {
-    [Header("Configuração Geral")]
+    [Header("Configurao Geral")]
     [Range(0f, 1f)]
     public float spawnChancePerPoint = 0.5f;
 
-    [Header("Itens Coletáveis")]
+    [Header("Itens Coletveis")]
     public List<ItemSpawnData> collectableItems;
 
-    [Header("Decoração do Cenário")]
+    [Header("Decorao do Cenrio")]
     public List<ItemSpawnData> decorationItems;
 
     [Header("Armadilhas")]
@@ -46,6 +46,20 @@ public class ItemSpawner : MonoBehaviour
 
     public void SpawnItems()
     {
+        if (collectableItems == null || collectableItems.Count == 0)
+        {
+            collectableItems = new List<ItemSpawnData>();
+            GameObject[] loadedPrefabs = Resources.LoadAll<GameObject>("SpawnItems");
+            foreach (var prefab in loadedPrefabs)
+            {
+                if (prefab != null)
+                {
+                    collectableItems.Add(new ItemSpawnData { prefab = prefab, chance = 1.0f });
+                }
+            }
+            Debug.Log($"[ItemSpawner] Auto-loaded {collectableItems.Count} prefabs from Resources/SpawnItems.");
+        }
+
         var spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint");
 
         foreach (var point in spawnPoints)
@@ -53,7 +67,7 @@ public class ItemSpawner : MonoBehaviour
             if (Random.value > spawnChancePerPoint)
                 continue;
 
-            // Junta tudo numa lista temporária
+            // Junta tudo numa lista temporria
             List<ItemSpawnData> allItems = new();
             allItems.AddRange(collectableItems);
             allItems.AddRange(decorationItems);

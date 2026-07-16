@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Script unificado de coleta de itens.
@@ -45,6 +46,54 @@ public class ItemPickup : MonoBehaviour
     {
         spawnTime = Time.time;
         if (lifetime > 0) Destroy(gameObject, lifetime);
+        
+        RandomizeItemData();
+    }
+
+    private void RandomizeItemData()
+    {
+        if (interactable == null || interactable.itemData == null) return;
+
+        bool isGenericPlaceholder = interactable.itemData.itemId == "crystal" || 
+                                     interactable.itemData.itemId == "little_frog" || 
+                                     interactable.itemData.itemId == "planta" || 
+                                     interactable.itemData.itemId == "tinker" || 
+                                     string.IsNullOrEmpty(interactable.itemData.enemySource);
+
+        if (!isGenericPlaceholder) return;
+
+        string source = interactable.itemData.enemySource;
+        if (string.IsNullOrEmpty(source))
+        {
+            string nameLower = gameObject.name.ToLower();
+            if (nameLower.Contains("planta")) source = "Flora";
+            else if (nameLower.Contains("frog") || nameLower.Contains("tinker") || nameLower.Contains("carpet")) source = "Fauna";
+            else if (nameLower.Contains("crystal") || nameLower.Contains("stone")) source = "Minerals";
+        }
+
+        if (string.IsNullOrEmpty(source)) return;
+
+        if (ItemDatabase.Instance != null)
+        {
+            List<ItemData> matchingItems = new List<ItemData>();
+            foreach (var item in ItemDatabase.Instance.allItems)
+            {
+                if (item != null && item.enemySource == source)
+                {
+                    matchingItems.Add(item);
+                }
+            }
+
+            if (matchingItems.Count > 0)
+            {
+                ItemData chosen = matchingItems[UnityEngine.Random.Range(0, matchingItems.Count)];
+                interactable.itemData = chosen;
+                interactable.objetoNome = chosen.itemName;
+                interactable.descricao = chosen.description;
+                interactable.icon = chosen.icon;
+                gameObject.name = $"{chosen.itemId}_Pickup";
+            }
+        }
     }
 
     void Update()

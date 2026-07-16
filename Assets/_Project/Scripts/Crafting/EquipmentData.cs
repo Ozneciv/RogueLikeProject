@@ -21,7 +21,8 @@ public enum EquipmentEffectType
     HealthRegenBoost,        // Aumenta a regeneração de vida por segundo
     DashCooldownBoost,       // Diminui o cooldown do dash (multiplicador)
     DashCountsBoost,         // Aumenta a quantidade de cargas de dash
-    DashInvulnerabilityBoost // Aumenta o tempo de invulnerabilidade do dash
+    DashInvulnerabilityBoost, // Aumenta o tempo de invulnerabilidade do dash
+    MagnetRangeBoost         // Aumenta o raio de atração de essências
 }
 
 /// <summary>

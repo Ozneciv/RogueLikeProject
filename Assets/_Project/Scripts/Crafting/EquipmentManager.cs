@@ -344,6 +344,12 @@ public class EquipmentManager : MonoBehaviour
                 if (dashInvStats != null)
                     dashInvStats.ModifyAttribute("DashInvulnerability", data.effectValue, false);
                 break;
+
+            case EquipmentEffectType.MagnetRangeBoost:
+                PlayerAttributesDefensive magnetStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (magnetStats != null)
+                    magnetStats.ModifyAttribute("MagnetRange", data.effectValue, true);
+                break;
         }
     }
 
@@ -457,6 +463,12 @@ public class EquipmentManager : MonoBehaviour
                 PlayerAttributesDefensive dashInvStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
                 if (dashInvStats != null)
                     dashInvStats.ModifyAttribute("DashInvulnerability", -data.effectValue, false);
+                break;
+
+            case EquipmentEffectType.MagnetRangeBoost:
+                PlayerAttributesDefensive magnetStats = player.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (magnetStats != null)
+                    magnetStats.ModifyAttribute("MagnetRange", 1f / data.effectValue, true);
                 break;
         }
     }

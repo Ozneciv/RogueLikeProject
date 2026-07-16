@@ -75,8 +75,15 @@ public class EssencePickup : MonoBehaviour
         // Checa se o player está perto pra atrair
         if (!isBeingAttracted && playerTransform != null)
         {
+            float currentAttractDistance = attractDistance;
+            PlayerAttributesDefensive defStats = playerTransform.GetComponent<PlayerAttributesDefensive>();
+            if (defStats != null)
+            {
+                currentAttractDistance *= defStats.magnetRangeMultiplier;
+            }
+
             float dist = Vector3.Distance(transform.position, playerTransform.position);
-            if (dist < attractDistance)
+            if (dist < currentAttractDistance)
             {
                 isBeingAttracted = true;
             }
