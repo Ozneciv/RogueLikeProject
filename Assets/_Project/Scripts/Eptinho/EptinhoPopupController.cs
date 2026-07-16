@@ -83,7 +83,7 @@ public class EptinhoPopupController : MonoBehaviour
         {
             if (imagemDoItem == null)
             {
-                imagemDoItem = popupUI.transform.Find("PopupPanel/EptinhoFace")?.GetComponent<Image>();
+                imagemDoItem = popupUI.transform.Find("PopupPanel/EPTONHO")?.GetComponent<Image>();
                 if (imagemDoItem == null) imagemDoItem = popupUI.GetComponentInChildren<Image>();
             }
             if (textoDoItem == null)
@@ -104,7 +104,7 @@ public class EptinhoPopupController : MonoBehaviour
     /// <summary>Popup de aviso genérico ou restrição (usado em bloqueios de combate).</summary>
     public void MostrarPopupAviso(string mensagem)
     {
-        Sprite eptinhoFace = Resources.Load<Sprite>("EptinhoFace");
+        Sprite eptinhoFace = Resources.Load<Sprite>("EPTONHO");
         MostrarPopupGenerico(eptinhoFace, mensagem);
     }
 
@@ -131,7 +131,7 @@ public class EptinhoPopupController : MonoBehaviour
         Sprite iconeFinal = icone;
         if (iconeFinal == null)
         {
-            iconeFinal = Resources.Load<Sprite>("EptinhoFace");
+            iconeFinal = Resources.Load<Sprite>("EPTONHO");
         }
 
         if (imagemDoItem != null && iconeFinal != null)
