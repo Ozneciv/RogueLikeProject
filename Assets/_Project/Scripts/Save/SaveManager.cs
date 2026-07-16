@@ -129,6 +129,9 @@ public class SaveManager : MonoBehaviour
         data.craftedEquipmentIds = new List<string>(CachedData.craftedEquipmentIds);
         data.equippedEquipmentIds = new List<string>(CachedData.equippedEquipmentIds);
 
+        // Persiste inimigos descobertos no Bestiário
+        data.inimigosDescobertos = new List<string>(CachedData.inimigosDescobertos);
+
         string json = JsonUtility.ToJson(data, prettyPrint: true);
         File.WriteAllText(SaveFilePath, json);
         Debug.Log($"[SAVE] Progressão salva → {SaveFilePath} | " +

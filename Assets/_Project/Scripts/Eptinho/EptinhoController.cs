@@ -28,7 +28,7 @@ public class EptinhoController : MonoBehaviour
                 // Posiciona o Eptinho flutuando ligeiramente perto da mesa de crafting
                 Vector3 spawnPos = table.transform.position + new Vector3(-1.8f, 1.3f, 1.2f);
                 GameObject eptinho = Instantiate(prefab, spawnPos, Quaternion.Euler(0f, 135f, 0f));
-                eptinho.name = "EptinOracle";
+                eptinho.name = "EptOracle";
                 
                 // Configura o componente Interactable
                 Interactable interactable = eptinho.GetComponent<Interactable>();
@@ -47,13 +47,48 @@ public class EptinhoController : MonoBehaviour
                 }
                 trigger.isTrigger = true;
                 trigger.radius = 1.5f;
-                
+
+                // Adiciona EptinhoOracleInteract no filho 'Trigger Menu' (BoxCollider trigger)
+                bool foundTriggerMenu = false;
+                foreach (Transform child in eptinho.GetComponentsInChildren<Transform>(true))
+                {
+                    if (child.name == "Trigger Menu")
+                    {
+                        BoxCollider bc = child.GetComponent<BoxCollider>();
+                        if (bc != null) bc.isTrigger = true;
+
+                        EptinhoOracleInteract childInteract = child.GetComponent<EptinhoOracleInteract>();
+                        if (childInteract == null)
+                        {
+                            child.gameObject.AddComponent<EptinhoOracleInteract>();
+                        }
+                        foundTriggerMenu = true;
+                        break;
+                    }
+                }
+
+                // Fallback: adiciona no root se não houver filho 'Trigger Menu'
+                if (!foundTriggerMenu)
+                {
+                    EptinhoOracleInteract rootInteract = eptinho.GetComponent<EptinhoOracleInteract>();
+                    if (rootInteract == null)
+                        eptinho.AddComponent<EptinhoOracleInteract>();
+                }
+
                 Debug.Log("[EPTINHO] Modelo fisico do Oraculo spawnado perto da mesa de crafting na Base.");
             }
             else
             {
                 Debug.LogWarning("[EPTINHO] Prefab Eptin nao encontrado na pasta Resources.");
             }
+        }
+
+        // Garante que EnemyDataAutoLoader existe na cena
+        if (EnemyDataAutoLoader.instancia == null)
+        {
+            GameObject loaderGO = new GameObject("EnemyDataAutoLoader");
+            loaderGO.AddComponent<EnemyDataAutoLoader>();
+            DontDestroyOnLoad(loaderGO);
         }
     }
 

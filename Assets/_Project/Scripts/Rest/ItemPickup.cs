@@ -212,7 +212,33 @@ public class ItemPickup : MonoBehaviour
 
         // Coleta por tecla F (somente quando player está na zona)
         if (playerNearby != null && canBePickedUp && Input.GetKeyDown(KeyCode.F))
+        {
+            // Bloqueia coleta se há inimigos ativos
+            bool hasActiveEnemies = false;
+            GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (var enemy in enemies)
+            {
+                if (enemy == null || !enemy.activeInHierarchy) continue;
+                DummyHealth health = enemy.GetComponentInChildren<DummyHealth>();
+                if (health != null)
+                {
+                    if (health.CurrentHealth > 0) { hasActiveEnemies = true; break; }
+                }
+                else
+                {
+                    hasActiveEnemies = true; break;
+                }
+            }
+
+            if (hasActiveEnemies)
+            {
+                if (EptinhoPopupController.instancia != null)
+                    EptinhoPopupController.instancia.MostrarPopupAviso("Não é hora de distrações — há inimigos por aqui!");
+                return;
+            }
+
             TryCollect(playerNearby);
+        }
     }
 
     void OnTriggerEnter(Collider other)
