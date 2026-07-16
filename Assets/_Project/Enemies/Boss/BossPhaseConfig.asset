@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14407b66bb5115143b7628a725db5631, type: 3}
+  m_Name: BossPhaseConfig
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhaseConfig
+  maxHealth: 500
+  phase2Threshold: 0.7
+  phase3Threshold: 0.35
+  baseSpeed: 3.5
+  rotationSpeed: 120
+  phase3SpeedMultiplier: 1.4
+  phase3AttackCooldownMultiplier: 0.5
+  stunDuration: 3
+  baseMeleeDamage: 25
+  baseMeleeRange: 4
+  baseMeleeCooldown: 2.5
