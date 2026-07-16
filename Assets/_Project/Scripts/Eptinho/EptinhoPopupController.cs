@@ -136,6 +136,61 @@ public class EptinhoPopupController : MonoBehaviour
                     }
                 }
             }
+            // --- Estilização Estilo JARVIS / Visor Holográfico ---
+            // 1. Estiliza o painel principal (PopupPanel)
+            Transform panel = popupUI.transform.Find("PopupPanel");
+            if (panel != null)
+            {
+                Image panelImg = panel.GetComponent<Image>();
+                if (panelImg != null)
+                {
+                    // Fundo escuro semi-transparente (glassmorphism)
+                    panelImg.color = new Color(0.04f, 0.03f, 0.08f, 0.85f);
+                    
+                    // Adiciona borda neon ciano (visor do Iron Man / Jarvis)
+                    Outline outline = panel.GetComponent<Outline>();
+                    if (outline == null) outline = panel.gameObject.AddComponent<Outline>();
+                    outline.effectColor = new Color(0.0f, 0.75f, 1.0f, 0.65f); // Ciano neon brilhante
+                    outline.effectDistance = new Vector2(2f, 2f);
+                }
+            }
+
+            // 2. Estiliza a imagem do Eptinho e cria uma moldura para o retrato
+            if (imagemDoItem != null)
+            {
+                imagemDoItem.preserveAspect = true; // Impede achatamento/esticamento
+
+                Transform parent = imagemDoItem.transform.parent;
+                Transform existingBg = parent.Find("PortraitBg");
+                if (existingBg == null)
+                {
+                    GameObject bgGO = new GameObject("PortraitBg");
+                    bgGO.transform.SetParent(parent, false);
+                    bgGO.transform.SetSiblingIndex(imagemDoItem.transform.GetSiblingIndex());
+
+                    Image bgImg = bgGO.AddComponent<Image>();
+                    bgImg.color = new Color(0.12f, 0.08f, 0.22f, 0.90f); // Fundo escuro para a foto
+
+                    Outline bgOutline = bgGO.AddComponent<Outline>();
+                    bgOutline.effectColor = new Color(0.6f, 0.35f, 1.0f, 0.6f); // Borda roxa neon holográfica
+                    bgOutline.effectDistance = new Vector2(1.5f, 1.5f);
+
+                    RectTransform bgRect = bgGO.GetComponent<RectTransform>();
+                    RectTransform imgRect = imagemDoItem.GetComponent<RectTransform>();
+
+                    bgRect.anchorMin = imgRect.anchorMin;
+                    bgRect.anchorMax = imgRect.anchorMax;
+                    bgRect.pivot = imgRect.pivot;
+                    bgRect.anchoredPosition = imgRect.anchoredPosition;
+                    bgRect.sizeDelta = imgRect.sizeDelta + new Vector2(10f, 10f); // Moldura ligeiramente maior
+                }
+            }
+
+            // 3. Estiliza a cor do texto para ciano claro holográfico
+            if (textoDoItem != null)
+            {
+                textoDoItem.color = new Color(0.85f, 0.95f, 1.0f, 1.0f);
+            }
         }
     }
 
