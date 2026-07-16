@@ -94,7 +94,7 @@ public class RecipeSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         nameRect.offsetMax = new Vector2(-8f, 0f);
         nameObj.AddComponent<CanvasRenderer>();
         nameText = nameObj.AddComponent<TextMeshProUGUI>();
-        nameText.fontSize = 13f;
+        nameText.fontSize = 16f; // Aumentado de 13f
         nameText.fontStyle = FontStyles.Bold;
         nameText.color = new Color(0.9f, 0.88f, 0.95f, 1f);
         nameText.alignment = TextAlignmentOptions.MidlineLeft;
@@ -114,9 +114,17 @@ public class RecipeSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         statusRect.offsetMax = new Vector2(-8f, 0f);
         statusObj.AddComponent<CanvasRenderer>();
         statusText = statusObj.AddComponent<TextMeshProUGUI>();
-        statusText.fontSize = 10f;
+        statusText.fontSize = 12f; // Aumentado de 10f
         statusText.alignment = TextAlignmentOptions.MidlineLeft;
         statusText.raycastTarget = false;
+
+        // Carrega e aplica a fonte Oswald Bold SDF consistente
+        TMP_FontAsset customFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Oswald Bold SDF");
+        if (customFont != null)
+        {
+            nameText.font = customFont;
+            statusText.font = customFont;
+        }
     }
 
     /// <summary>

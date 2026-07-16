@@ -64,11 +64,14 @@ public class CraftingUI : MonoBehaviour
     private bool uiBuilt = false;
     private CraftingRecipe selectedRecipe;
 
+    public TMP_FontAsset customFont;
+
     // Cores do painel (tema escuro/roxo consistente com InventoryUI)
-    private static readonly Color PANEL_BG = new Color(0.05f, 0.05f, 0.09f, 0.95f);
+    private static readonly Color PANEL_BG = new Color(0.04f, 0.04f, 0.07f, 0.82f); // frosted glass background consistent with InventoryUI
+    private static readonly Color PANEL_BORDER = new Color(1f, 1f, 1f, 0.12f); // light reflection border
     private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1f);
     private static readonly Color ACCENT = new Color(0.6f, 0.45f, 0.90f, 1f);
-    private static readonly Color SECTION_BG = new Color(0.08f, 0.08f, 0.12f, 0.9f);
+    private static readonly Color SECTION_BG = new Color(0.08f, 0.08f, 0.12f, 0.85f); // frosted glass sub-section background
     private static readonly Color BTN_CRAFT_ENABLED = new Color(0.25f, 0.70f, 0.30f, 1f);
     private static readonly Color BTN_CRAFT_DISABLED = new Color(0.3f, 0.3f, 0.3f, 0.6f);
     private static readonly Color BTN_EQUIP = new Color(0.3f, 0.55f, 0.85f, 1f);
@@ -77,7 +80,7 @@ public class CraftingUI : MonoBehaviour
     // Dimensões
     private const float PANEL_WIDTH = 700f;
     private const float PANEL_HEIGHT = 520f;
-    private const float RECIPE_SLOT_HEIGHT = 52f;
+    private const float RECIPE_SLOT_HEIGHT = 58f; // Aumentado de 52f para melhor espaçamento de fontes maiores
     private const float EQUIPMENT_SLOT_SIZE = 110f;
 
     void Awake()
@@ -90,6 +93,12 @@ public class CraftingUI : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // Carrega Oswald Bold SDF como fallback consistente se não definida no Inspector
+        if (customFont == null)
+        {
+            customFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Oswald Bold SDF");
+        }
     }
 
     void Start()
@@ -406,6 +415,28 @@ public class CraftingUI : MonoBehaviour
         panelBg.color = PANEL_BG;
         panelBg.raycastTarget = true;
 
+        // Efeito de sombra (Drop Shadow) para dar profundidade de vidro suspenso
+        Shadow panelShadow = panelObject.AddComponent<Shadow>();
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
+        panelShadow.effectDistance = new Vector2(6f, -6f);
+
+        // Acento reflexivo superior de vidro (Glass Highlight)
+        GameObject glassHighlightObj = new GameObject("GlassHighlight");
+        glassHighlightObj.transform.SetParent(panelObject.transform, false);
+        glassHighlightObj.layer = panelObject.layer;
+
+        RectTransform glassHighlightRect = glassHighlightObj.AddComponent<RectTransform>();
+        glassHighlightRect.anchorMin = new Vector2(0f, 1f);
+        glassHighlightRect.anchorMax = new Vector2(1f, 1f);
+        glassHighlightRect.pivot = new Vector2(0.5f, 1f);
+        glassHighlightRect.anchoredPosition = new Vector2(0f, -2f);
+        glassHighlightRect.sizeDelta = new Vector2(-4f, 2f);
+
+        glassHighlightObj.AddComponent<CanvasRenderer>();
+        Image glassHighlightImg = glassHighlightObj.AddComponent<Image>();
+        glassHighlightImg.color = new Color(1f, 1f, 1f, 0.12f); // reflexo superior fino
+        glassHighlightImg.raycastTarget = false;
+
         // Borda do painel
         CreateBorder(panelObject.transform);
 
@@ -438,7 +469,7 @@ public class CraftingUI : MonoBehaviour
         r.sizeDelta = new Vector2(4f, 4f);
         borderObj.AddComponent<CanvasRenderer>();
         Image img = borderObj.AddComponent<Image>();
-        img.color = new Color(0.35f, 0.30f, 0.55f, 0.7f);
+        img.color = PANEL_BORDER;
         img.type = Image.Type.Sliced;
         img.fillCenter = false;
         img.raycastTarget = false;
@@ -472,11 +503,12 @@ public class CraftingUI : MonoBehaviour
         obj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI txt = obj.AddComponent<TextMeshProUGUI>();
         txt.text = "MESA DE TRABALHO";
-        txt.fontSize = 18f;
+        txt.fontSize = 22f; // Aumentado de 18f
         txt.fontStyle = FontStyles.Bold;
         txt.color = HEADER_COLOR;
         txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
+        if (customFont != null) txt.font = customFont;
     }
 
     private void CreateRecipeListSection(Transform parent)
@@ -507,11 +539,12 @@ public class CraftingUI : MonoBehaviour
         labelObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
         labelText.text = "RECEITAS";
-        labelText.fontSize = 11f;
+        labelText.fontSize = 14f; // Aumentado de 11f
         labelText.fontStyle = FontStyles.Bold;
         labelText.color = ACCENT;
         labelText.alignment = TextAlignmentOptions.Center;
         labelText.raycastTarget = false;
+        if (customFont != null) labelText.font = customFont;
 
         // ScrollView para as receitas
         GameObject scrollObj = new GameObject("RecipeScroll");
@@ -577,7 +610,7 @@ public class CraftingUI : MonoBehaviour
         // Nome da receita
         detailNameText = CreateTextElement(detailPanel.transform, "DetailName",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -8f), new Vector2(-16f, 28f), 16f, FontStyles.Bold, HEADER_COLOR);
+            new Vector2(0f, -8f), new Vector2(-16f, 28f), 20f, FontStyles.Bold, HEADER_COLOR);
 
         // Descrição
         detailDescText = CreateTextElement(detailPanel.transform, "DetailDesc",
@@ -628,11 +661,12 @@ public class CraftingUI : MonoBehaviour
         btnTextObj.AddComponent<CanvasRenderer>();
         craftButtonText = btnTextObj.AddComponent<TextMeshProUGUI>();
         craftButtonText.text = "CRAFTAR";
-        craftButtonText.fontSize = 14f;
+        craftButtonText.fontSize = 17f; // Aumentado de 14f
         craftButtonText.fontStyle = FontStyles.Bold;
         craftButtonText.color = Color.white;
         craftButtonText.alignment = TextAlignmentOptions.Center;
         craftButtonText.raycastTarget = false;
+        if (customFont != null) craftButtonText.font = customFont;
 
         // Inicializa com "selecione uma receita"
         detailNameText.text = "Selecione uma receita";
@@ -669,11 +703,12 @@ public class CraftingUI : MonoBehaviour
         labelObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI label = labelObj.AddComponent<TextMeshProUGUI>();
         label.text = "MELHORIAS CRAFTADAS";
-        label.fontSize = 11f;
+        label.fontSize = 14f; // Aumentado de 11f
         label.fontStyle = FontStyles.Bold;
         label.color = ACCENT;
         label.alignment = TextAlignmentOptions.Center;
         label.raycastTarget = false;
+        if (customFont != null) label.font = customFont;
 
         // ScrollView horizontal para equipamentos
         GameObject scrollObj = new GameObject("EquipScroll");
@@ -741,12 +776,13 @@ public class CraftingUI : MonoBehaviour
         nameObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
         nameText.text = equip.equipmentName;
-        nameText.fontSize = 10f;
+        nameText.fontSize = 13f; // Aumentado de 10f
         nameText.fontStyle = FontStyles.Bold;
         nameText.color = new Color(0.9f, 0.88f, 0.95f);
         nameText.alignment = TextAlignmentOptions.Center;
         nameText.raycastTarget = false;
         nameText.enableWordWrapping = true;
+        if (customFont != null) nameText.font = customFont;
 
         // Efeito
         GameObject effectObj = new GameObject("Effect");
@@ -760,10 +796,11 @@ public class CraftingUI : MonoBehaviour
         effectObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI effectText = effectObj.AddComponent<TextMeshProUGUI>();
         effectText.text = GetEffectDescription(equip);
-        effectText.fontSize = 9f;
+        effectText.fontSize = 11f; // Aumentado de 9f
         effectText.color = new Color(0.6f, 0.85f, 0.6f);
         effectText.alignment = TextAlignmentOptions.Center;
         effectText.raycastTarget = false;
+        if (customFont != null) effectText.font = customFont;
 
         // Botão Equipar/Desequipar
         GameObject btnObj = new GameObject("EquipBtn");
@@ -799,11 +836,12 @@ public class CraftingUI : MonoBehaviour
         btnTextObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI btnText = btnTextObj.AddComponent<TextMeshProUGUI>();
         btnText.text = isEquipped ? "DESEQUIPAR" : "EQUIPAR";
-        btnText.fontSize = 10f;
+        btnText.fontSize = 12f; // Aumentado de 10f
         btnText.fontStyle = FontStyles.Bold;
         btnText.color = Color.white;
         btnText.alignment = TextAlignmentOptions.Center;
         btnText.raycastTarget = false;
+        if (customFont != null) btnText.font = customFont;
 
         return slotObj;
     }
@@ -841,10 +879,11 @@ public class CraftingUI : MonoBehaviour
         xObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI x = xObj.AddComponent<TextMeshProUGUI>();
         x.text = "X";
-        x.fontSize = 16f;
+        x.fontSize = 18f; // Aumentado de 16f
         x.color = Color.white;
         x.alignment = TextAlignmentOptions.Center;
         x.raycastTarget = false;
+        if (customFont != null) x.font = customFont;
     }
 
     private TextMeshProUGUI CreateTextElement(Transform parent, string name,
@@ -870,6 +909,7 @@ public class CraftingUI : MonoBehaviour
         txt.alignment = TextAlignmentOptions.TopLeft;
         txt.raycastTarget = false;
         txt.enableWordWrapping = true;
+        if (customFont != null) txt.font = customFont;
         return txt;
     }
 }
