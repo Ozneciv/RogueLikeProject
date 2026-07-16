@@ -22,13 +22,13 @@ public class EptinhoController : MonoBehaviour
         GameObject table = GameObject.Find("crafting table");
         if (table != null)
         {
-            GameObject prefab = Resources.Load<GameObject>("EptinhoModel");
+            GameObject prefab = Resources.Load<GameObject>("Eptin");
             if (prefab != null)
             {
                 // Posiciona o Eptinho flutuando ligeiramente perto da mesa de crafting
                 Vector3 spawnPos = table.transform.position + new Vector3(-1.8f, 1.3f, 1.2f);
                 GameObject eptinho = Instantiate(prefab, spawnPos, Quaternion.Euler(0f, 135f, 0f));
-                eptinho.name = "EptinhoOracle";
+                eptinho.name = "EptinOracle";
                 
                 // Configura o componente Interactable
                 Interactable interactable = eptinho.GetComponent<Interactable>();
@@ -52,7 +52,7 @@ public class EptinhoController : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[EPTINHO] Prefab EptinhoModel nao encontrado na pasta Resources.");
+                Debug.LogWarning("[EPTINHO] Prefab Eptin nao encontrado na pasta Resources.");
             }
         }
     }

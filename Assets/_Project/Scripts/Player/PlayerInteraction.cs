@@ -37,7 +37,7 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (itemAtual != null && Input.GetKeyDown(KeyCode.F))
         {
-            if (itemAtual.gameObject.name.Contains("Eptinho"))
+            if (itemAtual.gameObject.name.Contains("Eptinho") || itemAtual.gameObject.name.Contains("Eptin"))
             {
                 EptinhoController eptinhoCtrl = FindFirstObjectByType<EptinhoController>();
                 if (eptinhoCtrl != null)
