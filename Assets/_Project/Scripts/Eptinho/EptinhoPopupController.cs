@@ -9,7 +9,26 @@ using System.Collections;
 /// </summary>
 public class EptinhoPopupController : MonoBehaviour
 {
-    public static EptinhoPopupController instancia;
+    private static EptinhoPopupController _instancia;
+    public static EptinhoPopupController instancia
+    {
+        get
+        {
+            if (_instancia == null)
+            {
+                _instancia = FindFirstObjectByType<EptinhoPopupController>();
+                if (_instancia == null)
+                {
+                    GameObject go = new GameObject("EptinhoPopupController_Auto");
+                    _instancia = go.AddComponent<EptinhoPopupController>();
+                    DontDestroyOnLoad(go);
+                    Debug.Log("[EPTINHO POPUP] Criado automaticamente sob demanda.");
+                }
+            }
+            return _instancia;
+        }
+        private set { _instancia = value; }
+    }
 
     public GameObject popupUI;
     public Image imagemDoItem;
@@ -19,12 +38,12 @@ public class EptinhoPopupController : MonoBehaviour
 
     void Awake()
     {
-        if (instancia == null)
+        if (_instancia == null)
         {
-            instancia = this;
+            _instancia = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (_instancia != this)
         {
             Destroy(gameObject);
             return;

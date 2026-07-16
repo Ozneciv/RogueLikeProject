@@ -46,16 +46,30 @@ public class ItemPickup : MonoBehaviour
     [HideInInspector]
     public string forceCategory = "";
 
+    private bool isInitialized = false;
+
+    public void InitializeItem(string category)
+    {
+        forceCategory = category;
+        RandomizeItemData();
+    }
+
     void Start()
     {
         spawnTime = Time.time;
         if (lifetime > 0) Destroy(gameObject, lifetime);
         
-        RandomizeItemData();
+        if (!isInitialized)
+        {
+            RandomizeItemData();
+        }
     }
 
     private void RandomizeItemData()
     {
+        if (isInitialized) return;
+        isInitialized = true;
+
         if (interactable == null || interactable.itemData == null) return;
 
         bool isGenericPlaceholder = !string.IsNullOrEmpty(forceCategory) ||

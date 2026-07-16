@@ -406,7 +406,6 @@ public class RoomController : MonoBehaviour
 
         if (isNearWall)
         {
-            // Project to the nearest edge/wall of the BoxCollider bounds
             float distToMinX = Mathf.Abs(x - bounds.min.x);
             float distToMaxX = Mathf.Abs(bounds.max.x - x);
             float distToMinZ = Mathf.Abs(z - bounds.min.z);
@@ -414,7 +413,6 @@ public class RoomController : MonoBehaviour
 
             float minDist = Mathf.Min(Mathf.Min(distToMinX, distToMaxX), Mathf.Min(distToMinZ, distToMaxZ));
 
-            // Move the coordinate exactly towards the closest boundary edge (inwards slightly by 5% buffer)
             float margin = 0.05f;
             if (minDist == distToMinX) x = bounds.min.x + (bounds.size.x * margin);
             else if (minDist == distToMaxX) x = bounds.max.x - (bounds.size.x * margin);
@@ -422,12 +420,24 @@ public class RoomController : MonoBehaviour
             else if (minDist == distToMaxZ) z = bounds.max.z - (bounds.size.z * margin);
         }
 
-        // Base ground level of the BoxCollider bounds
+        // Snap to ground using Raycast downwards
         float y = bounds.min.y + spawnHeightOffset;
+        Vector3 rayStart = new Vector3(x, bounds.max.y + 5f, z);
+        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 25f))
+        {
+            if (!hit.collider.isTrigger)
+            {
+                y = hit.point.y;
+            }
+        }
 
         if (isHigh)
         {
-            y += 2.0f; // Floating above the ground
+            y += 1.8f; // Floating above the ground
+        }
+        else
+        {
+            y += 0.05f; // Slightly above ground to prevent clipping
         }
 
         return new Vector3(x, y, z);
@@ -455,10 +465,9 @@ public class RoomController : MonoBehaviour
         {
             Vector3 pos = GetRandomPositionForCollectible(area, false, false);
             GameObject obj = Instantiate(crystalPrefab, pos, Quaternion.identity);
-            obj.transform.SetParent(transform);
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
-            if (pickup != null) pickup.forceCategory = "Minerals";
+            if (pickup != null) pickup.InitializeItem("Minerals");
         }
 
         // 2. Spawn Fauna (High/floating, glowing)
@@ -466,10 +475,9 @@ public class RoomController : MonoBehaviour
         {
             Vector3 pos = GetRandomPositionForCollectible(area, true, false);
             GameObject obj = Instantiate(faunaPrefab, pos, Quaternion.identity);
-            obj.transform.SetParent(transform);
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
-            if (pickup != null) pickup.forceCategory = "Fauna";
+            if (pickup != null) pickup.InitializeItem("Fauna");
         }
 
         // 3. Spawn Flora (Flat on ground, near walls, glowing)
@@ -477,10 +485,9 @@ public class RoomController : MonoBehaviour
         {
             Vector3 pos = GetRandomPositionForCollectible(area, false, true);
             GameObject obj = Instantiate(plantPrefab, pos, Quaternion.identity);
-            obj.transform.SetParent(transform);
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
-            if (pickup != null) pickup.forceCategory = "Flora";
+            if (pickup != null) pickup.InitializeItem("Flora");
         }
     }
 
