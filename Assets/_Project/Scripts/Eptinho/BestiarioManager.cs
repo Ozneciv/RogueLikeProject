@@ -43,7 +43,10 @@ public class BestiarioManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+    }
 
+    void Start()
+    {
         CarregarDoSave();
     }
 
