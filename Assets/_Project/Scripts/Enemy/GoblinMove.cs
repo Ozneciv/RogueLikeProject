@@ -49,7 +49,7 @@ public class GoblinAI_Transform : MonoBehaviour
     
     [Tooltip("Movement acceleration (higher = more responsive).")]
     [FormerlySerializedAs("aceleracao")]
-    public float acceleration = 12f;
+    public float acceleration = 5f;
 
     // ── Ranged Attack (Bomb) ────────────────────────────────────
     [Header("Ranged - Bomb Throw")]
@@ -162,9 +162,19 @@ public class GoblinAI_Transform : MonoBehaviour
         float dist = Vector3.Distance(transform.position, player.position);
         UpdateState(dist);
 
-        // Turn towards player (except during pure fleeing)
-        if (currentState != State.Flee)
+        // Durante o arremesso: trava a rotação na direção do player (snap imediato)
+        // Impede que o Goblin jogue de costas durante a transição de strafe
+        if (isThrowing)
+        {
+            Vector3 dirToPlayer = player.position - transform.position;
+            dirToPlayer.y = 0;
+            if (dirToPlayer.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(dirToPlayer);
+        }
+        else if (currentState != State.Flee)
+        {
             LookAtPlayer();
+        }
     }
 
     void FixedUpdate()
@@ -216,7 +226,7 @@ public class GoblinAI_Transform : MonoBehaviour
         }
 
         currentState = newState;
-        anim.SetBool("Running", newState == State.Chase || newState == State.Flee);
+        // Não seta Running aqui — isso é feito por velocidade real em ExecuteMovement
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -236,14 +246,19 @@ public class GoblinAI_Transform : MonoBehaviour
                 break;
 
             case State.MeleeAttack:
-                // Stop completely to strike
+                // Para completamente para atacar
                 targetVelocity = Vector3.zero;
                 break;
 
             case State.RangedAttack:
-                // Slow strafe when attacking
-                Vector3 lateral = transform.right * strafeDir * strafeSpeed * 0.3f;
-                targetVelocity = new Vector3(lateral.x, 0, lateral.z);
+                // Para completamente durante o arremesso; strafe suave quando livre
+                if (isThrowing)
+                    targetVelocity = Vector3.zero;
+                else
+                {
+                    Vector3 lateral = transform.right * strafeDir * strafeSpeed * 0.3f;
+                    targetVelocity = new Vector3(lateral.x, 0, lateral.z);
+                }
                 break;
 
             case State.Idle:
@@ -252,7 +267,7 @@ public class GoblinAI_Transform : MonoBehaviour
                 break;
         }
 
-        // Smooth acceleration
+        // Suaviza a aceleração gradualmente
         currentVelocity = Vector3.MoveTowards(
             currentVelocity,
             new Vector3(targetVelocity.x, 0, targetVelocity.z),
@@ -260,6 +275,11 @@ public class GoblinAI_Transform : MonoBehaviour
         );
 
         rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
+
+        // Sincroniza a animação Running com a velocidade real
+        // Threshold alto o suficiente para o strafe lento (1.2 u/s) não ativar corrida
+        float speed = new Vector3(currentVelocity.x, 0f, currentVelocity.z).magnitude;
+        anim.SetBool("Running", speed > 2.5f);
     }
 
     // ─────────────────────────────────────────────────────────────────

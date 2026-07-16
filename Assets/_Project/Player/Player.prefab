@@ -1749,7 +1749,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Player_WeaponManager
   rightHand: {fileID: 7952616563520327378}
   attackScript: {fileID: 399265535294509767}
-  playerAnimator: {fileID: 0}
+  playerAnimator: {fileID: 3618305479678570340}
 --- !u!114 &6793213990562782912
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1835,7 +1835,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesDefensive
   armorRegen: 10
   dodgeChance: 0
-  damageNegation: 0
+  damageNegation: 39.5
   thorns: 0
   dashCooldownMultiplier: 1
   dashCounts: 1
@@ -3993,7 +3993,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 135dcf644ad32864e87e1a0d9e5a7198, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesOffensive
-  baseDamageMultiplier: 1
+  baseDamageMultiplier: 2
   attackSpeedMelee: 1
   critChance: 38.3
   critMultiplier: 1.5

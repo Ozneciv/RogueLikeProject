@@ -73,7 +73,7 @@ public class GameManager : MonoBehaviour
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         // Se chegamos na Base...
-        if (scene.name == "BaseLab")
+        if (scene.name == "BaseLab" || scene.name == "Base")
         {
             if (currentPlayer != null)
             {
@@ -93,7 +93,7 @@ public class GameManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("GameManager: 'Base_SpawnPoint' não encontrado na BaseLab!");
+                    Debug.LogWarning("GameManager: 'Base_SpawnPoint' não encontrado na Base!");
                 }
 
                 // 2. Manda o jogador tocar a animação de acordar
@@ -160,7 +160,7 @@ public class GameManager : MonoBehaviour
     {
         FindLoadingReferences();
         if (loadingScreenCanvas != null) loadingScreenCanvas.SetActive(true);
-        SceneManager.LoadScene("BaseLab");
+        SceneManager.LoadScene("Base");
     }
 
     private IEnumerator LoadLevelAsync(string sceneName)

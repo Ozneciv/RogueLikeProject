@@ -119,9 +119,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   weaponType: 2
-  equipPosition: {x: 0, y: 0, z: 0}
-  equipRotation: {x: 0, y: 0, z: 0}
-  weaponAnimatorOverride: {fileID: 22100000, guid: 9e0452c3f06758c41a9acf005160b3cb, type: 2}
+  equipPosition: {x: -0.17, y: 0.3, z: 0.08}
+  equipRotation: {x: 15, y: -8, z: 32}
+  weaponAnimatorOverride: {fileID: 9100000, guid: e2d6c5ac1668e1542b67d06ea2dc47a8, type: 2}
 --- !u!114 &1560236383425289553
 MonoBehaviour:
   m_ObjectHideFlags: 0

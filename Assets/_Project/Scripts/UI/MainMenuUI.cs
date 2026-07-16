@@ -15,7 +15,7 @@ using TMPro;
 public class MainMenuUI : MonoBehaviour
 {
     [Header("Navegação")]
-    public string playSceneName = "BaseLab";
+    public string playSceneName = "Base";
 
     [Header("Créditos")]
     public string studioName = "EPTA Entertainment";

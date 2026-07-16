@@ -19,10 +19,17 @@ public class PlayerPreviewManager : MonoBehaviour
     [Tooltip("Resolução vertical do render texture.")]
     public int textureHeight = 512;
 
-    private GameObject stageObject;
+    [Header("Ajustes da Câmera de Preview (Tempo Real)")]
+    [Tooltip("Offset local (X, Y, Z) da câmera de preview em relação ao player.")]
+    public Vector3 previewCamOffset = new Vector3(0f, 1.5f, 5.0f);
+    [Tooltip("Campo de visão da câmera (FOV).")]
+    public float previewCamFOV = 35f;
+    [Tooltip("Inclinação da câmera no eixo X.")]
+    public float previewCamRotationX = 3f;
+    [Tooltip("Intensidade da iluminação frontal.")]
+    public float previewLightIntensity = 4.0f;
+
     private Camera previewCamera;
-    private Light previewLight;
-    private GameObject spawnedPreviewModel;
     private RenderTexture renderTexture;
     private RawImage targetRawImage;
 
@@ -46,188 +53,132 @@ public class PlayerPreviewManager : MonoBehaviour
     {
         targetRawImage = rawImage;
 
-        // Cria a textura de renderização em tempo real se não existir
-        if (renderTexture == null)
-        {
-            renderTexture = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32);
-            renderTexture.antiAliasing = 4;
-            renderTexture.Create();
-        }
-
         if (targetRawImage != null)
         {
+            // Pega as dimensões do RectTransform para evitar qualquer distorção de aspecto (anti-esticamento)
+            RectTransform rectTrans = targetRawImage.GetComponent<RectTransform>();
+            int width = 512;
+            int height = 1024;
+            if (rectTrans != null)
+            {
+                width = Mathf.RoundToInt(rectTrans.rect.width * 2f); // Supersampling x2 para nitidez premium
+                height = Mathf.RoundToInt(rectTrans.rect.height * 2f);
+            }
+
+            // Garante dimensões válidas
+            if (width <= 0) width = 512;
+            if (height <= 0) height = 1024;
+
+            // Recria a textura se as dimensões mudarem
+            if (renderTexture != null && (renderTexture.width != width || renderTexture.height != height))
+            {
+                renderTexture.Release();
+                Destroy(renderTexture);
+                renderTexture = null;
+            }
+
+            if (renderTexture == null)
+            {
+                renderTexture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+                renderTexture.antiAliasing = 4;
+                renderTexture.Create();
+            }
+
             targetRawImage.texture = renderTexture;
             targetRawImage.enabled = true;
         }
-
-        // Constrói o Palco 3D fisicamente isolado
-        if (stageObject == null)
-        {
-            stageObject = new GameObject("PlayerPreview_Stage");
-            stageObject.transform.position = stagePosition;
-            DontDestroyOnLoad(stageObject);
-
-            // Criar um pequeno piso para o personagem
-            GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            floor.name = "PreviewFloor";
-            floor.transform.SetParent(stageObject.transform);
-            floor.transform.localPosition = Vector3.zero;
-            floor.transform.localScale = new Vector3(0.3f, 1f, 0.3f);
-            
-            // Remove o colisor do piso para evitar colisões com o mundo
-            Collider col = floor.GetComponent<Collider>();
-            if (col != null) Destroy(col);
-
-            // Criar a Câmera de Preview focando o modelo
-            GameObject camObj = new GameObject("PreviewCamera");
-            camObj.transform.SetParent(stageObject.transform);
-            camObj.transform.localPosition = new Vector3(0f, 1.1f, -1.8f);
-            camObj.transform.localRotation = Quaternion.Euler(5f, 0f, 0f);
-
-            previewCamera = camObj.AddComponent<Camera>();
-            previewCamera.clearFlags = CameraClearFlags.SolidColor;
-            previewCamera.backgroundColor = new Color(0.06f, 0.06f, 0.09f, 1f); // Fundo escuro premium
-            previewCamera.fieldOfView = 38f;
-            previewCamera.targetTexture = renderTexture;
-            previewCamera.nearClipPlane = 0.1f;
-            previewCamera.farClipPlane = 10f;
-            previewCamera.enabled = false;
-
-            // Criar luz Direcional/Spot para o personagem
-            GameObject lightObj = new GameObject("PreviewLight");
-            lightObj.transform.SetParent(stageObject.transform);
-            lightObj.transform.localPosition = new Vector3(-1f, 3f, -2f);
-            lightObj.transform.localRotation = Quaternion.Euler(40f, 25f, 0f);
-
-            previewLight = lightObj.AddComponent<Light>();
-            previewLight.type = LightType.Directional;
-            previewLight.intensity = 1.8f;
-            previewLight.color = new Color(0.85f, 0.9f, 1f); // Brilho levemente azulado futurista
-            previewLight.enabled = false;
-        }
     }
 
     /// <summary>
-    /// Ativa o preview 3D, instanciando e limpando o clone do player
+    /// Ativa o preview 3D, acoplando a câmera ao jogador real da cena
     /// </summary>
     public void Activate()
     {
-        if (stageObject == null) return;
-
-        // Liga componentes de render
-        if (previewCamera != null) previewCamera.enabled = true;
-        if (previewLight != null) previewLight.enabled = true;
-
-        // Limpa o anterior
-        if (spawnedPreviewModel != null) Destroy(spawnedPreviewModel);
-
-        // Clona o visual atual do jogador baseado no PlayerSkinManager
-        PlayerSkinManager skinManager = FindFirstObjectByType<PlayerSkinManager>();
-        if (skinManager != null)
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
         {
-            string activeSkin = skinManager.ActiveSkinID;
-            PlayerSkinConfig activeConfig = new PlayerSkinConfig();
-            bool found = false;
-
-            foreach (var s in skinManager.skins)
+            // Tenta localizar ou criar a câmera de preview acoplada ao player
+            Transform camT = player.transform.Find("PlayerPreviewCamera");
+            if (camT == null)
             {
-                if (s.skinID == activeSkin)
-                {
-                    activeConfig = s;
-                    found = true;
-                    break;
-                }
+                GameObject camObj = new GameObject("PlayerPreviewCamera");
+                camObj.transform.SetParent(player.transform, false);
+                
+                // Posiciona com base no previewCamOffset
+                camObj.transform.localPosition = previewCamOffset;
+                camObj.transform.localRotation = Quaternion.Euler(previewCamRotationX, 180f, 0f);
+
+                previewCamera = camObj.AddComponent<Camera>();
+                previewCamera.clearFlags = CameraClearFlags.SolidColor;
+                // Fundo cinza escuro/preto para destacar o personagem
+                previewCamera.backgroundColor = new Color(0.06f, 0.06f, 0.08f, 1f);
+                previewCamera.fieldOfView = previewCamFOV;
+                previewCamera.nearClipPlane = 0.1f;
+                previewCamera.farClipPlane = previewCamOffset.z + 8f;
+
+                // Adiciona uma luz frontal dedicada anexada ao player para iluminá-lo no preview
+                GameObject lightObj = new GameObject("PreviewFrontLight");
+                lightObj.transform.SetParent(camObj.transform, false);
+                lightObj.transform.localPosition = new Vector3(-0.5f, 1f, -0.5f);
+                lightObj.transform.localRotation = Quaternion.Euler(20f, 20f, 0f);
+
+                Light lightComp = lightObj.AddComponent<Light>();
+                lightComp.type = LightType.Spot;
+                lightComp.range = previewCamOffset.z * 2f;
+                lightComp.spotAngle = 60f;
+                lightComp.intensity = previewLightIntensity;
+                lightComp.color = new Color(0.9f, 0.92f, 1.0f); // Brilho frio
+            }
+            else
+            {
+                previewCamera = camT.GetComponent<Camera>();
             }
 
-            if (found)
+            if (previewCamera != null)
             {
-                if (activeConfig.isPrefab && activeConfig.skinPrefab != null)
-                {
-                    spawnedPreviewModel = Instantiate(activeConfig.skinPrefab, stageObject.transform);
-                }
-                else if (activeConfig.existingChildObjects != null && activeConfig.existingChildObjects.Count > 0)
-                {
-                    // Clona o primeiro objeto da lista de filhos visuais
-                    GameObject visualSource = activeConfig.existingChildObjects[0];
-                    if (visualSource != null)
-                    {
-                        spawnedPreviewModel = Instantiate(visualSource, stageObject.transform);
-                    }
-                }
-            }
-        }
-
-        // Fallback genérico caso não ache o SkinManager
-        if (spawnedPreviewModel == null)
-        {
-            GameObject player = GameObject.FindWithTag("Player");
-            if (player != null)
-            {
-                Animator anim = player.GetComponentInChildren<Animator>();
-                if (anim != null && anim.gameObject != player)
-                {
-                    spawnedPreviewModel = Instantiate(anim.gameObject, stageObject.transform);
-                }
-            }
-        }
-
-        // Limpa o clone para que ele não se comporte como o jogador real (sem scripts, colisores e física)
-        if (spawnedPreviewModel != null)
-        {
-            spawnedPreviewModel.transform.localPosition = new Vector3(0f, 0.05f, 0f);
-            spawnedPreviewModel.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-
-            // Desativa colliders e rigidbodies
-            foreach (var col in spawnedPreviewModel.GetComponentsInChildren<Collider>())
-                col.enabled = false;
-            foreach (var rb in spawnedPreviewModel.GetComponentsInChildren<Rigidbody>())
-                Destroy(rb);
-            
-            // Remove scripts de movimentação, lógica ou IA
-            foreach (var comp in spawnedPreviewModel.GetComponentsInChildren<MonoBehaviour>())
-            {
-                string typeName = comp.GetType().Name.ToLower();
-                if (typeName.Contains("player") || typeName.Contains("movement") || typeName.Contains("controller") || typeName.Contains("health"))
-                {
-                    Destroy(comp);
-                }
-            }
-
-            // Garante animação de repouso no clone se houver Animator
-            Animator previewAnim = spawnedPreviewModel.GetComponentInChildren<Animator>();
-            if (previewAnim != null)
-            {
-                // Força o controller principal para garantir suporte a animações
-                if (skinManager != null && skinManager.mainAnimatorController != null)
-                {
-                    previewAnim.runtimeAnimatorController = skinManager.mainAnimatorController;
-                }
-                previewAnim.Play("Idle", 0, 0f);
+                previewCamera.targetTexture = renderTexture;
+                previewCamera.enabled = true;
             }
         }
     }
 
     /// <summary>
-    /// Desliga a câmera e limpa o clone
+    /// Desliga a câmera e limpa a câmera temporária do player
     /// </summary>
     public void Deactivate()
     {
-        if (previewCamera != null) previewCamera.enabled = false;
-        if (previewLight != null) previewLight.enabled = false;
-
-        if (spawnedPreviewModel != null)
+        if (previewCamera != null)
         {
-            Destroy(spawnedPreviewModel);
-            spawnedPreviewModel = null;
+            previewCamera.enabled = false;
         }
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            Transform camT = player.transform.Find("PlayerPreviewCamera");
+            if (camT != null)
+            {
+                Destroy(camT.gameObject);
+            }
+        }
+        previewCamera = null;
     }
 
     private void Update()
     {
-        // Gira o clone do jogador levemente para exibição em 360°
-        if (spawnedPreviewModel != null)
+        if (previewCamera != null && previewCamera.enabled)
         {
-            spawnedPreviewModel.transform.Rotate(Vector3.up, rotationSpeed * Time.unscaledDeltaTime);
+            // Aplica as configurações do Inspector em tempo real durante o jogo!
+            previewCamera.transform.localPosition = previewCamOffset;
+            previewCamera.transform.localRotation = Quaternion.Euler(previewCamRotationX, 180f, 0f);
+            previewCamera.fieldOfView = previewCamFOV;
+
+            Light lightComp = previewCamera.GetComponentInChildren<Light>();
+            if (lightComp != null)
+            {
+                lightComp.intensity = previewLightIntensity;
+                lightComp.range = previewCamOffset.z * 2f;
+            }
         }
     }
 
@@ -237,10 +188,6 @@ public class PlayerPreviewManager : MonoBehaviour
         {
             renderTexture.Release();
             Destroy(renderTexture);
-        }
-        if (stageObject != null)
-        {
-            Destroy(stageObject);
         }
     }
 }

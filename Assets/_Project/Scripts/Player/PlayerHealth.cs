@@ -11,6 +11,7 @@ public class PlayerHealth : MonoBehaviour
     public int maxArmor = 200;
     public int currentHealth { get; private set; }
     private int currentArmor;
+    public int CurrentArmor => currentArmor;
     private int cursedHealthLost = 0;
 
     [Header("Armor Regen")]
@@ -251,7 +252,7 @@ public class PlayerHealth : MonoBehaviour
         if (screenFader != null) yield return StartCoroutine(screenFader.FadeOut());
         
         if (GameManager.instance != null) GameManager.instance.ReturnToBase();
-        else SceneManager.LoadScene("BaseLab");
+        else SceneManager.LoadScene("Base");
     }
 
     public void HandleReviveCompletion() { UnlockPlayer(); }
