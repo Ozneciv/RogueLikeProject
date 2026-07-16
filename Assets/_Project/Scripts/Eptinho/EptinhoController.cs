@@ -8,7 +8,6 @@ public class EptinhoController : MonoBehaviour
     public GameObject HUDCanvas;
 
     private Interactable objetoAtual;
-    private static bool s_jaSpawnado = false;
 
     void Awake()
     {
@@ -39,56 +38,61 @@ public class EptinhoController : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // Reseta flag ao carregar nova cena para permitir re-spawn na base
-        s_jaSpawnado = false;
         SpawnEptinhoPhysicalModel();
     }
 
     private void SpawnEptinhoPhysicalModel()
     {
-        // Evita spawn duplicado
-        if (s_jaSpawnado) return;
-        if (GameObject.Find("EptOracle") != null) { s_jaSpawnado = true; return; }
-
-        // Carrega o prefab
-        GameObject prefab = Resources.Load<GameObject>("Eptin");
-        if (prefab == null)
+        // 1. Procura se já existe um Eptinho colocado estaticamente na cena
+        GameObject eptinho = GameObject.Find("EptOracle");
+        if (eptinho == null)
         {
-            Debug.LogWarning("[EPTINHO] Prefab 'Eptin' nao encontrado na pasta Resources.");
-            return;
+            eptinho = GameObject.Find("Eptin");
         }
 
-        // ── Determina a posição de spawn ─────────────────────────────────────
-        Vector3 spawnPos;
-        Quaternion spawnRot = Quaternion.Euler(0f, 135f, 0f);
-
-        // 1ª opção: perto da mesa de crafting
-        GameObject table = GameObject.Find("crafting table");
-        if (table != null)
+        // 2. Se não existir, spawna como fallback
+        if (eptinho == null)
         {
-            spawnPos = table.transform.position + new Vector3(-1.8f, 1.3f, 1.2f);
+            GameObject prefab = Resources.Load<GameObject>("Eptin");
+            if (prefab == null)
+            {
+                Debug.LogWarning("[EPTINHO] Prefab 'Eptin' nao encontrado na pasta Resources.");
+                return;
+            }
+
+            Vector3 spawnPos;
+            Quaternion spawnRot = Quaternion.Euler(0f, 135f, 0f);
+
+            GameObject table = GameObject.Find("crafting table");
+            if (table != null)
+            {
+                spawnPos = table.transform.position + new Vector3(-1.8f, 1.3f, 1.2f);
+            }
+            else
+            {
+                GameObject lab = GameObject.Find("Sector_Laboratory");
+                spawnPos = lab != null
+                    ? lab.transform.position + new Vector3(0f, 1.5f, 2f)
+                    : new Vector3(0f, 1.5f, 0f);
+            }
+
+            eptinho = Instantiate(prefab, spawnPos, spawnRot);
+            eptinho.name = "EptOracle";
+            Debug.Log($"[EPTINHO] Eptinho fisico nao encontrado na cena. Spawnado fallback em {spawnPos}.");
         }
-        // 2ª opção: perto do Sector_Laboratory
         else
         {
-            GameObject lab = GameObject.Find("Sector_Laboratory");
-            spawnPos = lab != null
-                ? lab.transform.position + new Vector3(0f, 1.5f, 2f)
-                : new Vector3(0f, 1.5f, 0f); // fallback absoluto
+            eptinho.name = "EptOracle";
+            Debug.Log("[EPTINHO] Usando Eptinho estatico ja existente na cena.");
         }
 
-        // ── Instancia e configura ────────────────────────────────────────────
-        GameObject eptinho = Instantiate(prefab, spawnPos, spawnRot);
-        eptinho.name = "EptOracle";
-        s_jaSpawnado = true;
-
-        // Garante que o root tem Rigidbody kinematic (necessário para OnTriggerEnter funcionar nos filhos)
+        // 3. Garante que o root tem Rigidbody kinematic (necessário para OnTriggerEnter funcionar nos filhos)
         Rigidbody rb = eptinho.GetComponent<Rigidbody>();
         if (rb == null) rb = eptinho.AddComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity  = false;
 
-        // Adiciona EptinhoOracleInteract no filho 'Trigger Menu'
+        // 4. Adiciona EptinhoOracleInteract no filho 'Trigger Menu'
         bool foundTriggerMenu = false;
         foreach (Transform child in eptinho.GetComponentsInChildren<Transform>(true))
         {
@@ -122,8 +126,6 @@ public class EptinhoController : MonoBehaviour
 
             Debug.Log("[EPTINHO] 'Trigger Menu' nao encontrado - EptinhoOracleInteract adicionado no root com SphereCollider.");
         }
-
-        Debug.Log($"[EPTINHO] Oraculo spawnado em {spawnPos}.");
     }
 
     void Update()
