@@ -37,7 +37,19 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (itemAtual != null && Input.GetKeyDown(KeyCode.F))
         {
-            CatalogoManager.instancia?.Catalogar(itemAtual);
+            if (itemAtual.gameObject.name.Contains("Eptinho"))
+            {
+                EptinhoController eptinhoCtrl = FindFirstObjectByType<EptinhoController>();
+                if (eptinhoCtrl != null)
+                {
+                    eptinhoCtrl.AbrirMenuDoObjeto(itemAtual);
+                }
+            }
+            else
+            {
+                CatalogoManager.instancia?.Catalogar(itemAtual);
+            }
+            
             if (pressFUI != null) pressFUI.SetActive(false);
             itemAtual = null;
         }
