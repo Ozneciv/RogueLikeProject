@@ -212,11 +212,21 @@ public class EptinhoMenuController : MonoBehaviour
     private void RefreshBestiary()
     {
         Transform grid = contentBestiary.transform.Find("Viewport/Content");
-        if (grid == null) return;
+        if (grid == null)
+        {
+            Debug.LogError("[EPTINHO MENU] Viewport/Content nao encontrado em ContentBestiary!");
+            return;
+        }
 
         foreach (Transform child in grid) Destroy(child.gameObject);
 
-        if (BestiarioManager.instancia == null) return;
+        if (BestiarioManager.instancia == null)
+        {
+            Debug.LogError("[EPTINHO MENU] BestiarioManager.instancia esta nulo!");
+            return;
+        }
+
+        Debug.Log($"[EPTINHO MENU] Atualizando bestiario. Encontrados no save/memoria: {BestiarioManager.instancia.inimigosEncontrados.Count} inimigos.");
 
         if (BestiarioManager.instancia.inimigosEncontrados.Count == 0)
         {
@@ -235,7 +245,11 @@ public class EptinhoMenuController : MonoBehaviour
     private void RefreshCatalogo()
     {
         Transform grid = contentCatalogo.transform.Find("Viewport/Content");
-        if (grid == null) return;
+        if (grid == null)
+        {
+            Debug.LogError("[EPTINHO MENU] Viewport/Content nao encontrado em ContentCatalogo!");
+            return;
+        }
 
         foreach (Transform child in grid) Destroy(child.gameObject);
 
@@ -495,10 +509,7 @@ public class EptinhoMenuController : MonoBehaviour
         // Viewport
         var vpGO = new GameObject("Viewport");
         vpGO.transform.SetParent(svGO.transform, false);
-        Image vpImg = vpGO.AddComponent<Image>();
-        vpImg.color = new Color(0f, 0f, 0f, 0f);
-        Mask mask = vpGO.AddComponent<Mask>();
-        mask.showMaskGraphic = false;
+        RectMask2D mask = vpGO.AddComponent<RectMask2D>();
         RectTransform vpRect = vpGO.GetComponent<RectTransform>();
         vpRect.anchorMin = Vector2.zero;
         vpRect.anchorMax = Vector2.one;
