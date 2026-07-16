@@ -269,6 +269,10 @@ public class EptinhoMenuController : MonoBehaviour
         RectTransform cardRect = card.GetComponent<RectTransform>();
         cardRect.sizeDelta = new Vector2(680f, 120f);
 
+        LayoutElement le = card.AddComponent<LayoutElement>();
+        le.minHeight = 120f;
+        le.preferredHeight = 120f;
+
         // Borda colorida no lado esquerdo
         GameObject border = new GameObject("Border");
         border.transform.SetParent(card.transform, false);
@@ -359,6 +363,10 @@ public class EptinhoMenuController : MonoBehaviour
         RectTransform cardRect = card.GetComponent<RectTransform>();
         cardRect.sizeDelta = new Vector2(680f, 80f);
 
+        LayoutElement le = card.AddComponent<LayoutElement>();
+        le.minHeight = 80f;
+        le.preferredHeight = 80f;
+
         // Ícone
         if (data.icon != null)
         {
@@ -435,6 +443,11 @@ public class EptinhoMenuController : MonoBehaviour
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(700f, 40f);
         rt.anchoredPosition = pos;
+
+        LayoutElement le = go.AddComponent<LayoutElement>();
+        le.minHeight = 40f;
+        le.preferredHeight = 40f;
+
         return go;
     }
 
@@ -497,6 +510,8 @@ public class EptinhoMenuController : MonoBehaviour
         contentGO.transform.SetParent(vpGO.transform, false);
         VerticalLayoutGroup vlg = contentGO.AddComponent<VerticalLayoutGroup>();
         vlg.spacing = 8f;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;
         vlg.childForceExpandWidth = true;
         vlg.childForceExpandHeight = false;
         vlg.padding = new RectOffset(8, 8, 8, 8);
