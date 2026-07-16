@@ -135,6 +135,18 @@ public class EptinhoPopupController : MonoBehaviour
             Transform panel = popupUI.transform.Find("PopupPanel");
             if (panel != null)
             {
+                // 1. Estiliza e Redimensiona o painel principal (PopupPanel)
+                RectTransform panelRect = panel.GetComponent<RectTransform>();
+                if (panelRect != null)
+                {
+                    // Posiciona o popup de forma fixa no Bottom Center da tela (estilo visor)
+                    panelRect.anchorMin = new Vector2(0.5f, 0f);
+                    panelRect.anchorMax = new Vector2(0.5f, 0f);
+                    panelRect.pivot = new Vector2(0.5f, 0f);
+                    panelRect.sizeDelta = new Vector2(620f, 110f); // Compacto e elegante
+                    panelRect.anchoredPosition = new Vector2(0f, 65f); // 65px acima do rodapé
+                }
+
                 Image panelImg = panel.GetComponent<Image>();
                 if (panelImg != null)
                 {
@@ -149,16 +161,28 @@ public class EptinhoPopupController : MonoBehaviour
                 }
             }
 
-            // 2. Estiliza a imagem do Eptinho e cria uma moldura para o retrato
+            // 2. Estiliza e posiciona a imagem do Eptinho e cria uma moldura para o retrato
             if (imagemDoItem != null)
             {
                 imagemDoItem.preserveAspect = true; // Impede achatamento/esticamento
 
+                RectTransform imgRect = imagemDoItem.GetComponent<RectTransform>();
+                if (imgRect != null)
+                {
+                    // Posiciona o retrato de forma fixa à esquerda do painel
+                    imgRect.anchorMin = new Vector2(0f, 0.5f);
+                    imgRect.anchorMax = new Vector2(0f, 0.5f);
+                    imgRect.pivot = new Vector2(0f, 0.5f);
+                    imgRect.sizeDelta = new Vector2(70f, 70f); // Tamanho ideal
+                    imgRect.anchoredPosition = new Vector2(20f, 0f); // 20px de margem da esquerda
+                }
+
                 Transform parent = imagemDoItem.transform.parent;
                 Transform existingBg = parent.Find("PortraitBg");
+                GameObject bgGO;
                 if (existingBg == null)
                 {
-                    GameObject bgGO = new GameObject("PortraitBg");
+                    bgGO = new GameObject("PortraitBg");
                     bgGO.transform.SetParent(parent, false);
                     bgGO.transform.SetSiblingIndex(imagemDoItem.transform.GetSiblingIndex());
 
@@ -168,10 +192,15 @@ public class EptinhoPopupController : MonoBehaviour
                     Outline bgOutline = bgGO.AddComponent<Outline>();
                     bgOutline.effectColor = new Color(0.6f, 0.35f, 1.0f, 0.6f); // Borda roxa neon holográfica
                     bgOutline.effectDistance = new Vector2(1.5f, 1.5f);
+                }
+                else
+                {
+                    bgGO = existingBg.gameObject;
+                }
 
-                    RectTransform bgRect = bgGO.GetComponent<RectTransform>();
-                    RectTransform imgRect = imagemDoItem.GetComponent<RectTransform>();
-
+                RectTransform bgRect = bgGO.GetComponent<RectTransform>();
+                if (bgRect != null && imgRect != null)
+                {
                     bgRect.anchorMin = imgRect.anchorMin;
                     bgRect.anchorMax = imgRect.anchorMax;
                     bgRect.pivot = imgRect.pivot;
@@ -180,10 +209,40 @@ public class EptinhoPopupController : MonoBehaviour
                 }
             }
 
-            // 3. Estiliza a cor do texto para ciano claro holográfico
+            // 3. Estiliza e posiciona o texto para ocupar o espaço restante sem estourar
             if (textoDoItem != null)
             {
                 textoDoItem.color = new Color(0.85f, 0.95f, 1.0f, 1.0f);
+                
+                RectTransform textRect = textoDoItem.GetComponent<RectTransform>();
+                if (textRect != null)
+                {
+                    // Estica o texto para ocupar o resto do painel à direita da imagem
+                    textRect.anchorMin = new Vector2(0f, 0.5f);
+                    textRect.anchorMax = new Vector2(1f, 0.5f);
+                    textRect.pivot = new Vector2(0f, 0.5f);
+                    textRect.offsetMin = new Vector2(110f, -40f); // Começa depois do ícone (20 + 70 + 20)
+                    textRect.offsetMax = new Vector2(-20f, 40f);  // Margem da direita
+                }
+            }
+
+            // 4. Oculta ou posiciona o botão/indicador AbrirEptinho se houver
+            if (panel != null)
+            {
+                Transform abrirBtn = panel.Find("AbrirEptinho");
+                if (abrirBtn != null)
+                {
+                    RectTransform btnRect = abrirBtn.GetComponent<RectTransform>();
+                    if (btnRect != null)
+                    {
+                        // Posiciona discretamente no canto inferior direito do painel
+                        btnRect.anchorMin = new Vector2(1f, 0f);
+                        btnRect.anchorMax = new Vector2(1f, 0f);
+                        btnRect.pivot = new Vector2(1f, 0f);
+                        btnRect.anchoredPosition = new Vector2(-15f, 8f);
+                        btnRect.sizeDelta = new Vector2(140f, 24f);
+                    }
+                }
             }
         }
     }
