@@ -43,7 +43,24 @@ public class SaveManager : MonoBehaviour
         get
         {
             if (_cachedData == null)
-                _cachedData = new PersistentSaveData();
+            {
+                if (File.Exists(SaveFilePath))
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(SaveFilePath);
+                        _cachedData = JsonUtility.FromJson<PersistentSaveData>(json);
+                        Debug.Log("[SAVE] CachedData carregado automaticamente do disco.");
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"[SAVE] Erro ao carregar CachedData automático: {e.Message}");
+                    }
+                }
+
+                if (_cachedData == null)
+                    _cachedData = new PersistentSaveData();
+            }
             return _cachedData;
         }
     }
@@ -93,51 +110,42 @@ public class SaveManager : MonoBehaviour
     public void SavePersistentData()
     {
         GameObject player = GameManager.instance?.currentPlayer;
-        if (player == null)
+        
+        // Se houver um player ativo, sincroniza suas propriedades no CachedData antes de salvar
+        if (player != null)
         {
-            Debug.LogWarning("[SAVE] Nenhum player registrado. Nada foi salvo.");
-            return;
-        }
+            PlayerInventory inventory = player.GetComponent<PlayerInventory>();
+            if (inventory != null)
+                CachedData.inventoryMaxSlots = inventory.MaxSlots;
 
-        PersistentSaveData data = new PersistentSaveData();
-
-        PlayerInventory inventory = player.GetComponent<PlayerInventory>();
-        if (inventory != null)
-            data.inventoryMaxSlots = inventory.MaxSlots;
-
-        // Bolsa Sintética — fonte única é o CachedData (itens chegam via AddResourceToBase)
-        data.baseResources = new List<ItemSaveEntry>(CachedData.baseResources);
-
-        PlayerUpgrades upgrades = player.GetComponent<PlayerUpgrades>();
-        if (upgrades != null)
-        {
-            for (int i = 0; i < upgrades.upgrades.Count; i++)
+            PlayerUpgrades upgrades = player.GetComponent<PlayerUpgrades>();
+            if (upgrades != null)
             {
-                var upg = upgrades.upgrades[i];
-                if (upg.button != null && !upg.button.interactable)
-                    data.purchasedUpgradeIndices.Add(i);
+                CachedData.purchasedUpgradeIndices.Clear();
+                for (int i = 0; i < upgrades.upgrades.Count; i++)
+                {
+                    var upg = upgrades.upgrades[i];
+                    if (upg.button != null && !upg.button.interactable)
+                        CachedData.purchasedUpgradeIndices.Add(i);
+                }
+            }
+
+            PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
+            if (skinManager != null)
+            {
+                CachedData.selectedSkinID = skinManager.ActiveSkinID;
             }
         }
 
-        PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
-        if (skinManager != null)
-        {
-            data.selectedSkinID = skinManager.ActiveSkinID;
-        }
-
-        // Persiste equipamentos craftados/equipados
-        data.craftedEquipmentIds = new List<string>(CachedData.craftedEquipmentIds);
-        data.equippedEquipmentIds = new List<string>(CachedData.equippedEquipmentIds);
-
-        // Persiste inimigos descobertos no Bestiário
-        data.inimigosDescobertos = new List<string>(CachedData.inimigosDescobertos);
-
-        string json = JsonUtility.ToJson(data, prettyPrint: true);
+        // Serializa e grava o CachedData
+        string json = JsonUtility.ToJson(CachedData, prettyPrint: true);
         File.WriteAllText(SaveFilePath, json);
+        
         Debug.Log($"[SAVE] Progressão salva → {SaveFilePath} | " +
-                  $"{data.baseResources.Count} recursos | " +
-                  $"{data.purchasedUpgradeIndices.Count} upgrades | " +
-                  $"{data.craftedEquipmentIds.Count} equipamentos");
+                  $"{CachedData.baseResources.Count} recursos | " +
+                  $"{CachedData.purchasedUpgradeIndices.Count} upgrades | " +
+                  $"{CachedData.craftedEquipmentIds.Count} equipamentos | " +
+                  $"{CachedData.inimigosDescobertos.Count} inimigos descobertos");
     }
 
     /// <summary>

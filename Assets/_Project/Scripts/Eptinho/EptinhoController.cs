@@ -23,7 +23,12 @@ public class EptinhoController : MonoBehaviour
     void Start()
     {
         if (MenuCanvas != null) MenuCanvas.SetActive(false);
-        SpawnEptinhoPhysicalModel();
+        
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName == "Base" || sceneName == "BaseLab - Teste Itens" || sceneName.Contains("Eptinho"))
+        {
+            SpawnEptinhoPhysicalModel();
+        }
     }
 
     void OnEnable()
@@ -38,7 +43,10 @@ public class EptinhoController : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        SpawnEptinhoPhysicalModel();
+        if (scene.name == "Base" || scene.name == "BaseLab - Teste Itens" || scene.name.Contains("Eptinho"))
+        {
+            SpawnEptinhoPhysicalModel();
+        }
     }
 
     private void SpawnEptinhoPhysicalModel()

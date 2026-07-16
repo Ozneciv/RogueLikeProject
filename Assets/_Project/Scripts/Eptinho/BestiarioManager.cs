@@ -7,7 +7,25 @@ using UnityEngine;
 /// </summary>
 public class BestiarioManager : MonoBehaviour
 {
-    public static BestiarioManager instancia;
+    private static BestiarioManager _instancia;
+    public static BestiarioManager instancia
+    {
+        get
+        {
+            if (_instancia == null)
+            {
+                _instancia = FindFirstObjectByType<BestiarioManager>();
+                if (_instancia == null)
+                {
+                    GameObject go = new GameObject("BestiarioManager_Auto");
+                    _instancia = go.AddComponent<BestiarioManager>();
+                    DontDestroyOnLoad(go);
+                }
+            }
+            return _instancia;
+        }
+        private set { _instancia = value; }
+    }
 
     // Lista de EnemyData descobertos nesta sessão
     public List<EnemyData> inimigosEncontrados = new List<EnemyData>();
@@ -15,12 +33,12 @@ public class BestiarioManager : MonoBehaviour
 
     void Awake()
     {
-        if (instancia == null)
+        if (_instancia == null)
         {
-            instancia = this;
+            _instancia = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (_instancia != this)
         {
             Destroy(gameObject);
             return;

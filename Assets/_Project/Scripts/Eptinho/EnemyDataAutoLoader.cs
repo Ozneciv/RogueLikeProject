@@ -7,19 +7,37 @@ using System.Collections.Generic;
 /// </summary>
 public class EnemyDataAutoLoader : MonoBehaviour
 {
-    public static EnemyDataAutoLoader instancia;
+    private static EnemyDataAutoLoader _instancia;
+    public static EnemyDataAutoLoader instancia
+    {
+        get
+        {
+            if (_instancia == null)
+            {
+                _instancia = FindFirstObjectByType<EnemyDataAutoLoader>();
+                if (_instancia == null)
+                {
+                    GameObject go = new GameObject("EnemyDataAutoLoader_Auto");
+                    _instancia = go.AddComponent<EnemyDataAutoLoader>();
+                    DontDestroyOnLoad(go);
+                }
+            }
+            return _instancia;
+        }
+        private set { _instancia = value; }
+    }
 
     // Lista dos dados de inimigos criados em runtime
     private List<EnemyData> _enemyDataCache = new List<EnemyData>();
 
     void Awake()
     {
-        if (instancia == null)
+        if (_instancia == null)
         {
-            instancia = this;
+            _instancia = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (_instancia != this)
         {
             Destroy(gameObject);
             return;
