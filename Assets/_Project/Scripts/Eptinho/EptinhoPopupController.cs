@@ -196,6 +196,13 @@ public class EptinhoPopupController : MonoBehaviour
         {
             textoDoItem.gameObject.SetActive(true);
             textoDoItem.text = mensagem;
+
+            // Aplica a mesma fonte bonita do inventário
+            TMP_FontAsset customFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Oswald Bold SDF");
+            if (customFont != null)
+            {
+                textoDoItem.font = customFont;
+            }
         }
 
         Debug.Log("[EPTINHO POPUP] MOSTRANDO POPUP: " + mensagem);

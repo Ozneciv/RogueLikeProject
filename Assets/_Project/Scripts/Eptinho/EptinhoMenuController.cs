@@ -38,6 +38,7 @@ public class EptinhoMenuController : MonoBehaviour
     private bool        showingBestiary = true;
     private bool        isOpen = false;
     private bool        uiBuilt = false;
+    private TMP_FontAsset customFont;
 
     // ─────────────────────────────────────────────────────────────────────────
     void Awake()
@@ -57,6 +58,11 @@ public class EptinhoMenuController : MonoBehaviour
         if (GetComponent<EptinhoController>() == null)
         {
             gameObject.AddComponent<EptinhoController>();
+        }
+
+        if (customFont == null)
+        {
+            customFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Oswald Bold SDF");
         }
     }
 
@@ -323,6 +329,7 @@ public class EptinhoMenuController : MonoBehaviour
         nameTMP.fontSize = 18;
         nameTMP.fontStyle = FontStyles.Bold;
         nameTMP.color = HEADER_COLOR;
+        if (customFont != null) nameTMP.font = customFont;
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
         nameRect.anchorMin = new Vector2(0f, 1f);
         nameRect.anchorMax = new Vector2(1f, 1f);
@@ -405,6 +412,7 @@ public class EptinhoMenuController : MonoBehaviour
         nameTMP.fontSize = 16;
         nameTMP.fontStyle = FontStyles.Bold;
         nameTMP.color = HEADER_COLOR;
+        if (customFont != null) nameTMP.font = customFont;
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
         nameRect.anchorMin = new Vector2(0f, 0.5f);
         nameRect.anchorMax = new Vector2(1f, 0.5f);
@@ -454,6 +462,7 @@ public class EptinhoMenuController : MonoBehaviour
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         if (bold) tmp.fontStyle = FontStyles.Bold;
+        if (customFont != null) tmp.font = customFont;
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(700f, 40f);
         rt.anchoredPosition = pos;
@@ -485,6 +494,7 @@ public class EptinhoMenuController : MonoBehaviour
         tmp.fontSize = 14;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
+        if (customFont != null) tmp.font = customFont;
         RectTransform trt = textGO.GetComponent<RectTransform>();
         trt.anchorMin = Vector2.zero;
         trt.anchorMax = Vector2.one;
