@@ -52,6 +52,12 @@ public class EptinhoMenuController : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Garante que o EptinhoController exista neste GameObject para spawnar o Eptinho físico
+        if (GetComponent<EptinhoController>() == null)
+        {
+            gameObject.AddComponent<EptinhoController>();
+        }
     }
 
     void Start()
