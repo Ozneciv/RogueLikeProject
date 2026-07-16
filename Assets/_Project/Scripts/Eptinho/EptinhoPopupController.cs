@@ -139,12 +139,12 @@ public class EptinhoPopupController : MonoBehaviour
                 RectTransform panelRect = panel.GetComponent<RectTransform>();
                 if (panelRect != null)
                 {
-                    // Posiciona o popup de forma fixa no Bottom Center da tela (estilo visor)
-                    panelRect.anchorMin = new Vector2(0.5f, 0f);
-                    panelRect.anchorMax = new Vector2(0.5f, 0f);
-                    panelRect.pivot = new Vector2(0.5f, 0f);
+                    // Posiciona o popup de forma fixa no Top Right (canto superior direito) da tela
+                    panelRect.anchorMin = new Vector2(1f, 1f);
+                    panelRect.anchorMax = new Vector2(1f, 1f);
+                    panelRect.pivot = new Vector2(1f, 1f);
                     panelRect.sizeDelta = new Vector2(620f, 110f); // Compacto e elegante
-                    panelRect.anchoredPosition = new Vector2(0f, 65f); // 65px acima do rodapé
+                    panelRect.anchoredPosition = new Vector2(-40f, -40f); // 40px de margem das bordas superior e direita
                 }
 
                 Image panelImg = panel.GetComponent<Image>();
