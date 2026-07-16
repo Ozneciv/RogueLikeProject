@@ -55,16 +55,12 @@ public class EptinhoPopupController : MonoBehaviour
     {
         if (popupUI == null)
         {
-            // Tenta encontrar por diversos nomes possíveis na cena
-            GameObject existing = GameObject.Find("PopupUI");
-            if (existing == null) existing = GameObject.Find("PopupUI_Auto");
-            if (existing == null) existing = GameObject.Find("PopUpCanvas");
-            if (existing == null) existing = GameObject.Find("PopupPanel");
-            
+            // Busca apenas por PopupUI_Auto na cena para evitar colisão/sequestro de outros Canvas
+            GameObject existing = GameObject.Find("PopupUI_Auto");
             if (existing != null)
             {
                 popupUI = existing;
-                Debug.Log("[EPTINHO POPUP] Conectou ao Canvas existente na cena: " + popupUI.name);
+                Debug.Log("[EPTINHO POPUP] Conectou ao PopupUI_Auto existente.");
             }
             else
             {
@@ -84,11 +80,12 @@ public class EptinhoPopupController : MonoBehaviour
             }
         }
 
-        // Auto-busca imagemDoItem e textoDoItem
+        // Auto-busca imagemDoItem e textoDoItem estritamente no nosso Canvas
         if (popupUI != null)
         {
             if (imagemDoItem == null)
             {
+                // Busca direta pelo caminho do prefab
                 Transform faceTransform = popupUI.transform.Find("PopupPanel/EptinhoFace");
                 if (faceTransform == null) faceTransform = popupUI.transform.Find("EptinhoFace");
                 
@@ -96,39 +93,36 @@ public class EptinhoPopupController : MonoBehaviour
                 {
                     imagemDoItem = faceTransform.GetComponent<Image>();
                 }
-                
-                if (imagemDoItem == null)
+                else
                 {
+                    // Busca segura baseada no nome exato
                     foreach (var img in popupUI.GetComponentsInChildren<Image>(true))
                     {
-                        if (img.gameObject.name == "EptinhoFace" || img.gameObject.name.Contains("Face"))
+                        if (img.gameObject.name == "EptinhoFace")
                         {
                             imagemDoItem = img;
                             break;
                         }
                     }
                 }
-                
-                if (imagemDoItem == null) imagemDoItem = popupUI.GetComponentInChildren<Image>(true);
             }
 
             if (textoDoItem == null)
             {
-                foreach (var tmp in popupUI.GetComponentsInChildren<TextMeshProUGUI>(true))
+                // Busca direta pelo caminho do prefab
+                Transform textTransform = popupUI.transform.Find("PopupPanel/Text (TMP)");
+                if (textTransform == null) textTransform = popupUI.transform.Find("Text (TMP)");
+
+                if (textTransform != null)
                 {
-                    string nameLower = tmp.gameObject.name.ToLower();
-                    if (nameLower.Contains("text") && !nameLower.Contains("abrir") && tmp.gameObject.name != "Text")
-                    {
-                        textoDoItem = tmp;
-                        break;
-                    }
+                    textoDoItem = textTransform.GetComponent<TextMeshProUGUI>();
                 }
-                
-                if (textoDoItem == null)
+                else
                 {
+                    // Busca segura baseada no nome exato
                     foreach (var tmp in popupUI.GetComponentsInChildren<TextMeshProUGUI>(true))
                     {
-                        if (tmp.gameObject.name != "Text")
+                        if (tmp.gameObject.name == "Text (TMP)")
                         {
                             textoDoItem = tmp;
                             break;
