@@ -55,46 +55,84 @@ public class EptinhoPopupController : MonoBehaviour
     {
         if (popupUI == null)
         {
-            // Tenta achar na cena
+            // Tenta encontrar por diversos nomes possíveis na cena
             GameObject existing = GameObject.Find("PopupUI");
+            if (existing == null) existing = GameObject.Find("PopupUI_Auto");
+            if (existing == null) existing = GameObject.Find("PopUpCanvas");
+            if (existing == null) existing = GameObject.Find("PopupPanel");
+            
             if (existing != null)
             {
                 popupUI = existing;
+                Debug.Log("[EPTINHO POPUP] Conectou ao Canvas existente na cena: " + popupUI.name);
             }
             else
             {
-                // Instancia da pasta Resources
+                // Carrega do resources
                 GameObject prefab = Resources.Load<GameObject>("PopupUI");
                 if (prefab != null)
                 {
                     popupUI = Instantiate(prefab);
                     popupUI.name = "PopupUI_Auto";
                     DontDestroyOnLoad(popupUI);
+                    Debug.Log("[EPTINHO POPUP] Instanciou novo PopupUI a partir de Resources.");
                 }
                 else
                 {
-                    Debug.LogError("[POPUP] Não foi possível encontrar ou carregar o prefab 'PopupUI' na pasta Resources!");
+                    Debug.LogError("[EPTINHO POPUP] ERRO: Nao encontrou prefab 'PopupUI' na pasta Resources!");
                 }
             }
         }
 
-        // Auto-detecta imagemDoItem e textoDoItem se forem nulos
+        // Auto-busca imagemDoItem e textoDoItem
         if (popupUI != null)
         {
             if (imagemDoItem == null)
             {
-                imagemDoItem = popupUI.transform.Find("PopupPanel/EPTONHO")?.GetComponent<Image>();
-                if (imagemDoItem == null) imagemDoItem = popupUI.GetComponentInChildren<Image>();
+                Transform faceTransform = popupUI.transform.Find("PopupPanel/EptinhoFace");
+                if (faceTransform == null) faceTransform = popupUI.transform.Find("EptinhoFace");
+                
+                if (faceTransform != null)
+                {
+                    imagemDoItem = faceTransform.GetComponent<Image>();
+                }
+                
+                if (imagemDoItem == null)
+                {
+                    foreach (var img in popupUI.GetComponentsInChildren<Image>(true))
+                    {
+                        if (img.gameObject.name == "EptinhoFace" || img.gameObject.name.Contains("Face"))
+                        {
+                            imagemDoItem = img;
+                            break;
+                        }
+                    }
+                }
+                
+                if (imagemDoItem == null) imagemDoItem = popupUI.GetComponentInChildren<Image>(true);
             }
+
             if (textoDoItem == null)
             {
-                // Tenta achar o primeiro TextMeshProUGUI que não seja o de abrir/fechar do botão
                 foreach (var tmp in popupUI.GetComponentsInChildren<TextMeshProUGUI>(true))
                 {
-                    if (tmp.gameObject.name != "AbrirEptinho" && tmp.gameObject.name != "Text")
+                    string nameLower = tmp.gameObject.name.ToLower();
+                    if (nameLower.Contains("text") && !nameLower.Contains("abrir") && tmp.gameObject.name != "Text")
                     {
                         textoDoItem = tmp;
                         break;
+                    }
+                }
+                
+                if (textoDoItem == null)
+                {
+                    foreach (var tmp in popupUI.GetComponentsInChildren<TextMeshProUGUI>(true))
+                    {
+                        if (tmp.gameObject.name != "Text")
+                        {
+                            textoDoItem = tmp;
+                            break;
+                        }
                     }
                 }
             }
@@ -111,44 +149,61 @@ public class EptinhoPopupController : MonoBehaviour
     /// <summary>Popup ao catalogar um novo ItemData.</summary>
     public void MostrarPopup(ItemData item)
     {
-        MostrarPopupGenerico(item.icon, $"Eptinho analisou: {item.itemName}");
+        if (item == null) return;
+        MostrarPopupGenerico(item.icon, "Eptinho analisou: " + item.itemName);
     }
 
     /// <summary>Popup ao registrar um novo EnemyData no Bestiário.</summary>
     public void MostrarPopupInimigo(EnemyData inimigo)
     {
-        MostrarPopupGenerico(inimigo.icon, $"Novo inimigo encontrado: {inimigo.enemyName}");
+        if (inimigo == null) return;
+        MostrarPopupGenerico(inimigo.icon, "Novo inimigo encontrado: " + inimigo.enemyName);
     }
 
     void MostrarPopupGenerico(Sprite icone, string mensagem)
     {
         EnsurePopupUIExists();
-        if (popupUI == null) return;
+        if (popupUI == null)
+        {
+            Debug.LogWarning("[EPTINHO POPUP] Nao pode mostrar popup: popupUI e nulo!");
+            return;
+        }
 
+        // Ativa o Canvas principal
         popupUI.SetActive(true);
 
-        // Se icone for nulo, tenta carregar a face do Eptinho como padrão
+        // Ativa o painel de fundo (PopupPanel) caso ele esteja desativado no prefab
+        Transform panel = popupUI.transform.Find("PopupPanel");
+        if (panel != null)
+        {
+            panel.gameObject.SetActive(true);
+        }
+
+        // Define o ícone final (EPTONHO como fallback)
         Sprite iconeFinal = icone;
         if (iconeFinal == null)
         {
             iconeFinal = Resources.Load<Sprite>("EPTONHO");
         }
 
-        if (imagemDoItem != null && iconeFinal != null)
+        if (imagemDoItem != null)
         {
+            imagemDoItem.gameObject.SetActive(true);
             imagemDoItem.sprite = iconeFinal;
         }
+        
         if (textoDoItem != null)
         {
+            textoDoItem.gameObject.SetActive(true);
             textoDoItem.text = mensagem;
         }
 
-        Debug.Log($"[POPUP] Mostrando: {mensagem}");
+        Debug.Log("[EPTINHO POPUP] MOSTRANDO POPUP: " + mensagem);
 
         if (esconderCoroutine != null)
             StopCoroutine(esconderCoroutine);
 
-        esconderCoroutine = StartCoroutine(EsconderApos(3f));
+        esconderCoroutine = StartCoroutine(EsconderApos(3.5f));
     }
 
     IEnumerator EsconderApos(float segundos)
