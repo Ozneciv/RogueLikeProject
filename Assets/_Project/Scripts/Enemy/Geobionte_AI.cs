@@ -422,7 +422,10 @@ public class Geobionte_AI : MonoBehaviour
         // Se já foi impedido, não busca mais minério
         if (isPrevented) return;
 
-        // PROGRESSÃO MULTI-FASE: Se já absorveu um cristal nesta fase, não busca mais
+        // Se já fundiu nesta sala/fase, não busca mais minério (funciona mesmo sem RunManager)
+        if (hasFused) return;
+
+        // PROGRESSÃO MULTI-FASE: Guard adicional via RunManager (persistente entre cenas)
         if (RunManager.instance != null && RunManager.instance.geobionteAbsorbedThisLevel) return;
 
         // Verifica proximidade do player para ativar
@@ -1399,16 +1402,16 @@ public class Geobionte_AI : MonoBehaviour
         }
         else
         {
-            // PROGRESSÃO MULTI-FASE: Reverter ao Geobionte passivo (já usou a absorção desta fase)
-            StartCoroutine(RevertToBaseSequence());
+            // PROGRESSÃO MULTI-FASE: Foge da sala após ser derrotado (só reaparece na próxima sala)
+            StartCoroutine(FleeAfterDefeatSequence());
         }
     }
 
     /// <summary>
-    /// Sequência de reversão: Bismutado (cubo) → Geobionte padrão (esfera).
-    /// Encolhe, troca mesh, muda cor e volta ao estado Idle para buscar mais minérios.
+    /// Sequência pós-derrota do Bismutado: reverte o visual (cubo → esfera),
+    /// depois foge da sala e despawna. O Geobionte só reaparece na próxima sala.
     /// </summary>
-    IEnumerator RevertToBaseSequence()
+    IEnumerator FleeAfterDefeatSequence()
     {
         // Torna invulnerável durante a reversão
         if (health != null)
@@ -1457,30 +1460,26 @@ public class Geobionte_AI : MonoBehaviour
         // Restaura pernas do Mimic
         if (mimicComponent != null)
         {
-            // Recalcula parâmetros para o tamanho original antes de reativar as pernas
             mimicComponent.numberOfLegs = originalNumberOfLegs;
             mimicComponent.partsPerLeg = originalPartsPerLeg;
             mimicComponent.newLegRadius = originalNewLegRadius;
-            mimicComponent.legsDealDamage = false; // Desativa dano das pernas
+            mimicComponent.legsDealDamage = false;
             mimicComponent.RecalculateParameters();
             mimicComponent.SetLegsActive(true);
         }
 
-        // Reset de estado para Geobionte padrão
-        hasFused = false;
-        isPrevented = false;
+        // Marca que já fundiu nesta sala (impede nova transformação)
+        hasFused = true;
         absorbedOreValue = 0;
         hasSpeedBuff = false;
         targetOre = null;
         sweepTimer = 0f;
         isSweeping = false;
 
-        // PROGRESSÃO MULTI-FASE: Não busca novo minério — já absorveu nesta fase
-        // O Geobionte volta ao Idle passivo até a próxima fase
-        ChangeState(GeobionteState.Idle);
-        PickNewWanderDirection();
+        // Entra no estado Fleeing — foge para longe do player e despawna
+        ChangeState(GeobionteState.Fleeing);
 
-        Debug.Log("[GEOBIONTE] Revertido ao padrão! Derrota " + bismutadoDefeatCount + "/" + fusionsToSentinel + ". Aguardando próxima fase para absorver novamente.");
+        Debug.Log("[GEOBIONTE] Derrotado como Bismutado (" + bismutadoDefeatCount + "/" + fusionsToSentinel + ")! Fugindo da sala...");
     }
 
     // ========================================================================
@@ -2067,21 +2066,12 @@ public class Geobionte_AI : MonoBehaviour
 
     void HandleFleeing()
     {
-        // Verifica distância do player — se longe o bastante, some
+        // Verifica distância do player — se longe o bastante, despawna
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distToPlayer > fleeDestroyDistance)
         {
-            Debug.Log("[GEOBIONTE] Fugiu com sucesso! Distância: " + distToPlayer.ToString("F1") + "m");
-
-            // Agenda respawn se configurado
-            if (respawnDelay > 0f)
-            {
-                StartCoroutine(ScheduleRespawn());
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            Debug.Log("[GEOBIONTE] Fugiu com sucesso! Distância: " + distToPlayer.ToString("F1") + "m. Reaparecerá na próxima sala.");
+            Destroy(gameObject);
         }
     }
 
