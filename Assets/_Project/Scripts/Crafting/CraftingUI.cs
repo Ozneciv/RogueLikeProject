@@ -66,22 +66,22 @@ public class CraftingUI : MonoBehaviour
 
     public TMP_FontAsset customFont;
 
-    // Cores do painel (tema escuro/roxo consistente com InventoryUI)
-    private static readonly Color PANEL_BG = new Color(0.02f, 0.02f, 0.04f, 0.92f); // frosted glass background, slightly more opaque and darker
-    private static readonly Color PANEL_BORDER = new Color(1f, 1f, 1f, 0.12f); // light reflection border
-    private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1f);
-    private static readonly Color ACCENT = new Color(0.6f, 0.45f, 0.90f, 1f);
-    private static readonly Color SECTION_BG = new Color(0.04f, 0.04f, 0.07f, 0.90f); // frosted glass sub-section background, slightly darker
+    [Header("Configurações de Design (Ajustáveis em Tempo Real)")]
+    [Range(400f, 1200f)] [SerializeField] private float panelWidth = 800f;
+    [Range(300f, 1000f)] [SerializeField] private float panelHeight = 600f;
+    [Range(30f, 120f)] [SerializeField] private float recipeSlotHeight = 58f;
+    [Range(60f, 200f)] [SerializeField] private float equipmentSlotSize = 110f;
+
+    [SerializeField] private Color panelBg = new Color(0.02f, 0.02f, 0.04f, 0.92f);
+    [SerializeField] private Color panelBorder = new Color(1f, 1f, 1f, 0.12f);
+    [SerializeField] private Color sectionBg = new Color(0.04f, 0.04f, 0.07f, 0.90f);
+    [SerializeField] private Color headerColor = new Color(0.85f, 0.80f, 0.95f, 1f);
+    [SerializeField] private Color accentColor = new Color(0.6f, 0.45f, 0.90f, 1f);
+
     private static readonly Color BTN_CRAFT_ENABLED = new Color(0.25f, 0.70f, 0.30f, 1f);
     private static readonly Color BTN_CRAFT_DISABLED = new Color(0.3f, 0.3f, 0.3f, 0.6f);
     private static readonly Color BTN_EQUIP = new Color(0.3f, 0.55f, 0.85f, 1f);
     private static readonly Color BTN_UNEQUIP = new Color(0.7f, 0.35f, 0.35f, 1f);
-
-    // Dimensões
-    private const float PANEL_WIDTH = 800f; // Aumentado de 700f
-    private const float PANEL_HEIGHT = 600f; // Aumentado de 520f
-    private const float RECIPE_SLOT_HEIGHT = 58f; // Aumentado de 52f para melhor espaçamento de fontes maiores
-    private const float EQUIPMENT_SLOT_SIZE = 110f;
 
     void Awake()
     {
@@ -107,6 +107,20 @@ public class CraftingUI : MonoBehaviour
         panelObject.SetActive(false);
         uiBuilt = true;
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (Application.isPlaying && uiBuilt && canvasObject != null)
+        {
+            bool wasOpen = isOpen;
+            Destroy(canvasObject);
+            CreateCraftingUI();
+            panelObject.SetActive(wasOpen);
+            RefreshUI();
+        }
+    }
+#endif
 
     void OnEnable()
     {
@@ -232,7 +246,7 @@ public class CraftingUI : MonoBehaviour
             slotObj.transform.SetParent(recipesContainer, false);
 
             RecipeSlotUI slot = slotObj.AddComponent<RecipeSlotUI>();
-            slot.Initialize(OnRecipeSelected, 230f, RECIPE_SLOT_HEIGHT);
+            slot.Initialize(OnRecipeSelected, 230f, recipeSlotHeight);
 
             bool canCraft = CraftingManager.Instance.CanCraft(recipe);
             slot.SetRecipe(recipe, canCraft);
@@ -421,11 +435,11 @@ public class CraftingUI : MonoBehaviour
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
+        panelRect.sizeDelta = new Vector2(panelWidth, panelHeight);
 
-        Image panelBg = panelObject.AddComponent<Image>();
-        panelBg.color = PANEL_BG;
-        panelBg.raycastTarget = true;
+        Image mainPanelBg = panelObject.AddComponent<Image>();
+        mainPanelBg.color = panelBg;
+        mainPanelBg.raycastTarget = true;
 
         // Efeito de sombra (Drop Shadow) para dar profundidade de vidro suspenso
         Shadow panelShadow = panelObject.AddComponent<Shadow>();
@@ -481,7 +495,7 @@ public class CraftingUI : MonoBehaviour
         r.sizeDelta = new Vector2(4f, 4f);
         borderObj.AddComponent<CanvasRenderer>();
         Image img = borderObj.AddComponent<Image>();
-        img.color = PANEL_BORDER;
+        img.color = panelBorder;
         img.type = Image.Type.Sliced;
         img.fillCenter = false;
         img.raycastTarget = false;
@@ -498,7 +512,7 @@ public class CraftingUI : MonoBehaviour
         r.sizeDelta = new Vector2(0f, 3f);
         obj.AddComponent<CanvasRenderer>();
         Image img = obj.AddComponent<Image>();
-        img.color = ACCENT;
+        img.color = accentColor;
         img.raycastTarget = false;
     }
 
@@ -517,7 +531,7 @@ public class CraftingUI : MonoBehaviour
         txt.text = "MESA DE TRABALHO";
         txt.fontSize = 22f; // Aumentado de 18f
         txt.fontStyle = FontStyles.Bold;
-        txt.color = HEADER_COLOR;
+        txt.color = headerColor;
         txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
         if (customFont != null) txt.font = customFont;
@@ -536,7 +550,7 @@ public class CraftingUI : MonoBehaviour
 
         listPanel.AddComponent<CanvasRenderer>();
         Image bg = listPanel.AddComponent<Image>();
-        bg.color = SECTION_BG;
+        bg.color = sectionBg;
         bg.raycastTarget = true;
 
         // Label
@@ -553,7 +567,7 @@ public class CraftingUI : MonoBehaviour
         labelText.text = "RECEITAS";
         labelText.fontSize = 14f; // Aumentado de 11f
         labelText.fontStyle = FontStyles.Bold;
-        labelText.color = ACCENT;
+        labelText.color = accentColor;
         labelText.alignment = TextAlignmentOptions.Center;
         labelText.raycastTarget = false;
         if (customFont != null) labelText.font = customFont;
@@ -616,13 +630,13 @@ public class CraftingUI : MonoBehaviour
 
         detailPanel.AddComponent<CanvasRenderer>();
         Image bg = detailPanel.AddComponent<Image>();
-        bg.color = SECTION_BG;
+        bg.color = sectionBg;
         bg.raycastTarget = false;
 
         // Nome da receita
         detailNameText = CreateTextElement(detailPanel.transform, "DetailName",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -10f), new Vector2(-16f, 30f), 20f, FontStyles.Bold, HEADER_COLOR);
+            new Vector2(0f, -10f), new Vector2(-16f, 30f), 20f, FontStyles.Bold, headerColor);
 
         // Descrição
         detailDescText = CreateTextElement(detailPanel.transform, "DetailDesc",
@@ -700,7 +714,7 @@ public class CraftingUI : MonoBehaviour
 
         equipPanel.AddComponent<CanvasRenderer>();
         Image bg = equipPanel.AddComponent<Image>();
-        bg.color = SECTION_BG;
+        bg.color = sectionBg;
         bg.raycastTarget = false;
 
         // Label
@@ -717,7 +731,7 @@ public class CraftingUI : MonoBehaviour
         label.text = "MELHORIAS CRAFTADAS";
         label.fontSize = 14f; // Aumentado de 11f
         label.fontStyle = FontStyles.Bold;
-        label.color = ACCENT;
+        label.color = accentColor;
         label.alignment = TextAlignmentOptions.Center;
         label.raycastTarget = false;
         if (customFont != null) label.font = customFont;
@@ -769,7 +783,7 @@ public class CraftingUI : MonoBehaviour
 
         GameObject slotObj = new GameObject("EquipSlot_" + equip.equipmentId);
         RectTransform r = slotObj.AddComponent<RectTransform>();
-        r.sizeDelta = new Vector2(EQUIPMENT_SLOT_SIZE, 0f);
+        r.sizeDelta = new Vector2(equipmentSlotSize, 0f);
 
         slotObj.AddComponent<CanvasRenderer>();
         Image bg = slotObj.AddComponent<Image>();
