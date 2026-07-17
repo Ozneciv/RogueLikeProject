@@ -1013,13 +1013,13 @@ public class Geobionte_AI : MonoBehaviour
     {
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        // Cria campo de cristais quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
+        // Cria campo de cristais quando está perto e cooldown pronto (usado apenas pelo Bismutado)
         if (distToPlayer <= attackRange && fieldTimer <= 0)
         {
             CreateCrystalField();
         }
 
-        // Golpe giratório quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
+        // Golpe giratório quando está perto e cooldown pronto (usado apenas pelo Bismutado)
         if (distToPlayer <= sweepRange && sweepTimer <= 0 && !isSweeping)
         {
             StartCoroutine(SweepAttack());
@@ -1279,7 +1279,7 @@ public class Geobionte_AI : MonoBehaviour
     // ========================================================================
 
     /// <summary>
-    /// [SENTINELA] Cria campo de cristais debuffer. Reservado para o Geobionte Sentinela.
+    /// [BISMUTADO] Cria campo de cristais debuffer. Usado apenas pelo Bismutado (Sentinela NÃO usa).
     /// </summary>
     void CreateCrystalField()
     {
@@ -1602,14 +1602,11 @@ public class Geobionte_AI : MonoBehaviour
     /// - Se acertar: dano + knockback, volta a subir sem ficar stunado
     /// - Se errar: fica stunado (vulnerável) por sentinelVulnerableWindow segundos
     /// - Pernas dão dano automaticamente (gerenciado pelo Leg.cs)
-    /// - Campo de cristais é criado periodicamente
+    /// - NÃO cria campo de cristais (mecânica exclusiva do Bismutado)
     /// </summary>
     void HandleSentinelCombat()
     {
         if (health != null && health.CurrentHealth <= 0) return;
-
-        // Timer do campo de cristais
-        if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
 
         // Rotação lenta para olhar o player (não rotaciona durante slam/stun)
         if (!sentinelIsSlaming && !sentinelVulnerable)
@@ -1623,20 +1620,10 @@ public class Geobionte_AI : MonoBehaviour
 
         if (!sentinelVulnerable)
         {
-            // FASE: Esfera ALTA (invulnerável) — anda e cria campos de cristais
+            // FASE: Esfera ALTA (invulnerável) — anda, pernas dão dano
             sentinelTargetHeight = sentinelHighHeight;
 
             if (health != null) health.isInvulnerable = true;
-
-            // Cria campo de cristais periodicamente
-            if (fieldTimer <= 0 && playerTransform != null)
-            {
-                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-                if (distToPlayer <= attackRange * 2f)
-                {
-                    CreateCrystalField();
-                }
-            }
 
             // Após sentinelInvulnerableDuration, inicia o SLAM
             if (sentinelPhaseTimer >= sentinelInvulnerableDuration)
