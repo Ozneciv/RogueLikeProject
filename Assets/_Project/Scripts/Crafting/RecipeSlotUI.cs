@@ -94,7 +94,7 @@ public class RecipeSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         nameRect.offsetMax = new Vector2(-8f, 0f);
         nameObj.AddComponent<CanvasRenderer>();
         nameText = nameObj.AddComponent<TextMeshProUGUI>();
-        nameText.fontSize = 22f; // Aumentado em 75%+ (anteriormente 13f/16f)
+        nameText.fontSize = 16f; // Revertido para o padrão limpo e compacto
         nameText.fontStyle = FontStyles.Bold;
         nameText.color = new Color(0.9f, 0.88f, 0.95f, 1f);
         nameText.alignment = TextAlignmentOptions.MidlineLeft;
@@ -114,7 +114,7 @@ public class RecipeSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         statusRect.offsetMax = new Vector2(-8f, 0f);
         statusObj.AddComponent<CanvasRenderer>();
         statusText = statusObj.AddComponent<TextMeshProUGUI>();
-        statusText.fontSize = 16f; // Aumentado em 75%+ (anteriormente 10f/12f)
+        statusText.fontSize = 12f; // Revertido para o padrão limpo e compacto
         statusText.alignment = TextAlignmentOptions.MidlineLeft;
         statusText.raycastTarget = false;
 

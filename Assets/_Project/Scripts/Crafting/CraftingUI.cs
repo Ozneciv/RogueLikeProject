@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
 
@@ -66,9 +67,17 @@ public class CraftingUI : MonoBehaviour
 
     public TMP_FontAsset customFont;
 
+    // Tooltip flutuante para descrição de melhoria (Hover)
+    private GameObject upgradeTooltipPanel;
+    private TextMeshProUGUI tooltipNameText;
+    private TextMeshProUGUI tooltipDescText;
+    private TextMeshProUGUI tooltipEffectText;
+
+    // Dimensões Fixas (Conforme solicitado)
+    private const float PANEL_WIDTH = 1100f;
+    private const float PANEL_HEIGHT = 900f;
+
     [Header("Configurações de Design (Ajustáveis em Tempo Real)")]
-    [Range(400f, 1500f)] [SerializeField] private float panelWidth = 1100f;
-    [Range(300f, 1200f)] [SerializeField] private float panelHeight = 900f;
     [Range(30f, 200f)] [SerializeField] private float recipeSlotHeight = 76f;
     [Range(60f, 400f)] [SerializeField] private float equipmentSlotSize = 200f;
 
@@ -332,6 +341,9 @@ public class CraftingUI : MonoBehaviour
         }
         equipmentSlotObjects.Clear();
 
+        // Oculta o tooltip ao atualizar a lista para evitar que fique órfão
+        ShowUpgradeTooltip(null, false, Vector2.zero);
+
         // Cria slots para cada equipamento craftado
         List<EquipmentData> owned = EquipmentManager.Instance.GetOwnedEquipment();
 
@@ -340,6 +352,40 @@ public class CraftingUI : MonoBehaviour
             GameObject slotObj = CreateEquipmentSlot(equip);
             slotObj.transform.SetParent(equipmentContainer, false);
             equipmentSlotObjects.Add(slotObj);
+
+            // Adiciona detector de hover para abrir o painel de descrição detalhada
+            UpgradeHoverHandler hover = slotObj.AddComponent<UpgradeHoverHandler>();
+            hover.equipment = equip;
+            hover.onHover = (eq, isHovering) =>
+            {
+                if (isHovering)
+                {
+                    // Converte a posição do slot para coordenadas locais do Canvas pai principal (panelRect)
+                    Vector3 worldPos = slotObj.transform.position;
+                    Vector2 localPos;
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        panelRect,
+                        RectTransformUtility.WorldToScreenPoint(null, worldPos),
+                        null,
+                        out localPos
+                    );
+
+                    // Posiciona o tooltip acima do slot centralizado
+                    float slotHeight = 180f;
+                    if (equipmentContainer.parent != null)
+                    {
+                        RectTransform parentRect = equipmentContainer.parent.GetComponent<RectTransform>();
+                        if (parentRect != null) slotHeight = parentRect.rect.height;
+                    }
+
+                    Vector2 tooltipPos = new Vector2(localPos.x, localPos.y + slotHeight / 2f + 85f);
+                    ShowUpgradeTooltip(eq, true, tooltipPos);
+                }
+                else
+                {
+                    ShowUpgradeTooltip(null, false, Vector2.zero);
+                }
+            };
         }
     }
 
@@ -435,7 +481,7 @@ public class CraftingUI : MonoBehaviour
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(panelWidth, panelHeight);
+        panelRect.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
 
         Image mainPanelBg = panelObject.AddComponent<Image>();
         mainPanelBg.color = panelBg;
@@ -481,6 +527,9 @@ public class CraftingUI : MonoBehaviour
 
         // Botão de fechar
         CreateCloseButton(panelObject.transform);
+
+        // Tooltip flutuante de melhorias (por cima de tudo)
+        CreateUpgradeTooltip(panelObject.transform);
 
         Debug.Log("[CRAFTING] UI criada.");
     }
@@ -529,7 +578,7 @@ public class CraftingUI : MonoBehaviour
         obj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI txt = obj.AddComponent<TextMeshProUGUI>();
         txt.text = "MESA DE TRABALHO";
-        txt.fontSize = 32f; // Aumentado em 75%+ (anteriormente 18f/22f)
+        txt.fontSize = 22f; // Revertido para o padrão limpo e compacto
         txt.fontStyle = FontStyles.Bold;
         txt.color = headerColor;
         txt.alignment = TextAlignmentOptions.Center;
@@ -565,7 +614,7 @@ public class CraftingUI : MonoBehaviour
         labelObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
         labelText.text = "RECEITAS";
-        labelText.fontSize = 20f; // Aumentado em 75%+ (anteriormente 11f/14f)
+        labelText.fontSize = 14f; // Revertido para o padrão limpo e compacto
         labelText.fontStyle = FontStyles.Bold;
         labelText.color = accentColor;
         labelText.alignment = TextAlignmentOptions.Center;
@@ -633,40 +682,40 @@ public class CraftingUI : MonoBehaviour
         bg.color = sectionBg;
         bg.raycastTarget = false;
 
-        // Nome da receita
+        // Nome da receita (Extra Grande: 32f)
         detailNameText = CreateTextElement(detailPanel.transform, "DetailName",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -10f), new Vector2(-16f, 30f), 20f, FontStyles.Bold, headerColor);
+            new Vector2(0f, -15f), new Vector2(-16f, 38f), 32f, FontStyles.Bold, headerColor);
 
-        // Descrição
+        // Descrição (Extra Grande: 22f)
         detailDescText = CreateTextElement(detailPanel.transform, "DetailDesc",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -48f), new Vector2(-16f, 36f), 14f, FontStyles.Italic,
+            new Vector2(0f, -60f), new Vector2(-16f, 48f), 22f, FontStyles.Italic,
             new Color(0.7f, 0.68f, 0.78f, 1f));
 
-        // Ingredientes
+        // Ingredientes (Extra Grande: 24f)
         ingredientsText = CreateTextElement(detailPanel.transform, "Ingredients",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -96f), new Vector2(-16f, 130f), 15f, FontStyles.Normal,
+            new Vector2(0f, -115f), new Vector2(-16f, 180f), 24f, FontStyles.Normal,
             new Color(0.85f, 0.83f, 0.92f, 1f));
         ingredientsText.richText = true;
 
-        // Resultado
+        // Resultado (Extra Grande: 24f)
         resultText = CreateTextElement(detailPanel.transform, "Result",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -240f), new Vector2(-16f, 60f), 15f, FontStyles.Normal,
+            new Vector2(0f, -310f), new Vector2(-16f, 80f), 24f, FontStyles.Normal,
             new Color(0.85f, 0.83f, 0.92f, 1f));
         resultText.richText = true;
 
-        // Botão de Craftar
+        // Botão de Craftar (Ajustado para tamanho 50f)
         GameObject btnObj = new GameObject("CraftButton");
         btnObj.transform.SetParent(detailPanel.transform, false);
         RectTransform br = btnObj.AddComponent<RectTransform>();
         br.anchorMin = new Vector2(0.1f, 0f);
         br.anchorMax = new Vector2(0.9f, 0f);
         br.pivot = new Vector2(0.5f, 0f);
-        br.anchoredPosition = new Vector2(0f, 12f);
-        br.sizeDelta = new Vector2(0f, 38f);
+        br.anchoredPosition = new Vector2(0f, 16f);
+        br.sizeDelta = new Vector2(0f, 50f);
 
         btnObj.AddComponent<CanvasRenderer>();
         Image btnBg = btnObj.AddComponent<Image>();
@@ -677,7 +726,7 @@ public class CraftingUI : MonoBehaviour
         craftButton.onClick.AddListener(OnCraftButtonClicked);
         craftButton.interactable = false;
 
-        // Texto do botão
+        // Texto do botão (Extra Grande: 28f)
         GameObject btnTextObj = new GameObject("CraftBtnText");
         btnTextObj.transform.SetParent(btnObj.transform, false);
         RectTransform btr = btnTextObj.AddComponent<RectTransform>();
@@ -687,7 +736,7 @@ public class CraftingUI : MonoBehaviour
         btnTextObj.AddComponent<CanvasRenderer>();
         craftButtonText = btnTextObj.AddComponent<TextMeshProUGUI>();
         craftButtonText.text = "CRAFTAR";
-        craftButtonText.fontSize = 17f; // Aumentado de 14f
+        craftButtonText.fontSize = 28f; 
         craftButtonText.fontStyle = FontStyles.Bold;
         craftButtonText.color = Color.white;
         craftButtonText.alignment = TextAlignmentOptions.Center;
@@ -729,7 +778,7 @@ public class CraftingUI : MonoBehaviour
         labelObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI label = labelObj.AddComponent<TextMeshProUGUI>();
         label.text = "MELHORIAS CRAFTADAS";
-        label.fontSize = 20f; // Aumentado em 75%+ (anteriormente 11f/14f)
+        label.fontSize = 14f; // Revertido para o padrão limpo e compacto
         label.fontStyle = FontStyles.Bold;
         label.color = accentColor;
         label.alignment = TextAlignmentOptions.Center;
@@ -788,7 +837,7 @@ public class CraftingUI : MonoBehaviour
         slotObj.AddComponent<CanvasRenderer>();
         Image bg = slotObj.AddComponent<Image>();
         bg.color = new Color(0.12f, 0.12f, 0.18f, 0.95f);
-        bg.raycastTarget = false;
+        bg.raycastTarget = true; // Necessário para detectar o PointerEnter/Exit do hover
 
         // Borda interna do slot de melhoria para ficar mais premium
         GameObject borderObj = new GameObject("Border");
@@ -812,8 +861,8 @@ public class CraftingUI : MonoBehaviour
             GameObject iconObj = new GameObject("Icon");
             iconObj.transform.SetParent(slotObj.transform, false);
             RectTransform iconRect = iconObj.AddComponent<RectTransform>();
-            iconRect.anchorMin = new Vector2(0.06f, 0.74f);
-            iconRect.anchorMax = new Vector2(0.24f, 0.94f);
+            iconRect.anchorMin = new Vector2(0.06f, 0.60f);
+            iconRect.anchorMax = new Vector2(0.24f, 0.92f);
             iconRect.sizeDelta = Vector2.zero;
             
             iconObj.AddComponent<CanvasRenderer>();
@@ -822,22 +871,22 @@ public class CraftingUI : MonoBehaviour
             iconImg.preserveAspect = true;
             iconImg.raycastTarget = false;
 
-            nameOffsetLeft = 56f; // Desloca o texto do nome para não sobrepor o ícone
+            nameOffsetLeft = 56f;
         }
 
-        // Nome da Melhoria
+        // Nome da Melhoria (Revertido para 13f limpo)
         GameObject nameObj = new GameObject("Name");
         nameObj.transform.SetParent(slotObj.transform, false);
         RectTransform nr = nameObj.AddComponent<RectTransform>();
-        nr.anchorMin = new Vector2(0f, 0.72f);
-        nr.anchorMax = new Vector2(1f, 0.96f);
+        nr.anchorMin = new Vector2(0f, 0.60f);
+        nr.anchorMax = new Vector2(1f, 0.92f);
         nr.sizeDelta = Vector2.zero;
         nr.offsetMin = new Vector2(nameOffsetLeft, 0f);
         nr.offsetMax = new Vector2(-6f, 0f);
         nameObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
         nameText.text = equip.equipmentName;
-        nameText.fontSize = 16f; // Aumentado em 75%+ (anteriormente 10f/13f)
+        nameText.fontSize = 13f; 
         nameText.fontStyle = FontStyles.Bold;
         nameText.color = new Color(0.9f, 0.88f, 0.95f);
         nameText.alignment = (equip.icon != null) ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.Center;
@@ -845,35 +894,17 @@ public class CraftingUI : MonoBehaviour
         nameText.enableWordWrapping = true;
         if (customFont != null) nameText.font = customFont;
 
-        // Descrição Detalhada da Melhoria
-        GameObject descObj = new GameObject("Description");
-        descObj.transform.SetParent(slotObj.transform, false);
-        RectTransform dr = descObj.AddComponent<RectTransform>();
-        dr.anchorMin = new Vector2(0.06f, 0.40f);
-        dr.anchorMax = new Vector2(0.94f, 0.68f);
-        dr.sizeDelta = Vector2.zero;
-        descObj.AddComponent<CanvasRenderer>();
-        TextMeshProUGUI descText = descObj.AddComponent<TextMeshProUGUI>();
-        descText.text = equip.description; // Exibe a descrição do ScriptableObject
-        descText.fontSize = 13f; // Aumentado em 75%+ (anteriormente inexistente)
-        descText.fontStyle = FontStyles.Italic;
-        descText.color = new Color(0.75f, 0.73f, 0.85f);
-        descText.alignment = TextAlignmentOptions.TopLeft;
-        descText.raycastTarget = false;
-        descText.enableWordWrapping = true;
-        if (customFont != null) descText.font = customFont;
-
-        // Efeito (Valor de Stat)
+        // Efeito (Revertido para 11f limpo)
         GameObject effectObj = new GameObject("Effect");
         effectObj.transform.SetParent(slotObj.transform, false);
         RectTransform er = effectObj.AddComponent<RectTransform>();
-        er.anchorMin = new Vector2(0.06f, 0.22f);
-        er.anchorMax = new Vector2(0.94f, 0.36f);
+        er.anchorMin = new Vector2(0.06f, 0.30f);
+        er.anchorMax = new Vector2(0.94f, 0.55f);
         er.sizeDelta = Vector2.zero;
         effectObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI effectText = effectObj.AddComponent<TextMeshProUGUI>();
         effectText.text = GetEffectDescription(equip);
-        effectText.fontSize = 15f; // Aumentado em 75%+ (anteriormente 9f/11f)
+        effectText.fontSize = 11f; 
         effectText.color = new Color(0.4f, 0.85f, 0.4f);
         effectText.alignment = TextAlignmentOptions.Center;
         effectText.raycastTarget = false;
@@ -884,8 +915,8 @@ public class CraftingUI : MonoBehaviour
         GameObject btnObj = new GameObject("EquipBtn");
         btnObj.transform.SetParent(slotObj.transform, false);
         RectTransform br = btnObj.AddComponent<RectTransform>();
-        br.anchorMin = new Vector2(0.1f, 0.04f);
-        br.anchorMax = new Vector2(0.9f, 0.20f);
+        br.anchorMin = new Vector2(0.1f, 0.05f);
+        br.anchorMax = new Vector2(0.9f, 0.25f);
         br.sizeDelta = Vector2.zero;
 
         btnObj.AddComponent<CanvasRenderer>();
@@ -894,7 +925,7 @@ public class CraftingUI : MonoBehaviour
         btnBg.raycastTarget = true;
 
         Button btn = btnObj.AddComponent<Button>();
-        string eqId = equip.equipmentId; // Captura para o closure
+        string eqId = equip.equipmentId;
         btn.onClick.AddListener(() =>
         {
             if (EquipmentManager.Instance == null) return;
@@ -904,7 +935,7 @@ public class CraftingUI : MonoBehaviour
                 EquipmentManager.Instance.Equip(eqId);
         });
 
-        // Texto do botão
+        // Texto do botão (Revertido para 12f limpo)
         GameObject btnTextObj = new GameObject("BtnText");
         btnTextObj.transform.SetParent(btnObj.transform, false);
         RectTransform btr = btnTextObj.AddComponent<RectTransform>();
@@ -914,7 +945,7 @@ public class CraftingUI : MonoBehaviour
         btnTextObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI btnText = btnTextObj.AddComponent<TextMeshProUGUI>();
         btnText.text = isEquipped ? "DESEQUIPAR" : "EQUIPAR";
-        btnText.fontSize = 15f; // Aumentado em 75%+ (anteriormente 10f/12f)
+        btnText.fontSize = 12f; 
         btnText.fontStyle = FontStyles.Bold;
         btnText.color = Color.white;
         btnText.alignment = TextAlignmentOptions.Center;
@@ -957,7 +988,7 @@ public class CraftingUI : MonoBehaviour
         xObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI x = xObj.AddComponent<TextMeshProUGUI>();
         x.text = "X";
-        x.fontSize = 26f; // Aumentado em 75%+ (anteriormente 16f/18f)
+        x.fontSize = 18f; // Revertido para o padrão limpo e compacto
         x.color = Color.white;
         x.alignment = TextAlignmentOptions.Center;
         x.raycastTarget = false;
@@ -989,5 +1020,145 @@ public class CraftingUI : MonoBehaviour
         txt.enableWordWrapping = true;
         if (customFont != null) txt.font = customFont;
         return txt;
+    }
+
+    // ─── TOOLTIP DE UPGRADES (HOVER) ──────────────────────────────────────────
+
+    private void CreateUpgradeTooltip(Transform parent)
+    {
+        upgradeTooltipPanel = new GameObject("UpgradeTooltip");
+        upgradeTooltipPanel.transform.SetParent(parent, false);
+        upgradeTooltipPanel.layer = parent.gameObject.layer;
+
+        RectTransform r = upgradeTooltipPanel.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 0.5f);
+        r.anchorMax = new Vector2(0.5f, 0.5f);
+        r.pivot = new Vector2(0.5f, 0f); // Pivô inferior central (ficará acima do slot)
+        r.sizeDelta = new Vector2(300f, 150f);
+
+        upgradeTooltipPanel.AddComponent<CanvasRenderer>();
+        Image bg = upgradeTooltipPanel.AddComponent<Image>();
+        bg.color = new Color(0.02f, 0.02f, 0.04f, 0.98f); // Vidro escuro opaco
+        bg.raycastTarget = false;
+
+        // Borda reflexiva fina
+        GameObject borderObj = new GameObject("Border");
+        borderObj.transform.SetParent(upgradeTooltipPanel.transform, false);
+        RectTransform br = borderObj.AddComponent<RectTransform>();
+        br.anchorMin = Vector2.zero;
+        br.anchorMax = Vector2.one;
+        br.sizeDelta = new Vector2(2f, 2f);
+        borderObj.AddComponent<CanvasRenderer>();
+        Image borderImg = borderObj.AddComponent<Image>();
+        borderImg.color = new Color(0.6f, 0.45f, 0.90f, 0.60f); // Borda neon roxa
+        borderImg.type = Image.Type.Sliced;
+        borderImg.fillCenter = false;
+        borderImg.raycastTarget = false;
+
+        // Nome da melhoria no Tooltip
+        GameObject nameObj = new GameObject("Name");
+        nameObj.transform.SetParent(upgradeTooltipPanel.transform, false);
+        RectTransform nr = nameObj.AddComponent<RectTransform>();
+        nr.anchorMin = new Vector2(0f, 0.72f);
+        nr.anchorMax = new Vector2(1f, 0.96f);
+        nr.sizeDelta = Vector2.zero;
+        nr.offsetMin = new Vector2(10f, 0f);
+        nr.offsetMax = new Vector2(-10f, 0f);
+        nameObj.AddComponent<CanvasRenderer>();
+        tooltipNameText = nameObj.AddComponent<TextMeshProUGUI>();
+        tooltipNameText.fontSize = 15f;
+        tooltipNameText.fontStyle = FontStyles.Bold;
+        tooltipNameText.color = new Color(0.9f, 0.88f, 0.95f);
+        tooltipNameText.alignment = TextAlignmentOptions.BottomLeft;
+        tooltipNameText.raycastTarget = false;
+        if (customFont != null) tooltipNameText.font = customFont;
+
+        // Linha divisória
+        GameObject lineObj = new GameObject("Line");
+        lineObj.transform.SetParent(upgradeTooltipPanel.transform, false);
+        RectTransform lr = lineObj.AddComponent<RectTransform>();
+        lr.anchorMin = new Vector2(0.03f, 0.70f);
+        lr.anchorMax = new Vector2(0.97f, 0.70f);
+        lr.sizeDelta = new Vector2(0f, 1f);
+        lineObj.AddComponent<CanvasRenderer>();
+        Image lineImg = lineObj.AddComponent<Image>();
+        lineImg.color = new Color(1f, 1f, 1f, 0.15f);
+        lineImg.raycastTarget = false;
+
+        // Descrição detalhada da melhoria
+        GameObject descObj = new GameObject("Description");
+        descObj.transform.SetParent(upgradeTooltipPanel.transform, false);
+        RectTransform dr = descObj.AddComponent<RectTransform>();
+        dr.anchorMin = new Vector2(0f, 0.28f);
+        dr.anchorMax = new Vector2(1f, 0.65f);
+        dr.sizeDelta = Vector2.zero;
+        dr.offsetMin = new Vector2(10f, 0f);
+        dr.offsetMax = new Vector2(-10f, 0f);
+        descObj.AddComponent<CanvasRenderer>();
+        tooltipDescText = descObj.AddComponent<TextMeshProUGUI>();
+        tooltipDescText.fontSize = 12f;
+        tooltipDescText.fontStyle = FontStyles.Italic;
+        tooltipDescText.color = new Color(0.75f, 0.73f, 0.85f);
+        tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
+        tooltipDescText.raycastTarget = false;
+        tooltipDescText.enableWordWrapping = true;
+        if (customFont != null) tooltipDescText.font = customFont;
+
+        // Efeito da melhoria
+        GameObject effectObj = new GameObject("Effect");
+        effectObj.transform.SetParent(upgradeTooltipPanel.transform, false);
+        RectTransform er = effectObj.AddComponent<RectTransform>();
+        er.anchorMin = new Vector2(0f, 0.04f);
+        er.anchorMax = new Vector2(1f, 0.25f);
+        er.sizeDelta = Vector2.zero;
+        er.offsetMin = new Vector2(10f, 0f);
+        er.offsetMax = new Vector2(-10f, 0f);
+        effectObj.AddComponent<CanvasRenderer>();
+        tooltipEffectText = effectObj.AddComponent<TextMeshProUGUI>();
+        tooltipEffectText.fontSize = 13f;
+        tooltipEffectText.color = new Color(0.4f, 0.85f, 0.4f);
+        tooltipEffectText.alignment = TextAlignmentOptions.MidlineLeft;
+        tooltipEffectText.raycastTarget = false;
+        if (customFont != null) tooltipEffectText.font = customFont;
+
+        upgradeTooltipPanel.SetActive(false);
+    }
+
+    private void ShowUpgradeTooltip(EquipmentData equip, bool show, Vector2 localPos)
+    {
+        if (upgradeTooltipPanel == null) return;
+
+        if (show && equip != null)
+        {
+            tooltipNameText.text = equip.equipmentName;
+            tooltipDescText.text = equip.description;
+            tooltipEffectText.text = GetEffectDescription(equip);
+
+            RectTransform r = upgradeTooltipPanel.GetComponent<RectTransform>();
+            r.anchoredPosition = localPos;
+            upgradeTooltipPanel.SetActive(true);
+        }
+        else
+        {
+            upgradeTooltipPanel.SetActive(false);
+        }
+    }
+}
+
+// ─── CLASSE AUXILIAR DETECTOR DE HOVER ────────────────────────────────────────
+
+public class UpgradeHoverHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+{
+    public EquipmentData equipment;
+    public System.Action<EquipmentData, bool> onHover;
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        onHover?.Invoke(equipment, true);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        onHover?.Invoke(equipment, false);
     }
 }
