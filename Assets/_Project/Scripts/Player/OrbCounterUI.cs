@@ -70,6 +70,43 @@ public class OrbCounterUI : MonoBehaviour
 
     // ─────────────────────────────────────────────────────────────────────────
 
+    // Unity chama Reset() ao adicionar o componente e ao clicar "Reset" no Inspector.
+    // Garante que os defaults do C# sobrescrevem qualquer valor antigo serializado na cena.
+    private void Reset()
+    {
+        fontSize    = 30;
+        textColor   = new Color(0.95f, 0.88f, 0.55f, 1.00f);
+        labelColor  = new Color(0.72f, 0.76f, 0.78f, 0.90f);
+        panelColor  = new Color(0.23f, 0.28f, 0.70f, 0.45f);
+        borderColor = new Color(0.52f, 0.45f, 0.15f, 0.60f);
+
+        orbCoreColor = new Color(1.00f, 0.88f, 0.10f, 1.00f);
+        orbGlowColor = new Color(1.00f, 1.00f, 0.65f, 0.70f);
+        orbSize      = 32f;
+
+        rippleCount      = 3;
+        rippleDuration   = 1.6f;
+        rippleMaxScale   = 2.2f;
+        rippleStartAlpha = 0.55f;
+        rippleColor      = new Color(1.00f, 0.92f, 0.20f, 1.00f);
+
+        particleCount    = 4;
+        particleInterval = 1.8f;
+        particleRadius   = 20f;
+        particleLifetime = 0.65f;
+        particleMaxSize  = 4.5f;
+        particleColor    = new Color(1f, 0.95f, 0.4f, 1f);
+
+        offsetX = -60f;
+        offsetY =  40f;
+
+        panelWidth  = 250f;
+        panelHeight =  70f;
+
+        pulseDuration = 0.22f;
+        pulseScale    = 1.14f;
+    }
+
     void Start()
     {
         CreateUI();
