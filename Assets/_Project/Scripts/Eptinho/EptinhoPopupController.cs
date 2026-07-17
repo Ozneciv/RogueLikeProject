@@ -201,39 +201,9 @@ public class EptinhoPopupController : MonoBehaviour
 
                 Transform parent = imagemDoItem.transform.parent;
                 Transform existingBg = parent.Find("PortraitBg");
-                GameObject bgGO;
-                Image bgImg;
-                Outline bgOutline;
-                if (existingBg == null)
+                if (existingBg != null)
                 {
-                    bgGO = new GameObject("PortraitBg");
-                    bgGO.transform.SetParent(parent, false);
-                    bgGO.transform.SetSiblingIndex(imagemDoItem.transform.GetSiblingIndex());
-
-                    bgImg = bgGO.AddComponent<Image>();
-                    bgOutline = bgGO.AddComponent<Outline>();
-                }
-                else
-                {
-                    bgGO = existingBg.gameObject;
-                    bgImg = bgGO.GetComponent<Image>();
-                    if (bgImg == null) bgImg = bgGO.AddComponent<Image>();
-                    bgOutline = bgGO.GetComponent<Outline>();
-                    if (bgOutline == null) bgOutline = bgGO.AddComponent<Outline>();
-                }
-
-                bgImg.color = portraitBgColor;
-                bgOutline.effectColor = portraitBorderColor;
-                bgOutline.effectDistance = new Vector2(borderThickness * 0.75f, borderThickness * 0.75f);
-
-                RectTransform bgRect = bgGO.GetComponent<RectTransform>();
-                if (bgRect != null && imgRect != null)
-                {
-                    bgRect.anchorMin = imgRect.anchorMin;
-                    bgRect.anchorMax = imgRect.anchorMax;
-                    bgRect.pivot = imgRect.pivot;
-                    bgRect.anchoredPosition = imgRect.anchoredPosition;
-                    bgRect.sizeDelta = imgRect.sizeDelta + new Vector2(borderThickness * 4f, borderThickness * 4f); 
+                    DestroyImmediate(existingBg.gameObject);
                 }
             }
 
