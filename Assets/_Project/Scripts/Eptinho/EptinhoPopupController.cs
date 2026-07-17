@@ -46,7 +46,7 @@ public class EptinhoPopupController : MonoBehaviour
     [Range(0f, 10f)] [SerializeField] private float borderThickness = 2f;
 
     [Space(5)]
-    [Range(30f, 200f)] [SerializeField] private float portraitSize = 70f;
+    [Range(30f, 400f)] [SerializeField] private float portraitSize = 70f;
     [SerializeField] private float portraitMarginLeft = 20f;
     [SerializeField] private Color portraitBgColor = new Color(0.12f, 0.08f, 0.22f, 0.90f);
     [SerializeField] private Color portraitBorderColor = new Color(0.6f, 0.35f, 1.0f, 0.6f);
@@ -242,6 +242,8 @@ public class EptinhoPopupController : MonoBehaviour
             {
                 textoDoItem.color = textColor;
                 textoDoItem.fontSize = textFontSize;
+                textoDoItem.alignment = TextAlignmentOptions.MidlineLeft; // Força alinhamento à esquerda para evitar sobrepor a imagem
+                textoDoItem.enableWordWrapping = true; // Garante quebra de linha automática
                 
                 RectTransform textRect = textoDoItem.GetComponent<RectTransform>();
                 if (textRect != null)
@@ -250,8 +252,8 @@ public class EptinhoPopupController : MonoBehaviour
                     textRect.anchorMin = new Vector2(0f, 0.5f);
                     textRect.anchorMax = new Vector2(1f, 0.5f);
                     textRect.pivot = new Vector2(0f, 0.5f);
-                    textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginLeft, -panelHeight/2f + 15f); 
-                    textRect.offsetMax = new Vector2(-20f, panelHeight/2f - 15f);  
+                    textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginLeft, -panelHeight/2f + 10f); 
+                    textRect.offsetMax = new Vector2(-20f, panelHeight/2f - 10f);  
                 }
             }
 
