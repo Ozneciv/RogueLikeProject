@@ -114,6 +114,7 @@ public class RoomController : MonoBehaviour
     // Restrições globais (não por onda) — reiniciam apenas ao entrar na sala
     private int eliteSpawnedTotal  = 0;
     private int tanqueSpawnedTotal = 0;
+    private int suporteSpawnedTotal = 0;
 
     private int   totalWavesThisRoom = 1;
     private int   currentWave        = 0;
@@ -238,6 +239,14 @@ public class RoomController : MonoBehaviour
 
         List<GameObject> result = new List<GameObject>();
 
+        // Força exatamente 1 inimigo de suporte por sala, spawnado na primeira onda
+        if (currentWave == 1 && suportePrefabs.Count > 0 && suporteSpawnedTotal < 1)
+        {
+            result.Add(GetRandom(suportePrefabs));
+            suporteSpawnedTotal++;
+            remainingPts -= 3;
+        }
+
         bool addedSomething = true;
         while (remainingPts > 0 && addedSomething)
         {
@@ -252,8 +261,8 @@ public class RoomController : MonoBehaviour
             if (atiradorPrefabs.Count > 0 && remainingPts >= 4)                           validOptions.Add(EnemyClass.Atirador);
             // Mob Menor: máx. 50% do budget da onda
             if (mobMenorPrefabs.Count > 0 && remainingPts >= 1 && mobPointsUsed < maxMobPoints) validOptions.Add(EnemyClass.MobMenor);
-            // Suporte: 3 pontos
-            if (suportePrefabs.Count > 0 && remainingPts >= 3)                            validOptions.Add(EnemyClass.Suporte);
+            // Suporte: 3 pontos | máx. 1 POR SALA (limite global)
+            if (suportePrefabs.Count > 0 && remainingPts >= 3 && suporteSpawnedTotal < 1)  validOptions.Add(EnemyClass.Suporte);
 
             if (validOptions.Count == 0) break;
 
@@ -303,7 +312,7 @@ public class RoomController : MonoBehaviour
         }
 
         if (showSpawnLog)
-            Debug.Log($"[ROOM {roomIndex}] Onda {currentWave}: {result.Count} inimigos gerados (Elite:{eliteSpawnedTotal} Tanque:{tanqueSpawnedTotal})");
+            Debug.Log($"[ROOM {roomIndex}] Onda {currentWave}: {result.Count} inimigos gerados (Elite:{eliteSpawnedTotal} Tanque:{tanqueSpawnedTotal} Suporte:{suporteSpawnedTotal})");
 
         return result;
     }
