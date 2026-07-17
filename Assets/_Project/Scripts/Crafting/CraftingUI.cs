@@ -67,10 +67,10 @@ public class CraftingUI : MonoBehaviour
     public TMP_FontAsset customFont;
 
     [Header("Configurações de Design (Ajustáveis em Tempo Real)")]
-    [Range(400f, 1200f)] [SerializeField] private float panelWidth = 800f;
-    [Range(300f, 1000f)] [SerializeField] private float panelHeight = 600f;
-    [Range(30f, 120f)] [SerializeField] private float recipeSlotHeight = 58f;
-    [Range(60f, 200f)] [SerializeField] private float equipmentSlotSize = 110f;
+    [Range(400f, 1500f)] [SerializeField] private float panelWidth = 1100f;
+    [Range(300f, 1200f)] [SerializeField] private float panelHeight = 900f;
+    [Range(30f, 200f)] [SerializeField] private float recipeSlotHeight = 76f;
+    [Range(60f, 400f)] [SerializeField] private float equipmentSlotSize = 200f;
 
     [SerializeField] private Color panelBg = new Color(0.02f, 0.02f, 0.04f, 0.92f);
     [SerializeField] private Color panelBorder = new Color(1f, 1f, 1f, 0.12f);
@@ -529,7 +529,7 @@ public class CraftingUI : MonoBehaviour
         obj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI txt = obj.AddComponent<TextMeshProUGUI>();
         txt.text = "MESA DE TRABALHO";
-        txt.fontSize = 22f; // Aumentado de 18f
+        txt.fontSize = 32f; // Aumentado em 75%+ (anteriormente 18f/22f)
         txt.fontStyle = FontStyles.Bold;
         txt.color = headerColor;
         txt.alignment = TextAlignmentOptions.Center;
@@ -565,7 +565,7 @@ public class CraftingUI : MonoBehaviour
         labelObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
         labelText.text = "RECEITAS";
-        labelText.fontSize = 14f; // Aumentado de 11f
+        labelText.fontSize = 20f; // Aumentado em 75%+ (anteriormente 11f/14f)
         labelText.fontStyle = FontStyles.Bold;
         labelText.color = accentColor;
         labelText.alignment = TextAlignmentOptions.Center;
@@ -729,7 +729,7 @@ public class CraftingUI : MonoBehaviour
         labelObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI label = labelObj.AddComponent<TextMeshProUGUI>();
         label.text = "MELHORIAS CRAFTADAS";
-        label.fontSize = 14f; // Aumentado de 11f
+        label.fontSize = 20f; // Aumentado em 75%+ (anteriormente 11f/14f)
         label.fontStyle = FontStyles.Bold;
         label.color = accentColor;
         label.alignment = TextAlignmentOptions.Center;
@@ -790,50 +790,102 @@ public class CraftingUI : MonoBehaviour
         bg.color = new Color(0.12f, 0.12f, 0.18f, 0.95f);
         bg.raycastTarget = false;
 
-        // Nome
+        // Borda interna do slot de melhoria para ficar mais premium
+        GameObject borderObj = new GameObject("Border");
+        borderObj.transform.SetParent(slotObj.transform, false);
+        RectTransform borderRect = borderObj.AddComponent<RectTransform>();
+        borderRect.anchorMin = Vector2.zero;
+        borderRect.anchorMax = Vector2.one;
+        borderRect.sizeDelta = Vector2.zero;
+        borderObj.AddComponent<CanvasRenderer>();
+        Image borderImg = borderObj.AddComponent<Image>();
+        borderImg.color = new Color(1f, 1f, 1f, 0.08f);
+        borderImg.type = Image.Type.Sliced;
+        borderImg.fillCenter = false;
+        borderImg.raycastTarget = false;
+
+        float nameOffsetLeft = 6f;
+
+        // Ícone da melhoria se disponível
+        if (equip.icon != null)
+        {
+            GameObject iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(slotObj.transform, false);
+            RectTransform iconRect = iconObj.AddComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(0.06f, 0.74f);
+            iconRect.anchorMax = new Vector2(0.24f, 0.94f);
+            iconRect.sizeDelta = Vector2.zero;
+            
+            iconObj.AddComponent<CanvasRenderer>();
+            Image iconImg = iconObj.AddComponent<Image>();
+            iconImg.sprite = equip.icon;
+            iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
+
+            nameOffsetLeft = 56f; // Desloca o texto do nome para não sobrepor o ícone
+        }
+
+        // Nome da Melhoria
         GameObject nameObj = new GameObject("Name");
         nameObj.transform.SetParent(slotObj.transform, false);
         RectTransform nr = nameObj.AddComponent<RectTransform>();
-        nr.anchorMin = new Vector2(0f, 0.55f);
-        nr.anchorMax = new Vector2(1f, 0.95f);
+        nr.anchorMin = new Vector2(0f, 0.72f);
+        nr.anchorMax = new Vector2(1f, 0.96f);
         nr.sizeDelta = Vector2.zero;
-        nr.offsetMin = new Vector2(4f, 0f);
-        nr.offsetMax = new Vector2(-4f, 0f);
+        nr.offsetMin = new Vector2(nameOffsetLeft, 0f);
+        nr.offsetMax = new Vector2(-6f, 0f);
         nameObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
         nameText.text = equip.equipmentName;
-        nameText.fontSize = 13f; // Aumentado de 10f
+        nameText.fontSize = 16f; // Aumentado em 75%+ (anteriormente 10f/13f)
         nameText.fontStyle = FontStyles.Bold;
         nameText.color = new Color(0.9f, 0.88f, 0.95f);
-        nameText.alignment = TextAlignmentOptions.Center;
+        nameText.alignment = (equip.icon != null) ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.Center;
         nameText.raycastTarget = false;
         nameText.enableWordWrapping = true;
         if (customFont != null) nameText.font = customFont;
 
-        // Efeito
+        // Descrição Detalhada da Melhoria
+        GameObject descObj = new GameObject("Description");
+        descObj.transform.SetParent(slotObj.transform, false);
+        RectTransform dr = descObj.AddComponent<RectTransform>();
+        dr.anchorMin = new Vector2(0.06f, 0.40f);
+        dr.anchorMax = new Vector2(0.94f, 0.68f);
+        dr.sizeDelta = Vector2.zero;
+        descObj.AddComponent<CanvasRenderer>();
+        TextMeshProUGUI descText = descObj.AddComponent<TextMeshProUGUI>();
+        descText.text = equip.description; // Exibe a descrição do ScriptableObject
+        descText.fontSize = 13f; // Aumentado em 75%+ (anteriormente inexistente)
+        descText.fontStyle = FontStyles.Italic;
+        descText.color = new Color(0.75f, 0.73f, 0.85f);
+        descText.alignment = TextAlignmentOptions.TopLeft;
+        descText.raycastTarget = false;
+        descText.enableWordWrapping = true;
+        if (customFont != null) descText.font = customFont;
+
+        // Efeito (Valor de Stat)
         GameObject effectObj = new GameObject("Effect");
         effectObj.transform.SetParent(slotObj.transform, false);
         RectTransform er = effectObj.AddComponent<RectTransform>();
-        er.anchorMin = new Vector2(0f, 0.35f);
-        er.anchorMax = new Vector2(1f, 0.58f);
+        er.anchorMin = new Vector2(0.06f, 0.22f);
+        er.anchorMax = new Vector2(0.94f, 0.36f);
         er.sizeDelta = Vector2.zero;
-        er.offsetMin = new Vector2(4f, 0f);
-        er.offsetMax = new Vector2(-4f, 0f);
         effectObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI effectText = effectObj.AddComponent<TextMeshProUGUI>();
         effectText.text = GetEffectDescription(equip);
-        effectText.fontSize = 11f; // Aumentado de 9f
-        effectText.color = new Color(0.6f, 0.85f, 0.6f);
+        effectText.fontSize = 15f; // Aumentado em 75%+ (anteriormente 9f/11f)
+        effectText.color = new Color(0.4f, 0.85f, 0.4f);
         effectText.alignment = TextAlignmentOptions.Center;
         effectText.raycastTarget = false;
+        effectText.enableWordWrapping = true;
         if (customFont != null) effectText.font = customFont;
 
         // Botão Equipar/Desequipar
         GameObject btnObj = new GameObject("EquipBtn");
         btnObj.transform.SetParent(slotObj.transform, false);
         RectTransform br = btnObj.AddComponent<RectTransform>();
-        br.anchorMin = new Vector2(0.1f, 0.05f);
-        br.anchorMax = new Vector2(0.9f, 0.32f);
+        br.anchorMin = new Vector2(0.1f, 0.04f);
+        br.anchorMax = new Vector2(0.9f, 0.20f);
         br.sizeDelta = Vector2.zero;
 
         btnObj.AddComponent<CanvasRenderer>();
@@ -862,7 +914,7 @@ public class CraftingUI : MonoBehaviour
         btnTextObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI btnText = btnTextObj.AddComponent<TextMeshProUGUI>();
         btnText.text = isEquipped ? "DESEQUIPAR" : "EQUIPAR";
-        btnText.fontSize = 12f; // Aumentado de 10f
+        btnText.fontSize = 15f; // Aumentado em 75%+ (anteriormente 10f/12f)
         btnText.fontStyle = FontStyles.Bold;
         btnText.color = Color.white;
         btnText.alignment = TextAlignmentOptions.Center;
@@ -905,7 +957,7 @@ public class CraftingUI : MonoBehaviour
         xObj.AddComponent<CanvasRenderer>();
         TextMeshProUGUI x = xObj.AddComponent<TextMeshProUGUI>();
         x.text = "X";
-        x.fontSize = 18f; // Aumentado de 16f
+        x.fontSize = 26f; // Aumentado em 75%+ (anteriormente 16f/18f)
         x.color = Color.white;
         x.alignment = TextAlignmentOptions.Center;
         x.raycastTarget = false;
