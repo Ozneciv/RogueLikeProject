@@ -388,12 +388,35 @@ public class RoomController : MonoBehaviour
     {
         if (area == null) return transform.position;
         Bounds bounds = area.bounds;
-        float x = Random.Range(bounds.min.x, bounds.max.x);
-        float z = Random.Range(bounds.min.z, bounds.max.z);
-        // Usa bounds.min.y (chão da BoxCollider) como referência base.
-        // Isso é correto independente de onde o pivot/root da área estiver.
-        float y = bounds.min.y + spawnHeightOffset;
-        return new Vector3(x, y, z);
+        Vector3 size = bounds.size;
+
+        // Se a área de spawn for muito pequena em world space (erro de escala no prefab),
+        // expande para um raio útil de 8 metros ao redor do centro.
+        float halfX = size.x < 2f ? 8f : size.x * 0.5f;
+        float halfZ = size.z < 2f ? 8f : size.z * 0.5f;
+
+        float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
+        float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
+
+        // Projetar a posição no NavMesh para garantir que nasça exatamente no chão válido
+        Vector3 candidatePos = new Vector3(x, bounds.center.y, z);
+        if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 15f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            return navHit.position;
+        }
+
+        // Se NavMesh falhar, faz raycast de cima para baixo a partir de uma altura segura dentro do quarto
+        Vector3 rayStart = new Vector3(x, bounds.center.y + 10f, z);
+        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 30f))
+        {
+            if (!hit.collider.isTrigger)
+            {
+                return hit.point;
+            }
+        }
+
+        // Fallback final usando bounds.min.y com offset baixo seguro
+        return new Vector3(x, bounds.min.y + 0.1f, z);
     }
 
     private Vector3 GetRandomPositionForCollectible(BoxCollider box, bool isHigh, bool isNearWall)
@@ -401,34 +424,64 @@ public class RoomController : MonoBehaviour
         if (box == null) return transform.position;
         
         Bounds bounds = box.bounds;
-        float x = Random.Range(bounds.min.x, bounds.max.x);
-        float z = Random.Range(bounds.min.z, bounds.max.z);
+        Vector3 size = bounds.size;
+
+        // Se a área for muito pequena (erro de escala no prefab), expande para um raio útil de 7 metros
+        float halfX = size.x < 2f ? 7f : size.x * 0.5f;
+        float halfZ = size.z < 2f ? 7f : size.z * 0.5f;
+
+        float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
+        float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
 
         if (isNearWall)
         {
-            float distToMinX = Mathf.Abs(x - bounds.min.x);
-            float distToMaxX = Mathf.Abs(bounds.max.x - x);
-            float distToMinZ = Mathf.Abs(z - bounds.min.z);
-            float distToMaxZ = Mathf.Abs(bounds.max.z - z);
+            float distToMinX = Mathf.Abs(x - (bounds.center.x - halfX));
+            float distToMaxX = Mathf.Abs((bounds.center.x + halfX) - x);
+            float distToMinZ = Mathf.Abs(z - (bounds.center.z - halfZ));
+            float distToMaxZ = Mathf.Abs((bounds.center.z + halfZ) - z);
 
             float minDist = Mathf.Min(Mathf.Min(distToMinX, distToMaxX), Mathf.Min(distToMinZ, distToMaxZ));
 
             float margin = 0.05f;
-            if (minDist == distToMinX) x = bounds.min.x + (bounds.size.x * margin);
-            else if (minDist == distToMaxX) x = bounds.max.x - (bounds.size.x * margin);
-            else if (minDist == distToMinZ) z = bounds.min.z + (bounds.size.z * margin);
-            else if (minDist == distToMaxZ) z = bounds.max.z - (bounds.size.z * margin);
+            float sizeX = halfX * 2f;
+            float sizeZ = halfZ * 2f;
+
+            if (minDist == distToMinX) x = (bounds.center.x - halfX) + (sizeX * margin);
+            else if (minDist == distToMaxX) x = (bounds.center.x + halfX) - (sizeX * margin);
+            else if (minDist == distToMinZ) z = (bounds.center.z - halfZ) + (sizeZ * margin);
+            else if (minDist == distToMaxZ) z = (bounds.center.z + halfZ) - (sizeZ * margin);
         }
 
-        // Snap to ground using Raycast downwards
-        float y = bounds.min.y + spawnHeightOffset;
-        Vector3 rayStart = new Vector3(x, bounds.max.y + 5f, z);
-        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 25f))
+        // Snap to ground using NavMesh or Raycast downwards
+        float y = bounds.center.y;
+        Vector3 candidatePos = new Vector3(x, y, z);
+        bool foundGround = false;
+
+        // 1. Tenta NavMesh primeiro
+        if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 15f, UnityEngine.AI.NavMesh.AllAreas))
         {
-            if (!hit.collider.isTrigger)
+            y = navHit.position.y;
+            foundGround = true;
+        }
+
+        // 2. Se NavMesh falhar, tenta Raycast de cima para baixo
+        if (!foundGround)
+        {
+            Vector3 rayStart = new Vector3(x, bounds.center.y + 8f, z);
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 20f))
             {
-                y = hit.point.y;
+                if (!hit.collider.isTrigger)
+                {
+                    y = hit.point.y;
+                    foundGround = true;
+                }
             }
+        }
+
+        // 3. Fallback final seguro
+        if (!foundGround)
+        {
+            y = bounds.min.y + 0.1f;
         }
 
         if (isHigh)
