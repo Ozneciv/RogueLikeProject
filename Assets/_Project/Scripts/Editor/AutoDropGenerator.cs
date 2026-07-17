@@ -72,8 +72,9 @@ public class AutoDropGenerator : Editor
                 // Colore por tier
                 Color tierColor = GetTierColor(dropItem.tier);
                 var renderer = visual.GetComponent<Renderer>();
-                renderer.material = new Material(Shader.Find("Standard"));
-                renderer.material.color = tierColor;
+                Material tempMat = new Material(Shader.Find("Standard"));
+                tempMat.color = tierColor;
+                renderer.sharedMaterial = tempMat;
 
                 // Remove colisores do visual
                 DestroyImmediate(visual.GetComponent<Collider>());
