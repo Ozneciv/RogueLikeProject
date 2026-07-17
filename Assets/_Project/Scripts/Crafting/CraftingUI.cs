@@ -378,7 +378,7 @@ public class CraftingUI : MonoBehaviour
                         if (parentRect != null) slotHeight = parentRect.rect.height;
                     }
 
-                    Vector2 tooltipPos = new Vector2(localPos.x, localPos.y + slotHeight / 2f + 85f);
+                    Vector2 tooltipPos = new Vector2(localPos.x, localPos.y + slotHeight / 2f + 15f);
                     ShowUpgradeTooltip(eq, true, tooltipPos);
                 }
                 else
@@ -1034,7 +1034,7 @@ public class CraftingUI : MonoBehaviour
         r.anchorMin = new Vector2(0.5f, 0.5f);
         r.anchorMax = new Vector2(0.5f, 0.5f);
         r.pivot = new Vector2(0.5f, 0f); // Pivô inferior central (ficará acima do slot)
-        r.sizeDelta = new Vector2(300f, 150f);
+        r.sizeDelta = new Vector2(600f, 300f); // Aumentado em 2x exatas (anteriormente 300f, 150f)
 
         upgradeTooltipPanel.AddComponent<CanvasRenderer>();
         Image bg = upgradeTooltipPanel.AddComponent<Image>();
@@ -1055,18 +1055,18 @@ public class CraftingUI : MonoBehaviour
         borderImg.fillCenter = false;
         borderImg.raycastTarget = false;
 
-        // Nome da melhoria no Tooltip
+        // Nome da melhoria no Tooltip (Extra Grande: 30f - 2x exatas)
         GameObject nameObj = new GameObject("Name");
         nameObj.transform.SetParent(upgradeTooltipPanel.transform, false);
         RectTransform nr = nameObj.AddComponent<RectTransform>();
-        nr.anchorMin = new Vector2(0f, 0.72f);
-        nr.anchorMax = new Vector2(1f, 0.96f);
+        nr.anchorMin = new Vector2(0f, 0.76f);
+        nr.anchorMax = new Vector2(1f, 0.94f);
         nr.sizeDelta = Vector2.zero;
-        nr.offsetMin = new Vector2(10f, 0f);
-        nr.offsetMax = new Vector2(-10f, 0f);
+        nr.offsetMin = new Vector2(20f, 0f);
+        nr.offsetMax = new Vector2(-20f, 0f);
         nameObj.AddComponent<CanvasRenderer>();
         tooltipNameText = nameObj.AddComponent<TextMeshProUGUI>();
-        tooltipNameText.fontSize = 15f;
+        tooltipNameText.fontSize = 30f;
         tooltipNameText.fontStyle = FontStyles.Bold;
         tooltipNameText.color = new Color(0.9f, 0.88f, 0.95f);
         tooltipNameText.alignment = TextAlignmentOptions.BottomLeft;
@@ -1077,26 +1077,26 @@ public class CraftingUI : MonoBehaviour
         GameObject lineObj = new GameObject("Line");
         lineObj.transform.SetParent(upgradeTooltipPanel.transform, false);
         RectTransform lr = lineObj.AddComponent<RectTransform>();
-        lr.anchorMin = new Vector2(0.03f, 0.70f);
-        lr.anchorMax = new Vector2(0.97f, 0.70f);
+        lr.anchorMin = new Vector2(0.03f, 0.74f);
+        lr.anchorMax = new Vector2(0.97f, 0.74f);
         lr.sizeDelta = new Vector2(0f, 1f);
         lineObj.AddComponent<CanvasRenderer>();
         Image lineImg = lineObj.AddComponent<Image>();
         lineImg.color = new Color(1f, 1f, 1f, 0.15f);
         lineImg.raycastTarget = false;
 
-        // Descrição detalhada da melhoria
+        // Descrição detalhada da melhoria (Extra Grande: 24f - 2x exatas)
         GameObject descObj = new GameObject("Description");
         descObj.transform.SetParent(upgradeTooltipPanel.transform, false);
         RectTransform dr = descObj.AddComponent<RectTransform>();
-        dr.anchorMin = new Vector2(0f, 0.28f);
-        dr.anchorMax = new Vector2(1f, 0.65f);
+        dr.anchorMin = new Vector2(0f, 0.32f);
+        dr.anchorMax = new Vector2(1f, 0.70f);
         dr.sizeDelta = Vector2.zero;
-        dr.offsetMin = new Vector2(10f, 0f);
-        dr.offsetMax = new Vector2(-10f, 0f);
+        dr.offsetMin = new Vector2(20f, 0f);
+        dr.offsetMax = new Vector2(-20f, 0f);
         descObj.AddComponent<CanvasRenderer>();
         tooltipDescText = descObj.AddComponent<TextMeshProUGUI>();
-        tooltipDescText.fontSize = 12f;
+        tooltipDescText.fontSize = 24f;
         tooltipDescText.fontStyle = FontStyles.Italic;
         tooltipDescText.color = new Color(0.75f, 0.73f, 0.85f);
         tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
@@ -1104,18 +1104,18 @@ public class CraftingUI : MonoBehaviour
         tooltipDescText.enableWordWrapping = true;
         if (customFont != null) tooltipDescText.font = customFont;
 
-        // Efeito da melhoria
+        // Efeito da melhoria (Extra Grande: 26f - 2x exatas)
         GameObject effectObj = new GameObject("Effect");
         effectObj.transform.SetParent(upgradeTooltipPanel.transform, false);
         RectTransform er = effectObj.AddComponent<RectTransform>();
-        er.anchorMin = new Vector2(0f, 0.04f);
-        er.anchorMax = new Vector2(1f, 0.25f);
+        er.anchorMin = new Vector2(0f, 0.06f);
+        er.anchorMax = new Vector2(1f, 0.28f);
         er.sizeDelta = Vector2.zero;
-        er.offsetMin = new Vector2(10f, 0f);
-        er.offsetMax = new Vector2(-10f, 0f);
+        er.offsetMin = new Vector2(20f, 0f);
+        er.offsetMax = new Vector2(-20f, 0f);
         effectObj.AddComponent<CanvasRenderer>();
         tooltipEffectText = effectObj.AddComponent<TextMeshProUGUI>();
-        tooltipEffectText.fontSize = 13f;
+        tooltipEffectText.fontSize = 26f;
         tooltipEffectText.color = new Color(0.4f, 0.85f, 0.4f);
         tooltipEffectText.alignment = TextAlignmentOptions.MidlineLeft;
         tooltipEffectText.raycastTarget = false;
