@@ -195,6 +195,16 @@ MonoBehaviour:
   retreatChance: 0.3
   retreatForce: 8
   retreatCooldown: 5
+  walkingSounds:
+  - {fileID: 8300000, guid: 5401201776ce46159bcf8d53ca9ae56b, type: 3}
+  - {fileID: 8300000, guid: 21224e3e4a404f2baec63aad0385f414, type: 3}
+  - {fileID: 8300000, guid: f95eaf7cf5cd42209278bd6e1f978e36, type: 3}
+  - {fileID: 8300000, guid: 64fbbf2865174ea0a8ca5948f34b82bc, type: 3}
+  - {fileID: 8300000, guid: 1b36a7030c3f49f1a4356d349022f488, type: 3}
+  - {fileID: 8300000, guid: 4838dfead5cb422bb8e57d5c78a9ff0b, type: 3}
+  - {fileID: 8300000, guid: 708a2536156843e583e65338002e1388, type: 3}
+  walkingSoundVolume: 0.5
+  stepInterval: 0.18
 --- !u!114 &5632678571611438161
 MonoBehaviour:
   m_ObjectHideFlags: 0
