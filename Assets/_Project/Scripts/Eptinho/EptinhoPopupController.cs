@@ -34,6 +34,27 @@ public class EptinhoPopupController : MonoBehaviour
     public Image imagemDoItem;
     public TextMeshProUGUI textoDoItem;
 
+    [Header("Ajustes em Tempo Real")]
+    [Range(200f, 1000f)] [SerializeField] private float panelWidth = 620f;
+    [Range(50f, 400f)] [SerializeField] private float panelHeight = 110f;
+    [SerializeField] private float marginX = -40f;
+    [SerializeField] private float marginY = -40f;
+    
+    [Space(5)]
+    [SerializeField] private Color panelColor = new Color(0.04f, 0.03f, 0.08f, 0.85f);
+    [SerializeField] private Color borderColor = new Color(0.0f, 0.75f, 1.0f, 0.65f);
+    [Range(0f, 10f)] [SerializeField] private float borderThickness = 2f;
+
+    [Space(5)]
+    [Range(30f, 200f)] [SerializeField] private float portraitSize = 70f;
+    [SerializeField] private float portraitMarginLeft = 20f;
+    [SerializeField] private Color portraitBgColor = new Color(0.12f, 0.08f, 0.22f, 0.90f);
+    [SerializeField] private Color portraitBorderColor = new Color(0.6f, 0.35f, 1.0f, 0.6f);
+
+    [Space(5)]
+    [Range(10f, 60f)] [SerializeField] private float textFontSize = 18f;
+    [SerializeField] private Color textColor = new Color(0.85f, 0.95f, 1.0f, 1.0f);
+
     private Coroutine esconderCoroutine;
 
     void Awake()
@@ -143,21 +164,21 @@ public class EptinhoPopupController : MonoBehaviour
                     panelRect.anchorMin = new Vector2(1f, 1f);
                     panelRect.anchorMax = new Vector2(1f, 1f);
                     panelRect.pivot = new Vector2(1f, 1f);
-                    panelRect.sizeDelta = new Vector2(620f, 110f); // Compacto e elegante
-                    panelRect.anchoredPosition = new Vector2(-40f, -40f); // 40px de margem das bordas superior e direita
+                    panelRect.sizeDelta = new Vector2(panelWidth, panelHeight); 
+                    panelRect.anchoredPosition = new Vector2(marginX, marginY); 
                 }
 
                 Image panelImg = panel.GetComponent<Image>();
                 if (panelImg != null)
                 {
                     // Fundo escuro semi-transparente (glassmorphism)
-                    panelImg.color = new Color(0.04f, 0.03f, 0.08f, 0.85f);
+                    panelImg.color = panelColor;
                     
                     // Adiciona borda neon ciano (visor do Iron Man / Jarvis)
                     Outline outline = panel.GetComponent<Outline>();
                     if (outline == null) outline = panel.gameObject.AddComponent<Outline>();
-                    outline.effectColor = new Color(0.0f, 0.75f, 1.0f, 0.65f); // Ciano neon brilhante
-                    outline.effectDistance = new Vector2(2f, 2f);
+                    outline.effectColor = borderColor; 
+                    outline.effectDistance = new Vector2(borderThickness, borderThickness);
                 }
             }
 
@@ -173,30 +194,36 @@ public class EptinhoPopupController : MonoBehaviour
                     imgRect.anchorMin = new Vector2(0f, 0.5f);
                     imgRect.anchorMax = new Vector2(0f, 0.5f);
                     imgRect.pivot = new Vector2(0f, 0.5f);
-                    imgRect.sizeDelta = new Vector2(70f, 70f); // Tamanho ideal
-                    imgRect.anchoredPosition = new Vector2(20f, 0f); // 20px de margem da esquerda
+                    imgRect.sizeDelta = new Vector2(portraitSize, portraitSize); 
+                    imgRect.anchoredPosition = new Vector2(portraitMarginLeft, 0f); 
                 }
 
                 Transform parent = imagemDoItem.transform.parent;
                 Transform existingBg = parent.Find("PortraitBg");
                 GameObject bgGO;
+                Image bgImg;
+                Outline bgOutline;
                 if (existingBg == null)
                 {
                     bgGO = new GameObject("PortraitBg");
                     bgGO.transform.SetParent(parent, false);
                     bgGO.transform.SetSiblingIndex(imagemDoItem.transform.GetSiblingIndex());
 
-                    Image bgImg = bgGO.AddComponent<Image>();
-                    bgImg.color = new Color(0.12f, 0.08f, 0.22f, 0.90f); // Fundo escuro para a foto
-
-                    Outline bgOutline = bgGO.AddComponent<Outline>();
-                    bgOutline.effectColor = new Color(0.6f, 0.35f, 1.0f, 0.6f); // Borda roxa neon holográfica
-                    bgOutline.effectDistance = new Vector2(1.5f, 1.5f);
+                    bgImg = bgGO.AddComponent<Image>();
+                    bgOutline = bgGO.AddComponent<Outline>();
                 }
                 else
                 {
                     bgGO = existingBg.gameObject;
+                    bgImg = bgGO.GetComponent<Image>();
+                    if (bgImg == null) bgImg = bgGO.AddComponent<Image>();
+                    bgOutline = bgGO.GetComponent<Outline>();
+                    if (bgOutline == null) bgOutline = bgGO.AddComponent<Outline>();
                 }
+
+                bgImg.color = portraitBgColor;
+                bgOutline.effectColor = portraitBorderColor;
+                bgOutline.effectDistance = new Vector2(borderThickness * 0.75f, borderThickness * 0.75f);
 
                 RectTransform bgRect = bgGO.GetComponent<RectTransform>();
                 if (bgRect != null && imgRect != null)
@@ -205,14 +232,15 @@ public class EptinhoPopupController : MonoBehaviour
                     bgRect.anchorMax = imgRect.anchorMax;
                     bgRect.pivot = imgRect.pivot;
                     bgRect.anchoredPosition = imgRect.anchoredPosition;
-                    bgRect.sizeDelta = imgRect.sizeDelta + new Vector2(10f, 10f); // Moldura ligeiramente maior
+                    bgRect.sizeDelta = imgRect.sizeDelta + new Vector2(borderThickness * 4f, borderThickness * 4f); 
                 }
             }
 
             // 3. Estiliza e posiciona o texto para ocupar o espaço restante sem estourar
             if (textoDoItem != null)
             {
-                textoDoItem.color = new Color(0.85f, 0.95f, 1.0f, 1.0f);
+                textoDoItem.color = textColor;
+                textoDoItem.fontSize = textFontSize;
                 
                 RectTransform textRect = textoDoItem.GetComponent<RectTransform>();
                 if (textRect != null)
@@ -221,8 +249,8 @@ public class EptinhoPopupController : MonoBehaviour
                     textRect.anchorMin = new Vector2(0f, 0.5f);
                     textRect.anchorMax = new Vector2(1f, 0.5f);
                     textRect.pivot = new Vector2(0f, 0.5f);
-                    textRect.offsetMin = new Vector2(110f, -40f); // Começa depois do ícone (20 + 70 + 20)
-                    textRect.offsetMax = new Vector2(-20f, 40f);  // Margem da direita
+                    textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginLeft, -panelHeight/2f + 15f); 
+                    textRect.offsetMax = new Vector2(-20f, panelHeight/2f - 15f);  
                 }
             }
 
@@ -304,6 +332,8 @@ public class EptinhoPopupController : MonoBehaviour
         {
             textoDoItem.gameObject.SetActive(true);
             textoDoItem.text = mensagem;
+            textoDoItem.fontSize = textFontSize;
+            textoDoItem.color = textColor;
 
             // Aplica a mesma fonte bonita do inventário
             TMP_FontAsset customFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Oswald Bold SDF");
@@ -326,4 +356,19 @@ public class EptinhoPopupController : MonoBehaviour
         yield return new WaitForSecondsRealtime(segundos);
         if (popupUI != null) popupUI.SetActive(false);
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (Application.isPlaying && popupUI != null)
+        {
+            EnsurePopupUIExists();
+            
+            // Força a ativação do painel para visualização em tempo real no Editor
+            popupUI.SetActive(true);
+            Transform panel = popupUI.transform.Find("PopupPanel");
+            if (panel != null) panel.gameObject.SetActive(true);
+        }
+    }
+#endif
 }
