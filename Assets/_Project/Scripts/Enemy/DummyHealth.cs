@@ -4,6 +4,20 @@ using System.Collections;
 
 public class DummyHealth : MonoBehaviour
 {
+    [Header("Debuffs (Slow)")]
+    [HideInInspector] public bool isSlowed = false;
+    private float slowPercent = 0f;
+    private float slowTimer = 0f;
+
+    private Geobionte_AI geobionteAI;
+    private Golem_AI golemAI;
+    private Spider_AI spiderAI;
+    private GoblinAI_Transform goblinAI;
+    private ShardSwarm_AI shardSwarmAI;
+    private MagicStone_AI magicStoneAI;
+    private CrystalTuner crystalTunerAI;
+    private Cristalus_AI cristalusAI;
+
     [Header("Vida")]
     public int maxHealth = 100;
     public int CurrentHealth { get; private set; }
@@ -88,6 +102,19 @@ public class DummyHealth : MonoBehaviour
         }
 
         UpdateHealthBar();
+        DetectAIScripts();
+    }
+
+    private void DetectAIScripts()
+    {
+        geobionteAI = GetComponent<Geobionte_AI>();
+        golemAI = GetComponent<Golem_AI>();
+        spiderAI = GetComponent<Spider_AI>();
+        goblinAI = GetComponent<GoblinAI_Transform>();
+        shardSwarmAI = GetComponent<ShardSwarm_AI>();
+        magicStoneAI = GetComponent<MagicStone_AI>();
+        crystalTunerAI = GetComponent<CrystalTuner>();
+        cristalusAI = GetComponent<Cristalus_AI>();
     }
 
     // --- NOVA FUNÇÃO CHAMADA PELO SINTONIZADOR ---
@@ -218,5 +245,82 @@ public class DummyHealth : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private void Update()
+    {
+        if (isSlowed)
+        {
+            slowTimer -= Time.deltaTime;
+            if (slowTimer <= 0f)
+            {
+                RemoveSlow();
+            }
+        }
+    }
+
+    public void ApplySlow(float percent, float duration)
+    {
+        if (percent <= 0f) return;
+
+        if (!isSlowed)
+        {
+            isSlowed = true;
+            slowPercent = percent;
+            slowTimer = duration;
+            ApplySlowToAI(percent);
+            Debug.Log($"[DEBUFF] Slow de {percent * 100}% aplicado a {gameObject.name} por {duration}s.");
+        }
+        else
+        {
+            // Atualiza tempo de duração (pega o maior)
+            slowTimer = Mathf.Max(slowTimer, duration);
+            
+            // Se o novo slow for mais forte, aplica a diferença
+            if (percent > slowPercent)
+            {
+                RemoveSlowFromAI(); // Reverte o antigo
+                slowPercent = percent;
+                ApplySlowToAI(percent); // Aplica o novo mais forte
+            }
+        }
+    }
+
+    public void RemoveSlow()
+    {
+        if (!isSlowed) return;
+
+        RemoveSlowFromAI();
+        isSlowed = false;
+        slowPercent = 0f;
+        slowTimer = 0f;
+        Debug.Log($"[DEBUFF] Slow removido de {gameObject.name}. Velocidade restaurada.");
+    }
+
+    private void ApplySlowToAI(float percent)
+    {
+        float factor = 1f - percent;
+        if (geobionteAI != null) { geobionteAI.chaseSpeed *= factor; geobionteAI.seekSpeed *= factor; geobionteAI.wanderSpeed *= factor; }
+        if (golemAI != null) { golemAI.moveSpeed *= factor; }
+        if (spiderAI != null) { spiderAI.moveSpeed *= factor; }
+        if (goblinAI != null) { goblinAI.chaseSpeed *= factor; goblinAI.fleeSpeed *= factor; goblinAI.strafeSpeed *= factor; }
+        if (shardSwarmAI != null) { shardSwarmAI.moveSpeed *= factor; }
+        if (magicStoneAI != null) { magicStoneAI.moveSpeed *= factor; }
+        if (crystalTunerAI != null) { crystalTunerAI.moveSpeed *= factor; }
+        if (cristalusAI != null) { cristalusAI.moveSpeed *= factor; }
+    }
+
+    private void RemoveSlowFromAI()
+    {
+        if (slowPercent >= 1f) return; // Evita divisão por zero
+        float factor = 1f / (1f - slowPercent);
+        if (geobionteAI != null) { geobionteAI.chaseSpeed *= factor; geobionteAI.seekSpeed *= factor; geobionteAI.wanderSpeed *= factor; }
+        if (golemAI != null) { golemAI.moveSpeed *= factor; }
+        if (spiderAI != null) { spiderAI.moveSpeed *= factor; }
+        if (goblinAI != null) { goblinAI.chaseSpeed *= factor; goblinAI.fleeSpeed *= factor; goblinAI.strafeSpeed *= factor; }
+        if (shardSwarmAI != null) { shardSwarmAI.moveSpeed *= factor; }
+        if (magicStoneAI != null) { magicStoneAI.moveSpeed *= factor; }
+        if (crystalTunerAI != null) { crystalTunerAI.moveSpeed *= factor; }
+        if (cristalusAI != null) { cristalusAI.moveSpeed *= factor; }
     }
 }

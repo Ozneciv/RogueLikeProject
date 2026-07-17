@@ -297,6 +297,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
+  isSlowed: 0
   maxHealth: 200
   healthBarSlider: {fileID: 2118708073140547246}
   normalColor: {r: 0.32781482, g: 1, b: 0, a: 1}
@@ -307,6 +308,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &8342968827306300709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -340,17 +342,17 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  globalDropChance: 1
+  globalDropChance: 0.35
   itemAmount: 1
   lootPool:
   - itemPrefab: {fileID: 3764477026988318115, guid: 2be4f3a63b118e64bb2a69427bfbf3f9, type: 3}
-    weight: 40
+    weight: 60
   - itemPrefab: {fileID: 7710391414899334709, guid: 5314d132cb2d52f409294ab016c985d9, type: 3}
-    weight: 30
+    weight: 25
   - itemPrefab: {fileID: 1892841328970859659, guid: 87d066aa87c84744a871765c7c0c1cf6, type: 3}
-    weight: 20
-  - itemPrefab: {fileID: 410151209585210004, guid: 6554e4a4dbb882e45a7a04c31a6d00b6, type: 3}
     weight: 10
+  - itemPrefab: {fileID: 410151209585210004, guid: 6554e4a4dbb882e45a7a04c31a6d00b6, type: 3}
+    weight: 5
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
@@ -366,9 +368,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Totem
-  icon: {fileID: 0}
-  descricao: "Descri\xE7\xE3o teste teste"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!1001 &3277407914684802703
 PrefabInstance:

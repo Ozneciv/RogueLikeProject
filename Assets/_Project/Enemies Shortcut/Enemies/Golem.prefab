@@ -157,6 +157,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
+  isSlowed: 0
   maxHealth: 100
   healthBarSlider: {fileID: 0}
   normalColor: {r: 0.45705712, g: 1, b: 0, a: 1}
@@ -167,6 +168,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &4728308152487144125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -209,11 +211,17 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  globalDropChance: 1
+  globalDropChance: 0.35
   itemAmount: 1
   lootPool:
-  - itemPrefab: {fileID: 1066167381274076914, guid: 294f662b14179e84ea3e72c6956c2460, type: 3}
-    weight: 1
+  - itemPrefab: {fileID: 4483142858074221592, guid: c92e479881a9a5d4697323958b3595fb, type: 3}
+    weight: 60
+  - itemPrefab: {fileID: 1582116761678166610, guid: f9df4ec66da70494db04e3035831e297, type: 3}
+    weight: 25
+  - itemPrefab: {fileID: 1346386853181149894, guid: 4ab4ccdfba961a14eb47afe0ec707df5, type: 3}
+    weight: 10
+  - itemPrefab: {fileID: 5351024838107336789, guid: aeea4dbbbd52cd048a997a6b83b367ec, type: 3}
+    weight: 5
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 2
@@ -229,9 +237,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  nomeInimigo: Golem
-  icon: {fileID: 21300000, guid: ed0bc8cd41f91174fb5eff00e69d5caf, type: 3}
-  descricao: "Golem descr\xE7\xE3o teste"
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!1001 &5881570581251759777
 PrefabInstance:

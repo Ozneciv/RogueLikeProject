@@ -65,7 +65,12 @@ public class ItemDataAssetGenerator : Editor
                     bool isMultiplier = false;
 
                     string lower = attrString.ToLower();
-                    if (lower.Contains("multiplier") || lower.Contains("chance") || lower.Contains("speed") || lower.Contains("regen"))
+                    if (lower.Contains("slow"))
+                    {
+                        placeholderValue = 0.05f; // Represents 5% slow
+                        isMultiplier = false;
+                    }
+                    else if (lower.Contains("multiplier") || lower.Contains("chance") || lower.Contains("speed") || lower.Contains("regen"))
                     {
                         placeholderValue = 0.05f; // Represents +5%
                         isMultiplier = true;

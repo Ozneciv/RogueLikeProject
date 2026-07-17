@@ -99,6 +99,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
+  isSlowed: 0
   maxHealth: 100
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
@@ -109,6 +110,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &2107083964686136380
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -124,9 +126,11 @@ MonoBehaviour:
   essencePrefab: {fileID: 0}
   essenceAmount: 10
   essenceVariation: 3
-  globalDropChance: 0.3
+  globalDropChance: 0.35
   itemAmount: 1
-  lootPool: []
+  lootPool:
+  - itemPrefab: {fileID: 4556253161868932902, guid: 29e4faefc1c7bca49bab3a0f38ea201c, type: 3}
+    weight: 25
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
@@ -158,22 +162,51 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geobionte_AI
   currentState: 0
   activationDistance: 20
+  bodyHoverHeight: 1.2
+  hoverLerpSpeed: 8
   wanderSpeed: 2
   wanderChangeInterval: 3
   oreSearchRadius: 30
   seekSpeed: 5
   oreReachDistance: 1.5
+  bismutadoDefeatCount: 0
+  preventionMaxHP: 7
+  interruptedFleeSpeed: 8
   fusionDuration: 1.5
   transformedScale: 2.5
   chaseSpeed: 4
   rotationSpeed: 8
   attackRange: 8
+  sweepDamage: 8
+  sweepRange: 2
+  sweepCooldown: 6
+  sweepDuration: 0.6
+  sweepIndicatorColor: {r: 1, g: 0.2, b: 0.2, a: 0.4}
+  fusionsToSentinel: 3
+  sentinelNumberOfLegs: 12
+  sentinelPartsPerLeg: 5
+  sentinelLegRadius: 6
+  sentinelScale: 2.5
+  sentinelHighHeight: 5
+  sentinelLowHeight: 1.2
+  sentinelInvulnerableDuration: 3
+  sentinelVulnerableWindow: 1
+  sentinelMaxHP: 10
+  sentinelLegDamage: 10
+  sentinelLegDamageCooldown: 0.5
+  sentinelLegDamageRadius: 1
+  sentinelSlamDamage: 15
+  sentinelSlamRadius: 3
+  sentinelSlamSpeed: 20
   fieldCooldown: 6
   fieldDuration: 10
   fieldRadius: 4
   fleeSpeed: 10
   fleeDestroyDistance: 50
   respawnDelay: 30
+  baseColor: {r: 0.03, g: 0.01, b: 0.05, a: 1}
+  transformedColor: {r: 0.7, g: 0.3, b: 0.6, a: 1}
+  sentinelColor: {r: 0.9, g: 0.2, b: 0.8, a: 1}
 --- !u!114 &344258591659258005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -187,6 +220,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MimicSpace.Mimic
   legPrefab: {fileID: 1682633662898237459, guid: fb7bce2dee9494540a1866bb5d230a51, type: 3}
+  legGenerationSounds: []
+  legSoundVolume: 1
   numberOfLegs: 5
   partsPerLeg: 4
   legCount: 0
@@ -204,6 +239,10 @@ MonoBehaviour:
   maxGrowCoef: 6.5
   newLegCooldown: 0.3
   velocity: {x: -0.5991216, y: 0, z: -0.08149819}
+  legsDealDamage: 0
+  legDamageAmount: 10
+  legDamageCooldown: 0.5
+  legDamageRadius: 1
 --- !u!1 &8312534338257933218
 GameObject:
   m_ObjectHideFlags: 0

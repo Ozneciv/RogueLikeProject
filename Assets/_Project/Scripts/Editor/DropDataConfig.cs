@@ -409,6 +409,20 @@ public class DropDataConfig : ScriptableObject
             essenceCost = 420f
         });
 
+        // ════════════════════════════════════════════════════════════════
+        // 💎 GEOBIONTE (1 item: T2)
+        // ════════════════════════════════════════════════════════════════
+        
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "geobionte_bismuto_t2",
+            itemName = "Cristal de Bismuto",
+            enemyName = "Geobionte",
+            tier = 2,
+            attributes = new List<string> { "SlowOnHit" },
+            essenceCost = 180f
+        });
+
         Debug.Log($"[DROP CONFIG] Gerados {allItems.Count} items!");
     }
 }

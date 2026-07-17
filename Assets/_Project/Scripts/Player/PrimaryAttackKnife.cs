@@ -172,9 +172,21 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             // Aplica dano no componente correto
             if (enemy != null)
+            {
                 enemy.TakeDamage(finalDamage, isCritical);
+                if (playerAttributes != null && playerAttributes.slowOnHit > 0f)
+                {
+                    enemy.ApplySlow(playerAttributes.slowOnHit, 3.0f);
+                }
+            }
             else if (swarmEnemy != null)
+            {
                 swarmEnemy.TakeDamage(finalDamage, isCritical);
+                if (playerAttributes != null && playerAttributes.slowOnHit > 0f)
+                {
+                    swarmEnemy.ApplySlow(playerAttributes.slowOnHit, 3.0f);
+                }
+            }
 
             // Aplicar Knockback — o Rigidbody pode estar no pai (ex: ShardSwarm)
             if (playerAttributes != null)
