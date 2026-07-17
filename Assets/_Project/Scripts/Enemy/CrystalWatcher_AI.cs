@@ -227,7 +227,8 @@ public class CrystalWatcher_AI : MonoBehaviour
             if (vfx != null)
             {
                 vfx.StopChargeEffect();
-                vfx.StartLaserEffect(currentLaserAngle);
+                Vector3 laserDir = (playerTransform.position + Vector3.up * 1f - GetLaserOrigin()).normalized;
+                vfx.StartLaserEffect(laserDir);
                 vfx.SetAmbientIntensity(5f); // Aura bem intensa durante disparo
             }
 
@@ -302,7 +303,11 @@ public class CrystalWatcher_AI : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, currentLaserAngle, 0);
 
         // 5. ATUALIZA DIREÇÃO DAS PARTÍCULAS DO LASER
-        if (vfx != null) vfx.UpdateLaserDirection(currentLaserAngle);
+        if (vfx != null)
+        {
+            Vector3 laserDir = (playerTransform.position + Vector3.up * 1f - GetLaserOrigin()).normalized;
+            vfx.UpdateLaserDirection(laserDir);
+        }
 
         // 6. ATUALIZA A POSIÇÃO VISUAL DO LASER
         UpdateLaserVisual();
@@ -319,9 +324,11 @@ public class CrystalWatcher_AI : MonoBehaviour
         damageTimer += Time.deltaTime;
         if (damageTimer < damageTickRate) return;
 
-        // Calcula a direção do laser baseado no ângulo atual
-        Vector3 laserDirection = AngleToDirection(currentLaserAngle);
         Vector3 origin = GetLaserOrigin(); // Um pouco acima do chão
+
+        // Em vez de usar um vetor puramente horizontal, nós apontamos na direção 3D do player (peito)
+        Vector3 targetPos = playerTransform.position + Vector3.up * 1f;
+        Vector3 laserDirection = (targetPos - origin).normalized;
 
         // Encontra a distância da parede mais próxima para não dar dano através dela
         float finalLaserDist = laserRange;
@@ -499,7 +506,10 @@ public class CrystalWatcher_AI : MonoBehaviour
         if (laserLine == null || !laserLine.enabled) return;
 
         Vector3 origin = GetLaserOrigin();
-        Vector3 direction = AngleToDirection(currentLaserAngle);
+        
+        // Em vez de usar um vetor puramente horizontal, nós apontamos na direção 3D do player (peito)
+        Vector3 targetPos = playerTransform.position + Vector3.up * 1f;
+        Vector3 direction = (targetPos - origin).normalized;
         Vector3 endPoint = origin + direction * laserRange;
 
         float finalLaserDist = laserRange;
