@@ -409,7 +409,7 @@ PrefabInstance:
       objectReference: {fileID: 8769541777565081956}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: tanquePrefabs.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: atiradorPrefabs.Array.size
@@ -418,14 +418,14 @@ PrefabInstance:
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'elitePrefabs.Array.data[0]'
       value: 
-      objectReference: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
+      objectReference: {fileID: 5825432386404738263, guid: 69c1af8f17b4ffe4cb2a1e940deae7b8, type: 3}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'elitePrefabs.Array.data[1]'
       value: 
       objectReference: {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: mobMenorPrefabs.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'tanquePrefabs.Array.data[0]'

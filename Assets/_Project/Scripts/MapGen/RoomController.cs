@@ -64,6 +64,10 @@ public class RoomController : MonoBehaviour
     [Tooltip("Todos os prefabs que podem aparecer como Elite neste bioma.")]
     public List<GameObject> elitePrefabs = new List<GameObject>();
 
+    [Header("Suporte — 3 pontos | máx. 2 por onda")]
+    [Tooltip("Todos os prefabs que podem aparecer como Suporte neste bioma.")]
+    public List<GameObject> suportePrefabs = new List<GameObject>();
+
     // =====================================================
     // CONFIGURAÇÃO DE ONDAS
     // =====================================================
@@ -118,7 +122,7 @@ public class RoomController : MonoBehaviour
     private bool  hasTriggered  = false;
     private bool  combatActive  = false;
 
-    private enum EnemyClass { Elite, Tanque, Atirador, MobMenor }
+    private enum EnemyClass { Elite, Tanque, Atirador, MobMenor, Suporte }
 
     // =====================================================
     // API PÚBLICA
@@ -248,6 +252,8 @@ public class RoomController : MonoBehaviour
             if (atiradorPrefabs.Count > 0 && remainingPts >= 4)                           validOptions.Add(EnemyClass.Atirador);
             // Mob Menor: máx. 50% do budget da onda
             if (mobMenorPrefabs.Count > 0 && remainingPts >= 1 && mobPointsUsed < maxMobPoints) validOptions.Add(EnemyClass.MobMenor);
+            // Suporte: 3 pontos
+            if (suportePrefabs.Count > 0 && remainingPts >= 3)                            validOptions.Add(EnemyClass.Suporte);
 
             if (validOptions.Count == 0) break;
 
@@ -279,6 +285,11 @@ public class RoomController : MonoBehaviour
                     result.Add(GetRandom(mobMenorPrefabs));
                     mobPointsUsed++;
                     remainingPts -= 1;
+                    break;
+
+                case EnemyClass.Suporte:
+                    result.Add(GetRandom(suportePrefabs));
+                    remainingPts -= 3;
                     break;
             }
         }

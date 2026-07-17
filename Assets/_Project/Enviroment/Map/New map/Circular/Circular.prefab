@@ -480,11 +480,12 @@ MonoBehaviour:
   tanquePrefabs:
   - {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
   - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
-  - {fileID: 597106731579064663, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
   elitePrefabs:
   - {fileID: 6865054294158569394, guid: 69c1af8f17b4ffe4cb2a1e940deae7b8, type: 3}
-  - {fileID: 117068003402409443, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
   - {fileID: 9108585638185803770, guid: a3af8602d880e15468c32225f0c28523, type: 3}
+  suportePrefabs:
+  - {fileID: 597106731579064663, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
+  - {fileID: 117068003402409443, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
   minWaves: 1
   maxWaves: 3
   timeBetweenWaves: 2
