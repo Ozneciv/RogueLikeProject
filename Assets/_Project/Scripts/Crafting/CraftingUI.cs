@@ -67,19 +67,19 @@ public class CraftingUI : MonoBehaviour
     public TMP_FontAsset customFont;
 
     // Cores do painel (tema escuro/roxo consistente com InventoryUI)
-    private static readonly Color PANEL_BG = new Color(0.04f, 0.04f, 0.07f, 0.82f); // frosted glass background consistent with InventoryUI
+    private static readonly Color PANEL_BG = new Color(0.02f, 0.02f, 0.04f, 0.92f); // frosted glass background, slightly more opaque and darker
     private static readonly Color PANEL_BORDER = new Color(1f, 1f, 1f, 0.12f); // light reflection border
     private static readonly Color HEADER_COLOR = new Color(0.85f, 0.80f, 0.95f, 1f);
     private static readonly Color ACCENT = new Color(0.6f, 0.45f, 0.90f, 1f);
-    private static readonly Color SECTION_BG = new Color(0.08f, 0.08f, 0.12f, 0.85f); // frosted glass sub-section background
+    private static readonly Color SECTION_BG = new Color(0.04f, 0.04f, 0.07f, 0.90f); // frosted glass sub-section background, slightly darker
     private static readonly Color BTN_CRAFT_ENABLED = new Color(0.25f, 0.70f, 0.30f, 1f);
     private static readonly Color BTN_CRAFT_DISABLED = new Color(0.3f, 0.3f, 0.3f, 0.6f);
     private static readonly Color BTN_EQUIP = new Color(0.3f, 0.55f, 0.85f, 1f);
     private static readonly Color BTN_UNEQUIP = new Color(0.7f, 0.35f, 0.35f, 1f);
 
     // Dimensões
-    private const float PANEL_WIDTH = 700f;
-    private const float PANEL_HEIGHT = 520f;
+    private const float PANEL_WIDTH = 800f; // Aumentado de 700f
+    private const float PANEL_HEIGHT = 600f; // Aumentado de 520f
     private const float RECIPE_SLOT_HEIGHT = 58f; // Aumentado de 52f para melhor espaçamento de fontes maiores
     private const float EQUIPMENT_SLOT_SIZE = 110f;
 
@@ -138,6 +138,18 @@ public class CraftingUI : MonoBehaviour
         if (isOpen && Input.GetKeyDown(KeyCode.Escape))
         {
             CloseCrafting();
+        }
+
+        // Atalho T para realizar Craft se a UI estiver aberta e a receita for craftável
+        if (isOpen && Input.GetKeyDown(KeyCode.T))
+        {
+            if (selectedRecipe != null && CraftingManager.Instance != null)
+            {
+                if (CraftingManager.Instance.CanCraft(selectedRecipe))
+                {
+                    OnCraftButtonClicked();
+                }
+            }
         }
 
         // CHEAT DEBUG: Pressionando P com a UI aberta adiciona todos os recursos para testes rápidos de craft!
@@ -292,7 +304,7 @@ public class CraftingUI : MonoBehaviour
         bool canCraft = CraftingManager.Instance.CanCraft(selectedRecipe);
         craftButton.interactable = canCraft;
         craftButton.GetComponent<Image>().color = canCraft ? BTN_CRAFT_ENABLED : BTN_CRAFT_DISABLED;
-        craftButtonText.text = canCraft ? "CRAFTAR" : "MATERIAIS INSUFICIENTES";
+        craftButtonText.text = canCraft ? "CRAFTAR [T]" : "MATERIAIS INSUFICIENTES";
     }
 
     private void RefreshEquipmentSection()
@@ -610,25 +622,25 @@ public class CraftingUI : MonoBehaviour
         // Nome da receita
         detailNameText = CreateTextElement(detailPanel.transform, "DetailName",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -8f), new Vector2(-16f, 28f), 20f, FontStyles.Bold, HEADER_COLOR);
+            new Vector2(0f, -10f), new Vector2(-16f, 30f), 20f, FontStyles.Bold, HEADER_COLOR);
 
         // Descrição
         detailDescText = CreateTextElement(detailPanel.transform, "DetailDesc",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -38f), new Vector2(-16f, 32f), 11f, FontStyles.Italic,
+            new Vector2(0f, -48f), new Vector2(-16f, 36f), 14f, FontStyles.Italic,
             new Color(0.7f, 0.68f, 0.78f, 1f));
 
         // Ingredientes
         ingredientsText = CreateTextElement(detailPanel.transform, "Ingredients",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -76f), new Vector2(-16f, 90f), 12f, FontStyles.Normal,
+            new Vector2(0f, -96f), new Vector2(-16f, 130f), 15f, FontStyles.Normal,
             new Color(0.85f, 0.83f, 0.92f, 1f));
         ingredientsText.richText = true;
 
         // Resultado
         resultText = CreateTextElement(detailPanel.transform, "Result",
             new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -172f), new Vector2(-16f, 50f), 12f, FontStyles.Normal,
+            new Vector2(0f, -240f), new Vector2(-16f, 60f), 15f, FontStyles.Normal,
             new Color(0.85f, 0.83f, 0.92f, 1f));
         resultText.richText = true;
 
