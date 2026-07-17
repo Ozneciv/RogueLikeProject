@@ -258,6 +258,8 @@ public class Geobionte_AI : MonoBehaviour
     public Color baseColor = new Color(0.03f, 0.01f, 0.05f, 1f); // Preto/Roxo muito escuro
     [Tooltip("Cor quando se funde ao cristal (modo de ataque)")]
     public Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
+    [Tooltip("Cor da esfera do Geobionte Sentinela")]
+    public Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f); // Roxo/rosa brilhante
     
     private int originalLayer;
 
@@ -1517,9 +1519,6 @@ public class Geobionte_AI : MonoBehaviour
         float elapsed = 0f;
         Vector3 startScale = transform.localScale;
         Vector3 endScale = originalScale * sentinelScale;
-
-        // Cor do Sentinela: roxo mais intenso/brilhante
-        Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f);
 
         while (elapsed < growDuration)
         {
