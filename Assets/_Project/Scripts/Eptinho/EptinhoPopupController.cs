@@ -35,7 +35,7 @@ public class EptinhoPopupController : MonoBehaviour
     public TextMeshProUGUI textoDoItem;
 
     [Header("Ajustes em Tempo Real")]
-    [Range(200f, 1000f)] [SerializeField] private float panelWidth = 672f;
+    [Range(200f, 1000f)] [SerializeField] private float panelWidth = 620f;
     [Range(50f, 400f)] [SerializeField] private float panelHeight = 250f;
     [SerializeField] private float marginX = -40f;
     [SerializeField] private float marginY = -40f;
@@ -43,12 +43,12 @@ public class EptinhoPopupController : MonoBehaviour
     [Space(5)]
     [SerializeField] private Color panelColor = new Color(0.23f, 0.28f, 0.70f, 0.5f);
     [SerializeField] private Color borderColor = new Color(0.52f, 0.45f, 0.15f, 0.5f);
-    [Range(0f, 20f)] [SerializeField] private float borderThickness = 10f;
+    [Range(0f, 40f)] [SerializeField] private float borderThickness = 20f;
 
     [Space(5)]
     [Range(30f, 400f)] [SerializeField] private float portraitSize = 192f;
-    [SerializeField] private float portraitMarginLeft = 70f;
-    [SerializeField] private float portraitMarginRight = 20f;
+    [SerializeField] private float portraitMarginLeft = 0f;
+    [SerializeField] private float portraitMarginRight = 70f;
     [SerializeField] private Color portraitBgColor = new Color(0.08f, 0.05f, 0.18f, 0.95f);
     [SerializeField] private Color portraitBorderColor = new Color(0.62f, 0.38f, 0.92f, 1.0f);
 
