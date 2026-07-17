@@ -313,7 +313,7 @@ public class RoomController : MonoBehaviour
         GameObject indicator = null;
         if (spawnIndicatorPrefab != null)
         {
-            Vector3 indicatorPos = new Vector3(spawnPos.x, chosenArea.transform.position.y + 0.05f, spawnPos.z);
+            Vector3 indicatorPos = new Vector3(spawnPos.x, spawnPos.y + 0.05f, spawnPos.z);
             indicator = Instantiate(spawnIndicatorPrefab, indicatorPos, Quaternion.identity);
         }
 
