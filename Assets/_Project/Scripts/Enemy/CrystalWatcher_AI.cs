@@ -95,6 +95,12 @@ public class CrystalWatcher_AI : MonoBehaviour
     
     void Start()
     {
+        // Sobrescreve o default antigo curto para o novo longo que cruza o mapa
+        if (laserRange == 20f)
+        {
+            laserRange = 120f;
+        }
+
         // Pega o componente de vida que está no mesmo GameObject
         health = GetComponent<DummyHealth>();
 
@@ -317,28 +323,43 @@ public class CrystalWatcher_AI : MonoBehaviour
         Vector3 laserDirection = AngleToDirection(currentLaserAngle);
         Vector3 origin = GetLaserOrigin(); // Um pouco acima do chão
 
+        // Encontra a distância da parede mais próxima para não dar dano através dela
+        float finalLaserDist = laserRange;
+        RaycastHit[] wallHits = Physics.RaycastAll(origin, laserDirection, laserRange);
+        foreach (RaycastHit wh in wallHits)
+        {
+            if (!wh.collider.CompareTag("Player") && !wh.collider.CompareTag("Enemy") && wh.collider.GetComponent<DummyHealth>() == null)
+            {
+                if (wh.distance < finalLaserDist)
+                {
+                    finalLaserDist = wh.distance;
+                }
+            }
+        }
+
         // SphereCast = como um Raycast mas com "espessura"
-        // Imagina jogar uma bolinha invisível na direção do laser
-        // Se ela bater em algo, retorna true
-        // SphereCastAll: Pega TUDO que estiver no caminho do laser
         RaycastHit[] hits = Physics.SphereCastAll(origin, laserWidth, laserDirection, laserRange);
         
         foreach (RaycastHit h in hits)
         {
-            // Se algum desses alvos for o Player, causa dano! (Ignora os inimigos atravessados)
+            // Se algum desses alvos for o Player, causa dano!
             if (h.collider.CompareTag("Player"))
             {
-                PlayerHealth playerHealth = h.collider.GetComponent<PlayerHealth>();
-                if (playerHealth != null)
+                // Só causa dano se o player estiver antes/rente à parede
+                if (h.distance <= finalLaserDist + 0.5f) // pequena margem de tolerância
                 {
-                    int finalDamage = laserDamage;
-                    
-                    if (isBuffed) finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
-                    
-                    playerHealth.TakeDamage(finalDamage, gameObject);
-                    damageTimer = 0f; // Reseta o timer pra não dar multi-hit insano no mesmo frame
-                    Debug.Log("[WATCHER] Laser acertou o player (atravessando obstáculos)! Dano: " + finalDamage);
-                    break; // Já achou o player e deu dano, pode parar de procurar nos hits.
+                    PlayerHealth playerHealth = h.collider.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        int finalDamage = laserDamage;
+                        
+                        if (isBuffed) finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
+                        
+                        playerHealth.TakeDamage(finalDamage, gameObject);
+                        damageTimer = 0f; // Reseta o timer pra não dar multi-hit insano no mesmo frame
+                        Debug.Log("[WATCHER] Laser acertou o player! Dano: " + finalDamage);
+                        break; // Já achou o player e deu dano, pode parar de procurar nos hits.
+                    }
                 }
             }
         }
@@ -371,8 +392,9 @@ public class CrystalWatcher_AI : MonoBehaviour
         laserGlow.numCapVertices = 8;
         laserGlow.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-        Shader glowShader = Shader.Find("Sprites/Default");
-        if (glowShader == null) glowShader = Shader.Find("UI/Default");
+        Shader glowShader = Shader.Find("Legacy Shaders/Particles/Additive");
+        if (glowShader == null) glowShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        if (glowShader == null) glowShader = Shader.Find("Sprites/Default");
         Material glowMat = new Material(glowShader);
         laserGlow.material = glowMat;
 
@@ -408,8 +430,9 @@ public class CrystalWatcher_AI : MonoBehaviour
         laserLine.numCapVertices = 8;
         laserLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-        Shader coreShader = Shader.Find("Sprites/Default");
-        if (coreShader == null) coreShader = Shader.Find("UI/Default");
+        Shader coreShader = Shader.Find("Legacy Shaders/Particles/Additive");
+        if (coreShader == null) coreShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        if (coreShader == null) coreShader = Shader.Find("Sprites/Default");
         Material coreMat = new Material(coreShader);
         laserLine.material = coreMat;
 
@@ -504,6 +527,21 @@ public class CrystalWatcher_AI : MonoBehaviour
         laserLine.SetPosition(0, origin);
         laserLine.SetPosition(1, endPoint);
 
+        if (vfx != null)
+        {
+            // Encontra a normal da parede atingida para gerar faíscas ricocheteando corretamente
+            Vector3 hitNormal = -direction; // fallback caso não ache a colisão exata
+            foreach (RaycastHit h in hits)
+            {
+                if (h.distance == finalLaserDist)
+                {
+                    hitNormal = h.normal;
+                    break;
+                }
+            }
+            vfx.UpdateLaserImpact(endPoint, hitNormal);
+        }
+
         if (laserGlow != null && laserGlow.enabled)
         {
             laserGlow.SetPosition(0, origin);
@@ -511,7 +549,6 @@ public class CrystalWatcher_AI : MonoBehaviour
 
             // === EFEITO DE PULSAÇÃO ===
             // Faz o laser "respirar" — oscila a largura suavemente
-            // Mathf.Sin com Time.time cria uma onda que vai e volta
             float pulse = Mathf.Sin(Time.time * 8f) * 0.15f; // Oscila ±0.15
             laserLine.startWidth = 0.15f + pulse * 0.3f;
             laserGlow.startWidth = 0.8f + pulse;

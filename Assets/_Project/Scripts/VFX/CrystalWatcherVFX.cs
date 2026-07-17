@@ -18,6 +18,7 @@ public class CrystalWatcherVFX : MonoBehaviour
     private ParticleSystem chargeParticles;   // Partículas durante carregamento
     private ParticleSystem ambientParticles;  // Aura constante ao redor do cristal
     private ParticleSystem laserParticles;    // Partículas ao longo do laser
+    private ParticleSystem impactParticles;   // Faíscas no ponto de impacto (parede)
 
     private Renderer modelRenderer;
 
@@ -29,6 +30,7 @@ public class CrystalWatcherVFX : MonoBehaviour
         CreateAmbientParticles(center);
         CreateChargeParticles(center);
         CreateLaserParticles(center);
+        CreateImpactParticles(center);
     }
 
     Vector3 GetCenter()
@@ -201,6 +203,47 @@ public class CrystalWatcherVFX : MonoBehaviour
         laserParticles.Stop();
     }
 
+    void CreateImpactParticles(Vector3 center)
+    {
+        GameObject obj = new GameObject("LaserImpactVFX");
+        obj.transform.SetParent(transform);
+        obj.transform.position = center;
+
+        impactParticles = obj.AddComponent<ParticleSystem>();
+
+        var main = impactParticles.main;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.2f, 0.45f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 8f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.12f);
+        main.startColor = new ParticleSystem.MinMaxGradient(
+            new Color(0.9f, 0.6f, 1f, 1f),
+            new Color(1f, 0.8f, 1f, 0.9f)
+        );
+        main.maxParticles = 50;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = impactParticles.emission;
+        emission.enabled = true;
+        emission.rateOverTime = 40f;
+
+        var shape = impactParticles.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 35f; // cone de faíscas se espalhando
+        shape.radius = 0.05f;
+
+        var sizeOverLifetime = impactParticles.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        AnimationCurve sizeCurve = new AnimationCurve();
+        sizeCurve.AddKey(0f, 1f);
+        sizeCurve.AddKey(1f, 0f);
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+
+        SetupParticleMaterial(impactParticles);
+
+        // Começa desligado
+        impactParticles.Stop();
+    }
+
     // =============================================
     // MATERIAL — configura material aditivo para todas as partículas
     // =============================================
@@ -263,6 +306,10 @@ public class CrystalWatcherVFX : MonoBehaviour
             UpdateLaserDirection(angle);
             laserParticles.Play();
         }
+        if (impactParticles != null)
+        {
+            impactParticles.Play();
+        }
     }
 
     /// <summary>
@@ -281,12 +328,30 @@ public class CrystalWatcherVFX : MonoBehaviour
     }
 
     /// <summary>
+    /// Atualiza o ponto de colisão e a normal do impacto do laser
+    /// </summary>
+    public void UpdateLaserImpact(Vector3 impactPoint, Vector3 normal)
+    {
+        if (impactParticles != null)
+        {
+            impactParticles.transform.position = impactPoint;
+            if (normal != Vector3.zero)
+            {
+                // Faz as faíscas ricochetearem para longe da parede
+                impactParticles.transform.rotation = Quaternion.LookRotation(normal);
+            }
+        }
+    }
+
+    /// <summary>
     /// Para partículas do laser
     /// </summary>
     public void StopLaserEffect()
     {
         if (laserParticles != null)
             laserParticles.Stop();
+        if (impactParticles != null)
+            impactParticles.Stop();
     }
 
     /// <summary>
