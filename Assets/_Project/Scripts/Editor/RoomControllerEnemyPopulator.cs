@@ -28,29 +28,32 @@ public class RoomControllerEnemyPopulator : EditorWindow
     private static readonly string[] MOB_MENOR_PATHS = new[]
     {
         "Assets/_Project/Enemies/Spider/Spider.prefab",
+        "Assets/_Project/Enemies/SharpBlur/Sh.prefab",
+        "Assets/_Project/Enemies/Totem/Totem 1.prefab",
     };
 
     private static readonly string[] ATIRADOR_PATHS = new[]
     {
-        "Assets/_Project/Enemies/Goblin/Goblin.prefab",
+        "Assets/_Project/Enemies/CrystalDragon/cristaldrag.prefab",
         "Assets/_Project/Enemies/CrystalWatcher/CrystalWatcher.prefab",
+        "Assets/_Project/Enemies/Goblin/Goblin.prefab",
     };
 
     private static readonly string[] TANQUE_PATHS = new[]
     {
         "Assets/_Project/Enemies/Golem/Golem.prefab",
+        "Assets/_Project/Enemies/CrystalWatcher/CrystalWatcher.prefab",
         "Assets/_Project/Enemies/MagicStone/MagicStoneEnemy.prefab",
     };
 
     private static readonly string[] ELITE_PATHS = new[]
     {
-        "Assets/_Project/Enemies/SharpBlur/Sh.prefab",
-        "Assets/_Project/Enemies/CrystalDragon/crystal_dragon.prefab",
+        "Assets/GameAssets/Prefabs-Gabriel/Enemies Prefabs/Geobionte.prefab",
     };
 
     private static readonly string[] SUPORTE_PATHS = new[]
     {
-        "Assets/_Project/Enemies/Totem/Totem_3_FBX_low.prefab",
+        "Assets/_Project/Enemies/Cristalus/Cristalus.prefab",
         "Assets/_Project/Enemies/CrystalTunner/CrystalTuner_Root.prefab",
     };
 
