@@ -154,6 +154,11 @@ public class MainMenuUI : MonoBehaviour
                 Debug.LogWarning("ControlsReferenceMenu not found in scene.");
             }
         });
+
+        y = NavRow(p.transform, "Resetar Progresso", "RESET", y, () => {
+            SaveManager.ResetProfile();
+            Debug.Log("[DEBUG] Progresso do jogo resetado via menu principal.");
+        });
         y -= 28f;
 
         Btn(p.transform, "VOLTAR", y, ShowMain); y -= 76f;

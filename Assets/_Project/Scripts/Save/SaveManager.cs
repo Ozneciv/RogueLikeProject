@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -376,5 +377,104 @@ public class SaveManager : MonoBehaviour
     public List<string> GetAllEquippedEquipmentIds()
     {
         return new List<string>(CachedData.equippedEquipmentIds);
+    }
+
+    /// <summary>
+    /// Reseta toda a progressão em disco e memória (deleta o arquivo JSON e re-inicializa cache).
+    /// </summary>
+    public static void ResetProfile()
+    {
+        string path = Path.Combine(Application.persistentDataPath, SaveFileName);
+        if (File.Exists(path))
+        {
+            try
+            {
+                File.Delete(path);
+                Debug.Log("[SAVE] Arquivo de save deletado do disco.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[SAVE] Erro ao deletar save: {e.Message}");
+            }
+        }
+        
+        // Se a instância estiver rodando (reset em tempo real)
+        if (instance != null)
+        {
+            instance.ResetAllProgress();
+        }
+    }
+
+    /// <summary>
+    /// Reseta toda a progressão do jogo ativa em memória.
+    /// </summary>
+    public void ResetAllProgress()
+    {
+        _cachedData = new PersistentSaveData();
+
+        // Aplica o reset ao player atual, se ativo na cena
+        GameObject player = GameManager.instance != null ? GameManager.instance.currentPlayer : null;
+        if (player != null)
+        {
+            PlayerInventory inventory = player.GetComponent<PlayerInventory>();
+            if (inventory != null)
+            {
+                inventory.SetMaxSlots(10);
+                List<string> itemsToClear = new List<string>();
+                foreach (var kvp in inventory.GetAllItems())
+                {
+                    itemsToClear.Add(kvp.Key);
+                }
+                foreach (string id in itemsToClear)
+                {
+                    inventory.RemoveItem(id, inventory.GetItemCount(id));
+                }
+            }
+
+            PlayerUpgrades upgrades = player.GetComponent<PlayerUpgrades>();
+            if (upgrades != null)
+            {
+                for (int i = 0; i < upgrades.upgrades.Count; i++)
+                {
+                    var upg = upgrades.upgrades[i];
+                    if (upg.button != null)
+                    {
+                        upg.button.interactable = true;
+                    }
+                }
+            }
+
+            PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
+            if (skinManager != null)
+            {
+                skinManager.SetSkin("astronaut");
+            }
+            
+            EquipmentManager equipManager = player.GetComponent<EquipmentManager>();
+            if (equipManager != null)
+            {
+                equipManager.ResetAllEquippedEffects();
+            }
+        }
+
+        // Notifica as UIs ativas para atualizar imediatamente
+        OnBaseResourcesChanged?.Invoke();
+        OnEquipmentChanged?.Invoke();
+
+        Debug.Log("[SAVE] Progresso limpo da memória.");
+    }
+
+    /// <summary>
+    /// Atalho de depuração para testes de jogabilidade rápidos.
+    /// </summary>
+    void Update()
+    {
+        // Atalho: Shift + R para resetar progresso e reiniciar a cena na hora
+        if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKeyDown(KeyCode.R))
+        {
+            Debug.Log("[DEBUG] Shift+R pressionado! Resetando progresso e recarregando cena...");
+            ResetProfile();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
     }
 }
