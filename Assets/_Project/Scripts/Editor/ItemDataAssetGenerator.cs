@@ -54,7 +54,14 @@ public class ItemDataAssetGenerator : Editor
                 // Especial handling for T4 unique abilities that are not standard attributes
                 if (attrString.StartsWith("Special_"))
                 {
-                    newItem.description = $"Efeito Único T4: {attrString.Replace("Special_", "")}";
+                    if (attrString == "Special_SentinelLeg")
+                    {
+                        newItem.description = "Evita morte uma vez a cada 10 min. Se <30% HP, ignora dano. Se >=30% HP, define HP para 30%.";
+                    }
+                    else
+                    {
+                        newItem.description = $"Efeito Único T4: {attrString.Replace("Special_", "")}";
+                    }
                     continue;
                 }
 

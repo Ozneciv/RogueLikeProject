@@ -160,6 +160,7 @@ public class Geobionte_AI : MonoBehaviour
     /// NÃO configurar manualmente no Inspector.
     /// </summary>
     private bool isSentinel = false;
+    public bool IsSentinel => isSentinel;
 
     // ==================== SENTINELA (Semi-boss) ====================
 

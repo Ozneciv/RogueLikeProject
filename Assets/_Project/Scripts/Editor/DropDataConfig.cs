@@ -423,6 +423,20 @@ public class DropDataConfig : ScriptableObject
             essenceCost = 180f
         });
 
+        // ════════════════════════════════════════════════════════════════
+        // 💎 GEOBIONTE SENTINELA (1 item: T4)
+        // ════════════════════════════════════════════════════════════════
+        
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "sentinel_leg_t4",
+            itemName = "Perna de Sentinela",
+            enemyName = "Geobionte",
+            tier = 4,
+            attributes = new List<string> { "Special_SentinelLeg" },
+            essenceCost = 420f
+        });
+
         Debug.Log($"[DROP CONFIG] Gerados {allItems.Count} items!");
     }
 }

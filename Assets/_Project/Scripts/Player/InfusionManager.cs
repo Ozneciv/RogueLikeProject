@@ -277,4 +277,13 @@ public class InfusionManager : MonoBehaviour
                 break;
         }
     }
+
+    public bool HasInfusion(string itemId)
+    {
+        foreach (var item in infusedItems)
+        {
+            if (item.itemId == itemId) return true;
+        }
+        return false;
+    }
 }
