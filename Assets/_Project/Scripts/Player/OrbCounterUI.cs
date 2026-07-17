@@ -269,46 +269,28 @@ public class OrbCounterUI : MonoBehaviour
             particlePool.Add(pR);
         }
 
-        // ── Label "ESSÊNCIA" ──
-        float textX = panelHeight + 8f; // começa depois do orb area
+        // ── Valor (sem label — número centralizado ao lado do orb) ──
+        float textX = panelHeight + 8f;
 
-        GameObject lbGO = new GameObject("Label");
-        lbGO.transform.SetParent(cGO.transform, false);
-        lbGO.layer = layer;
-        RectTransform lR = lbGO.AddComponent<RectTransform>();
-        lR.anchorMin = new Vector2(0f, 0.5f);
-        lR.anchorMax = new Vector2(1f, 1f);
-        lR.offsetMin = new Vector2(textX, 4f);
-        lR.offsetMax = new Vector2(-10f, 0f);
-        lbGO.AddComponent<CanvasRenderer>();
-        labelText           = lbGO.AddComponent<TextMeshProUGUI>();
-        labelText.text      = "ESSÊNCIA";
-        labelText.fontSize  = fontSize * 0.46f;
-        labelText.color     = labelColor;
-        labelText.alignment = TextAlignmentOptions.BottomLeft;
-        labelText.fontStyle = FontStyles.Bold;
-        labelText.raycastTarget = false;
-
-        // ── Valor ──
         GameObject vGO = new GameObject("Value");
         vGO.transform.SetParent(cGO.transform, false);
         vGO.layer = layer;
         RectTransform vR = vGO.AddComponent<RectTransform>();
         vR.anchorMin = new Vector2(0f, 0f);
-        vR.anchorMax = new Vector2(1f, 0.54f);
+        vR.anchorMax = new Vector2(1f, 1f);  // ocupa toda a altura
         vR.offsetMin = new Vector2(textX, 0f);
-        vR.offsetMax = new Vector2(-10f, -4f);
+        vR.offsetMax = new Vector2(-10f, 0f);
         vGO.AddComponent<CanvasRenderer>();
         counterText           = vGO.AddComponent<TextMeshProUGUI>();
         counterText.text      = "0";
         counterText.fontSize  = fontSize;
         counterText.color     = textColor;
-        counterText.alignment = TextAlignmentOptions.TopLeft;
+        counterText.alignment = TextAlignmentOptions.Left;  // centralizado verticalmente via anchorMin/Max
         counterText.fontStyle = FontStyles.Bold;
         counterText.raycastTarget = false;
 
         TMP_FontAsset font = Resources.Load<TMP_FontAsset>("Fonts & Materials/Oswald Bold SDF");
-        if (font != null) { labelText.font = font; counterText.font = font; }
+        if (font != null) { counterText.font = font; }
     }
 
     // ─── Animação de Emanação ─────────────────────────────────────────────────
