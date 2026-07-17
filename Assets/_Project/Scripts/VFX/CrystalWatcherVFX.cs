@@ -298,12 +298,12 @@ public class CrystalWatcherVFX : MonoBehaviour
     /// <summary>
     /// Ativa partículas ao longo do laser
     /// </summary>
-    public void StartLaserEffect(float angle)
+    public void StartLaserEffect(Vector3 direction)
     {
         if (laserParticles != null)
         {
             laserParticles.transform.position = GetCenter();
-            UpdateLaserDirection(angle);
+            UpdateLaserDirection(direction);
             laserParticles.Play();
         }
         if (impactParticles != null)
@@ -315,15 +315,12 @@ public class CrystalWatcherVFX : MonoBehaviour
     /// <summary>
     /// Atualiza a direção das partículas do laser (chamado todo frame durante firing)
     /// </summary>
-    public void UpdateLaserDirection(float angle)
+    public void UpdateLaserDirection(Vector3 direction)
     {
         if (laserParticles != null)
         {
             laserParticles.transform.position = GetCenter();
-            // Aponta o emissor de partículas na mesma direção do laser
-            float rad = angle * Mathf.Deg2Rad;
-            Vector3 dir = new Vector3(Mathf.Sin(rad), 0, Mathf.Cos(rad));
-            laserParticles.transform.rotation = Quaternion.LookRotation(dir);
+            laserParticles.transform.rotation = Quaternion.LookRotation(direction);
         }
     }
 

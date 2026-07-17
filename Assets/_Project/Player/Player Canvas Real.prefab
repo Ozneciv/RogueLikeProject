@@ -2631,8 +2631,8 @@ MonoBehaviour:
   particleColor: {r: 1, g: 0.95, b: 0.4, a: 1}
   offsetX: -60
   offsetY: 40
-  panelWidth: 250
-  panelHeight: 70
+  panelWidth: 140
+  panelHeight: 50
   pulseDuration: 0.22
   pulseScale: 1.14
 

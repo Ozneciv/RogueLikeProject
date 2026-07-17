@@ -28,7 +28,6 @@ public class RoomControllerEnemyPopulator : EditorWindow
     private static readonly string[] MOB_MENOR_PATHS = new[]
     {
         "Assets/_Project/Enemies/Spider/Spider.prefab",
-        "Assets/_Project/Enemies/Totem/SkullController 1.prefab",
     };
 
     private static readonly string[] ATIRADOR_PATHS = new[]
@@ -46,8 +45,9 @@ public class RoomControllerEnemyPopulator : EditorWindow
 
     private static readonly string[] ELITE_PATHS = new[]
     {
-        "Assets/_Project/Enemies/ShardSwarm/Shard Swarm.prefab",
+        "Assets/_Project/Enemies/SharpBlur/Sh.prefab",
         "Assets/_Project/Enemies/CrystalTunner/CrystalTuner_Root.prefab",
+        "Assets/_Project/Enemies/CrystalDragon/crystal_dragon.prefab",
     };
 
     // =========================================================

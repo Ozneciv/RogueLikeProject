@@ -48,8 +48,8 @@ public class OrbCounterUI : MonoBehaviour
     public float offsetY =  40f;
 
     [Header("Tamanho do Painel")]
-    public float panelWidth  = 250f;
-    public float panelHeight =  70f;
+    public float panelWidth  = 140f;
+    public float panelHeight =  50f;
 
     [Header("Pulso ao Coletar")]
     public float pulseDuration = 0.22f;
@@ -100,8 +100,8 @@ public class OrbCounterUI : MonoBehaviour
         offsetX = -60f;
         offsetY =  40f;
 
-        panelWidth  = 250f;
-        panelHeight =  70f;
+        panelWidth  = 140f;
+        panelHeight =  50f;
 
         pulseDuration = 0.22f;
         pulseScale    = 1.14f;
