@@ -35,25 +35,25 @@ public class EptinhoPopupController : MonoBehaviour
     public TextMeshProUGUI textoDoItem;
 
     [Header("Ajustes em Tempo Real")]
-    [Range(200f, 1000f)] [SerializeField] private float panelWidth = 620f;
-    [Range(50f, 400f)] [SerializeField] private float panelHeight = 110f;
+    [Range(200f, 1000f)] [SerializeField] private float panelWidth = 672f;
+    [Range(50f, 400f)] [SerializeField] private float panelHeight = 250f;
     [SerializeField] private float marginX = -40f;
     [SerializeField] private float marginY = -40f;
     
     [Space(5)]
-    [SerializeField] private Color panelColor = new Color(0.04f, 0.03f, 0.08f, 0.85f);
-    [SerializeField] private Color borderColor = new Color(0.0f, 0.75f, 1.0f, 0.65f);
-    [Range(0f, 10f)] [SerializeField] private float borderThickness = 2f;
+    [SerializeField] private Color panelColor = new Color(0.23f, 0.28f, 0.70f, 0.5f);
+    [SerializeField] private Color borderColor = new Color(0.52f, 0.45f, 0.15f, 0.5f);
+    [Range(0f, 20f)] [SerializeField] private float borderThickness = 10f;
 
     [Space(5)]
-    [Range(30f, 400f)] [SerializeField] private float portraitSize = 70f;
-    [SerializeField] private float portraitMarginLeft = 20f;
-    [SerializeField] private Color portraitBgColor = new Color(0.12f, 0.08f, 0.22f, 0.90f);
-    [SerializeField] private Color portraitBorderColor = new Color(0.6f, 0.35f, 1.0f, 0.6f);
+    [Range(30f, 400f)] [SerializeField] private float portraitSize = 192f;
+    [SerializeField] private float portraitMarginLeft = 70f;
+    [SerializeField] private Color portraitBgColor = new Color(0.08f, 0.05f, 0.18f, 0.95f);
+    [SerializeField] private Color portraitBorderColor = new Color(0.62f, 0.38f, 0.92f, 1.0f);
 
     [Space(5)]
-    [Range(10f, 60f)] [SerializeField] private float textFontSize = 18f;
-    [SerializeField] private Color textColor = new Color(0.85f, 0.95f, 1.0f, 1.0f);
+    [Range(10f, 80f)] [SerializeField] private float textFontSize = 40f;
+    [SerializeField] private Color textColor = new Color(0.72f, 0.76f, 0.78f, 1.0f);
     [SerializeField] private bool previewPermanente = false;
 
     private Coroutine esconderCoroutine;
