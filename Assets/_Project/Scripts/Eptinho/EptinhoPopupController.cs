@@ -54,6 +54,7 @@ public class EptinhoPopupController : MonoBehaviour
     [Space(5)]
     [Range(10f, 60f)] [SerializeField] private float textFontSize = 18f;
     [SerializeField] private Color textColor = new Color(0.85f, 0.95f, 1.0f, 1.0f);
+    [SerializeField] private bool previewPermanente = false;
 
     private Coroutine esconderCoroutine;
 
@@ -348,12 +349,37 @@ public class EptinhoPopupController : MonoBehaviour
         if (esconderCoroutine != null)
             StopCoroutine(esconderCoroutine);
 
-        esconderCoroutine = StartCoroutine(EsconderApos(3.5f));
+        if (!previewPermanente)
+        {
+            esconderCoroutine = StartCoroutine(EsconderApos(3.5f));
+        }
     }
 
     IEnumerator EsconderApos(float segundos)
     {
         yield return new WaitForSecondsRealtime(segundos);
+        if (popupUI != null) popupUI.SetActive(false);
+    }
+
+    // ─── MÉTODOS DE TESTE E PREVIEW ──────────────────────────────────────────
+
+    [ContextMenu("Testar Popup Temporário (3.5s)")]
+    public void TestarPopupTemporario()
+    {
+        MostrarPopupAviso("Eptinho: Teste de Popup temporário (3.5 segundos)!");
+    }
+
+    [ContextMenu("Ativar Preview Permanente")]
+    public void AtivarPreviewPermanente()
+    {
+        previewPermanente = true;
+        MostrarPopupAviso("Eptinho: Preview Permanente Ativado!");
+    }
+
+    [ContextMenu("Desativar Preview Permanente")]
+    public void DesativarPreviewPermanente()
+    {
+        previewPermanente = false;
         if (popupUI != null) popupUI.SetActive(false);
     }
 
@@ -364,10 +390,25 @@ public class EptinhoPopupController : MonoBehaviour
         {
             EnsurePopupUIExists();
             
-            // Força a ativação do painel para visualização em tempo real no Editor
-            popupUI.SetActive(true);
-            Transform panel = popupUI.transform.Find("PopupPanel");
-            if (panel != null) panel.gameObject.SetActive(true);
+            if (previewPermanente)
+            {
+                // Garante que o painel e os elementos estejam ativos
+                popupUI.SetActive(true);
+                Transform panel = popupUI.transform.Find("PopupPanel");
+                if (panel != null) panel.gameObject.SetActive(true);
+
+                // Cancela o coroutine de esconder para manter na tela
+                if (esconderCoroutine != null) StopCoroutine(esconderCoroutine);
+
+                // Mostra mensagem de teste em tempo real
+                Sprite eptFace = Resources.Load<Sprite>("EPTONHO");
+                MostrarPopupGenerico(eptFace, "Eptinho: Preview permanente ativo!");
+            }
+            else
+            {
+                // Se desmarcou a flag em tempo real, oculta o popup
+                popupUI.SetActive(false);
+            }
         }
     }
 #endif
