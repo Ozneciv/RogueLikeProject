@@ -55,6 +55,10 @@ public class BossController : MonoBehaviour
              "Será destruído quando o boss morrer.")]
     public GameObject arenaSeal;
 
+    [Header("Animação")]
+    [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
+    public Animator animator;
+
     [Header("Debug")]
     public bool showDebugLog = true;
 
@@ -110,6 +114,8 @@ public class BossController : MonoBehaviour
     {
         health = GetComponent<DummyHealth>();
         agent = GetComponent<NavMeshAgent>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
     }
 
     void Start()
@@ -148,6 +154,8 @@ public class BossController : MonoBehaviour
 
     void Update()
     {
+        UpdateAnimationState();
+
         if (CurrentState == BossState.Idle || CurrentState == BossState.Dead) return;
 
         // Monitora HP para transições de fase e eventos
@@ -169,6 +177,30 @@ public class BossController : MonoBehaviour
                 // Não faz nada — o stun coroutine controla a saída
                 break;
         }
+    }
+
+    private void UpdateAnimationState()
+    {
+        if (animator == null) return;
+
+        if (CurrentState == BossState.Dead)
+        {
+            animator.SetBool("IsWalking", false);
+            return;
+        }
+
+        if (CurrentState == BossState.Stunned)
+        {
+            animator.SetBool("IsWalking", false);
+            return;
+        }
+
+        bool isMoving = false;
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            isMoving = agent.velocity.magnitude > 0.15f;
+        }
+        animator.SetBool("IsWalking", isMoving);
     }
 
     void OnDestroy()
@@ -349,6 +381,11 @@ public class BossController : MonoBehaviour
         // Para de se mover durante o ataque
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
+
+        if (animator != null)
+        {
+            animator.SetTrigger("Spell");
+        }
 
         yield return new WaitForSeconds(0.4f);
 
