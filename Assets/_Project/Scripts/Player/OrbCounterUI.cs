@@ -6,67 +6,73 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Contador de Essência — canto inferior direito.
-/// Orb amarelo com pulso contínuo + partículas indie-style + label "ESSÊNCIA".
+/// Paleta inspirada no popup do Eptinho.
+/// Animação de emanação: ondas concêntricas crescendo e sumindo continuamente.
 /// </summary>
 public class OrbCounterUI : MonoBehaviour
 {
     [Header("Visual do Painel")]
-    public int   fontSize    = 32;
-    public Color textColor   = new Color(1f,    0.88f, 0.25f, 1f);
-    public Color labelColor  = new Color(0.95f, 0.78f, 0.2f,  0.9f);
-    // Cor do painel — agora escuro acinzentado quente (sem roxo)
-    public Color panelColor  = new Color(0.10f, 0.09f, 0.07f, 0.90f);
-    public Color borderColor = new Color(0.75f, 0.55f, 0.05f, 0.55f);
+    public int   fontSize    = 30;
+    // Paleta inspirada no popup do Eptinho
+    public Color textColor   = new Color(0.95f, 0.88f, 0.55f, 1.00f); // dourado claro
+    public Color labelColor  = new Color(0.72f, 0.76f, 0.78f, 0.90f); // cinza metálico
+    public Color panelColor  = new Color(0.23f, 0.28f, 0.70f, 0.45f); // azul glass
+    public Color borderColor = new Color(0.52f, 0.45f, 0.15f, 0.60f); // dourado oliva
 
-    [Header("Orb")]
-    public Color orbColor     = new Color(1f,    0.88f, 0.08f, 1f);
-    public Color orbGlowColor = new Color(1f,    1f,    0.65f, 0.75f);
-    public float orbSize      = 30f;
-    public float orbPulseAmp  = 0.16f;   // amplitude da respiração
-    public float orbPulseSpeed = 1.8f;   // ciclos por segundo
+    [Header("Orb Core")]
+    public Color orbCoreColor = new Color(1.00f, 0.88f, 0.10f, 1.00f); // amarelo vivo
+    public Color orbGlowColor = new Color(1.00f, 1.00f, 0.65f, 0.70f); // brilho interno
+    public float orbSize      = 32f;
 
-    [Header("Partículas (indie sparkles)")]
-    [Tooltip("Quantidade de partículas por emissão")]
+    [Header("Animação — Emanação")]
+    [Tooltip("Número de ondas concêntricas simultâneas")]
+    public int   rippleCount    = 3;
+    [Tooltip("Duração de um ciclo completo de emanação")]
+    public float rippleDuration = 1.6f;
+    [Tooltip("Quanto a onda cresce em relação ao orb (ex: 2.0 = dobra o tamanho)")]
+    public float rippleMaxScale = 2.2f;
+    [Tooltip("Alpha inicial da onda")]
+    public float rippleStartAlpha = 0.55f;
+    public Color rippleColor  = new Color(1.00f, 0.92f, 0.20f, 1.00f);
+
+    [Header("Partículas")]
     public int   particleCount    = 4;
-    [Tooltip("Segundos entre cada emissão de partículas")]
-    public float particleInterval = 1.4f;
-    [Tooltip("Distância máxima que a partícula viaja")]
-    public float particleRadius   = 22f;
-    [Tooltip("Duração de vida de cada partícula")]
-    public float particleLifetime = 0.7f;
-    [Tooltip("Tamanho máximo de cada partícula (px)")]
-    public float particleMaxSize  = 5f;
-    public Color particleColor    = new Color(1f, 0.96f, 0.4f, 1f);
+    public float particleInterval = 1.8f;
+    public float particleRadius   = 20f;
+    public float particleLifetime = 0.65f;
+    public float particleMaxSize  = 4.5f;
+    public Color particleColor    = new Color(1f, 0.95f, 0.4f, 1f);
 
     [Header("Posição (canto inferior direito)")]
-    public float offsetX = -20f;
-    public float offsetY =  70f;   // mais alto para não cortar
+    public float offsetX = -60f;
+    public float offsetY =  40f;
 
     [Header("Tamanho do Painel")]
-    public float panelWidth  = 215f;
-    public float panelHeight =  54f;
+    public float panelWidth  = 250f;
+    public float panelHeight =  70f;
 
     [Header("Pulso ao Coletar")]
     public float pulseDuration = 0.22f;
-    public float pulseScale    = 1.15f;
+    public float pulseScale    = 1.14f;
 
     // ── Referências internas ──────────────────────────────────────────────────
-    private TextMeshProUGUI counterText;
-    private TextMeshProUGUI labelText;
-    private RectTransform   counterContainer;
-    private RectTransform   orbTransform;
-    private Transform       particleParent;     // pai das partículas (filho do orb)
-    private PlayerEssence   playerEssence;
-    private Coroutine       collectPulseRoutine;
+    private TextMeshProUGUI  counterText;
+    private TextMeshProUGUI  labelText;
+    private RectTransform    counterContainer;
+    private RectTransform    orbCore;
+    private Transform        rippleParent;
+    private Transform        particleParent;
+    private PlayerEssence    playerEssence;
+    private Coroutine        collectPulseRoutine;
 
-    // Pool simples de partículas pré-criadas
-    private readonly List<RectTransform> particlePool = new List<RectTransform>();
+    private readonly List<Image>         rippleImages  = new List<Image>();
+    private readonly List<RectTransform> particlePool  = new List<RectTransform>();
 
     // ─────────────────────────────────────────────────────────────────────────
 
     void Start()
     {
-        CreateCounterUI();
+        CreateUI();
 
         playerEssence = FindObjectOfType<PlayerEssence>();
         if (playerEssence != null)
@@ -74,13 +80,12 @@ public class OrbCounterUI : MonoBehaviour
             playerEssence.onEssenceChanged.AddListener(OnEssenceChanged);
             UpdateCounter(playerEssence.currentEssence);
         }
-        else
-        {
-            Debug.LogWarning("[ORB COUNTER] PlayerEssence não encontrado.");
-            UpdateCounter(0);
-        }
+        else { UpdateCounter(0); }
 
-        StartCoroutine(OrbIdlePulse());
+        // Inicia loops contínuos
+        for (int i = 0; i < rippleCount; i++)
+            StartCoroutine(RippleLoop(i * (rippleDuration / rippleCount)));
+
         StartCoroutine(ParticleLoop());
     }
 
@@ -105,16 +110,18 @@ public class OrbCounterUI : MonoBehaviour
 
     // ─── Construção da UI ─────────────────────────────────────────────────────
 
-    void CreateCounterUI()
+    void CreateUI()
     {
         int layer = gameObject.layer;
+        Sprite circLg = MakeCircleSprite(64);
+        Sprite circSm = MakeCircleSprite(16);
 
         // ── Container ──
-        GameObject cObj = new GameObject("OrbCounter");
-        cObj.transform.SetParent(transform, false);
-        cObj.layer = layer;
+        GameObject cGO = new GameObject("OrbCounter");
+        cGO.transform.SetParent(transform, false);
+        cGO.layer = layer;
 
-        counterContainer                  = cObj.AddComponent<RectTransform>();
+        counterContainer                  = cGO.AddComponent<RectTransform>();
         counterContainer.anchorMin        = new Vector2(1f, 0f);
         counterContainer.anchorMax        = new Vector2(1f, 0f);
         counterContainer.pivot            = new Vector2(1f, 0f);
@@ -122,90 +129,122 @@ public class OrbCounterUI : MonoBehaviour
         counterContainer.sizeDelta        = new Vector2(panelWidth, panelHeight);
 
         // ── Fundo ──
-        MakeImg(cObj.transform, "BG", Vector2.zero, Vector2.one, Vector2.zero, panelColor, layer, toFront: false);
+        Image bgImg = MakeImgFull(cGO.transform, "BG", panelColor, layer);
 
         // ── Borda ──
-        GameObject bordGO = MakeImg(cObj.transform, "Border", Vector2.zero, Vector2.one, new Vector2(2f, 2f), borderColor, layer, toFront: false);
-        bordGO.GetComponent<Image>().fillCenter = false;
+        Image bordImg = MakeImgFull(cGO.transform, "Border", borderColor, layer);
+        RectTransform bordR = bordImg.GetComponent<RectTransform>();
+        bordR.sizeDelta     = new Vector2(2f, 2f);
+        bordImg.fillCenter  = false;
+        bordGO(bordImg).transform.SetAsFirstSibling();
 
-        // ── Orb ──
-        GameObject orbGO = new GameObject("Orb");
-        orbGO.transform.SetParent(cObj.transform, false);
+        // ── Pivot central do orb (esquerda do painel) ──
+        float orbCenterX = (panelHeight / 2f); // centro do orb = metade da altura do painel
+        GameObject orbPivot = new GameObject("OrbPivot");
+        orbPivot.transform.SetParent(cGO.transform, false);
+        orbPivot.layer = layer;
+        RectTransform pivR = orbPivot.AddComponent<RectTransform>();
+        pivR.anchorMin = pivR.anchorMax = new Vector2(0f, 0.5f);
+        pivR.pivot     = new Vector2(0.5f, 0.5f);
+        pivR.sizeDelta = Vector2.zero;
+        pivR.anchoredPosition = new Vector2(orbCenterX, 0f);
+
+        // ── Ondas de emanação (filhas do pivot, atrás do orb) ──
+        GameObject rParGO = new GameObject("Ripples");
+        rParGO.transform.SetParent(orbPivot.transform, false);
+        rParGO.layer = layer;
+        RectTransform rParR = rParGO.AddComponent<RectTransform>();
+        rParR.anchorMin = rParR.anchorMax = new Vector2(0.5f, 0.5f);
+        rParR.pivot = new Vector2(0.5f, 0.5f);
+        rParR.sizeDelta = Vector2.zero;
+        rippleParent = rParGO.transform;
+
+        for (int i = 0; i < rippleCount; i++)
+        {
+            GameObject rGO = new GameObject("Ripple_" + i);
+            rGO.transform.SetParent(rippleParent, false);
+            rGO.layer = layer;
+            RectTransform rR = rGO.AddComponent<RectTransform>();
+            rR.anchorMin = rR.anchorMax = new Vector2(0.5f, 0.5f);
+            rR.pivot     = new Vector2(0.5f, 0.5f);
+            rR.sizeDelta = new Vector2(orbSize, orbSize);
+            rGO.AddComponent<CanvasRenderer>();
+            Image rImg    = rGO.AddComponent<Image>();
+            rImg.sprite   = circLg;
+            rImg.color    = new Color(rippleColor.r, rippleColor.g, rippleColor.b, 0f);
+            rImg.raycastTarget = false;
+            rippleImages.Add(rImg);
+        }
+
+        // ── Orb core (na frente das ondas) ──
+        GameObject orbGO = new GameObject("OrbCore");
+        orbGO.transform.SetParent(orbPivot.transform, false);
         orbGO.layer = layer;
-
-        orbTransform                  = orbGO.AddComponent<RectTransform>();
-        float margin                  = (panelHeight - orbSize) / 2f;
-        orbTransform.anchorMin        = new Vector2(0f, 0.5f);
-        orbTransform.anchorMax        = new Vector2(0f, 0.5f);
-        orbTransform.pivot            = new Vector2(0.5f, 0.5f);
-        orbTransform.sizeDelta        = new Vector2(orbSize, orbSize);
-        orbTransform.anchoredPosition = new Vector2(margin + orbSize * 0.5f, 0f);
-
+        orbCore = orbGO.AddComponent<RectTransform>();
+        orbCore.anchorMin = orbCore.anchorMax = new Vector2(0.5f, 0.5f);
+        orbCore.pivot     = new Vector2(0.5f, 0.5f);
+        orbCore.sizeDelta = new Vector2(orbSize, orbSize);
         orbGO.AddComponent<CanvasRenderer>();
-        Image orbImg       = orbGO.AddComponent<Image>();
-        orbImg.color       = orbColor;
-        orbImg.sprite      = MakeCircleSprite(64);
+        Image orbImg = orbGO.AddComponent<Image>();
+        orbImg.sprite = circLg;
+        orbImg.color  = orbCoreColor;
         orbImg.raycastTarget = false;
 
         // Brilho interno
-        GameObject glowGO = new GameObject("Glow");
-        glowGO.transform.SetParent(orbGO.transform, false);
-        glowGO.layer = layer;
-        RectTransform gr = glowGO.AddComponent<RectTransform>();
-        gr.anchorMin        = new Vector2(0.12f, 0.42f);
-        gr.anchorMax        = new Vector2(0.52f, 0.82f);
-        gr.sizeDelta        = Vector2.zero;
-        glowGO.AddComponent<CanvasRenderer>();
-        Image glowImg       = glowGO.AddComponent<Image>();
-        glowImg.color       = orbGlowColor;
-        glowImg.sprite      = MakeCircleSprite(32);
-        glowImg.raycastTarget = false;
+        GameObject glGO = new GameObject("Glow");
+        glGO.transform.SetParent(orbGO.transform, false);
+        glGO.layer = layer;
+        RectTransform glR = glGO.AddComponent<RectTransform>();
+        glR.anchorMin = new Vector2(0.12f, 0.42f);
+        glR.anchorMax = new Vector2(0.52f, 0.82f);
+        glR.sizeDelta = Vector2.zero;
+        glGO.AddComponent<CanvasRenderer>();
+        Image glImg   = glGO.AddComponent<Image>();
+        glImg.sprite  = MakeCircleSprite(32);
+        glImg.color   = orbGlowColor;
+        glImg.raycastTarget = false;
 
-        // Pai das partículas (filho do orb, não interfere na escala do painel)
+        // ── Partículas ──
         GameObject ppGO = new GameObject("Particles");
-        ppGO.transform.SetParent(orbGO.transform, false);
+        ppGO.transform.SetParent(orbPivot.transform, false);
         ppGO.layer = layer;
         RectTransform ppR = ppGO.AddComponent<RectTransform>();
-        ppR.anchorMin = new Vector2(0.5f, 0.5f);
-        ppR.anchorMax = new Vector2(0.5f, 0.5f);
-        ppR.pivot     = new Vector2(0.5f, 0.5f);
+        ppR.anchorMin = ppR.anchorMax = new Vector2(0.5f, 0.5f);
+        ppR.pivot = new Vector2(0.5f, 0.5f);
         ppR.sizeDelta = Vector2.zero;
-        ppR.anchoredPosition = Vector2.zero;
         particleParent = ppGO.transform;
 
-        // Pré-cria o pool de partículas (inativas)
-        Sprite circSmall = MakeCircleSprite(16);
-        for (int i = 0; i < particleCount * 2; i++)
+        for (int i = 0; i < particleCount * 3; i++)
         {
             GameObject p = new GameObject("P_" + i);
             p.transform.SetParent(particleParent, false);
             p.layer = layer;
-            RectTransform pr = p.AddComponent<RectTransform>();
-            pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 0.5f);
-            pr.pivot     = new Vector2(0.5f, 0.5f);
-            pr.sizeDelta = Vector2.one * particleMaxSize;
+            RectTransform pR = p.AddComponent<RectTransform>();
+            pR.anchorMin = pR.anchorMax = new Vector2(0.5f, 0.5f);
+            pR.pivot     = new Vector2(0.5f, 0.5f);
+            pR.sizeDelta = Vector2.one * particleMaxSize;
             p.AddComponent<CanvasRenderer>();
-            Image pi     = p.AddComponent<Image>();
-            pi.color     = particleColor;
-            pi.sprite    = circSmall;
-            pi.raycastTarget = false;
+            Image pImg = p.AddComponent<Image>();
+            pImg.sprite = circSm;
+            pImg.color  = particleColor;
+            pImg.raycastTarget = false;
             p.SetActive(false);
-            particlePool.Add(pr);
+            particlePool.Add(pR);
         }
 
         // ── Label "ESSÊNCIA" ──
-        float textX = margin + orbSize + 10f;
+        float textX = panelHeight + 8f; // começa depois do orb area
 
-        GameObject labelGO = new GameObject("Label");
-        labelGO.transform.SetParent(cObj.transform, false);
-        labelGO.layer = layer;
-        RectTransform lr = labelGO.AddComponent<RectTransform>();
-        lr.anchorMin = new Vector2(0f, 0.5f);
-        lr.anchorMax = new Vector2(1f, 1f);
-        lr.offsetMin = new Vector2(textX, 2f);
-        lr.offsetMax = new Vector2(-8f, 0f);
-        labelGO.AddComponent<CanvasRenderer>();
-        labelText           = labelGO.AddComponent<TextMeshProUGUI>();
+        GameObject lbGO = new GameObject("Label");
+        lbGO.transform.SetParent(cGO.transform, false);
+        lbGO.layer = layer;
+        RectTransform lR = lbGO.AddComponent<RectTransform>();
+        lR.anchorMin = new Vector2(0f, 0.5f);
+        lR.anchorMax = new Vector2(1f, 1f);
+        lR.offsetMin = new Vector2(textX, 4f);
+        lR.offsetMax = new Vector2(-10f, 0f);
+        lbGO.AddComponent<CanvasRenderer>();
+        labelText           = lbGO.AddComponent<TextMeshProUGUI>();
         labelText.text      = "ESSÊNCIA";
         labelText.fontSize  = fontSize * 0.46f;
         labelText.color     = labelColor;
@@ -213,17 +252,17 @@ public class OrbCounterUI : MonoBehaviour
         labelText.fontStyle = FontStyles.Bold;
         labelText.raycastTarget = false;
 
-        // ── Valor numérico ──
-        GameObject valGO = new GameObject("Value");
-        valGO.transform.SetParent(cObj.transform, false);
-        valGO.layer = layer;
-        RectTransform vr = valGO.AddComponent<RectTransform>();
-        vr.anchorMin = new Vector2(0f, 0f);
-        vr.anchorMax = new Vector2(1f, 0.54f);
-        vr.offsetMin = new Vector2(textX, 0f);
-        vr.offsetMax = new Vector2(-8f, -2f);
-        valGO.AddComponent<CanvasRenderer>();
-        counterText           = valGO.AddComponent<TextMeshProUGUI>();
+        // ── Valor ──
+        GameObject vGO = new GameObject("Value");
+        vGO.transform.SetParent(cGO.transform, false);
+        vGO.layer = layer;
+        RectTransform vR = vGO.AddComponent<RectTransform>();
+        vR.anchorMin = new Vector2(0f, 0f);
+        vR.anchorMax = new Vector2(1f, 0.54f);
+        vR.offsetMin = new Vector2(textX, 0f);
+        vR.offsetMax = new Vector2(-10f, -4f);
+        vGO.AddComponent<CanvasRenderer>();
+        counterText           = vGO.AddComponent<TextMeshProUGUI>();
         counterText.text      = "0";
         counterText.fontSize  = fontSize;
         counterText.color     = textColor;
@@ -235,153 +274,161 @@ public class OrbCounterUI : MonoBehaviour
         if (font != null) { labelText.font = font; counterText.font = font; }
     }
 
-    // ─── Animações ────────────────────────────────────────────────────────────
+    // ─── Animação de Emanação ─────────────────────────────────────────────────
 
-    /// <summary>Respiração suave e contínua do orb.</summary>
-    IEnumerator OrbIdlePulse()
+    /// <summary>
+    /// Cada onda começa no tamanho do orb, cresce e perde opacidade — 
+    /// dando impressão de energia emanando continuamente.
+    /// As ondas são iniciadas com offset de tempo para ficarem defasadas.
+    /// </summary>
+    IEnumerator RippleLoop(float initialDelay)
     {
+        yield return new WaitForSeconds(initialDelay);
+
+        // Encontra qual onda este loop controla baseado no index
+        int idx = Mathf.RoundToInt(initialDelay / (rippleDuration / rippleCount));
+        idx = Mathf.Clamp(idx, 0, rippleImages.Count - 1);
+        Image wave = rippleImages[idx];
+
         while (true)
         {
-            if (orbTransform != null)
+            float elapsed = 0f;
+
+            while (elapsed < rippleDuration)
             {
-                float s = 1f + orbPulseAmp * Mathf.Sin(Time.time * orbPulseSpeed * Mathf.PI * 2f);
-                orbTransform.localScale = new Vector3(s, s, 1f);
+                elapsed += Time.deltaTime;
+                float t = elapsed / rippleDuration;
+
+                // Escala: cresce de 1 → rippleMaxScale
+                float s = Mathf.Lerp(1f, rippleMaxScale, t);
+                if (wave != null)
+                {
+                    wave.rectTransform.sizeDelta = Vector2.one * (orbSize * s);
+
+                    // Alpha: começa em rippleStartAlpha e vai a 0
+                    // Curva: linear com suavização no fim
+                    float a = rippleStartAlpha * (1f - Mathf.Pow(t, 0.7f));
+                    Color c = wave.color;
+                    c.a = a;
+                    wave.color = c;
+                }
+                yield return null;
             }
-            yield return null;
+
+            // Reseta instantaneamente ao centro (sem transição visível)
+            if (wave != null)
+            {
+                wave.rectTransform.sizeDelta = Vector2.one * orbSize;
+                Color c = wave.color; c.a = 0f; wave.color = c;
+            }
         }
     }
 
-    /// <summary>Emite partículas periodicamente (indie sparkles).</summary>
+    // ─── Partículas ───────────────────────────────────────────────────────────
+
     IEnumerator ParticleLoop()
     {
-        yield return new WaitForSeconds(0.5f); // espera UI inicializar
+        yield return new WaitForSeconds(0.8f);
         while (true)
         {
-            EmitParticleBurst(particleCount);
+            EmitBurst(particleCount);
             yield return new WaitForSeconds(particleInterval);
         }
     }
 
-    void EmitParticleBurst(int count)
+    void EmitBurst(int count)
     {
         if (particleParent == null) return;
-
-        // Distribui os ângulos uniformemente + leve variação aleatória
         float step = 360f / count;
         for (int i = 0; i < count; i++)
         {
-            RectTransform pr = GetPooledParticle();
+            RectTransform pr = GetPooled();
             if (pr == null) continue;
-
-            float angle    = step * i + Random.Range(-25f, 25f);
-            float radians  = angle * Mathf.Deg2Rad;
-            Vector2 dir    = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
-            float   size   = Random.Range(particleMaxSize * 0.4f, particleMaxSize);
-            float   speed  = Random.Range(0.75f, 1f);
-
-            pr.sizeDelta         = Vector2.one * size;
-            pr.anchoredPosition  = dir * (orbSize * 0.5f); // começa na borda do orb
+            float angle   = step * i + Random.Range(-30f, 30f);
+            Vector2 dir   = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            float speed   = Random.Range(0.7f, 1f);
+            float sz      = Random.Range(particleMaxSize * 0.4f, particleMaxSize);
+            pr.sizeDelta  = Vector2.one * sz;
+            pr.anchoredPosition = dir * (orbSize * 0.5f);
             pr.gameObject.SetActive(true);
-
             StartCoroutine(AnimateParticle(pr, dir, speed));
         }
     }
 
     IEnumerator AnimateParticle(RectTransform pr, Vector2 dir, float speedMult)
     {
-        Image img     = pr.GetComponent<Image>();
-        float elapsed = 0f;
-        float life    = particleLifetime * speedMult;
+        Image img = pr.GetComponent<Image>();
+        float elapsed = 0f, life = particleLifetime * speedMult;
         Vector2 start = pr.anchoredPosition;
 
         while (elapsed < life)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / life;
-
-            // Movimento: desacelera conforme afasta (ease-out)
+            float t     = elapsed / life;
             float eased = 1f - Mathf.Pow(1f - t, 2f);
             pr.anchoredPosition = start + dir * (particleRadius * eased);
-
-            // Escala: cresce no início, some no fim
-            float scl = Mathf.Sin(t * Mathf.PI);
-            pr.localScale = Vector3.one * scl;
-
-            // Alpha: desaparece nos últimos 40%
+            pr.localScale       = Vector3.one * Mathf.Sin(t * Mathf.PI);
             if (img != null)
             {
                 Color c = img.color;
-                c.a     = t < 0.6f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.6f) / 0.4f);
+                c.a = t < 0.55f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.55f) / 0.45f);
                 img.color = c;
             }
-
             yield return null;
         }
-
         pr.localScale = Vector3.one;
         pr.gameObject.SetActive(false);
     }
 
-    RectTransform GetPooledParticle()
+    RectTransform GetPooled()
     {
         foreach (var p in particlePool)
             if (!p.gameObject.activeSelf) return p;
         return null;
     }
 
-    void OnEssenceChanged(int newValue)
+    // ─── Eventos ─────────────────────────────────────────────────────────────
+
+    void OnEssenceChanged(int val)
     {
-        UpdateCounter(newValue);
-        EmitParticleBurst(particleCount + 2); // burst extra ao coletar
+        UpdateCounter(val);
+        EmitBurst(particleCount + 2);
         if (collectPulseRoutine != null) StopCoroutine(collectPulseRoutine);
-        collectPulseRoutine = StartCoroutine(CollectPulseRoutine());
+        collectPulseRoutine = StartCoroutine(CollectPulse());
     }
 
-    void UpdateCounter(int value)
+    void UpdateCounter(int val)
     {
-        if (counterText != null) counterText.text = value.ToString();
+        if (counterText != null) counterText.text = val.ToString();
     }
 
-    IEnumerator CollectPulseRoutine()
+    IEnumerator CollectPulse()
     {
-        float half = pulseDuration / 2f, elapsed = 0f;
-        while (elapsed < half)
-        {
-            elapsed += Time.deltaTime;
-            float s = Mathf.Lerp(1f, pulseScale, elapsed / half);
-            counterContainer.localScale = new Vector3(s, s, 1f);
-            yield return null;
-        }
-        elapsed = 0f;
-        while (elapsed < half)
-        {
-            elapsed += Time.deltaTime;
-            float s = Mathf.Lerp(pulseScale, 1f, elapsed / half);
-            counterContainer.localScale = new Vector3(s, s, 1f);
-            yield return null;
-        }
+        float h = pulseDuration / 2f, e = 0f;
+        while (e < h) { e += Time.deltaTime; float s = Mathf.Lerp(1f, pulseScale, e / h); counterContainer.localScale = new Vector3(s,s,1); yield return null; }
+        e = 0f;
+        while (e < h) { e += Time.deltaTime; float s = Mathf.Lerp(pulseScale, 1f, e / h); counterContainer.localScale = new Vector3(s,s,1); yield return null; }
         counterContainer.localScale = Vector3.one;
         collectPulseRoutine = null;
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    GameObject MakeImg(Transform parent, string name,
-                       Vector2 anchorMin, Vector2 anchorMax,
-                       Vector2 sizeDelta, Color color,
-                       int layer, bool toFront)
+    // retorna o gameobject de um Image para poder mover na hierarquia
+    static GameObject bordGO(Image img) => img.gameObject;
+
+    Image MakeImgFull(Transform parent, string name, Color color, int layer)
     {
-        GameObject go = new GameObject("OrbCounter_" + name);
+        GameObject go = new GameObject("OC_" + name);
         go.transform.SetParent(parent, false);
         go.layer = layer;
         RectTransform r = go.AddComponent<RectTransform>();
-        r.anchorMin = anchorMin; r.anchorMax = anchorMax;
-        r.sizeDelta = sizeDelta; r.anchoredPosition = Vector2.zero;
+        r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one;
+        r.sizeDelta = Vector2.zero; r.anchoredPosition = Vector2.zero;
         go.AddComponent<CanvasRenderer>();
         Image img = go.AddComponent<Image>();
         img.color = color; img.raycastTarget = false;
-        if (toFront) go.transform.SetAsLastSibling();
-        return go;
+        return img;
     }
 
     Sprite MakeCircleSprite(int res)
@@ -389,8 +436,8 @@ public class OrbCounterUI : MonoBehaviour
         Texture2D tex  = new Texture2D(res, res, TextureFormat.RGBA32, false);
         tex.filterMode = FilterMode.Bilinear;
         tex.wrapMode   = TextureWrapMode.Clamp;
-        Color[] px     = new Color[res * res];
-        float  c       = (res - 1) / 2f;
+        Color[] px = new Color[res * res];
+        float c = (res - 1) / 2f;
         for (int y = 0; y < res; y++)
             for (int x = 0; x < res; x++)
             {
@@ -398,8 +445,7 @@ public class OrbCounterUI : MonoBehaviour
                 float a = Mathf.Clamp01(1f - (d - (c - 1.2f)));
                 px[y * res + x] = new Color(1f, 1f, 1f, a);
             }
-        tex.SetPixels(px);
-        tex.Apply();
-        return Sprite.Create(tex, new Rect(0, 0, res, res), new Vector2(0.5f, 0.5f));
+        tex.SetPixels(px); tex.Apply();
+        return Sprite.Create(tex, new Rect(0,0,res,res), new Vector2(0.5f,0.5f));
     }
 }
