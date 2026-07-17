@@ -59,6 +59,27 @@ public class EptinhoPopupController : MonoBehaviour
 
     private Coroutine esconderCoroutine;
 
+    // Unity chama Reset() quando o componente é adicionado pela primeira vez
+    // e quando se clica em "Reset" no Inspector — garante os padrões corretos
+    private void Reset()
+    {
+        panelWidth          = 620f;
+        panelHeight         = 250f;
+        marginX             = -40f;
+        marginY             = -40f;
+        panelColor          = new Color(0.23f, 0.28f, 0.70f, 0.5f);
+        borderColor         = new Color(0.52f, 0.45f, 0.15f, 0.5f);
+        borderThickness     = 20f;
+        portraitSize        = 192f;
+        portraitMarginLeft  = 0f;
+        portraitMarginRight = 70f;
+        portraitBgColor     = new Color(0.08f, 0.05f, 0.18f, 0.95f);
+        portraitBorderColor = new Color(0.62f, 0.38f, 0.92f, 1.0f);
+        textFontSize        = 40f;
+        textColor           = new Color(0.72f, 0.76f, 0.78f, 1.0f);
+        previewPermanente   = false;
+    }
+
     void Awake()
     {
         if (_instancia == null)
