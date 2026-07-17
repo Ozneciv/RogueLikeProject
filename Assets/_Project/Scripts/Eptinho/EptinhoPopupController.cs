@@ -48,6 +48,7 @@ public class EptinhoPopupController : MonoBehaviour
     [Space(5)]
     [Range(30f, 400f)] [SerializeField] private float portraitSize = 192f;
     [SerializeField] private float portraitMarginLeft = 70f;
+    [SerializeField] private float portraitMarginRight = 20f;
     [SerializeField] private Color portraitBgColor = new Color(0.08f, 0.05f, 0.18f, 0.95f);
     [SerializeField] private Color portraitBorderColor = new Color(0.62f, 0.38f, 0.92f, 1.0f);
 
@@ -222,7 +223,7 @@ public class EptinhoPopupController : MonoBehaviour
                     textRect.anchorMin = new Vector2(0f, 0.5f);
                     textRect.anchorMax = new Vector2(1f, 0.5f);
                     textRect.pivot = new Vector2(0f, 0.5f);
-                    textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginLeft, -panelHeight/2f + 10f); 
+                    textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginRight, -panelHeight/2f + 10f); 
                     textRect.offsetMax = new Vector2(-20f, panelHeight/2f - 10f);  
                 }
             }
