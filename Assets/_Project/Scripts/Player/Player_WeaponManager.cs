@@ -13,6 +13,7 @@ public class Player_WeaponManager : MonoBehaviour
     public GameObject currentWeapon;
     public bool isWeaponDrawn = true;
     public KeyCode holsterKey = KeyCode.H;
+    private RuntimeAnimatorController activeWeaponController;
 
     void Start()
     {
@@ -30,6 +31,13 @@ public class Player_WeaponManager : MonoBehaviour
         {
             currentWeapon = rightHand.GetChild(0).gameObject;
             isWeaponDrawn = currentWeapon.activeSelf;
+            
+            // Tenta obter o moveset da arma inicial
+            WeaponOffset offset = currentWeapon.GetComponent<WeaponOffset>();
+            if (offset != null && offset.weaponAnimatorOverride != null)
+            {
+                activeWeaponController = offset.weaponAnimatorOverride;
+            }
         }
     }
 
@@ -70,13 +78,14 @@ public class Player_WeaponManager : MonoBehaviour
             attackScript.hasWeapon = false;
         }
 
-        // Dispara o gatilho (trigger) de animação
+        // Restaura o Animator Controller padrão (Unarmed) e dispara o trigger
         if (playerAnimator != null)
         {
+            playerAnimator.runtimeAnimatorController = defaultAnimatorController;
             playerAnimator.SetTrigger("HolsterWeapon");
         }
 
-        Debug.Log("[Player_WeaponManager] Arma guardada (Holstered).");
+        Debug.Log("[Player_WeaponManager] Arma guardada (Holstered). Retornou ao moveset default desarmado.");
     }
 
     public void DrawWeapon()
@@ -94,13 +103,21 @@ public class Player_WeaponManager : MonoBehaviour
             attackScript.hasWeapon = true;
         }
 
-        // Dispara o gatilho (trigger) de animação
+        // Aplica o moveset específico da arma e dispara o trigger
         if (playerAnimator != null)
         {
+            if (activeWeaponController != null)
+            {
+                playerAnimator.runtimeAnimatorController = activeWeaponController;
+            }
+            else
+            {
+                playerAnimator.runtimeAnimatorController = defaultAnimatorController;
+            }
             playerAnimator.SetTrigger("DrawWeapon");
         }
 
-        Debug.Log("[Player_WeaponManager] Arma empunhada (Drawn).");
+        Debug.Log("[Player_WeaponManager] Arma empunhada (Drawn). Moveset da arma ativado.");
     }
 
     public void EquipDagger(GameObject weapon)
@@ -136,20 +153,20 @@ public class Player_WeaponManager : MonoBehaviour
         weapon.transform.localRotation = Quaternion.Euler(offsetData.equipRotation);
         Debug.Log($"[Player_WeaponManager] Objeto {weapon.name} acoplado à mão: {(rightHand != null ? rightHand.name : "null")}");
 
-        
+        // Salva o controller da nova arma
+        if (offsetData.weaponAnimatorOverride != null)
+        {
+            activeWeaponController = offsetData.weaponAnimatorOverride;
+        }
+        else
+        {
+            activeWeaponController = defaultAnimatorController;
+        }
+
         if (playerAnimator != null)
         {
-            if (offsetData.weaponAnimatorOverride != null)
-            {
-                
-                playerAnimator.runtimeAnimatorController = offsetData.weaponAnimatorOverride;
-                Debug.Log("Moveset alterado para: " + weapon.name);
-            }
-            else
-            {
-
-                playerAnimator.runtimeAnimatorController = defaultAnimatorController;
-            }
+            playerAnimator.runtimeAnimatorController = activeWeaponController;
+            Debug.Log("Moveset alterado para: " + weapon.name);
         }
         // -------------------------------------------------------
 
