@@ -10,6 +10,24 @@ public class StartRunDoor : MonoBehaviour
         // Se o jogador (com a tag "Player") tocar o trigger
         if (other.CompareTag("Player") && !isLoading)
         {
+            // Verificação se o jogador está armado e com a arma empunhada
+            Player_WeaponManager weaponManager = other.GetComponent<Player_WeaponManager>();
+            if (weaponManager != null)
+            {
+                if (weaponManager.currentWeapon == null || !weaponManager.isWeaponDrawn)
+                {
+                    if (EptinhoPopupController.instancia != null)
+                    {
+                        EptinhoPopupController.instancia.MostrarPopupAviso("Você não pode sair desarmado! Empunhe sua arma antes de partir.");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[StartRunDoor] Jogador tentou sair desarmado, mas EptinhoPopupController não foi encontrado.");
+                    }
+                    return; // Bloqueia a transição
+                }
+            }
+
             isLoading = true;
             Debug.Log("Jogador tocou a porta! Iniciando transição da run com fade...");
 

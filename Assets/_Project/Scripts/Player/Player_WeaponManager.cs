@@ -12,7 +12,7 @@ public class Player_WeaponManager : MonoBehaviour
     [Header("Arma Ativa / Coldre")]
     public GameObject currentWeapon;
     public bool isWeaponDrawn = true;
-    public KeyCode holsterKey = KeyCode.H;
+    public KeyCode holsterKey = KeyCode.G;
     private RuntimeAnimatorController activeWeaponController;
 
     void Start()
