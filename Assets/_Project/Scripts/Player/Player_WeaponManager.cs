@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class Player_WeaponManager : MonoBehaviour
 {
@@ -13,7 +14,10 @@ public class Player_WeaponManager : MonoBehaviour
     public GameObject currentWeapon;
     public bool isWeaponDrawn = true;
     public KeyCode holsterKey = KeyCode.G;
+    [Tooltip("Tempo em segundos para a arma sumir da mão após iniciar a animação de guardar.")]
+    public float holsterDelay = 0.6f;
     private RuntimeAnimatorController activeWeaponController;
+    private Coroutine holsterCoroutine;
 
     void Start()
     {
@@ -67,12 +71,18 @@ public class Player_WeaponManager : MonoBehaviour
     {
         if (currentWeapon == null) return;
 
+        if (holsterCoroutine != null)
+        {
+            StopCoroutine(holsterCoroutine);
+        }
+        holsterCoroutine = StartCoroutine(DoHolsterWeapon());
+    }
+
+    private IEnumerator DoHolsterWeapon()
+    {
         isWeaponDrawn = false;
 
-        // Oculta a visualização da arma
-        currentWeapon.SetActive(false);
-
-        // Desativa a capacidade de ataque do script de ataque primário
+        // Desativa a capacidade de ataque do script de ataque primário imediatamente
         if (attackScript != null)
         {
             attackScript.hasWeapon = false;
@@ -85,16 +95,28 @@ public class Player_WeaponManager : MonoBehaviour
             playerAnimator.SetTrigger("HolsterWeapon");
         }
 
-        Debug.Log("[Player_WeaponManager] Arma guardada (Holstered). Retornou ao moveset default desarmado.");
+        // Espera o tempo da animação antes de sumir com o visual da arma
+        yield return new WaitForSeconds(holsterDelay);
+
+        if (currentWeapon != null && !isWeaponDrawn)
+        {
+            currentWeapon.SetActive(false);
+            Debug.Log("[Player_WeaponManager] Arma guardada (Holstered) no final da animação.");
+        }
     }
 
     public void DrawWeapon()
     {
         if (currentWeapon == null) return;
 
+        if (holsterCoroutine != null)
+        {
+            StopCoroutine(holsterCoroutine);
+        }
+
         isWeaponDrawn = true;
 
-        // Mostra a visualização da arma
+        // Mostra a visualização da arma imediatamente no início do saque
         currentWeapon.SetActive(true);
 
         // Reativa a capacidade de ataque
