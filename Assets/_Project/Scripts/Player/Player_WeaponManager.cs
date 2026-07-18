@@ -16,8 +16,12 @@ public class Player_WeaponManager : MonoBehaviour
     public KeyCode holsterKey = KeyCode.G;
     [Tooltip("Tempo em segundos para a arma sumir da mão após iniciar a animação de guardar.")]
     public float holsterDelay = 0.6f;
+    [Tooltip("Tempo em segundos para a arma aparecer na mão após iniciar a animação de empunhar.")]
+    public float drawDelay = 0.3f;
     private RuntimeAnimatorController activeWeaponController;
     private Coroutine holsterCoroutine;
+    private Coroutine drawCoroutine;
+    private string lastSceneName;
 
     void Start()
     {
@@ -25,6 +29,8 @@ public class Player_WeaponManager : MonoBehaviour
         {
             defaultAnimatorController = playerAnimator.runtimeAnimatorController;
         }
+
+        lastSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
         // Tenta detectar arma já acoplada na inicialização
         if (rightHand == null)
@@ -47,7 +53,22 @@ public class Player_WeaponManager : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(holsterKey))
+        string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        // Se mudou de cena e NÃO está na base, força a empunhar a arma imediatamente
+        if (activeScene != lastSceneName)
+        {
+            lastSceneName = activeScene;
+            bool isInBase = (activeScene == "Base" || activeScene == "BaseLab");
+            if (!isInBase && currentWeapon != null && !isWeaponDrawn)
+            {
+                DrawWeapon();
+            }
+        }
+
+        // Só permite guardar/empunhar manualmente se estiver na Base (Base ou BaseLab)
+        bool isInBaseNow = (activeScene == "Base" || activeScene == "BaseLab");
+        if (isInBaseNow && Input.GetKeyDown(holsterKey))
         {
             ToggleWeaponDrawState();
         }
@@ -71,10 +92,9 @@ public class Player_WeaponManager : MonoBehaviour
     {
         if (currentWeapon == null) return;
 
-        if (holsterCoroutine != null)
-        {
-            StopCoroutine(holsterCoroutine);
-        }
+        if (holsterCoroutine != null) StopCoroutine(holsterCoroutine);
+        if (drawCoroutine != null) StopCoroutine(drawCoroutine);
+
         holsterCoroutine = StartCoroutine(DoHolsterWeapon());
     }
 
@@ -109,17 +129,17 @@ public class Player_WeaponManager : MonoBehaviour
     {
         if (currentWeapon == null) return;
 
-        if (holsterCoroutine != null)
-        {
-            StopCoroutine(holsterCoroutine);
-        }
+        if (holsterCoroutine != null) StopCoroutine(holsterCoroutine);
+        if (drawCoroutine != null) StopCoroutine(drawCoroutine);
 
+        drawCoroutine = StartCoroutine(DoDrawWeapon());
+    }
+
+    private IEnumerator DoDrawWeapon()
+    {
         isWeaponDrawn = true;
 
-        // Mostra a visualização da arma imediatamente no início do saque
-        currentWeapon.SetActive(true);
-
-        // Reativa a capacidade de ataque
+        // Reativa a capacidade de ataque imediatamente ao puxar a arma
         if (attackScript != null)
         {
             attackScript.hasWeapon = true;
@@ -139,7 +159,14 @@ public class Player_WeaponManager : MonoBehaviour
             playerAnimator.SetTrigger("DrawWeapon");
         }
 
-        Debug.Log("[Player_WeaponManager] Arma empunhada (Drawn). Moveset da arma ativado.");
+        // Espera o tempo do saque (meio da animação) antes de tornar a arma visível
+        yield return new WaitForSeconds(drawDelay);
+
+        if (currentWeapon != null && isWeaponDrawn)
+        {
+            currentWeapon.SetActive(true);
+            Debug.Log("[Player_WeaponManager] Arma empunhada (Drawn) e visível.");
+        }
     }
 
     public void EquipDagger(GameObject weapon)
@@ -147,6 +174,7 @@ public class Player_WeaponManager : MonoBehaviour
         Debug.Log($"[Player_WeaponManager] EquipDagger chamado para o objeto: {weapon.name}");
         currentWeapon = weapon;
         isWeaponDrawn = true;
+        weapon.SetActive(true); // Garante que a arma fique ativa no momento do equip
         WeaponOffset offsetData = weapon.GetComponent<WeaponOffset>();
         
         if (offsetData == null)
