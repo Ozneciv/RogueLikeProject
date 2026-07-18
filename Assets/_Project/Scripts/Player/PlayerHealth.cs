@@ -475,6 +475,13 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(int damage, GameObject attacker = null)
     {
         if (isDead || isInvulnerable) return;
+
+        // Se estivermos no modo Endless e o level for maior que 3, aumenta o dano recebido pelo jogador
+        if (RunManager.instance != null && RunManager.instance.isEndlessMode && RunManager.instance.currentLevel > 3)
+        {
+            float endlessDamageMultiplier = 1f + (RunManager.instance.currentLevel - 3) * 0.15f; // +15% de dano por level acima do 3
+            damage = Mathf.RoundToInt(damage * endlessDamageMultiplier);
+        }
         
         int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
         

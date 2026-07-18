@@ -192,9 +192,24 @@ public class CheatConsole : MonoBehaviour
 
             Debug.Log($"💻 CHEAT: {count} inimigos eliminados com sucesso.");
         }
+        else if (string.Equals(command, "endless", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (RunManager.instance != null)
+            {
+                RunManager.instance.isEndlessMode = !RunManager.instance.isEndlessMode;
+                RunManager.instance.UpdateEndlessUI();
+                Debug.Log($"💻 CHEAT: Modo Endless alterado para: {RunManager.instance.isEndlessMode}");
+
+                if (EptinhoPopupController.instancia != null)
+                {
+                    string statusText = RunManager.instance.isEndlessMode ? "Modo Endless ATIVADO!" : "Modo Endless DESATIVADO!";
+                    EptinhoPopupController.instancia.MostrarPopupAviso(statusText);
+                }
+            }
+        }
         else
         {
-            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é igual a EPTA ou killall.");
+            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é igual a EPTA, killall ou endless.");
         }
 
         // Depois de tentar o cheat, fecha o console pro jogo voltar ao normal
