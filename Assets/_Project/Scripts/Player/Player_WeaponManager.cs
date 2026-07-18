@@ -9,18 +9,105 @@ public class Player_WeaponManager : MonoBehaviour
     public Animator playerAnimator; 
     private RuntimeAnimatorController defaultAnimatorController;
 
+    [Header("Arma Ativa / Coldre")]
+    public GameObject currentWeapon;
+    public bool isWeaponDrawn = true;
+    public KeyCode holsterKey = KeyCode.H;
+
     void Start()
     {
-
         if (playerAnimator != null)
         {
             defaultAnimatorController = playerAnimator.runtimeAnimatorController;
         }
+
+        // Tenta detectar arma já acoplada na inicialização
+        if (rightHand == null)
+        {
+            rightHand = transform.Find("RightHand") ?? transform.Find("Hand_R") ?? transform.Find("Hand.R");
+        }
+        if (rightHand != null && rightHand.childCount > 0)
+        {
+            currentWeapon = rightHand.GetChild(0).gameObject;
+            isWeaponDrawn = currentWeapon.activeSelf;
+        }
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(holsterKey))
+        {
+            ToggleWeaponDrawState();
+        }
+    }
+
+    public void ToggleWeaponDrawState()
+    {
+        if (currentWeapon == null) return;
+
+        if (isWeaponDrawn)
+        {
+            HolsterWeapon();
+        }
+        else
+        {
+            DrawWeapon();
+        }
+    }
+
+    public void HolsterWeapon()
+    {
+        if (currentWeapon == null) return;
+
+        isWeaponDrawn = false;
+
+        // Oculta a visualização da arma
+        currentWeapon.SetActive(false);
+
+        // Desativa a capacidade de ataque do script de ataque primário
+        if (attackScript != null)
+        {
+            attackScript.hasWeapon = false;
+        }
+
+        // Dispara o gatilho (trigger) de animação
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetTrigger("HolsterWeapon");
+        }
+
+        Debug.Log("[Player_WeaponManager] Arma guardada (Holstered).");
+    }
+
+    public void DrawWeapon()
+    {
+        if (currentWeapon == null) return;
+
+        isWeaponDrawn = true;
+
+        // Mostra a visualização da arma
+        currentWeapon.SetActive(true);
+
+        // Reativa a capacidade de ataque
+        if (attackScript != null)
+        {
+            attackScript.hasWeapon = true;
+        }
+
+        // Dispara o gatilho (trigger) de animação
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetTrigger("DrawWeapon");
+        }
+
+        Debug.Log("[Player_WeaponManager] Arma empunhada (Drawn).");
     }
 
     public void EquipDagger(GameObject weapon)
     {
         Debug.Log($"[Player_WeaponManager] EquipDagger chamado para o objeto: {weapon.name}");
+        currentWeapon = weapon;
+        isWeaponDrawn = true;
         WeaponOffset offsetData = weapon.GetComponent<WeaponOffset>();
         
         if (offsetData == null)
