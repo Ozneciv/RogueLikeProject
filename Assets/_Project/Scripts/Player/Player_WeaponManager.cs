@@ -39,14 +39,20 @@ public class Player_WeaponManager : MonoBehaviour
         }
         if (rightHand != null && rightHand.childCount > 0)
         {
-            currentWeapon = rightHand.GetChild(0).gameObject;
-            isWeaponDrawn = currentWeapon.activeSelf;
-            
-            // Tenta obter o moveset da arma inicial
-            WeaponOffset offset = currentWeapon.GetComponent<WeaponOffset>();
-            if (offset != null && offset.weaponAnimatorOverride != null)
+            // Filtra os filhos para garantir que apenas objetos com WeaponOffset sejam considerados armas
+            foreach (Transform child in rightHand)
             {
-                activeWeaponController = offset.weaponAnimatorOverride;
+                WeaponOffset offset = child.GetComponent<WeaponOffset>();
+                if (offset != null)
+                {
+                    currentWeapon = child.gameObject;
+                    isWeaponDrawn = currentWeapon.activeSelf;
+                    if (offset.weaponAnimatorOverride != null)
+                    {
+                        activeWeaponController = offset.weaponAnimatorOverride;
+                    }
+                    break;
+                }
             }
         }
     }
