@@ -99,7 +99,7 @@ public class RecipeSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         nameText.color = new Color(0.9f, 0.88f, 0.95f, 1f);
         nameText.alignment = TextAlignmentOptions.MidlineLeft;
         nameText.raycastTarget = false;
-        nameText.enableWordWrapping = false;
+        nameText.textWrappingMode = TextWrappingModes.NoWrap;
         nameText.overflowMode = TextOverflowModes.Ellipsis;
 
         // Status (disponível/indisponível)

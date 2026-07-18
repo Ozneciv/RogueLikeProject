@@ -48,7 +48,7 @@ public class StartRunDoor : MonoBehaviour
         ScreenFader fader = player.GetComponentInChildren<ScreenFader>();
         if (fader == null)
         {
-            fader = FindObjectOfType<ScreenFader>();
+            fader = Object.FindFirstObjectByType<ScreenFader>();
         }
 
         if (fader != null)

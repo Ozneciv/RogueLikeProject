@@ -235,7 +235,7 @@ public class EptinhoPopupController : MonoBehaviour
                 textoDoItem.color = textColor;
                 textoDoItem.fontSize = textFontSize;
                 textoDoItem.alignment = TextAlignmentOptions.MidlineLeft; // Força alinhamento à esquerda para evitar sobrepor a imagem
-                textoDoItem.enableWordWrapping = true; // Garante quebra de linha automática
+                textoDoItem.textWrappingMode = TextWrappingModes.Normal; // Garante quebra de linha automática
                 
                 RectTransform textRect = textoDoItem.GetComponent<RectTransform>();
                 if (textRect != null)

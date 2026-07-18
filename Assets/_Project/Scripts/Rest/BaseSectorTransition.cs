@@ -63,7 +63,7 @@ public class BaseSectorTransition : MonoBehaviour
         ScreenFader fader = player.GetComponentInChildren<ScreenFader>();
         if (fader == null)
         {
-            fader = FindObjectOfType<ScreenFader>();
+            fader = Object.FindFirstObjectByType<ScreenFader>();
         }
 
         if (fader != null)
@@ -90,7 +90,7 @@ public class BaseSectorTransition : MonoBehaviour
         }
 
         // 4. Snap Camera to avoid smooth slide through space
-        MoveCam cameraController = FindObjectOfType<MoveCam>();
+        MoveCam cameraController = Object.FindFirstObjectByType<MoveCam>();
         if (cameraController != null)
         {
             cameraController.playerTransform = player.transform; // Re-bind just in case

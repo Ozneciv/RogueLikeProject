@@ -121,7 +121,7 @@ public class EssencePickup : MonoBehaviour
         // Se ainda não achar (ex: o script está num objeto irmão do colisor), procura globalmente
         if (playerEssence == null)
         {
-            playerEssence = FindObjectOfType<PlayerEssence>();
+            playerEssence = Object.FindFirstObjectByType<PlayerEssence>();
         }
         
         if (playerEssence != null)

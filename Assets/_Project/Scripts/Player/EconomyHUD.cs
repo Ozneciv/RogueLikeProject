@@ -107,8 +107,8 @@ public class EconomyHUD : MonoBehaviour
     void FindRefs()
     {
         if (runManager     == null) runManager     = RunManager.instance;
-        if (playerEssence  == null) playerEssence  = FindObjectOfType<PlayerEssence>();
-        if (infusionManager == null) infusionManager = FindObjectOfType<InfusionManager>();
+        if (playerEssence  == null) playerEssence  = Object.FindFirstObjectByType<PlayerEssence>();
+        if (infusionManager == null) infusionManager = Object.FindFirstObjectByType<InfusionManager>();
     }
 
     // ─────────────────────────────────────────
@@ -368,7 +368,7 @@ public class EconomyHUD : MonoBehaviour
         t.fontSize          = size;
         t.color             = color;
         t.richText          = true;
-        t.enableWordWrapping = false;
+        t.textWrappingMode = TextWrappingModes.NoWrap;
         t.overflowMode      = TextOverflowModes.Overflow;
         return t;
     }

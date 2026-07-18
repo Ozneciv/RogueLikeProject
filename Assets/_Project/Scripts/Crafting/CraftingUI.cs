@@ -891,7 +891,7 @@ public class CraftingUI : MonoBehaviour
         nameText.color = new Color(0.9f, 0.88f, 0.95f);
         nameText.alignment = (equip.icon != null) ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.Center;
         nameText.raycastTarget = false;
-        nameText.enableWordWrapping = true;
+        nameText.textWrappingMode = TextWrappingModes.Normal;
         if (customFont != null) nameText.font = customFont;
 
         // Efeito (Revertido para 11f limpo)
@@ -908,7 +908,7 @@ public class CraftingUI : MonoBehaviour
         effectText.color = new Color(0.4f, 0.85f, 0.4f);
         effectText.alignment = TextAlignmentOptions.Center;
         effectText.raycastTarget = false;
-        effectText.enableWordWrapping = true;
+        effectText.textWrappingMode = TextWrappingModes.Normal;
         if (customFont != null) effectText.font = customFont;
 
         // Botão Equipar/Desequipar
@@ -1017,7 +1017,7 @@ public class CraftingUI : MonoBehaviour
         txt.color = color;
         txt.alignment = TextAlignmentOptions.TopLeft;
         txt.raycastTarget = false;
-        txt.enableWordWrapping = true;
+        txt.textWrappingMode = TextWrappingModes.Normal;
         if (customFont != null) txt.font = customFont;
         return txt;
     }
@@ -1101,7 +1101,7 @@ public class CraftingUI : MonoBehaviour
         tooltipDescText.color = new Color(0.75f, 0.73f, 0.85f);
         tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
         tooltipDescText.raycastTarget = false;
-        tooltipDescText.enableWordWrapping = true;
+        tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
         if (customFont != null) tooltipDescText.font = customFont;
 
         // Efeito da melhoria (Extra Grande: 26f - 2x exatas)

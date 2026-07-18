@@ -81,7 +81,7 @@ namespace MimicSpace
 
         private void ResetMimic()
         {
-            foreach (Leg g in GameObject.FindObjectsOfType<Leg>())
+            foreach (Leg g in Object.FindObjectsByType<Leg>(FindObjectsSortMode.None))
             {
                 Destroy(g.gameObject);
             }

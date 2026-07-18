@@ -42,7 +42,7 @@ public class MoveCam : MonoBehaviour
     void FindPlayer()
     {
         // Tenta achar pelo script de vida (funciona melhor que Tag as vezes)
-        PlayerHealth playerScript = FindObjectOfType<PlayerHealth>();
+        PlayerHealth playerScript = Object.FindFirstObjectByType<PlayerHealth>();
 
         if (playerScript != null)
         {

@@ -8,7 +8,7 @@ public class Merchant : MonoBehaviour
     void Start()
     {
         // Encontra o controlador da UI. 'true' permite encontrá-lo mesmo que esteja desativado.
-        uiController = FindObjectOfType<MerchantUIController>(true); 
+        uiController = Object.FindFirstObjectByType<MerchantUIController>(FindObjectsInactive.Include); 
         
         if (uiController == null)
         {

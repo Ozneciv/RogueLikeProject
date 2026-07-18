@@ -111,7 +111,7 @@ public class OrbCounterUI : MonoBehaviour
     {
         CreateUI();
 
-        playerEssence = FindObjectOfType<PlayerEssence>();
+        playerEssence = Object.FindFirstObjectByType<PlayerEssence>();
         if (playerEssence != null)
         {
             playerEssence.onEssenceChanged.AddListener(OnEssenceChanged);
@@ -136,7 +136,7 @@ public class OrbCounterUI : MonoBehaviour
     {
         if (playerEssence == null)
         {
-            playerEssence = FindObjectOfType<PlayerEssence>();
+            playerEssence = Object.FindFirstObjectByType<PlayerEssence>();
             if (playerEssence != null)
             {
                 playerEssence.onEssenceChanged.AddListener(OnEssenceChanged);
