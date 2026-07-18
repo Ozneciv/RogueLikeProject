@@ -6283,30 +6283,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Cristalus
       objectReference: {fileID: 0}
-    - target: {fileID: 3361224048668512275, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-      propertyPath: crystalPrefabs.Array.size
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 3361224048668512275, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-      propertyPath: 'crystalPrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2533969110523615093, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
-    - target: {fileID: 3361224048668512275, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-      propertyPath: 'crystalPrefabs.Array.data[1]'
-      value: 
-      objectReference: {fileID: 3560458092330961674, guid: 0ed8fe3070ae7144dada282d2efc0357, type: 3}
-    - target: {fileID: 3361224048668512275, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-      propertyPath: 'crystalPrefabs.Array.data[2]'
-      value: 
-      objectReference: {fileID: 694298290060655522, guid: 55c549f9c0753d5428f79dfb397ad1d0, type: 3}
-    - target: {fileID: 3361224048668512275, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-      propertyPath: 'crystalPrefabs.Array.data[3]'
-      value: 
-      objectReference: {fileID: 2757013489351881423, guid: 48368a7c5d2236b4397bb93c4e703fdf, type: 3}
-    - target: {fileID: 3361224048668512275, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-      propertyPath: 'crystalPrefabs.Array.data[4]'
-      value: 
-      objectReference: {fileID: 1685054568492720185, guid: 2165f93bc1ce14d4d96f6df7b559f311, type: 3}
     - target: {fileID: 4711066773821520326, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0

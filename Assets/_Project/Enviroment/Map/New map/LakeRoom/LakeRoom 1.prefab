@@ -413,7 +413,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: atiradorPrefabs.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'elitePrefabs.Array.data[0]'
@@ -425,7 +425,7 @@ PrefabInstance:
       objectReference: {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: mobMenorPrefabs.Array.size
-      value: 1
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'tanquePrefabs.Array.data[0]'
@@ -440,6 +440,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
+      propertyPath: 'suportePrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
+    - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'atiradorPrefabs.Array.data[0]'
       value: 
       objectReference: {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
@@ -448,13 +452,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
+      propertyPath: 'atiradorPrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 326464074420430212, guid: 75587e19386eb024c8b895034e0d087d, type: 3}
+    - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'mobMenorPrefabs.Array.data[0]'
       value: 
       objectReference: {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
     - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: 'mobMenorPrefabs.Array.data[1]'
       value: 
-      objectReference: {fileID: 1155010451884850368, guid: 17526d5d2a1393e438fd19d86fdfed1c, type: 3}
+      objectReference: {fileID: 4268998290841704769, guid: 54907d67b9c4ae344968f4a78411c6ac, type: 3}
+    - target: {fileID: 9079656935210156055, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
+      propertyPath: 'mobMenorPrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 6905926503053819252, guid: d54e315a1f763424b99a1d4255734563, type: 3}
     - target: {fileID: 9222173885555114153, guid: 71ac0841cf687af4aa628175b58ba900, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.00709
