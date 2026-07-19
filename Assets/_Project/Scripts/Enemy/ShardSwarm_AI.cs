@@ -1,101 +1,129 @@
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+﻿using UnityEngine;
 
 /// <summary>
-/// IA do Shard Swarm.
-/// Geração 0 (bola grande): persegue o player, orbita e ataca.
-///   → Ao morrer: spawna N bolas menores (geração 1).
-/// Geração 1 (bolas pequenas): mesmo comportamento, sem split ao morrer.
+/// IA do Shard Swarm â€” 3 geraÃ§Ãµes de split.
 ///
-/// DEPENDÊNCIAS: DummyHealth, Rigidbody, tag "Player"
+///   Gen 0 (grande)  â†’ ao morrer: spawna 4Ã— Gen 1
+///   Gen 1 (mÃ©dio)   â†’ ao morrer: spawna 2Ã— Gen 2
+///   Gen 2 (pequeno) â†’ morre de verdade, dropa itens
+///
+/// Cada instÃ¢ncia Ã© um inimigo independente com seu prÃ³prio ShardSwarmHealth.
+/// Ataque por contato (OnCollisionEnter). Movimento por Rigidbody.
+///
+/// DEPENDÃŠNCIAS: ShardSwarmHealth, Rigidbody, tag "Player"
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(DummyHealth))]
+[RequireComponent(typeof(ShardSwarmHealth))]
 public class ShardSwarm_AI : MonoBehaviour
 {
-    // ─── Split ao Morrer ─────────────────────────────────────────
+    // â”€â”€â”€ Split â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    [Header("Split ao Morrer")]
-    [Tooltip("Arraste o próprio prefab aqui (self-reference). Obrigatório.")]
+    [Header("Split")]
+    [Tooltip("Arraste o prÃ³prio prefab aqui (self-reference). ObrigatÃ³rio.")]
     public GameObject shardSwarmPrefab;
-    [Tooltip("0 = bola grande (splita ao morrer) | 1 = bola pequena (morre sem split). Deixe 0 na cena.")]
+    [Tooltip("0 = grande (spawna 4) | 1 = mÃ©dio (spawna 2) | 2 = pequeno (morre)")]
     public int generation = 0;
-    [Tooltip("Quantas bolas menores spawnam ao morrer")]
-    public int splitCount = 4;
-    [Tooltip("Escala das bolas filhas em relação à mãe")]
-    public float childScale = 0.45f;
-    [Tooltip("Raio de dispersão das bolas filhas ao spawnar")]
+    [Tooltip("Escala dos filhos em relaÃ§Ã£o ao pai")]
+    public float childScale = 0.5f;
+    [Tooltip("Raio de dispersÃ£o dos filhos ao spawnar")]
     public float splitSpawnRadius = 1.5f;
 
-    // ─── Movimento ───────────────────────────────────────────────
+    // â”€â”€â”€ Stats por GeraÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    [Header("Stats â€” Gen 0 (Grande)")]
+    public int gen0HP     = 150;
+    public int gen0Damage = 25;
+
+    [Header("Stats â€” Gen 1 (MÃ©dio)")]
+    public int gen1HP     = 60;
+    public int gen1Damage = 15;
+
+    [Header("Stats â€” Gen 2 (Pequeno)")]
+    public int gen2HP     = 25;
+    public int gen2Damage = 8;
+
+    // â”€â”€â”€ Movimento â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Header("Movimento")]
-    public float moveSpeed = 5f;
-    public float rotationSpeed = 8f;
-    [Tooltip("Distância para iniciar ataque")]
-    public float attackRange = 5f;
-    [Tooltip("Distância para ativar o inimigo")]
+    public float moveSpeed          = 3f;
+    public float rotationSpeed      = 8f;
     public float activationDistance = 20f;
+    [Tooltip("Raio da órbita em volta do player.")]
+    public float stopDistance       = 2.5f;
+    [Tooltip("Velocidade da órbita em graus/segundo. Negativo inverte o sentido.")]
+    public float orbitSpeed         = 80f;
 
-    // ─── Órbita ──────────────────────────────────────────────────
+    // â”€â”€â”€ Ataque por Contato â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    [Header("Órbita")]
-    [Tooltip("Raio de órbita dos filhos visuais ao redor do centro")]
-    public float orbitRadius = 0.8f;
-    [Tooltip("Velocidade de órbita")]
-    public float orbitSpeed = 2f;
+    [Header("Ataque por Contato")]
+    public float attackCooldown  = 1.5f;
+    [Tooltip("Velocidade durante o charge (bote no player).")]
+    public float chargeSpeed     = 9f;
+    [Tooltip("Tempo de espera entre charges (segundos).")]
+    public float chargeCooldown  = 3f;
+    [Tooltip("Dura\u00e7\u00e3o do charge em linha reta.")]
+    public float chargeDuration  = 0.35f;
 
-    // ─── Ataque ──────────────────────────────────────────────────
+    // â”€â”€â”€ Privado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    [Header("Ataque")]
-    public float attackCooldown = 2f;
-    public int contactDamage = 20;
-    public float attackDuration = 0.5f;
+    private Transform         playerTransform;
+    private Rigidbody         rb;
+    private ShardSwarmHealth  health;
+    private EnemyDrops        drops;
 
-    // ─── Morte ───────────────────────────────────────────────────
+    private enum MoveState { Orbit, Charge, Retreat }
+    private MoveState moveState = MoveState.Orbit;
 
-    [Header("Morte")]
-    public float deathExplosionRadius = 3f;
-    public int deathExplosionDamage = 15;
-    public GameObject deathExplosionVFX;
+    private bool    isActivated    = false;
+    private bool    isDead         = false;
+    private float   attackTimer    = 0f;
+    private int     contactDamage;
+    private float   orbitAngle;         // \u00e2ngulo atual na \u00f3rbita (graus)
+    private float   chargeTimer;        // countdown at\u00e9 o pr\u00f3ximo charge
+    private float   chargePhaseTimer;   // tempo restante na fase atual
+    private Vector3 chargeDir;          // dire\u00e7\u00e3o travada no in\u00edcio do charge
 
-    // ─── Privado ─────────────────────────────────────────────────
-
-    private Transform playerTransform;
-    private Rigidbody rb;
-    private DummyHealth health;
-
-    private bool isActivated = false;
-    private bool isAttacking  = false;
-    private float attackTimer = 0f;
-
-    private List<Transform> orbitChildren = new List<Transform>();
-
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Unity Callbacks
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    void Awake()
+    {
+        // Roda imediatamente no Instantiate — garante trigger antes de qualquer frame de física
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
+    }
 
     void Start()
     {
         rb     = GetComponent<Rigidbody>();
-        health = GetComponent<DummyHealth>();
+        health = GetComponent<ShardSwarmHealth>();
+        drops  = GetComponent<EnemyDrops>();
 
         rb.useGravity     = false;
         rb.freezeRotation = true;
         rb.constraints   |= RigidbodyConstraints.FreezePositionY;
 
+        ApplyGenerationStats();
+
+        // Ângulo inicial aleatório para que múltiplos inimigos não empilhem no mesmo ponto
+        orbitAngle   = Random.Range(0f, 360f);
+        // Jitter no primeiro charge para que inimigos não carreguem em sincronia
+        chargeTimer  = chargeCooldown + Random.Range(0f, 1.5f);
+
+        health.onDeathOverride = OnDeath;
+
+        // Se o prefab também tiver DummyHealth, registra o override nele também.
+        // Isso garante o split independente de qual componente receber o hit.
+        DummyHealth dummy = GetComponent<DummyHealth>();
+        if (dummy != null)
+            dummy.onDeathOverride = OnDeath;
+
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
             playerTransform = player.transform;
         else
-            Debug.LogError("[SHARD SWARM] Player não encontrado! Verifique a tag 'Player'.");
-
-        // orbitChildren fica vazio intencionalmente → UpdateOrbit não faz nada
-        // Os filhos ficam nas posições padrão do prefab
-
-        // Registra split como callback de morte no DummyHealth
-        health.onDeathOverride = OnDeath;
+            Debug.LogError("[SHARD SWARM] Player nÃ£o encontrado! Verifique a tag 'Player'.");
     }
 
     void Update()
@@ -106,11 +134,9 @@ public class ShardSwarm_AI : MonoBehaviour
 
         if (!isActivated)
         {
-            float dist = Vector3.Distance(transform.position, playerTransform.position);
-            if (dist < activationDistance)
+            if (Vector3.Distance(transform.position, playerTransform.position) < activationDistance)
             {
                 isActivated = true;
-                Debug.Log($"[SHARD SWARM] Gen{generation} ativado.");
 
                 EnemyIdentity id = GetComponent<EnemyIdentity>()
                                 ?? GetComponentInChildren<EnemyIdentity>()
@@ -118,40 +144,77 @@ public class ShardSwarm_AI : MonoBehaviour
                 if (id != null && BestiarioManager.instancia != null)
                     BestiarioManager.instancia.Registrar(id);
             }
-            return;
         }
-
-        UpdateOrbit();
-
-        if (!isAttacking)
+        else
         {
             RotateTowardPlayer();
-            TryCombat();
         }
     }
 
     void FixedUpdate()
     {
-        if (!isActivated || isAttacking) return;
+        if (!isActivated) return;
         MoveTowardPlayer();
     }
 
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Movimento
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     void MoveTowardPlayer()
     {
-        float dist = HorizontalDistance();
-        Vector3 dir = HorizontalDirection();
+        switch (moveState)
+        {
+            case MoveState.Orbit:
+                // Orbita em volta do player
+                orbitAngle += orbitSpeed * Time.fixedDeltaTime;
+                float rad = orbitAngle * Mathf.Deg2Rad;
+                Vector3 orbitTarget = playerTransform.position
+                                    + new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * stopDistance;
+                orbitTarget.y = transform.position.y;
+                Vector3 toOrbit = orbitTarget - transform.position; toOrbit.y = 0f;
+                rb.linearVelocity = toOrbit.normalized * moveSpeed;
 
-        Vector3 velocity = Vector3.zero;
-        if (dist > attackRange)
-            velocity = dir * moveSpeed;
-        else if (dist < attackRange * 0.5f)
-            velocity = -dir * moveSpeed;
+                // Countdown para o charge
+                chargeTimer -= Time.fixedDeltaTime;
+                if (chargeTimer <= 0f)
+                {
+                    chargeDir        = HorizontalDirection();
+                    chargePhaseTimer = chargeDuration;
+                    moveState        = MoveState.Charge;
+                }
+                break;
 
-        rb.linearVelocity = new Vector3(velocity.x, 0f, velocity.z);
+            case MoveState.Charge:
+                // Dispara em linha reta na direção travada
+                rb.linearVelocity = new Vector3(chargeDir.x, 0f, chargeDir.z) * chargeSpeed;
+                chargePhaseTimer -= Time.fixedDeltaTime;
+                if (chargePhaseTimer <= 0f)
+                {
+                    // Inicia recuo
+                    chargePhaseTimer = 0.5f;
+                    moveState        = MoveState.Retreat;
+                }
+                break;
+
+            case MoveState.Retreat:
+                // Retorna ao ponto de órbita
+                float radR = orbitAngle * Mathf.Deg2Rad;
+                Vector3 retreatTarget = playerTransform.position
+                                      + new Vector3(Mathf.Cos(radR), 0f, Mathf.Sin(radR)) * stopDistance;
+                retreatTarget.y = transform.position.y;
+                Vector3 toRetreat = retreatTarget - transform.position; toRetreat.y = 0f;
+                rb.linearVelocity = toRetreat.normalized * moveSpeed;
+
+                chargePhaseTimer -= Time.fixedDeltaTime;
+                if (chargePhaseTimer <= 0f || toRetreat.magnitude < 0.6f)
+                {
+                    // De volta à órbita, reinicia o timer com pequeno jitter
+                    chargeTimer = chargeCooldown + Random.Range(-0.3f, 0.5f);
+                    moveState   = MoveState.Orbit;
+                }
+                break;
+        }
     }
 
     void RotateTowardPlayer()
@@ -164,141 +227,133 @@ public class ShardSwarm_AI : MonoBehaviour
             rotationSpeed * Time.deltaTime);
     }
 
-    void UpdateOrbit()
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ataque por Contato
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    // Trigger (sem física de colisão) — inimigo não empurra o player
+    void OnTriggerEnter(Collider other)
     {
-        float t = Time.time * orbitSpeed;
-        int count = orbitChildren.Count;
-        if (count == 0) return;
-
-        for (int i = 0; i < count; i++)
-        {
-            if (orbitChildren[i] == null) continue;
-            float angle = (360f / count) * i + t * 60f;
-            float rad   = angle * Mathf.Deg2Rad;
-            orbitChildren[i].localPosition = Vector3.Lerp(
-                orbitChildren[i].localPosition,
-                new Vector3(Mathf.Cos(rad) * orbitRadius,
-                            Mathf.Sin(t + i) * 0.25f,
-                            Mathf.Sin(rad) * orbitRadius),
-                Time.deltaTime * 6f);
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // Combate
-    // ─────────────────────────────────────────────────────────────
-
-    void TryCombat()
-    {
+        if (!isActivated) return;
         if (attackTimer > 0f) return;
-        if (HorizontalDistance() <= attackRange)
-            StartCoroutine(DoAttack());
-    }
+        if (!other.CompareTag("Player")) return;
 
-    IEnumerator DoAttack()
-    {
-        isAttacking = true;
+        PlayerHealth ph = other.GetComponent<PlayerHealth>();
+        if (ph == null) return;
+
+        ph.TakeDamage(contactDamage, gameObject);
         attackTimer = attackCooldown;
-
-        Vector3 targetPos = playerTransform.position + Vector3.up * 0.5f;
-        float elapsed = 0f;
-
-        while (elapsed < attackDuration)
-        {
-            elapsed += Time.deltaTime;
-            transform.position = Vector3.MoveTowards(
-                transform.position, targetPos, moveSpeed * 2f * Time.deltaTime);
-            yield return null;
-        }
-
-        if (Vector3.Distance(transform.position, playerTransform.position) <= 1.5f)
-        {
-            PlayerHealth ph = playerTransform.GetComponent<PlayerHealth>();
-            ph?.TakeDamage(contactDamage, gameObject);
-            Debug.Log($"[SHARD SWARM] Gen{generation} acertou player! Dano={contactDamage}");
-        }
-
-        isAttacking = false;
+        Debug.Log($"[SHARD SWARM] Gen{generation} acertou player! Dano={contactDamage}");
     }
 
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Morte e Split
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private void OnDeath()
+    void OnDeath()
     {
-        if (deathExplosionVFX != null)
-            Instantiate(deathExplosionVFX, transform.position, Quaternion.identity);
+        if (isDead) return;
+        isDead = true;
 
-        Collider[] cols = Physics.OverlapSphere(transform.position, deathExplosionRadius);
-        foreach (Collider col in cols)
-        {
-            if (!col.CompareTag("Player")) continue;
-            col.GetComponent<PlayerHealth>()?.TakeDamage(deathExplosionDamage, gameObject);
-        }
+        int childGen   = generation + 1;
+        int spawnCount = generation == 0 ? 4
+                       : generation == 1 ? 2
+                       : 0;
 
-        // Só a geração 0 spawna filhos
-        if (generation == 0 && shardSwarmPrefab != null)
+        if (spawnCount > 0 && shardSwarmPrefab != null)
         {
-            for (int i = 0; i < splitCount; i++)
+            for (int i = 0; i < spawnCount; i++)
             {
-                float angle = (360f / splitCount) * i * Mathf.Deg2Rad;
+                float angle = (360f / spawnCount) * i * Mathf.Deg2Rad;
                 Vector3 offset = new Vector3(
                     Mathf.Cos(angle) * splitSpawnRadius,
                     0f,
                     Mathf.Sin(angle) * splitSpawnRadius);
 
-                GameObject child = Instantiate(shardSwarmPrefab,
-                                               transform.position + offset,
-                                               Quaternion.identity);
+                GameObject child = Instantiate(
+                    shardSwarmPrefab,
+                    transform.position + offset,
+                    Quaternion.identity);
 
                 child.transform.localScale = transform.localScale * childScale;
 
                 ShardSwarm_AI childAI = child.GetComponent<ShardSwarm_AI>();
                 if (childAI != null)
                 {
-                    childAI.generation       = 1;              // não splita ao morrer
+                    childAI.generation       = childGen;
                     childAI.shardSwarmPrefab = shardSwarmPrefab;
                     childAI.childScale       = childScale;
                     childAI.splitSpawnRadius = splitSpawnRadius;
-                    childAI.moveSpeed        = moveSpeed * 1.3f; // filhos mais rápidos
-                    childAI.contactDamage    = Mathf.Max(5, contactDamage / 2);
+                    childAI.moveSpeed        = moveSpeed * 1.2f;
+                    childAI.attackCooldown   = attackCooldown;
+                    childAI.gen0HP           = gen0HP;
+                    childAI.gen1HP           = gen1HP;
+                    childAI.gen2HP           = gen2HP;
+                    childAI.gen0Damage       = gen0Damage;
+                    childAI.gen1Damage       = gen1Damage;
+                    childAI.gen2Damage       = gen2Damage;
                 }
-
-                DummyHealth childHealth = child.GetComponent<DummyHealth>();
-                if (childHealth != null)
-                    childHealth.maxHealth = Mathf.Max(1, health.maxHealth / 3);
             }
-            Debug.Log($"[SHARD SWARM] Gen0 morreu → {splitCount} bolas pequenas spawnadas.");
+
+            Debug.Log($"[SHARD SWARM] Gen{generation} morreu â†’ {spawnCount}Ã— Gen{childGen} spawnados.");
         }
         else
         {
-            Debug.Log($"[SHARD SWARM] Gen{generation} morreu. Fim.");
+            // Gen 2: aciona drops antes de destruir
+            if (drops != null)
+                drops.OnDeath();
+
+            Debug.Log($"[SHARD SWARM] Gen{generation} morreu. Fim de linha.");
         }
 
         Destroy(gameObject);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Buff (Crystal Tuner)
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Buff (CrystalTuner)
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void SetBuff(bool active)
     {
         contactDamage = active
             ? Mathf.RoundToInt(contactDamage * 1.5f)
-            : Mathf.RoundToInt(contactDamage / 1.5f);
+            : Mathf.Max(1, Mathf.RoundToInt(contactDamage / 1.5f));
     }
 
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Helpers
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    void ApplyGenerationStats()
+    {
+        switch (generation)
+        {
+            case 0:
+                health.maxHealth = gen0HP;
+                contactDamage    = gen0Damage;
+                break;
+            case 1:
+                health.maxHealth = gen1HP;
+                contactDamage    = gen1Damage;
+                break;
+            case 2:
+                health.maxHealth = gen2HP;
+                contactDamage    = gen2Damage;
+                break;
+            default:
+                Debug.LogWarning($"[SHARD SWARM] GeraÃ§Ã£o invÃ¡lida: {generation}");
+                health.maxHealth = gen0HP;
+                contactDamage    = gen0Damage;
+                break;
+        }
+        health.SetHealth(health.maxHealth);
+    }
 
     float HorizontalDistance()
     {
         if (playerTransform == null) return 999f;
-        Vector3 a = transform.position;       a.y = 0f;
-        Vector3 b = playerTransform.position; b.y = 0f;
+        Vector3 a = transform.position;        a.y = 0f;
+        Vector3 b = playerTransform.position;  b.y = 0f;
         return Vector3.Distance(a, b);
     }
 
@@ -310,23 +365,14 @@ public class ShardSwarm_AI : MonoBehaviour
         return dir.normalized;
     }
 
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Gizmos
-    // ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, activationDistance);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
-
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, orbitRadius);
-
-        Gizmos.color = new Color(1f, 0.5f, 0f, 0.35f);
-        Gizmos.DrawSphere(transform.position, deathExplosionRadius);
 
         Gizmos.color = new Color(0.5f, 1f, 0.5f, 0.35f);
         Gizmos.DrawSphere(transform.position, splitSpawnRadius);
