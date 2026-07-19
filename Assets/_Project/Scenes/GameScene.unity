@@ -499,7 +499,7 @@ MonoBehaviour:
   merchantPrefab: {fileID: 3761318572803560436, guid: 439bea62bc2f06f4e87293ba77d6853a, type: 3}
   exitRoomPrefab: {fileID: 9111555122348223166, guid: ff1acf62bd7027d4981f6509e9052a16, type: 3}
   deadEndPrefab: {fileID: 901390459081756430, guid: 99897e60af28beb4989d544507ee2ee7, type: 3}
-  bossRoomPrefab: {fileID: 0}
+  bossRoomPrefab: {fileID: 4075775615371522870, guid: ea9952427c739f444b2a82a07fe77e91, type: 3}
   maxMainRooms: 4
   roomLimitPerType: 10
   merchantRoomChance: 1
@@ -566,6 +566,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 764090812858029931, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
       propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 764090812858029931, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 764090812858029931, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 764090812858029931, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
+      propertyPath: m_LocalScale.z
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 764090812858029931, guid: 620e0c3d2d508f54a8cfd5d6d5aae9bb, type: 3}
