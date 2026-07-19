@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: goblin_coin_t1
   itemName: "Moeda M\xE1gica (T1)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 49cc2e499c09f8b4e939189622003841, type: 3}
   tier: 0
   enemySource: Goblin
   recycleEssenceValue: 67

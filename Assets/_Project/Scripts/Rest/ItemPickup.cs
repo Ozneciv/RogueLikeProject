@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Script unificado de coleta de itens.
@@ -41,10 +42,144 @@ public class ItemPickup : MonoBehaviour
         if (pressFUI != null) pressFUI.SetActive(false);
     }
 
+    [Header("Forçar Categoria (Definido por Room Spawner)")]
+    [HideInInspector]
+    public string forceCategory = "";
+
     void Start()
     {
         spawnTime = Time.time;
         if (lifetime > 0) Destroy(gameObject, lifetime);
+        
+        RandomizeItemData();
+    }
+
+    private void RandomizeItemData()
+    {
+        if (interactable == null || interactable.itemData == null) return;
+
+        bool isGenericPlaceholder = !string.IsNullOrEmpty(forceCategory) ||
+                                     interactable.itemData.itemId == "crystal" || 
+                                     interactable.itemData.itemId == "little_frog" || 
+                                     interactable.itemData.itemId == "planta" || 
+                                     interactable.itemData.itemId == "tinker" || 
+                                     string.IsNullOrEmpty(interactable.itemData.enemySource);
+
+        if (!isGenericPlaceholder) return;
+
+        string source = forceCategory;
+        if (string.IsNullOrEmpty(source))
+        {
+            source = interactable.itemData.enemySource;
+        }
+
+        if (string.IsNullOrEmpty(source))
+        {
+            string nameLower = gameObject.name.ToLower();
+            if (nameLower.Contains("planta")) source = "Flora";
+            else if (nameLower.Contains("frog") || nameLower.Contains("tinker") || nameLower.Contains("carpet")) source = "Fauna";
+            else if (nameLower.Contains("crystal") || nameLower.Contains("stone")) source = "Minerals";
+        }
+
+        if (string.IsNullOrEmpty(source)) return;
+
+        if (ItemDatabase.Instance != null)
+        {
+            List<ItemData> matchingItems = new List<ItemData>();
+            foreach (var item in ItemDatabase.Instance.allItems)
+            {
+                if (item != null && item.enemySource == source)
+                {
+                    matchingItems.Add(item);
+                }
+            }
+
+            if (matchingItems.Count > 0)
+            {
+                ItemData chosen = matchingItems[UnityEngine.Random.Range(0, matchingItems.Count)];
+                interactable.itemData = chosen;
+                interactable.objetoNome = chosen.itemName;
+                interactable.descricao = chosen.description;
+                interactable.icon = chosen.icon;
+                gameObject.name = $"{chosen.itemId}_Pickup";
+                
+                CustomizeItemVisuals(source);
+            }
+        }
+    }
+
+    private void CustomizeItemVisuals(string source)
+    {
+        if (source == "Minerals")
+        {
+            // Minerals: solid items of medium size (represented by a cube)
+            // Disable existing MeshRenderers except UI components
+            foreach (var r in GetComponentsInChildren<MeshRenderer>())
+            {
+                if (r.gameObject.name.Contains("Text") || r.gameObject.name.Contains("Canvas") || r.gameObject.name.Contains("glow"))
+                    continue;
+                r.enabled = false;
+            }
+
+            // Create primitive cube child
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.name = "MineralCube";
+            cube.transform.SetParent(transform);
+            cube.transform.localPosition = Vector3.zero;
+            cube.transform.localRotation = Quaternion.identity;
+            cube.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f); // Medium size
+
+            // Remove box collider from the created cube to avoid blocking the trigger
+            Collider col = cube.GetComponent<Collider>();
+            if (col != null) Destroy(col);
+
+            // Change color to gold/orange mineral color
+            MeshRenderer cubeRenderer = cube.GetComponent<MeshRenderer>();
+            if (cubeRenderer != null)
+            {
+                cubeRenderer.material.color = new Color(0.9f, 0.6f, 0.2f);
+            }
+        }
+        else if (source == "Fauna")
+        {
+            // Fauna: glowing items positioned higher. Add a nice cyan glow light.
+            Light light = GetComponentInChildren<Light>();
+            if (light == null)
+            {
+                GameObject lightGo = new GameObject("FaunaGlowLight");
+                lightGo.transform.SetParent(transform);
+                lightGo.transform.localPosition = Vector3.zero;
+                light = lightGo.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(0f, 0.8f, 1f); // Cyan
+                light.range = 6f;
+                light.intensity = 2f;
+            }
+
+            // Extend collider downwards so it can be picked up from the ground
+            BoxCollider boxCol = GetComponent<BoxCollider>();
+            if (boxCol != null)
+            {
+                boxCol.center = new Vector3(0f, -1.0f, 0f);
+                boxCol.size = new Vector3(boxCol.size.x, boxCol.size.y + 2.0f, boxCol.size.z);
+            }
+        }
+        else if (source == "Flora")
+        {
+            // Flora: glowing items flat on ground or near walls. Add green glow.
+            Light light = GetComponentInChildren<Light>();
+            if (light == null)
+            {
+                GameObject lightGo = new GameObject("FloraGlowLight");
+                lightGo.transform.SetParent(transform);
+                lightGo.transform.localPosition = Vector3.zero;
+                light = lightGo.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(0.1f, 1f, 0.2f); // Vibrant Green
+                light.range = 5f;
+                light.intensity = 1.8f;
+            }
+        }
     }
 
     void Update()

@@ -11,17 +11,17 @@ public class InventoryTooltip : MonoBehaviour
     private RectTransform tooltipRect;
     private CanvasGroup canvasGroup;
 
-    // Elementos internos
-    private TextMeshProUGUI nameText;
-    private TextMeshProUGUI descriptionText;
-    private TextMeshProUGUI tierText;
-    private TextMeshProUGUI quantityText;
-    private Image separatorLine;
-    private Image tierIndicator;
+    [Header("Componentes (Opcional - Prefab)")]
+    public TextMeshProUGUI nameText;
+    public TextMeshProUGUI descriptionText;
+    public TextMeshProUGUI tierText;
+    public TextMeshProUGUI quantityText;
+    public Image separatorLine;
+    public Image tierIndicator;
 
     // Configurações
-    private static readonly float TOOLTIP_WIDTH = 260f;
-    private static readonly float PADDING = 12f;
+    private static readonly float TOOLTIP_WIDTH = 320f;
+    private static readonly float PADDING = 14f;
     private static readonly Color BG_COLOR = new Color(0.08f, 0.08f, 0.12f, 0.95f);
     private static readonly Color BORDER_COLOR = new Color(0.4f, 0.4f, 0.5f, 0.7f);
 
@@ -33,16 +33,24 @@ public class InventoryTooltip : MonoBehaviour
     public void Initialize(Canvas canvas)
     {
         parentCanvas = canvas;
-        int uiLayer = gameObject.layer;
 
-        // === Container Principal ===
-        tooltipRect = gameObject.AddComponent<RectTransform>();
-        tooltipRect.sizeDelta = new Vector2(TOOLTIP_WIDTH, 160f);
-        tooltipRect.pivot = new Vector2(0f, 1f); // Pivot no topo-esquerda
+        tooltipRect = GetComponent<RectTransform>();
+        if (tooltipRect == null) tooltipRect = gameObject.AddComponent<RectTransform>();
 
-        canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        
         canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = false;
+
+        // Se já tiver as referências do Prefab atribuídas, não cria nada por código!
+        if (nameText != null)
+        {
+            return;
+        }
+
+        int uiLayer = gameObject.layer;
         canvasGroup.interactable = false;
 
         // === Background ===
@@ -145,15 +153,16 @@ public class InventoryTooltip : MonoBehaviour
         descRect.anchorMax = new Vector2(1f, 1f);
         descRect.pivot = new Vector2(0f, 1f);
         descRect.anchoredPosition = new Vector2(PADDING + 4f, -(PADDING + 36f));
-        descRect.sizeDelta = new Vector2(-PADDING * 2 - 4f, 60f);
+        descRect.sizeDelta = new Vector2(-PADDING * 2 - 4f, 90f);
 
         descObj.AddComponent<CanvasRenderer>();
         descriptionText = descObj.AddComponent<TextMeshProUGUI>();
-        descriptionText.fontSize = 12f;
+        descriptionText.fontSize = 13f;
         descriptionText.color = new Color(0.75f, 0.75f, 0.8f, 0.9f);
         descriptionText.alignment = TextAlignmentOptions.TopLeft;
         descriptionText.raycastTarget = false;
         descriptionText.enableWordWrapping = true;
+        descriptionText.overflowMode = TextOverflowModes.Ellipsis;
 
         // === Tier + Quantidade (linha inferior) ===
         GameObject infoObj = new GameObject("InfoLine");
@@ -223,7 +232,9 @@ public class InventoryTooltip : MonoBehaviour
         // Quantidade
         quantityText.text = "Qtd: " + quantity;
 
-        // Mostra
+        // Mostra — garante que nunca bloqueia raycasts (cliques nos slots)
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable   = false;
         canvasGroup.alpha = 1f;
         gameObject.SetActive(true);
     }
@@ -271,5 +282,14 @@ public class InventoryTooltip : MonoBehaviour
         }
 
         tooltipRect.anchoredPosition = pos;
+    }
+
+    public void SetFont(TMP_FontAsset fontAsset)
+    {
+        if (fontAsset == null) return;
+        if (nameText != null) nameText.font = fontAsset;
+        if (descriptionText != null) descriptionText.font = fontAsset;
+        if (tierText != null) tierText.font = fontAsset;
+        if (quantityText != null) quantityText.font = fontAsset;
     }
 }

@@ -12,7 +12,17 @@ public enum EquipmentEffectType
     SpeedBoost,              // Aumenta velocidade
     DamageBoost,             // Aumenta dano base
     CritChanceBoost,         // Aumenta chance de crítico
-    ArmorRegenBoost          // Aumenta regeneração de armadura
+    ArmorRegenBoost,         // Aumenta regeneração de armadura
+    RangeBoost,              // Aumenta o alcance da arma/ataques
+    DodgeChanceBoost,        // Aumenta a chance de esquivar de ataques
+    CritMultiplierBoost,     // Aumenta o multiplicador de dano crítico
+    KnockbackBoost,          // Aumenta a força de empurrão
+    AttackSpeedBoost,        // Aumenta a velocidade de ataque melee
+    HealthRegenBoost,        // Aumenta a regeneração de vida por segundo
+    DashCooldownBoost,       // Diminui o cooldown do dash (multiplicador)
+    DashCountsBoost,         // Aumenta a quantidade de cargas de dash
+    DashInvulnerabilityBoost, // Aumenta o tempo de invulnerabilidade do dash
+    MagnetRangeBoost         // Aumenta o raio de atração de essências
 }
 
 /// <summary>

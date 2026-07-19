@@ -38,6 +38,8 @@ public class EptinhoMenuController : MonoBehaviour
 
     void Update()
     {
+        if (menuUI == null) return;
+
         // Tecla I abre/fecha o catálogo
         if (Input.GetKeyDown(KeyCode.I))
         {

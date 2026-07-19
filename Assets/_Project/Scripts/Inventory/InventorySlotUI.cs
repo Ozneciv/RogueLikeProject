@@ -10,17 +10,20 @@ using TMPro;
 /// </summary>
 public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    // Referências internas (criadas por código)
-    private Image backgroundImage;
-    private Image borderImage;
-    private Image iconImage;
-    private TextMeshProUGUI quantityText;
+    [Header("Componentes (Opcional - Prefab)")]
+    public Image backgroundImage;
+    public Image borderImage;
+    public Image iconImage;
+    public Image glowImage;
+    public TextMeshProUGUI quantityText;
+    public TextMeshProUGUI lockText;
 
     // Dados do slot
     private string currentItemId;
     private int currentQuantity;
     private ItemData currentItemData;
     private bool isOccupied = false;
+    private bool isLocked = false;
 
     // Referência ao tooltip
     private InventoryTooltip tooltip;
@@ -33,12 +36,30 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private bool isHovered = false;
 
+    // Micro-animação de hover
+    private Vector3 targetScale = Vector3.one;
+    private float scaleSpeed = 15f;
+
+    // Sprite estático para glow radial de tier
+    private static Sprite radialGlowSprite;
+
     /// <summary>
-    /// Inicializa o slot criando todos os elementos visuais
+    /// Inicializa o slot criando todos os elementos visuais ou usando referências existentes do Prefab
+    /// <summary>
+    /// Inicializa o slot criando todos os elementos visuais ou usando referências existentes do Prefab
     /// </summary>
     public void Initialize(InventoryTooltip tooltipRef, float slotSize)
     {
         tooltip = tooltipRef;
+
+        // Se já tiver as referências do Prefab atribuídas, não cria nada por código!
+        if (backgroundImage != null && borderImage != null && iconImage != null && quantityText != null)
+        {
+            if (lockText != null) lockText.enabled = false;
+            if (glowImage != null) glowImage.enabled = false;
+            SetEmpty();
+            return;
+        }
 
         int uiLayer = gameObject.layer;
 
@@ -48,7 +69,27 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         backgroundImage.raycastTarget = true;
 
         RectTransform rect = GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(slotSize, slotSize);
+        if (rect != null) rect.sizeDelta = new Vector2(slotSize, slotSize);
+
+        // === Glow de Rarity/Tier ===
+        if (glowImage == null)
+        {
+            GameObject glowObj = new GameObject("TierGlow");
+            glowObj.transform.SetParent(transform, false);
+            glowObj.layer = uiLayer;
+            RectTransform glowRect = glowObj.AddComponent<RectTransform>();
+            glowRect.anchorMin = new Vector2(0.05f, 0.05f);
+            glowRect.anchorMax = new Vector2(0.95f, 0.95f);
+            glowRect.sizeDelta = Vector2.zero;
+            glowRect.anchoredPosition = Vector2.zero;
+
+            glowObj.AddComponent<CanvasRenderer>();
+            glowImage = glowObj.AddComponent<Image>();
+            if (radialGlowSprite == null) GenerateRadialGlowSprite();
+            glowImage.sprite = radialGlowSprite;
+            glowImage.raycastTarget = false;
+        }
+        glowImage.enabled = false;
 
         // === Borda ===
         GameObject borderObj = new GameObject("SlotBorder");
@@ -65,7 +106,6 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         borderImage = borderObj.AddComponent<Image>();
         borderImage.color = SLOT_EMPTY_BORDER;
         borderImage.raycastTarget = false;
-        // Fazemos a borda ser um outline usando sprite sliced
         borderImage.type = Image.Type.Sliced;
         borderImage.fillCenter = false;
         borderImage.pixelsPerUnitMultiplier = 1f;
@@ -108,7 +148,63 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         quantityText.margin = new Vector4(0, 0, 4, 2);
         quantityText.enabled = false;
 
+        // === Texto de Cadeado (Lock) ===
+        if (lockText == null)
+        {
+            GameObject lockObj = new GameObject("LockText");
+            lockObj.transform.SetParent(transform, false);
+            lockObj.layer = uiLayer;
+
+            RectTransform lockRect = lockObj.AddComponent<RectTransform>();
+            lockRect.anchorMin = Vector2.zero;
+            lockRect.anchorMax = Vector2.one;
+            lockRect.sizeDelta = Vector2.zero;
+            lockRect.anchoredPosition = Vector2.zero;
+
+            lockObj.AddComponent<CanvasRenderer>();
+            lockText = lockObj.AddComponent<TextMeshProUGUI>();
+            lockText.fontSize = slotSize * 0.35f;
+            lockText.color = new Color(0.5f, 0.5f, 0.6f, 0.4f);
+            lockText.alignment = TextAlignmentOptions.Center;
+            lockText.fontStyle = FontStyles.Bold;
+            lockText.raycastTarget = false;
+            lockText.text = "🔒";
+        }
+        lockText.enabled = false;
+
         SetEmpty();
+    }
+
+    void Update()
+    {
+        if (transform.localScale != targetScale)
+        {
+            transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.deltaTime * scaleSpeed);
+        }
+    }
+
+    private void GenerateRadialGlowSprite()
+    {
+        Texture2D tex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+        for (int y = 0; y < 32; y++)
+        {
+            for (int x = 0; x < 32; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(15.5f, 15.5f)) / 15.5f;
+                float alpha = Mathf.Clamp01(1f - dist);
+                alpha = alpha * alpha; // quadratic falloff for soft neon glow
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        }
+        tex.Apply();
+        radialGlowSprite = Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f));
+    }
+
+    public void SetFont(TMP_FontAsset fontAsset)
+    {
+        if (fontAsset == null) return;
+        if (quantityText != null) quantityText.font = fontAsset;
+        if (lockText != null) lockText.font = fontAsset;
     }
 
     /// <summary>
@@ -149,15 +245,45 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
             quantityText.enabled = false;
         }
 
-        // Borda com cor do Tier
+        // Borda com cor do Tier e Glow
         if (itemData != null)
         {
             Color tierColor = itemData.GetTierColor();
             borderImage.color = new Color(tierColor.r, tierColor.g, tierColor.b, 0.8f);
+            if (glowImage != null)
+            {
+                glowImage.color = new Color(tierColor.r, tierColor.g, tierColor.b, 0.35f);
+                glowImage.enabled = true;
+            }
         }
         else
         {
             borderImage.color = SLOT_EMPTY_BORDER;
+            if (glowImage != null) glowImage.enabled = false;
+        }
+    }
+
+    public void SetLocked(bool locked)
+    {
+        isLocked = locked;
+        if (locked)
+        {
+            currentItemId = null;
+            currentQuantity = 0;
+            currentItemData = null;
+            isOccupied = false;
+
+            backgroundImage.color = new Color(0.06f, 0.06f, 0.08f, 0.8f);
+            borderImage.color = new Color(0.2f, 0.2f, 0.25f, 0.3f);
+            iconImage.enabled = false;
+            quantityText.enabled = false;
+            if (lockText != null) lockText.enabled = true;
+            if (glowImage != null) glowImage.enabled = false;
+        }
+        else
+        {
+            if (lockText != null) lockText.enabled = false;
+            SetEmpty();
         }
     }
 
@@ -170,6 +296,7 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         currentQuantity = 0;
         currentItemData = null;
         isOccupied = false;
+        isLocked = false;
 
         if (!isHovered)
             backgroundImage.color = SLOT_EMPTY_BG;
@@ -177,13 +304,17 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
         iconImage.enabled = false;
         quantityText.enabled = false;
         borderImage.color = SLOT_EMPTY_BORDER;
+        if (lockText != null) lockText.enabled = false;
+        if (glowImage != null) glowImage.enabled = false;
     }
 
     // === Hover Events para Tooltip ===
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (isLocked) return;
         isHovered = true;
+        targetScale = new Vector3(1.08f, 1.08f, 1.08f);
 
         if (isOccupied)
         {
@@ -202,7 +333,9 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        if (isLocked) return;
         isHovered = false;
+        targetScale = Vector3.one;
 
         backgroundImage.color = isOccupied ? SLOT_OCCUPIED_BG : SLOT_EMPTY_BG;
 
@@ -216,21 +349,26 @@ public class InventorySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (isLocked) return;
+
         // Só faz algo se fomos clicados e se tem um item aqui dentro
         if (isOccupied && !string.IsNullOrEmpty(currentItemId))
         {
-            // Tenta procurar na cena atual se existe a Tela de Infusão (Upgrades)
-            // (Isso permite que o código nunca quebre mesmo se vc não tiver a tela instalada)
             InfusionUI telaDeUpgrades = Object.FindFirstObjectByType<InfusionUI>(FindObjectsInactive.Include);
-            
+
             if (telaDeUpgrades != null)
             {
-                // Manda abrir o painel imediatamente (já que você achou o outro botão inútil!)
-                telaDeUpgrades.OpenPanel();
-                
-                // Manda o item pra lá
-                telaDeUpgrades.SelectItem(currentItemId);
-                Debug.Log($"[SLOT CLICADO] Item de ID: {currentItemId} mandou abrir a janela de Upgrades e foi pra Bigorna central.");
+                // Só seleciona o item se o painel conseguiu abrir (sem inimigos por perto)
+                bool abriu = telaDeUpgrades.OpenPanel();
+                if (abriu)
+                {
+                    telaDeUpgrades.SelectItem(currentItemId);
+                    Debug.Log($"[SLOT] Item '{currentItemId}' enviado para Infusão.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[SLOT] InfusionUI não encontrada na cena!");
             }
         }
     }

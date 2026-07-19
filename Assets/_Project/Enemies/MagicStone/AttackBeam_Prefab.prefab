@@ -223,7 +223,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AttackBeam
   damage: 20
   radius: 1.5
-  lifetime: 0.25
+  lifetime: 0.75
+  coreColor: {r: 1, g: 1, b: 0.85, a: 1}
+  glowColor: {r: 1, g: 0.72, b: 0, a: 1}
+  jaggedness: 0.35
+  skyHeight: 35
+  segmentsCount: 4
+  sustainProgress: 0
+  particleCount: 15
+  particleSpeed: 5
+  particleLifetime: 10
+  lightIntensity: 8
+  owner: {fileID: 0}
 --- !u!114 &4149717219613606241
 MonoBehaviour:
   m_ObjectHideFlags: 0

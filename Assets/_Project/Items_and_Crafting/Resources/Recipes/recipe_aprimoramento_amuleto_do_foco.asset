@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e945c12aade065d41a2c2c1589c2ab8a, type: 3}
+  m_Name: recipe_aprimoramento_amuleto_do_foco
+  m_EditorClassIdentifier: Assembly-CSharp::CraftingRecipe
+  recipeId: recipe_aprimoramento_amuleto_do_foco
+  recipeName: "Amuleto do Foco"
+  description: "Cria a melhoria permanente: Amuleto do Foco"
+  icon: {fileID: 0}
+  ingredients:
+  - itemId: po_de_cristal
+    quantity: 3
+  - itemId: ovo_cristal_crawler
+    quantity: 1
+  resultType: 1
+  resultItemId: ""
+  resultEquipment: {fileID: 11400000, guid: e2f4b15c9c349b9fa9fb9992e515c774, type: 2}

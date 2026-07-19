@@ -22,6 +22,9 @@ public class PlayerAttributesDefensive : MonoBehaviour
     [Tooltip("Dano devolvido ao atacante quando jogador é atingido por contato físico")]
     public int thorns = 0;
     
+    [Tooltip("Regeneração de vida por segundo (valor somado, ex: 1 = 1 vida por segundo)")]
+    public float healthRegen = 0f;
+    
     // ========== ATRIBUTOS DE MOBILIDADE (3.3) ==========
     [Header("Mobility Attributes")]
     [Tooltip("Multiplicador de tempo de recarga do Dash. 1.0 = normal, 0.5 = metade do tempo")]
@@ -33,8 +36,27 @@ public class PlayerAttributesDefensive : MonoBehaviour
     [Tooltip("Duração da janela de invencibilidade durante o Dash (em segundos)")]
     public float dashInvulnerability = 0.2f;
     
-    [Tooltip("Multiplicador de velocidade de movimento. 1.0 = normal, 1.5 = +50% velocidade")]
-    public float speedMultiplier = 1.0f;
+    [SerializeField]
+    private float _speedMultiplier = 1.0f;
+    public float speedMultiplier
+    {
+        get { return _speedMultiplier + temporarySpeedBoost; }
+        set { _speedMultiplier = value; }
+    }
+
+    [HideInInspector]
+    public float temporarySpeedBoost = 0f;
+
+    [Tooltip("Multiplicador do raio de atração do ímã (Magnet) para essências")]
+    public float magnetRangeMultiplier = 1.0f;
+
+    private void Update()
+    {
+        if (temporarySpeedBoost > 0f)
+        {
+            temporarySpeedBoost = Mathf.Max(0f, temporarySpeedBoost - Time.deltaTime * 0.05f);
+        }
+    }
 
     /// <summary>
     /// Modifica um atributo pelo nome.
@@ -46,6 +68,9 @@ public class PlayerAttributesDefensive : MonoBehaviour
             // Defensivos
             case "armorregen":
                 armorRegen = isMultiplier ? armorRegen * value : armorRegen + value;
+                break;
+            case "healthregen":
+                healthRegen = isMultiplier ? healthRegen * value : healthRegen + value;
                 break;
             case "dodgechance":
             case "dodge":
@@ -71,7 +96,11 @@ public class PlayerAttributesDefensive : MonoBehaviour
                 break;
             case "speedmultiplier":
             case "speed":
-                speedMultiplier = isMultiplier ? speedMultiplier * value : speedMultiplier + value;
+                _speedMultiplier = isMultiplier ? _speedMultiplier * value : _speedMultiplier + value;
+                break;
+            case "magnetrangemultiplier":
+            case "magnetrange":
+                magnetRangeMultiplier = isMultiplier ? magnetRangeMultiplier * value : magnetRangeMultiplier + value;
                 break;
                 
             default:
@@ -89,11 +118,14 @@ public class PlayerAttributesDefensive : MonoBehaviour
         {
             // Defensivos
             case "armorregen": return armorRegen;
+            case "healthregen": return healthRegen;
             case "dodgechance":
             case "dodge": return dodgeChance;
             case "damagenegation":
             case "negation": return damageNegation;
             case "thorns": return thorns;
+            case "magnetrangemultiplier":
+            case "magnetrange": return magnetRangeMultiplier;
             
             // Mobilidade
             case "dashcooldownmultiplier": return dashCooldownMultiplier;

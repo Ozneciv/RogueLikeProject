@@ -61,6 +61,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!135 &1069383995936366341
 SphereCollider:
   m_ObjectHideFlags: 0

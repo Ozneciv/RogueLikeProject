@@ -31,8 +31,6 @@ public class PlayerInventory : MonoBehaviour
     /// </summary>
     void EnsureItemDatabaseExists()
     {
-        if (ItemDatabase.Instance != null) return;
-
         ItemDatabase existing = FindFirstObjectByType<ItemDatabase>();
         if (existing != null) return;
 
@@ -53,17 +51,9 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Cria o InventoryUI automaticamente se ele não existir.
-    /// Isso garante que Tab funcione em qualquer cena (Base, GameScene, etc.)
-    /// sem precisar de setup manual na cena.
-    /// </summary>
     void EnsureInventoryUIExists()
     {
-        if (InventoryUI.Instance != null) return;
-
-        // Procura se existe um na cena mas ainda não se registrou como Instance
-        InventoryUI existing = FindObjectOfType<InventoryUI>();
+        InventoryUI existing = FindFirstObjectByType<InventoryUI>();
         if (existing != null) return;
 
         // Cria um novo InventoryUI (ele faz DontDestroyOnLoad no próprio Awake)

@@ -179,6 +179,9 @@ public class RoomController : MonoBehaviour
 
     IEnumerator StartCombatEncounter()
     {
+        // Spawna os 3 tipos de coletáveis (Minérios, Fauna, Flora) antes do combate iniciar
+        SpawnRoomCollectibles();
+
         // Aguarda o player entrar completamente na sala antes de fechar as portas.
         // Sem este delay, a barreira fecha enquanto o player ainda está no vão da entrada.
         yield return new WaitForSeconds(0.8f);
@@ -391,6 +394,94 @@ public class RoomController : MonoBehaviour
         // Isso é correto independente de onde o pivot/root da área estiver.
         float y = bounds.min.y + spawnHeightOffset;
         return new Vector3(x, y, z);
+    }
+
+    private Vector3 GetRandomPositionForCollectible(BoxCollider box, bool isHigh, bool isNearWall)
+    {
+        if (box == null) return transform.position;
+        
+        Bounds bounds = box.bounds;
+        float x = Random.Range(bounds.min.x, bounds.max.x);
+        float z = Random.Range(bounds.min.z, bounds.max.z);
+
+        if (isNearWall)
+        {
+            // Project to the nearest edge/wall of the BoxCollider bounds
+            float distToMinX = Mathf.Abs(x - bounds.min.x);
+            float distToMaxX = Mathf.Abs(bounds.max.x - x);
+            float distToMinZ = Mathf.Abs(z - bounds.min.z);
+            float distToMaxZ = Mathf.Abs(bounds.max.z - z);
+
+            float minDist = Mathf.Min(Mathf.Min(distToMinX, distToMaxX), Mathf.Min(distToMinZ, distToMaxZ));
+
+            // Move the coordinate exactly towards the closest boundary edge (inwards slightly by 5% buffer)
+            float margin = 0.05f;
+            if (minDist == distToMinX) x = bounds.min.x + (bounds.size.x * margin);
+            else if (minDist == distToMaxX) x = bounds.max.x - (bounds.size.x * margin);
+            else if (minDist == distToMinZ) z = bounds.min.z + (bounds.size.z * margin);
+            else if (minDist == distToMaxZ) z = bounds.max.z - (bounds.size.z * margin);
+        }
+
+        // Base ground level of the BoxCollider bounds
+        float y = bounds.min.y + spawnHeightOffset;
+
+        if (isHigh)
+        {
+            y += 2.0f; // Floating above the ground
+        }
+
+        return new Vector3(x, y, z);
+    }
+
+    private void SpawnRoomCollectibles()
+    {
+        if (spawnAreas == null || spawnAreas.Count == 0) return;
+
+        // Choose a random spawn area BoxCollider
+        BoxCollider area = spawnAreas[Random.Range(0, spawnAreas.Count)];
+        if (area == null) return;
+
+        // Load the base prefabs from Resources/SpawnItems folder
+        GameObject crystalPrefab = Resources.Load<GameObject>("SpawnItems/Crystal");
+        GameObject plantPrefab = Resources.Load<GameObject>("SpawnItems/Planta");
+        GameObject faunaPrefab = Resources.Load<GameObject>("SpawnItems/little_frog");
+
+        // Fallbacks if not found
+        if (crystalPrefab == null) crystalPrefab = Resources.Load<GameObject>("SpawnItems/stone_low+");
+        if (faunaPrefab == null) faunaPrefab = Resources.Load<GameObject>("SpawnItems/tinker");
+
+        // 1. Spawn Minerals (Cube, on ground)
+        if (crystalPrefab != null)
+        {
+            Vector3 pos = GetRandomPositionForCollectible(area, false, false);
+            GameObject obj = Instantiate(crystalPrefab, pos, Quaternion.identity);
+            obj.transform.SetParent(transform);
+            
+            ItemPickup pickup = obj.GetComponent<ItemPickup>();
+            if (pickup != null) pickup.forceCategory = "Minerals";
+        }
+
+        // 2. Spawn Fauna (High/floating, glowing)
+        if (faunaPrefab != null)
+        {
+            Vector3 pos = GetRandomPositionForCollectible(area, true, false);
+            GameObject obj = Instantiate(faunaPrefab, pos, Quaternion.identity);
+            obj.transform.SetParent(transform);
+            
+            ItemPickup pickup = obj.GetComponent<ItemPickup>();
+            if (pickup != null) pickup.forceCategory = "Fauna";
+        }
+
+        // 3. Spawn Flora (Flat on ground, near walls, glowing)
+        if (plantPrefab != null)
+        {
+            Vector3 pos = GetRandomPositionForCollectible(area, false, true);
+            GameObject obj = Instantiate(plantPrefab, pos, Quaternion.identity);
+            obj.transform.SetParent(transform);
+            
+            ItemPickup pickup = obj.GetComponent<ItemPickup>();
+            if (pickup != null) pickup.forceCategory = "Flora";
+        }
     }
 
     GameObject GetRandom(List<GameObject> list)

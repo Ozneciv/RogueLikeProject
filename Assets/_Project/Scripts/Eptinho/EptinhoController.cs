@@ -17,7 +17,7 @@ public class EptinhoController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Tab))
+        if (Input.GetKeyDown(KeyCode.C))
         {
             MenuCanvas.SetActive(!MenuCanvas.activeSelf);
             HUDCanvas.SetActive(!HUDCanvas.activeSelf);

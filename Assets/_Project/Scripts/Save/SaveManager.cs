@@ -119,6 +119,12 @@ public class SaveManager : MonoBehaviour
             }
         }
 
+        PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
+        if (skinManager != null)
+        {
+            data.selectedSkinID = skinManager.ActiveSkinID;
+        }
+
         // Persiste equipamentos craftados/equipados
         data.craftedEquipmentIds = new List<string>(CachedData.craftedEquipmentIds);
         data.equippedEquipmentIds = new List<string>(CachedData.equippedEquipmentIds);
@@ -170,6 +176,12 @@ public class SaveManager : MonoBehaviour
             foreach (int idx in data.purchasedUpgradeIndices)
                 upgrades.BuyUpgrade(idx);
         }
+        PlayerSkinManager skinManager = player.GetComponent<PlayerSkinManager>();
+        if (skinManager != null)
+        {
+            skinManager.SetSkin(data.selectedSkinID);
+        }
+
         // Notifica a Bolsa Sintética para atualizar com os dados carregados do disco
         OnBaseResourcesChanged?.Invoke();
         Debug.Log($"[SAVE] Progressão carregada | " +

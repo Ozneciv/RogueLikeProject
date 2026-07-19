@@ -206,9 +206,7 @@ public class LevelGenerator : MonoBehaviour
         Debug.Log("[LevelGenerator] 🏆 BOSS FIGHT gerado!");
         yield return new WaitForSeconds(extraLoadDelay);
 
-        ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
-        if (itemSpawner != null) itemSpawner.SpawnItems();
-        else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
+        TriggerItemSpawning();
 
         BakeGlobalNavMesh();
 
@@ -430,9 +428,7 @@ public class LevelGenerator : MonoBehaviour
         Debug.Log($"[LevelGenerator] Geração Completa! ExitRoom: {(exitRoomSpawned ? "✅" : "❌")}");
         yield return new WaitForSeconds(extraLoadDelay);
 
-        ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
-        if (itemSpawner != null) itemSpawner.SpawnItems();
-        else Debug.LogWarning("[LevelGenerator] ItemSpawner não encontrado na cena!");
+        TriggerItemSpawning();
 
         BakeGlobalNavMesh();
 
@@ -797,6 +793,17 @@ public class LevelGenerator : MonoBehaviour
     /// Usa o agent type Humanoid (ID 0) para manter compatibilidade com o
     /// NavMeshAgent do player sem precisar trocar o agent type.
     /// </summary>
+    private void TriggerItemSpawning()
+    {
+        ItemSpawner itemSpawner = FindFirstObjectByType<ItemSpawner>();
+        if (itemSpawner == null)
+        {
+            itemSpawner = gameObject.AddComponent<ItemSpawner>();
+            Debug.Log("[LevelGenerator] ItemSpawner nao encontrado na cena. Adicionado automaticamente.");
+        }
+        itemSpawner.SpawnItems();
+    }
+
     void BakeGlobalNavMesh()
     {
         if (!useNavMesh)
@@ -958,4 +965,4 @@ public class LevelGenerator : MonoBehaviour
 
         return new Bounds(center, new Vector3(worldExtentX, worldExtentY, worldExtentZ) * 2f);
     }
-}
+}

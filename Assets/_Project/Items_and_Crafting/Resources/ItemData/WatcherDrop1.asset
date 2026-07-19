@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: 01cw
   itemName: "Carca\xE7a do Vigia"
   description: "A carca\xE7a de rochas que envolve o Vigia de Cristal."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d1a40c1e48ce20945810c9b13fd6c5f4, type: 3}
   tier: 0
   enemySource: Crystal Watcher
   recycleEssenceValue: 5

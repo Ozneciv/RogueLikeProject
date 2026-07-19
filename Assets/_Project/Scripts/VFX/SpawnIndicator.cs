@@ -1,48 +1,55 @@
 using UnityEngine;
 
 /// <summary>
-/// Indicador visual de spawn de inimigo.
-///
-/// COMO CRIAR O PREFAB NO UNITY:
-///   1. Crie um GameObject vazio na cena → renomeie para "SpawnIndicator".
-///   2. Adicione este script (Add Component → SpawnIndicator).
-///   3. O script cria automaticamente o LineRenderer e o ParticleSystem no Awake.
-///   4. Salve como Prefab em: Assets/_Project/Enviroment/VFX/SpawnIndicator.prefab
-///   5. Arraste o prefab para o campo "Spawn Indicator Prefab" do RoomController.
-///
-/// O RoomController já cuida de instanciar e destruir este objeto no tempo certo.
+/// Indicador visual premium de spawn de inimigos.
+/// Apresenta múltiplos anéis concêntricos (de mira, de carga e ondulado de energia)
+/// que pulsam, giram em direções opostas, e aceleram junto com partículas espiraladas
+/// em direção ao momento do spawn (pico/flash).
 /// </summary>
 [RequireComponent(typeof(LineRenderer))]
 public class SpawnIndicator : MonoBehaviour
 {
-    [Header("Visual")]
-    [Tooltip("Raio do círculo em unidades do mundo.")]
+    [Header("Visual Geral")]
+    [Tooltip("Raio final do círculo indicador.")]
     public float radius = 1.2f;
-    [Tooltip("Quantidade de pontos que formam o círculo (mais = mais suave).")]
-    public int segments = 64;
-    [Tooltip("Cor base do glow. Combina com a paleta do bioma.")]
-    public Color glowColor = new Color(0.55f, 0.1f, 0.9f, 1f); // roxo escuro
-    [Tooltip("Cor do pico do pulso.")]
-    public Color peakColor = new Color(0.85f, 0.3f, 1f, 1f);   // roxo claro vibrante
+    [Tooltip("Quantidade de segmentos para suavidade do círculo.")]
+    public int segments = 80;
+    [Tooltip("Duração total do indicador antes de sumir.")]
+    public float duration = 1.5f;
 
-    [Header("Animação")]
-    [Tooltip("Velocidade de pulsação do anel.")]
-    public float pulseSpeed = 3.5f;
-    [Tooltip("Velocidade de rotação das runas (em graus por segundo).")]
-    public float rotationSpeed = 45f;
-    [Tooltip("Velocidade de crescimento do raio no início.")]
-    public float growSpeed = 2.5f;
+    [Header("Cores (HDR / Glow)")]
+    [Tooltip("Cor base do glow de carregamento.")]
+    public Color glowColor = new Color(0.55f, 0.1f, 0.9f, 1f); // roxo
+    [Tooltip("Cor de pico de energia e do flash final.")]
+    public Color peakColor = new Color(0.15f, 0.85f, 1f, 1f);   // ciano elétrico
+
+    [Header("Velocidades Dinâmicas")]
+    [Tooltip("Velocidade inicial de rotação dos anéis (graus por segundo).")]
+    public float rotationSpeed = 30f;
+    [Tooltip("Frequência de pulsação de intensidade.")]
+    public float pulseSpeed = 4f;
+
+    // --- Componentes de Renderização ---
+    private LineRenderer mainRing;   // Anel de contenção principal no raio alvo
+    private LineRenderer outerRing;  // Anel de mira que encolhe de fora para dentro
+    private LineRenderer wavyRing;   // Anel interno ondulado que mostra acúmulo de energia
+    private LineRenderer innerRing;  // Pequeno anel interno rotatório
+    private ParticleSystem sparks;
 
     // --- Internos ---
-    private LineRenderer ring;
-    private LineRenderer innerRing;
-    private ParticleSystem sparks;
-    private float currentRadius = 0f;
     private float time = 0f;
-    private bool ready = false;
+    private Material sharedMaterial;
 
     void Awake()
     {
+        // Cria material aditivo compatível com URP e Standard para efeito de Glow/Neon
+        Shader additiveShader = Shader.Find("Legacy Shaders/Particles/Additive");
+        if (additiveShader == null)
+        {
+            additiveShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        }
+        sharedMaterial = new Material(additiveShader);
+
         BuildRings();
         BuildParticles();
     }
@@ -50,54 +57,89 @@ public class SpawnIndicator : MonoBehaviour
     void Update()
     {
         time += Time.deltaTime;
+        float progress = Mathf.Clamp01(time / duration);
 
-        // --- Cresce até o raio alvo ---
-        if (currentRadius < radius)
+        // Acelera a pulsação e a rotação à medida que se aproxima do final (100% de carga)
+        float currentRotationSpeed = rotationSpeed * Mathf.Lerp(1f, 6f, progress);
+        float currentPulseSpeed = pulseSpeed * Mathf.Lerp(1f, 3f, progress);
+        
+        // Pulso oscilante (0 a 1)
+        float pulse = (Mathf.Sin(time * currentPulseSpeed) + 1f) * 0.5f;
+
+        // Cor dinâmica interpolada (fica mais ciano/elétrica perto do spawn)
+        Color currentColor = Color.Lerp(glowColor, peakColor, progress);
+        
+        // Efeito de flash extremo nos últimos 10% da duração
+        if (progress > 0.9f)
         {
-            currentRadius = Mathf.MoveTowards(currentRadius, radius, growSpeed * Time.deltaTime);
+            float flashT = (progress - 0.9f) / 0.1f;
+            currentColor = Color.Lerp(currentColor, Color.white, flashT);
         }
-        else if (!ready)
+
+        // --- 1. Desenho do Anel de Mira Externo (Encolhe até o raio alvo) ---
+        // Nasce 2x maior e converge para o tamanho certo nos primeiros 40% do tempo
+        float outerProgress = Mathf.Clamp01(progress / 0.40f);
+        float outerR = Mathf.Lerp(radius * 2.0f, radius, outerProgress);
+        Color outerColor = currentColor;
+        outerColor.a = Mathf.Lerp(0f, 1f, outerProgress) * (1f - progress * 0.3f);
+        DrawCircle(outerRing, outerR, 0.05f + pulse * 0.04f, outerColor, time * currentRotationSpeed);
+
+        // --- 2. Desenho do Anel Principal (Fixo no chão) ---
+        Color mainColor = currentColor;
+        mainColor.a = Mathf.Lerp(0f, 0.9f, progress * 4f); // Surge rápido
+        float mainWidth = Mathf.Lerp(0.06f, 0.14f, pulse);
+        DrawCircle(mainRing, radius, mainWidth, mainColor, -time * (currentRotationSpeed * 0.3f));
+
+        // --- 3. Desenho do Anel Ondulado (Wavy / Energia instável) ---
+        Color wavyColor = currentColor * 0.7f;
+        wavyColor.a = progress; // Fica mais evidente com o tempo
+        DrawCircle(wavyRing, radius * 0.75f, 0.05f, wavyColor, time * (currentRotationSpeed * 1.5f), true, progress);
+
+        // --- 4. Desenho do Anel Interno (Gira rápido na direção oposta) ---
+        Color innerColor = Color.Lerp(glowColor, peakColor, pulse);
+        innerColor.a = Mathf.Lerp(0.2f, 0.8f, progress);
+        DrawCircle(innerRing, radius * 0.35f, 0.04f, innerColor, -time * (currentRotationSpeed * 2f));
+
+        // --- 5. Controle Dinâmico das Partículas ---
+        if (sparks != null)
         {
-            ready = true;
-            if (sparks != null) sparks.Play();
+            var emission = sparks.emission;
+            // Taxa de faíscas aumenta conforme carrega
+            emission.rateOverTime = Mathf.Lerp(15f, 70f, progress);
+
+            var main = sparks.main;
+            // Partículas se movem mais rápido no final
+            main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f * Mathf.Lerp(1f, 2.5f, progress));
         }
-
-        // --- Pulso de intensidade ---
-        float pulse = (Mathf.Sin(time * pulseSpeed) + 1f) * 0.5f; // 0..1
-        Color currentColor = Color.Lerp(glowColor, peakColor, pulse);
-
-        // Largura pulsa levemente
-        float width = Mathf.Lerp(0.04f, 0.12f, pulse);
-
-        // --- Anel externo ---
-        DrawCircle(ring, currentRadius, width, currentColor);
-
-        // --- Anel interno (50% do tamanho, rotação oposta) ---
-        float innerR = currentRadius * 0.5f;
-        Color innerColor = currentColor;
-        innerColor.a *= 0.6f;
-        DrawCircle(innerRing, innerR, width * 0.6f, innerColor);
-
-        // --- Rotação do objeto (gira as runas) ---
-        transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
     }
 
     // =========================================================
-    // CONSTRUÇÃO DOS COMPONENTES
+    // INICIALIZAÇÃO DE COMPONENTES
     // =========================================================
 
     void BuildRings()
     {
-        // Anel externo (já existe como LineRenderer obrigatório)
-        ring = GetComponent<LineRenderer>();
-        SetupLineRenderer(ring);
+        // Anel principal (GameObject raiz com LineRenderer)
+        mainRing = GetComponent<LineRenderer>();
+        SetupLineRenderer(mainRing);
 
-        // Anel interno como filho
-        GameObject innerObj = new GameObject("InnerRing");
-        innerObj.transform.SetParent(transform, false);
-        innerObj.transform.localPosition = Vector3.zero;
-        innerRing = innerObj.AddComponent<LineRenderer>();
-        SetupLineRenderer(innerRing);
+        // Anel externo (mira)
+        outerRing = CreateChildRing("OuterRing");
+        // Anel ondulado (carregamento de energia)
+        wavyRing = CreateChildRing("WavyRing");
+        // Anel interno
+        innerRing = CreateChildRing("InnerRing");
+    }
+
+    LineRenderer CreateChildRing(string name)
+    {
+        GameObject child = new GameObject(name);
+        child.transform.SetParent(transform, false);
+        child.transform.localPosition = Vector3.zero;
+        child.transform.localRotation = Quaternion.identity;
+        LineRenderer lr = child.AddComponent<LineRenderer>();
+        SetupLineRenderer(lr);
+        return lr;
     }
 
     void SetupLineRenderer(LineRenderer lr)
@@ -107,78 +149,119 @@ public class SpawnIndicator : MonoBehaviour
         lr.useWorldSpace = false;
         lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         lr.receiveShadows = false;
-
-        // Shader que emite luz (HDR). Usa o shader built-in do URP.
-        Material mat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-        mat.SetColor("_BaseColor", glowColor);
-
-        // Ativa emissão para o bloom do URP funcionar
-        mat.EnableKeyword("_EMISSION");
-        mat.SetColor("_EmissionColor", glowColor * 2f);
-        lr.material = mat;
-
-        lr.startWidth = 0.08f;
-        lr.endWidth   = 0.08f;
+        lr.material = sharedMaterial;
     }
 
     void BuildParticles()
     {
         GameObject psObj = new GameObject("Sparks");
         psObj.transform.SetParent(transform, false);
-        psObj.transform.localPosition = Vector3.zero;
+        psObj.transform.localPosition = new Vector3(0f, 0.05f, 0f);
 
         sparks = psObj.AddComponent<ParticleSystem>();
 
         var main = sparks.main;
         main.loop            = true;
-        main.startLifetime   = new ParticleSystem.MinMaxCurve(0.5f, 1.2f);
-        main.startSpeed      = new ParticleSystem.MinMaxCurve(0.8f, 2.0f);
-        main.startSize       = new ParticleSystem.MinMaxCurve(0.03f, 0.1f);
-        main.startColor      = new ParticleSystem.MinMaxGradient(glowColor, peakColor);
-        main.gravityModifier = -0.15f; // partículas sobem levemente
-        main.maxParticles    = 40;
+        main.startLifetime   = new ParticleSystem.MinMaxCurve(0.4f, 0.9f);
+        main.startSpeed      = new ParticleSystem.MinMaxCurve(1.0f, 2.5f);
+        main.startSize       = new ParticleSystem.MinMaxCurve(0.04f, 0.12f);
+        main.gravityModifier = -0.3f; // Sobem flutuando como brasas
+        main.maxParticles    = 100;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
 
         var emission = sparks.emission;
-        emission.enabled     = true;
-        emission.rateOverTime = 20f;
+        emission.enabled = true;
+        emission.rateOverTime = 15f;
 
-        // Emite a partir do anel (shape circular)
+        // Emite a partir de uma borda circular fina
         var shape = sparks.shape;
-        shape.enabled    = true;
-        shape.shapeType  = ParticleSystemShapeType.Circle;
-        shape.radius     = radius;
-        shape.radiusThickness = 0.1f; // borda do círculo
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = radius * 0.9f;
+        shape.radiusThickness = 0.05f;
 
-        // Renderizador das partículas
+        // Comportamento estético das partículas (Cores & Tamanho)
+        var sizeOverLifetime = sparks.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        AnimationCurve sizeCurve = new AnimationCurve();
+        sizeCurve.AddKey(0f, 0.1f);
+        sizeCurve.AddKey(0.2f, 1f);
+        sizeCurve.AddKey(0.8f, 0.8f);
+        sizeCurve.AddKey(1f, 0f);
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+
+        var colorOverLifetime = sparks.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[] { 
+                new GradientColorKey(Color.white, 0f), 
+                new GradientColorKey(peakColor, 0.3f), 
+                new GradientColorKey(glowColor, 0.7f) 
+            },
+            new GradientAlphaKey[] { 
+                new GradientAlphaKey(1f, 0f), 
+                new GradientAlphaKey(0.9f, 0.5f), 
+                new GradientAlphaKey(0f, 1f) 
+            }
+        );
+        colorOverLifetime.color = grad;
+
+        // Ruído orgânico tridimensional para simular calor ondulante/espiral
+        var noise = sparks.noise;
+        noise.enabled = true;
+        noise.strength = 0.6f;
+        noise.frequency = 1.5f;
+        noise.scrollSpeed = 1.2f;
+
         var renderer = psObj.GetComponent<ParticleSystemRenderer>();
-        Material pMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-        pMat.SetColor("_BaseColor", glowColor);
-        renderer.material = pMat;
+        renderer.material = sharedMaterial;
         renderer.renderMode = ParticleSystemRenderMode.Billboard;
 
-        sparks.Stop(); // começa parado, ativa quando o círculo estiver pronto
+        sparks.Play();
     }
 
     // =========================================================
-    // DESENHO DO CÍRCULO
+    // DESENHO GEOMÉTRICO DOS CÍRCULOS
     // =========================================================
 
-    void DrawCircle(LineRenderer lr, float r, float width, Color color)
+    void DrawCircle(LineRenderer lr, float r, float width, Color color, float rotationAngle, bool isWavy = false, float progress = 0f)
     {
         if (lr == null) return;
 
         lr.startWidth = width;
         lr.endWidth   = width;
-        lr.material.SetColor("_BaseColor", color);
-        lr.material.SetColor("_EmissionColor", color * 2.5f);
+        lr.startColor = color;
+        lr.endColor   = color;
 
+        float angleStep = 360f / segments;
         for (int i = 0; i <= segments; i++)
         {
-            float angle = (float)i / segments * Mathf.PI * 2f;
-            float x = Mathf.Cos(angle) * r;
-            float z = Mathf.Sin(angle) * r;
-            lr.SetPosition(i, new Vector3(x, 0.05f, z)); // 5cm acima do chão
+            float angleDeg = (i * angleStep) + rotationAngle;
+            float angleRad = angleDeg * Mathf.Deg2Rad;
+            
+            float currentR = r;
+            if (isWavy)
+            {
+                // A distorção ondulatória aumenta com o progresso do tempo e pulsação
+                float waveFrequency = 10f;
+                float waveAmplitude = 0.08f * progress;
+                currentR += Mathf.Sin(angleRad * waveFrequency + time * 15f) * waveAmplitude;
+            }
+
+            float x = Mathf.Cos(angleRad) * currentR;
+            float z = Mathf.Sin(angleRad) * currentR;
+            
+            // Desenha rente ao chão (3cm acima do plano Y para evitar Z-fighting)
+            lr.SetPosition(i, new Vector3(x, 0.03f, z));
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (sharedMaterial != null)
+        {
+            Destroy(sharedMaterial);
         }
     }
 }

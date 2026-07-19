@@ -29,6 +29,64 @@ public class EptinhoPopupController : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+        EnsurePopupUIExists();
+    }
+
+    private void EnsurePopupUIExists()
+    {
+        if (popupUI == null)
+        {
+            // Tenta achar na cena
+            GameObject existing = GameObject.Find("PopupUI");
+            if (existing != null)
+            {
+                popupUI = existing;
+            }
+            else
+            {
+                // Instancia da pasta Resources
+                GameObject prefab = Resources.Load<GameObject>("PopupUI");
+                if (prefab != null)
+                {
+                    popupUI = Instantiate(prefab);
+                    popupUI.name = "PopupUI_Auto";
+                    DontDestroyOnLoad(popupUI);
+                }
+                else
+                {
+                    Debug.LogError("[POPUP] Não foi possível encontrar ou carregar o prefab 'PopupUI' na pasta Resources!");
+                }
+            }
+        }
+
+        // Auto-detecta imagemDoItem e textoDoItem se forem nulos
+        if (popupUI != null)
+        {
+            if (imagemDoItem == null)
+            {
+                imagemDoItem = popupUI.transform.Find("PopupPanel/EptinhoFace")?.GetComponent<Image>();
+                if (imagemDoItem == null) imagemDoItem = popupUI.GetComponentInChildren<Image>();
+            }
+            if (textoDoItem == null)
+            {
+                // Tenta achar o primeiro TextMeshProUGUI que não seja o de abrir/fechar do botão
+                foreach (var tmp in popupUI.GetComponentsInChildren<TextMeshProUGUI>(true))
+                {
+                    if (tmp.gameObject.name != "AbrirEptinho" && tmp.gameObject.name != "Text")
+                    {
+                        textoDoItem = tmp;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>Popup de aviso genérico ou restrição (usado em bloqueios de combate).</summary>
+    public void MostrarPopupAviso(string mensagem)
+    {
+        Sprite eptinhoFace = Resources.Load<Sprite>("EptinhoFace");
+        MostrarPopupGenerico(eptinhoFace, mensagem);
     }
 
     /// <summary>Popup ao catalogar um novo ItemData.</summary>
@@ -45,15 +103,26 @@ public class EptinhoPopupController : MonoBehaviour
 
     void MostrarPopupGenerico(Sprite icone, string mensagem)
     {
-        if (popupUI == null)
-        {
-            Debug.LogError("[POPUP] popupUI não está configurado no Inspector!");
-            return;
-        }
+        EnsurePopupUIExists();
+        if (popupUI == null) return;
 
         popupUI.SetActive(true);
-        if (imagemDoItem != null && icone != null) imagemDoItem.sprite = icone;
-        if (textoDoItem != null) textoDoItem.text = mensagem;
+
+        // Se icone for nulo, tenta carregar a face do Eptinho como padrão
+        Sprite iconeFinal = icone;
+        if (iconeFinal == null)
+        {
+            iconeFinal = Resources.Load<Sprite>("EptinhoFace");
+        }
+
+        if (imagemDoItem != null && iconeFinal != null)
+        {
+            imagemDoItem.sprite = iconeFinal;
+        }
+        if (textoDoItem != null)
+        {
+            textoDoItem.text = mensagem;
+        }
 
         Debug.Log($"[POPUP] Mostrando: {mensagem}");
 

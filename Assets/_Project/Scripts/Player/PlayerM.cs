@@ -54,6 +54,16 @@ public class PlayerM : MonoBehaviour
 
     private void Update()
     {
+        // Pressione K para imprimir diagnósticos de movimentação no console do Unity
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            Debug.LogWarning($"=== DIAGNÓSTICO DE MOVIMENTAÇÃO ===");
+            Debug.LogWarning($"[PlayerM] Script Ativo: {enabled}, Objeto: {gameObject.name}, Ativo na Hierarquia: {gameObject.activeInHierarchy}");
+            Debug.LogWarning($"[PlayerM] Animator associado: {(animator != null ? animator.name : "null")}, Animator Ativo: {(animator != null ? animator.isActiveAndEnabled.ToString() : "false")}");
+            Debug.LogWarning($"[PlayerM] Controller: {(animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}");
+            Debug.LogWarning($"[PlayerM] moveDirection: {moveDirection}, grounded: {grounded}, linearVelocity: {rb.linearVelocity}");
+        }
+
         if (groundCheck != null) grounded = Physics.CheckSphere(groundCheck.position, groundRadius, whatIsGround);
 
         MyInput();
@@ -109,8 +119,16 @@ public class PlayerM : MonoBehaviour
 
         if (inDamageWindow)
         {
-            // Aplicação direta (sem inércia) para controle preciso durante o golpe
-            rb.linearVelocity = new Vector3(targetVelocity.x, currentVelocity.y, targetVelocity.z);
+            if (moveDirection != Vector3.zero)
+            {
+                // Aplicação direta (sem inércia) para controle preciso durante o golpe
+                rb.linearVelocity = new Vector3(targetVelocity.x, currentVelocity.y, targetVelocity.z);
+            }
+            else
+            {
+                // Se não há input, deixa a inércia (do lunge) desacelerar suavemente
+                rb.linearVelocity = Vector3.Lerp(currentVelocity, new Vector3(0f, currentVelocity.y, 0f), 5f * Time.fixedDeltaTime);
+            }
         }
         else
         {
@@ -131,30 +149,43 @@ public class PlayerM : MonoBehaviour
 
     private void UpdateAnimations()
     {
-        if (animator == null) return;
+        if (animator == null || !animator.isActiveAndEnabled) return;
         
-        bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
-
-        // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---
-        if (inDamageWindow)
+        try
         {
-            // AQUI ESTÁ A MUDANÇA: O código agora obedece o valor do Inspector
-            animator.speed = hitboxAnimSpeed; 
-
-            // Se você quer que as pernas parem de mexer visualmente se o moveSpeed for 0:
-            if (hitboxMoveSpeed < 0.1f)
+            // Se o player estiver no meio de um ataque, o script de ataque (PrimaryAttackKnife) assume controle absoluto das velocidades e parâmetros
+            if (attackScript != null && attackScript.isAttacking)
             {
-                animator.SetFloat("Speed", 0f);
+                return;
+            }
+
+            bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
+
+            // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---
+            if (inDamageWindow)
+            {
+                // AQUI ESTÁ A MUDANÇA: O código agora obedece o valor do Inspector
+                animator.speed = hitboxAnimSpeed; 
+
+                // Se você quer que as pernas parem de mexer visualmente se o moveSpeed for 0:
+                if (hitboxMoveSpeed < 0.1f)
+                {
+                    animator.SetFloat("Speed", 0f);
+                }
+            }
+            else
+            {
+                // Velocidade normal fora do impacto
+                animator.speed = 1f; 
+
+                // Lógica normal de pernas correndo/paradas
+                float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
+                animator.SetFloat("Speed", velocityMagnitude > 0.1f ? 1f : 0f);
             }
         }
-        else
+        catch (System.Exception)
         {
-            // Velocidade normal fora do impacto
-            animator.speed = 1f; 
-
-            // Lógica normal de pernas correndo/paradas
-            float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-            animator.SetFloat("Speed", velocityMagnitude > 0.1f ? 1f : 0f);
+            // Evita crashar o loop se referências estiverem se reestabelecendo
         }
     }
 }

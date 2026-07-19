@@ -45,8 +45,43 @@ public class InfusionUI : MonoBehaviour
         SetupPremiumButton(btnFechar, 1.2f);
     }
 
-    public void OpenPanel()
+    private bool HasActiveEnemies()
     {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null) continue;
+            if (!enemy.activeInHierarchy) continue;
+
+            DummyHealth health = enemy.GetComponentInChildren<DummyHealth>();
+            if (health != null)
+            {
+                if (health.CurrentHealth > 0) return true;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public bool OpenPanel()
+    {
+        // Impede a infusão caso haja inimigos ativos na cena
+        if (HasActiveEnemies())
+        {
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("Aqui é perigoso!");
+            }
+            else
+            {
+                Debug.LogWarning("[INFUSION] Não foi possível abrir o painel: Inimigos por perto!");
+            }
+            return false; // <-- sinaliza falha para o chamador
+        }
+
         // Reconexão de Segurança: Se a travessia do portal apagou o fio do Player, nós ligamos de novo!
         if (infusionManager == null)
         {
@@ -75,6 +110,7 @@ public class InfusionUI : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
 
         ClearSelection();
+        return true; // <-- abriu com sucesso
     }
 
     private IEnumerator AnimatePanelOpen()
@@ -122,8 +158,9 @@ public class InfusionUI : MonoBehaviour
         if (itemIcon != null) 
         {
             itemIcon.sprite = data.icon;
-            // Efeito sutil ao clicar num card
-            StartCoroutine(PulseEffect(itemIcon.transform, 1.3f, 0.2f));
+            // Efeito sutil ao clicar num card — só inicia se o painel estiver ativo
+            if (gameObject.activeInHierarchy)
+                StartCoroutine(PulseEffect(itemIcon.transform, 1.3f, 0.2f));
         }
 
         if (itemTitle != null) itemTitle.text = data.itemName.ToUpper();
