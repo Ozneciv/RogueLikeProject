@@ -338,6 +338,49 @@ public class LevelGenerator : MonoBehaviour
             }
 
             if (!outputPlaced)
+            {
+                // Fallback: Tenta conectar uma mainRoom DIRETA na saída (sem corredor de transição)
+                GameObject roomPrefab = GetCompatibleRoomPrefab(currentOutput.connectionTag);
+                if (roomPrefab != null)
+                {
+                    GameObject directRoom = Instantiate(roomPrefab);
+                    ConnectionPoint directEntrada = GetInputPoint(directRoom, currentOutput.connectionTag, currentOutput.transform);
+                    if (directEntrada != null)
+                    {
+                        AlignRooms(currentOutput.transform, directEntrada.transform);
+                        if (!HasOverlapWithExistingRooms(directRoom, excludeRoom: sourceRoom))
+                        {
+                            currentOutput.isOccupied = true;
+                            directEntrada.isOccupied = true;
+                            RegisterRoomBounds(directRoom);
+
+                            roomCount++;
+                            roomSequenceCounter++;
+                            string prefabName = roomPrefab.name;
+                            if (!roomCounts.ContainsKey(prefabName)) roomCounts[prefabName] = 0;
+                            roomCounts[prefabName]++;
+
+                            RoomController roomCtrl = directRoom.GetComponentInChildren<RoomController>();
+                            if (roomCtrl != null)
+                                roomCtrl.Initialize(roomSequenceCounter);
+
+                            RegisterOutputPoints(directRoom, isStartRoom: false);
+                            Debug.Log($"[LevelGenerator] ✅ Sala '{prefabName}' adicionada via conexão direta (#{roomCount}). Saídas abertas: {openOutputs.Count}");
+                            outputPlaced = true;
+                        }
+                        else
+                        {
+                            Destroy(directRoom);
+                        }
+                    }
+                    else
+                    {
+                        Destroy(directRoom);
+                    }
+                }
+            }
+
+            if (!outputPlaced)
                 Debug.LogWarning($"[LevelGenerator] ⚠️ Saída '{currentOutput.gameObject.name}' descartada: nenhuma transição sem sobreposição.");
 
             yield return null;
@@ -390,11 +433,16 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        // Fallback de fase 2 em todas as saídas livres
+        // Fallback de fase 2 em saídas livres (excluindo estritamente a SafeRoom)
         if (openOutputs.Count > 0 && !exitRoomSpawned)
         {
-            List<ConnectionPoint> sortedOutputs = openOutputs.Where(op => op != null && !op.isOccupied)
-                .OrderByDescending(op => Vector3.Distance(Vector3.zero, op.transform.position)).ToList();
+            List<ConnectionPoint> sortedOutputs = openOutputs.Where(op => {
+                if (op == null || op.isOccupied || op.transform.root == null) return false;
+                string rootName = op.transform.root.gameObject.name;
+                if (startRoomPrefab != null && rootName.Contains(startRoomPrefab.name)) return false;
+                if (rootName.Contains("Safe")) return false;
+                return true;
+            }).OrderByDescending(op => Vector3.Distance(Vector3.zero, op.transform.position)).ToList();
 
             for (int i = 0; i < sortedOutputs.Count; i++)
             {

@@ -45,6 +45,10 @@ public class Geobionte_AI : MonoBehaviour
     [Header("Estado Atual")]
     [SerializeField] private GeobionteState currentState = GeobionteState.Idle;
 
+    public bool IsFleeing => currentState == GeobionteState.Fleeing;
+    public bool IsInterrupted => currentState == GeobionteState.Interrupted;
+    public bool IsDefeatedOrFleeing => currentState == GeobionteState.Fleeing || currentState == GeobionteState.Interrupted;
+
     // ==================== REFERÊNCIAS ====================
 
     [Header("Referências")]
@@ -611,6 +615,12 @@ public class Geobionte_AI : MonoBehaviour
     void OnPrevented()
     {
         Debug.Log("[GEOBIONTE] IMPEDIDO! Player conseguiu impedir a fusão!");
+
+        // Notifica RoomControllers que o Geobionte foi impedido/derrotado para liberar tranca das portas
+        foreach (RoomController rc in FindObjectsByType<RoomController>(FindObjectsSortMode.None))
+        {
+            rc.NotifyEnemyDefeated(gameObject);
+        }
 
         isPrevented = true;
         hasFused = true; // Marca como fundido para não tentar de novo
@@ -1338,6 +1348,12 @@ public class Geobionte_AI : MonoBehaviour
     {
         // Cancela qualquer sweep em andamento
         isSweeping = false;
+
+        // Notifica RoomControllers que o Geobionte foi derrotado para liberar tranca das portas
+        foreach (RoomController rc in FindObjectsByType<RoomController>(FindObjectsSortMode.None))
+        {
+            rc.NotifyEnemyDefeated(gameObject);
+        }
 
         // Incrementa contador de derrotas como Bismutado
         bismutadoDefeatCount++;

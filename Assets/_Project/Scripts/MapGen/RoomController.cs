@@ -376,10 +376,24 @@ public class RoomController : MonoBehaviour
         enemiesPendingSpawn--;
     }
 
+    public void NotifyEnemyDefeated(GameObject enemy)
+    {
+        if (enemy != null && activeEnemies.Contains(enemy))
+        {
+            activeEnemies.Remove(enemy);
+            CheckWaveStatus();
+        }
+    }
+
     void CheckWaveStatus()
     {
-        // Remove referências de inimigos já destruídos
-        activeEnemies.RemoveAll(e => e == null);
+        // Remove referências de inimigos destruídos ou desativados/fugindo (como Geobionte)
+        activeEnemies.RemoveAll(e => {
+            if (e == null) return true;
+            Geobionte_AI geo = e.GetComponent<Geobionte_AI>() ?? e.GetComponentInChildren<Geobionte_AI>() ?? e.GetComponentInParent<Geobionte_AI>();
+            if (geo != null && geo.IsDefeatedOrFleeing) return true;
+            return false;
+        });
 
         if (activeEnemies.Count == 0 && enemiesPendingSpawn == 0)
         {
