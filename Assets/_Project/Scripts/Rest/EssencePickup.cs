@@ -12,9 +12,9 @@ public class EssencePickup : MonoBehaviour
 
     [Header("Movimento")]
     [Tooltip("Velocidade de atração quando perto do player")]
-    public float attractSpeed = 8f;
+    public float attractSpeed = 12f;
     [Tooltip("Distância para começar a atrair")]
-    public float attractDistance = 3f;
+    public float attractDistance = 8.5f;
     [Tooltip("Offset vertical do ponto de atração (0 = pés, 1.2 = peito)")]
     public float attractYOffset = 1.2f;
     [Tooltip("Velocidade de rotação visual")]
@@ -28,7 +28,7 @@ public class EssencePickup : MonoBehaviour
 
     [Header("Configurações")]
     [Tooltip("Tempo antes de poder ser coletada (evita coleta instantânea)")]
-    public float pickupDelay = 0.3f;
+    public float pickupDelay = 0.2f;
     [Tooltip("Tempo de vida antes de desaparecer (0 = infinito)")]
     public float lifetime = 30f;
 
@@ -56,8 +56,8 @@ public class EssencePickup : MonoBehaviour
         // Configura impulso de explosão física no nascimento (Pop Arc)
         if (enablePopArc)
         {
-            Vector2 randomCircle = Random.insideUnitCircle.normalized * Random.Range(1.8f, 3.2f);
-            popVelocity = new Vector3(randomCircle.x, Random.Range(3.5f, 5.0f), randomCircle.y);
+            Vector2 randomCircle = Random.insideUnitCircle.normalized * Random.Range(1.5f, 2.8f);
+            popVelocity = new Vector3(randomCircle.x, Random.Range(2.5f, 4.0f), randomCircle.y);
         }
         else
         {
@@ -82,13 +82,25 @@ public class EssencePickup : MonoBehaviour
         // 1. Fase de Pop (Arco de nascimento no ar)
         if (isPopping)
         {
-            popVelocity.y -= 12f * Time.deltaTime; // Gravidade do arco
+            popVelocity.y -= 14f * Time.deltaTime; // Gravidade do arco
             transform.position += popVelocity * Time.deltaTime;
 
-            if (Time.time - spawnTime >= popTime || (popVelocity.y < 0 && transform.position.y <= baseY + 0.2f))
+            if (Time.time - spawnTime >= popTime || popVelocity.y < 0)
             {
                 isPopping = false;
-                baseY = transform.position.y;
+
+                // Snap de segurança no chão real para evitar que a essência fique flutuando alto
+                if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit groundHit, 15f))
+                {
+                    baseY = groundHit.point.y + 0.5f;
+                    Vector3 p = transform.position;
+                    if (p.y > baseY) p.y = baseY;
+                    transform.position = p;
+                }
+                else
+                {
+                    baseY = transform.position.y;
+                }
             }
             return;
         }

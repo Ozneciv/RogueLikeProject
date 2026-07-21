@@ -155,8 +155,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EssencePickup
   essenceValue: 10
-  attractSpeed: 6
-  attractDistance: 3
+  attractSpeed: 12
+  attractDistance: 8.5
   attractYOffset: 1.2
   rotateSpeed: 90
   bobHeight: 0.2
