@@ -186,6 +186,18 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
             {
+                // Impede ataque se o mouse estiver sobre elementos de UI (botões, slots, menus de infusão/crafting)
+                if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                {
+                    return;
+                }
+
+                // Impede ataque se qualquer janela de menu/inventário/console estiver aberta
+                if (IsAnyUIOpen())
+                {
+                    return;
+                }
+
                 if (hasWeapon)
                 {
                     if (canAttack)
@@ -211,6 +223,17 @@ public class PrimaryAttackKnife : MonoBehaviour
         {
             // Evita crashar o loop de update se referências estiverem se restabelecendo
         }
+    }
+
+    private bool IsAnyUIOpen()
+    {
+        if (CheatConsole.IsOpen) return true;
+        if (InventoryUI.Instance != null && InventoryUI.Instance.IsOpen()) return true;
+        if (SyntheticBagUI.Instance != null && SyntheticBagUI.Instance.IsOpen()) return true;
+        if (CraftingUI.Instance != null && CraftingUI.Instance.IsOpen()) return true;
+        if (EptinhoMenuController.instancia != null && EptinhoMenuController.instancia.IsOpen()) return true;
+        if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsUiOpen()) return true;
+        return false;
     }
 
     private void PerformNextAttack()

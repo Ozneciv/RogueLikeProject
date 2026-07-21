@@ -87,6 +87,8 @@ public class EptinhoMenuController : MonoBehaviour
     // API Pública
     // ─────────────────────────────────────────────────────────────────────────
 
+    public bool IsOpen() => isOpen;
+
     public void AbrirMenu()
     {
         if (!uiBuilt) BuildUI();

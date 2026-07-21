@@ -60,6 +60,8 @@ public class DashM : MonoBehaviour
         }
     private void Update()
     {
+        if (CheatConsole.IsOpen) return;
+
         // Lógica para iniciar o dash
         if (Input.GetKeyDown(dashKey) && dashesLeft > 0 && !isDashing && !isRecharging)
         {

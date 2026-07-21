@@ -55,8 +55,11 @@ public class MerchantUIController : MonoBehaviour
     };
     private float[] cardHealthCostPercent = { 0.20f, 0.25f, 0.30f, 0.15f, 0.50f };
 
+    public static MerchantUIController Instance { get; private set; }
+
     void Awake()
     {
+        Instance = this;
         if (closeButton != null) closeButton.onClick.AddListener(ClosePanel);
         
         if (btnPactoDeSangue != null) btnPactoDeSangue.onClick.AddListener(ShowTarotCards);
