@@ -69,6 +69,15 @@ public class DummyHealth : MonoBehaviour
 
     private void Start()
     {
+        // Aplica escalonamento de HP por sala (+3% por sala avançada conforme Hp_Dano_Inimigos.pdf)
+        if (RunManager.instance != null && RunManager.instance.currentLevel > 1)
+        {
+            int roomIndex = RunManager.instance.currentLevel;
+            float hpScalingMultiplier = 1f + (0.03f * (roomIndex - 1));
+            maxHealth = Mathf.RoundToInt(maxHealth * hpScalingMultiplier);
+            CurrentHealth = maxHealth;
+        }
+
         // Se estivermos no modo Endless e o level for maior que 3, aumenta a vida máxima do inimigo
         if (RunManager.instance != null && RunManager.instance.isEndlessMode && RunManager.instance.currentLevel > 3)
         {

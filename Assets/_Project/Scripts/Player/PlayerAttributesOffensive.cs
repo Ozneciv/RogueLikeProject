@@ -61,7 +61,7 @@ public class PlayerAttributesOffensive : MonoBehaviour
                 baseDamageMultiplier = isMultiplier ? baseDamageMultiplier * value : baseDamageMultiplier + value;
                 break;
             case "attackspeedmelee":
-                attackSpeedMelee = isMultiplier ? attackSpeedMelee * value : attackSpeedMelee + value;
+                attackSpeedMelee = Mathf.Clamp(isMultiplier ? attackSpeedMelee * value : attackSpeedMelee + value, 0.2f, 2.5f);
                 break;
             case "critchance":
                 critChance = Mathf.Clamp(isMultiplier ? critChance * value : critChance + value, 0f, 100f);

@@ -29,7 +29,7 @@ public class SharpBlur : MonoBehaviour
 
     [Header("Configurações do Ataque Corpo a Corpo")]
     public float meleeDuration = 1f; // Tempo que dura a animação do soco
-    public int meleeDamage = 10;
+    public int meleeDamage = 20;
 
     [Header("Refinamentos Inteligencia")]
     public float anticipationTime = 0.2f; 

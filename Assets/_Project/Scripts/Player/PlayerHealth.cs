@@ -8,7 +8,7 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Configurações")]
     public int maxHealth = 100;
-    public int maxArmor = 200;
+    public int maxArmor = 100;
     public int currentHealth { get; private set; }
     private int currentArmor;
     public int CurrentArmor => currentArmor;

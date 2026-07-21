@@ -36,7 +36,7 @@ public class Golem_AI : MonoBehaviour
     [Tooltip("Cooldown entre ataques melee")]
     public float meleeCooldown = 3f;
     [Tooltip("Dano do ataque melee")]
-    public int meleeDamage = 35;
+    public int meleeDamage = 30;
     [Tooltip("Raio da hitbox do melee")]
     public float meleeHitRadius = 2f;
 

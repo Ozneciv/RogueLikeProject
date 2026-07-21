@@ -36,7 +36,7 @@ public class Spider_AI : MonoBehaviour
     [Tooltip("Cooldown entre leaps")]
     public float leapCooldown = 2f;
     [Tooltip("Dano causado pelo leap")]
-    public int leapDamage = 10;
+    public int leapDamage = 25;
     [Tooltip("Raio da hitbox durante o leap")]
     public float leapHitRadius = 1.5f;
 

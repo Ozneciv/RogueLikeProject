@@ -134,7 +134,7 @@ public class Geobionte_AI : MonoBehaviour
 
     [Header("Bismutado — Golpe Giratório")]
     [Tooltip("Dano do golpe horizontal giratório")]
-    public int sweepDamage = 8;
+    public int sweepDamage = 40;
     [Tooltip("Raio do golpe giratório (alcance ao redor do corpo)")]
     public float sweepRange = 2f;
     [Tooltip("Cooldown entre golpes giratórios (segundos)")]
@@ -196,7 +196,7 @@ public class Geobionte_AI : MonoBehaviour
 
     [Header("Sentinela — Slam")]
     [Tooltip("Dano do slam da esfera ao atingir o chão")]
-    public int sentinelSlamDamage = 15;
+    public int sentinelSlamDamage = 50;
     [Tooltip("Raio do dano do slam (ao redor do ponto de impacto)")]
     public float sentinelSlamRadius = 3f;
     [Tooltip("Velocidade de descida do slam (rápida)")]

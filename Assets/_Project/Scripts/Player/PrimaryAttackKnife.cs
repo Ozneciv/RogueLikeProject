@@ -57,10 +57,10 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float hit4SpeedMultiplier = 1.0f;
 
     [Header("Weapon Damages")]
-    public int[] defaultDamages = { 10, 15, 30 };
-    public int[] daggerDamages = { 25, 35, 60 };
-    public int[] swordDamages = { 30, 40, 75 };
-    public int[] axeDamages = { 45, 60, 110, 150 }; // Dano pesado de impacto para o Machado (4 Combos!)
+    public int[] defaultDamages = { 20, 25, 35 };
+    public int[] daggerDamages = { 30, 35, 40 }; // Conforme Hp_Dano_Inimigos.pdf (Combo total = 105)
+    public int[] swordDamages = { 35, 45, 60 };
+    public int[] axeDamages = { 40, 45, 55, 55 }; // Conforme Hp_Dano_Inimigos.pdf (Combo total = 195)
     private int[] currentDamages;
 
     [Header("Combo Settings")]

@@ -9,7 +9,7 @@ using UnityEngine;
 public class AttackBeam : MonoBehaviour
 {
     [Header("Configurações do Combate")]
-    public int damage = 25;
+    public int damage = 40;
     public float radius = 2f;
     [Tooltip("Tempo em segundos que o efeito visual do raio fica na tela antes de desaparecer.")]
     public float lifetime = 0.85f;

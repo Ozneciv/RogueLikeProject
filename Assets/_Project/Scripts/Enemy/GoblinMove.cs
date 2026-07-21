@@ -73,7 +73,7 @@ public class GoblinAI_Transform : MonoBehaviour
     
     [Tooltip("Damage dealt by the pickaxe hit.")]
     [FormerlySerializedAs("danoMelee")]
-    public int meleeDamage = 20;
+    public int meleeDamage = 15;
     
     [Tooltip("Cooldown between pickaxe hits.")]
     [FormerlySerializedAs("cooldownMelee")]

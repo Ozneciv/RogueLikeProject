@@ -9,7 +9,7 @@ using System.Collections;
 public class BombaExplosiva : MonoBehaviour
 {
     [Header("Dano")]
-    public int   danoExplosao   = 40;
+    public int   danoExplosao   = 30;
     [Tooltip("Raio base sem buff. O Crystal Tuner pode aumentar via SetExplosionRadius().")]
     public float raioExplosao   = 2f;
     public float forcaKnockback = 10f;
