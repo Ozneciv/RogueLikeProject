@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 286173162090625506}
   - component: {fileID: 3878058093404446092}
-  - component: {fileID: 1069383995936366341}
   - component: {fileID: 3361224048668512275}
   - component: {fileID: 16886834917353225}
+  - component: {fileID: 8140813302158855585}
   m_Layer: 6
   m_Name: Cristalus
   m_TagString: Enemy
@@ -50,7 +50,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 1000
+  isSlowed: 0
+  maxHealth: 45
   debugLogDamage: 0
   healthBarSlider: {fileID: 7587102527011683286}
   normalColor: {r: 0.3764706, g: 1, b: 0, a: 1}
@@ -62,27 +63,6 @@ MonoBehaviour:
   isInvulnerable: 0
   isBuffed: 0
   fixedDamageOverride: 0
---- !u!135 &1069383995936366341
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 626950691794527064}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 3
-  m_Center: {x: 0, y: 2, z: 0}
 --- !u!114 &3361224048668512275
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110,6 +90,7 @@ MonoBehaviour:
   crystalsPerArc: 5
   crystalSpawnInterval: 0.5
   arcOverlapThreshold: 10
+  crystalYOffset: 0.5
   playerMovementTolerance: 2
   minRepositionAngle: 90
 --- !u!114 &16886834917353225
@@ -141,6 +122,27 @@ MonoBehaviour:
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
+--- !u!65 &8140813302158855585
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626950691794527064}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3.5, y: 8, z: 3.5}
+  m_Center: {x: 0, y: 4, z: 0}
 --- !u!1 &8448378746313530241
 GameObject:
   m_ObjectHideFlags: 0

@@ -246,6 +246,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomController
   isSafeRoom: 0
+  roomCategory: 2
   doorsAreLocked: 0
   roomIndex: 1
   mobMenorPrefabs:

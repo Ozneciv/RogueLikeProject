@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 200
+  maxHealth: 150
   debugLogDamage: 0
   healthBarSlider: {fileID: 5124020315464445514}
   normalColor: {r: 0.32781482, g: 1, b: 0, a: 1}
