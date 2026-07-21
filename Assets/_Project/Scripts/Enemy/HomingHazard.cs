@@ -59,6 +59,13 @@ public class HomingHazard : MonoBehaviour
         health = GetComponent<DummyHealth>();
         pulseVisualizer = GetComponent<PulseVisualizer>();
 
+        // Garante que os colisores da caveira sejam Triggers para fluir sem prender no Totem
+        Collider[] cols = GetComponentsInChildren<Collider>();
+        foreach (var c in cols)
+        {
+            if (c != null) c.isTrigger = true;
+        }
+
         // Cache de renderizadores para piscar durante a fusão
         renderers = GetComponentsInChildren<Renderer>();
         if (renderers != null && renderers.Length > 0)
@@ -218,13 +225,8 @@ public class HomingHazard : MonoBehaviour
             }
         }
 
-        // VFX de Explosão / Pulso
-        if (pulseVisualizer != null)
-        {
-            pulseVisualizer.TriggerPulse();
-            pulseVisualizer.transform.SetParent(null);
-            Destroy(pulseVisualizer.gameObject, 1.5f);
-        }
+        // Gera o efeito visual da explosão (onda de choque + flash de fogo)
+        CreateExplosionVFX(explosionCenter);
 
         if (explosionVFXPrefab != null)
         {
@@ -232,6 +234,71 @@ public class HomingHazard : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private void CreateExplosionVFX(Vector3 position)
+    {
+        GameObject expObj = new GameObject("SkullExplosionVFX");
+        expObj.transform.position = position;
+
+        // Flash de Luz
+        Light light = expObj.AddComponent<Light>();
+        light.color = new Color(1f, 0.4f, 0.1f);
+        light.range = explosionRadius * 2f;
+        light.intensity = 6f;
+
+        // Esfera de Impacto / Onda de choque
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.transform.position = position;
+        sphere.transform.localScale = Vector3.one * 0.4f;
+
+        Collider col = sphere.GetComponent<Collider>();
+        if (col != null) Destroy(col);
+
+        Renderer rend = sphere.GetComponent<Renderer>();
+        if (rend != null)
+        {
+            Material mat = new Material(Shader.Find("Sprites/Default"));
+            mat.color = new Color(1f, 0.35f, 0.0f, 0.85f);
+            rend.material = mat;
+        }
+
+        StartCoroutine(AnimateExplosion(expObj, sphere, rend, light));
+    }
+
+    private IEnumerator AnimateExplosion(GameObject container, GameObject sphere, Renderer rend, Light light)
+    {
+        float duration = 0.35f;
+        float elapsed = 0f;
+        Vector3 startScale = Vector3.one * 0.4f;
+        Vector3 endScale = Vector3.one * (explosionRadius * 1.8f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            if (sphere != null)
+            {
+                sphere.transform.localScale = Vector3.Lerp(startScale, endScale, t);
+                if (rend != null && rend.material != null)
+                {
+                    Color c = rend.material.color;
+                    c.a = Mathf.Lerp(0.85f, 0f, t);
+                    rend.material.color = c;
+                }
+            }
+
+            if (light != null)
+            {
+                light.intensity = Mathf.Lerp(6f, 0f, t);
+            }
+
+            yield return null;
+        }
+
+        if (sphere != null) Destroy(sphere);
+        if (container != null) Destroy(container);
     }
 
     void OnDrawGizmosSelected()

@@ -100,6 +100,32 @@ public class TotemSpawner : MonoBehaviour
 
         GameObject newSkull = Instantiate(skullPrefab, spawnPosition, Quaternion.identity);
 
+        // 1. Ignora colisões entre o Totem e a Caveira para não prender no modelo do Totem
+        Collider[] totemCols = GetComponentsInChildren<Collider>();
+        Collider[] skullCols = newSkull.GetComponentsInChildren<Collider>();
+        foreach (var tCol in totemCols)
+        {
+            foreach (var sCol in skullCols)
+            {
+                if (tCol != null && sCol != null)
+                {
+                    Physics.IgnoreCollision(tCol, sCol, true);
+                }
+            }
+        }
+        foreach (var sCol in skullCols)
+        {
+            if (sCol != null) sCol.isTrigger = true;
+        }
+
+        // 2. Desativa DamageZone e PulseVisualizer de anéis concêntricos contínuos durante o voo
+        DamageZone dz = newSkull.GetComponent<DamageZone>();
+        if (dz != null) dz.enabled = false;
+
+        PulseVisualizer pv = newSkull.GetComponent<PulseVisualizer>();
+        if (pv != null) pv.enabled = false;
+
+        // 3. Inicializa o movimento de emergência da cabeça
         HomingHazard hazard = newSkull.GetComponent<HomingHazard>();
         if (hazard != null)
         {
