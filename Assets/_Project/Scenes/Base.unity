@@ -1032,8 +1032,16 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 6793213990562782912, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: maxArmor
+      value: 500
+      objectReference: {fileID: 0}
+    - target: {fileID: 6793213990562782912, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: maxHealth
-      value: 10000
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 6793213990562782912, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: armorRegenRate
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1314,6 +1322,7 @@ MonoBehaviour:
   currentLevel: 1
   geobionteDefeatCount: 0
   geobionteAbsorbedThisLevel: 0
+  isEndlessMode: 0
 --- !u!1 &1077161793
 GameObject:
   m_ObjectHideFlags: 0

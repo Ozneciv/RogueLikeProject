@@ -137,6 +137,46 @@ public class CrystalDragon_AI : MonoBehaviour
 
     private void Start()
     {
+        // 1. Fallback dinâmico para o projectile prefab
+        if (crystalSpikeProjectilePrefab == null)
+        {
+            crystalSpikeProjectilePrefab = Resources.Load<GameObject>("Crystal Spike");
+            if (crystalSpikeProjectilePrefab != null)
+            {
+                Debug.Log("[CrystalDragon_AI] Projétil 'Crystal Spike' carregado com sucesso via Resources.");
+            }
+            else
+            {
+                Debug.LogError("[CrystalDragon_AI] Falha ao carregar o prefab 'Crystal Spike' das Resources!");
+            }
+        }
+
+        // 2. Garante que o root tenha um colisor adequado para o jogador conseguir acertá-lo
+        Collider existingCollider = GetComponent<Collider>();
+        if (existingCollider == null)
+        {
+            BoxCollider bc = gameObject.AddComponent<BoxCollider>();
+            bc.center = new Vector3(0f, 1f, 0f);
+            bc.size = new Vector3(2.5f, 2f, 2.5f);
+            Debug.Log("[CrystalDragon_AI] BoxCollider adicionado automaticamente ao root do dragão.");
+        }
+        else
+        {
+            if (existingCollider is BoxCollider)
+            {
+                BoxCollider bc = (BoxCollider)existingCollider;
+                bc.center = new Vector3(0f, 1f, 0f);
+                bc.size = new Vector3(2.5f, 2f, 2.5f);
+            }
+            else if (existingCollider is CapsuleCollider)
+            {
+                CapsuleCollider cc = (CapsuleCollider)existingCollider;
+                cc.center = new Vector3(0f, 1f, 0f);
+                cc.height = 2f;
+                cc.radius = 1.25f;
+            }
+        }
+
         rb = GetComponent<Rigidbody>();
         health = GetComponent<DummyHealth>();
         startPosition = transform.position;
