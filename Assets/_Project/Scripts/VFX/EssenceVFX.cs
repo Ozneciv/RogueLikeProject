@@ -127,6 +127,33 @@ public class EssenceVFX : MonoBehaviour
         glowLight.shadows = LightShadows.None;
 
         baseIntensity = glowIntensity;
+        SetupTrail();
+    }
+
+    private TrailRenderer trailComp;
+
+    private void SetupTrail()
+    {
+        GameObject trailObj = new GameObject("EssenceTrail");
+        trailObj.transform.SetParent(transform);
+        trailObj.transform.localPosition = Vector3.zero;
+
+        trailComp = trailObj.AddComponent<TrailRenderer>();
+        trailComp.time = 0.35f;
+        trailComp.startWidth = 0.25f;
+        trailComp.endWidth = 0.02f;
+        trailComp.material = new Material(Shader.Find("Sprites/Default"));
+        trailComp.startColor = new Color(coreColor.r, coreColor.g, coreColor.b, 0.85f);
+        trailComp.endColor = new Color(coreColor.r, coreColor.g, coreColor.b, 0.0f);
+        trailComp.emitting = false;
+    }
+
+    public void StartFlyingTrail()
+    {
+        if (trailComp != null)
+        {
+            trailComp.emitting = true;
+        }
     }
 
     /// <summary>
@@ -137,17 +164,23 @@ public class EssenceVFX : MonoBehaviour
         // Flash de luz no momento da coleta
         if (glowLight != null)
         {
-            glowLight.intensity = glowIntensity * 4f;
+            glowLight.intensity = glowIntensity * 5f;
             glowLight.transform.SetParent(null);
-            Destroy(glowLight.gameObject, 0.2f);
+            Destroy(glowLight.gameObject, 0.25f);
         }
 
         // Expande e desaparece o glow
         if (glowSphere != null)
         {
             glowSphere.transform.SetParent(null);
-            glowSphere.transform.localScale *= 2f;
+            glowSphere.transform.localScale *= 2.2f;
             Destroy(glowSphere, 0.15f);
+        }
+
+        if (trailComp != null)
+        {
+            trailComp.transform.SetParent(null);
+            Destroy(trailComp.gameObject, 0.35f);
         }
     }
 
