@@ -86,7 +86,7 @@ public class PlayerHealth : MonoBehaviour
         isDead = false;
         gameObject.layer = playerLayer;
 
-        // Reset rotação do pai e dos filhos para evitar distorções
+        // Reset rotação do pai e dos filhos para posição limpa e em pé
         transform.rotation = Quaternion.identity;
         foreach (Transform child in transform)
         {
@@ -94,18 +94,19 @@ public class PlayerHealth : MonoBehaviour
             child.localRotation = Quaternion.identity;
         }
 
-        // Garante alinhamento exato no chão
-        SnapToGround();
-
-        // Trava a física para a animação
-        if (rb != null)
+        // Restaura o Animator para estado Idle em pé, sem root motion e sem animações de acoradagem
+        if (playerAnimator != null)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
+            playerAnimator.applyRootMotion = false;
+            playerAnimator.ResetTrigger("Revive1");
+            playerAnimator.ResetTrigger("Revive2");
+            playerAnimator.ResetTrigger("DeathForward");
+            playerAnimator.ResetTrigger("DeathBackward");
+            playerAnimator.Rebind();
+            playerAnimator.Update(0f);
         }
 
-        // Unequip weapon ao renascer na base (player acorda sem arma na mão)
+        // Unequip weapon ao renascer na base (player em pé sem arma na mão)
         Player_WeaponManager weaponManager = GetComponent<Player_WeaponManager>() ?? GetComponentInChildren<Player_WeaponManager>();
         if (weaponManager != null)
         {
@@ -116,62 +117,6 @@ public class PlayerHealth : MonoBehaviour
             playerAttack.hasWeapon = false;
         }
 
-        StartCoroutine(PlaySpawnAnimation());
-    }
-
-    private void SnapToGround()
-    {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out hit, 5f))
-        {
-            Vector3 pos = transform.position;
-            pos.y = hit.point.y;
-            transform.position = pos;
-        }
-    }
-
-    IEnumerator PlaySpawnAnimation()
-    {
-        if (playerMovement != null) playerMovement.enabled = false;
-        if (playerAttack != null) playerAttack.enabled = false;
-        
-        // Reforça a trava física
-        if (rb != null) 
-        { 
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true; 
-        }
-
-        SnapToGround();
-
-        if (playerAnimator != null)
-        {
-            // Desativa root motion para a animação não deslocar o pivô do player no ar
-            playerAnimator.applyRootMotion = false;
-            yield return new WaitForEndOfFrame();
-
-            string triggerName = "Revive2";
-            playerAnimator.SetTrigger(triggerName);
-
-            // Espera a animação iniciar
-            yield return new WaitForSeconds(0.1f);
-            float timeout = 0f;
-            
-            while (!playerAnimator.GetCurrentAnimatorStateInfo(0).IsName("Revive2"))
-            {
-                yield return null;
-                timeout += Time.deltaTime;
-                if (timeout > 1.5f) break;
-            }
-
-            float animationLength = playerAnimator.GetCurrentAnimatorStateInfo(0).length;
-            yield return new WaitForSeconds(Mathf.Clamp(animationLength, 0.5f, 3.5f));
-        }
-
-        SnapToGround();
-        
-        // Destrava o jogador
         UnlockPlayer();
     }
 
