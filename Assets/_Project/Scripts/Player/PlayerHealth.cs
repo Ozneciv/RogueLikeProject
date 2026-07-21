@@ -53,6 +53,7 @@ public class PlayerHealth : MonoBehaviour
     private bool isDead = false;
     private int playerLayer;
     private bool diedFallingForward = false;
+    private float sentinelLegCooldownEndTime = 0f;
 
     private float armorRegenAccumulator = 0f;
     private float healthRegenAccumulator = 0f;
@@ -516,14 +517,47 @@ public class PlayerHealth : MonoBehaviour
         
         if (finalDamage > 0)
         {
-            currentHealth -= finalDamage;
-            UpdateHealthBar();
-            
-            Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");
-            
-            if (currentHealth <= 0)
+            // Checa se o dano seria letal
+            if (currentHealth - finalDamage <= 0)
             {
-                Die();
+                InfusionManager infusionManager = GetComponent<InfusionManager>();
+                if (infusionManager != null && infusionManager.HasInfusion("sentinel_leg_t4") && Time.time >= sentinelLegCooldownEndTime)
+                {
+                    float currentHealthPercent = (float)currentHealth / maxHealth;
+                    int previousHealth = currentHealth;
+                    
+                    if (currentHealthPercent < 0.30f)
+                    {
+                        // Se estiver com menos de 30% da vida, apenas ignora o dano (não altera a vida atual)
+                        finalDamage = 0; 
+                    }
+                    else
+                    {
+                        // Se estiver com mais de 30% da vida, fica com 30% da vida
+                        int targetHealth = Mathf.RoundToInt(maxHealth * 0.30f);
+                        currentHealth = targetHealth;
+                        finalDamage = 0; // O dano foi mitigado, já definimos a vida para 30%
+                    }
+                    
+                    // Tempo de recarga de 10 minutos (600 segundos)
+                    sentinelLegCooldownEndTime = Time.time + 600f;
+                    
+                    UpdateHealthBar();
+                    Debug.Log($"🛡️ MITIGAÇÃO DE PERNA DE SENTINELA ATIVADA! Anterior: {previousHealth} HP -> Atual: {currentHealth} HP. Cooldown ativo por 10 minutos.");
+                }
+            }
+
+            if (finalDamage > 0)
+            {
+                currentHealth -= finalDamage;
+                UpdateHealthBar();
+                
+                Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");
+                
+                if (currentHealth <= 0)
+                {
+                    Die();
+                }
             }
         }
         

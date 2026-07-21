@@ -55,6 +55,16 @@ public class Spider_AI : MonoBehaviour
     [Tooltip("Cooldown do recuo")]
     public float retreatCooldown = 5f;
 
+    [Header("Áudio")]
+    [Tooltip("Vetor de áudios que serão selecionados aleatoriamente")]
+    public AudioClip[] walkingSounds;
+    [Tooltip("Volume dos sons de passos")]
+    [Range(0f, 1f)]
+    public float walkingSoundVolume = 0.5f;
+    [Tooltip("Intervalo entre cada passo enquanto caminha")]
+    public float stepInterval = 0.18f;
+    private float stepTimer = 0f;
+
     [Header("Estados")]
     private bool isLeaping = false;
     private bool isRetreating = false;
@@ -134,6 +144,7 @@ public class Spider_AI : MonoBehaviour
         if (health != null && health.CurrentHealth <= 0) return;
 
         HandleMovement();
+        HandleWalkingSound();
     }
 
     void HandleRotation()
@@ -304,6 +315,64 @@ public class Spider_AI : MonoBehaviour
         }
     }
 
+    private void HandleWalkingSound()
+    {
+        if (rb == null) return;
+
+        // Se a aranha está se movendo horizontalmente com velocidade significativa
+        Vector3 flatVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        if (flatVelocity.magnitude > 0.1f)
+        {
+            stepTimer -= Time.fixedDeltaTime;
+            if (stepTimer <= 0f)
+            {
+                PlayWalkingSound();
+                stepTimer = stepInterval;
+            }
+        }
+        else
+        {
+            // Se parar, reseta para tocar o som rapidamente ao dar o próximo passo
+            stepTimer = 0f;
+        }
+    }
+
+    private void PlayWalkingSound()
+    {
+        if (walkingSounds == null || walkingSounds.Length == 0)
+            return;
+
+        int randIndex = Random.Range(0, walkingSounds.Length);
+        AudioClip clipToPlay = walkingSounds[randIndex];
+        
+        float pitch = Random.Range(0.9f, 1.1f);
+        
+        // Se contiver "3" no nome ou for o índice correspondente, pode dar uma variação (seguindo a mesma lógica do Mimic)
+        if (clipToPlay != null)
+        {
+            if (randIndex == 2 || clipToPlay.name.Contains("3"))
+            {
+                pitch = Random.Range(1.4f, 1.6f);
+            }
+            PlayClipAtPointWithPitch(clipToPlay, transform.position, pitch, walkingSoundVolume);
+        }
+    }
+
+    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+    {
+        GameObject audioObj = new GameObject("TempSpiderAudio");
+        audioObj.transform.position = position;
+        AudioSource aSource = audioObj.AddComponent<AudioSource>();
+        aSource.clip = clip;
+        aSource.pitch = pitch;
+        aSource.volume = volume;
+        aSource.spatialBlend = 1f; // Som 3D
+        aSource.minDistance = 3f;
+        aSource.maxDistance = 20f;
+        aSource.rolloffMode = AudioRolloffMode.Linear;
+        aSource.Play();
+        Destroy(audioObj, clip.length / Mathf.Abs(pitch));
+    }
     // Visualização do range no Editor
     void OnDrawGizmosSelected()
     {

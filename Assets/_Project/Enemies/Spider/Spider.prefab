@@ -161,6 +161,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
+  isSlowed: 0
   maxHealth: 100
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
@@ -172,6 +173,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &1814543006137848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -198,6 +200,16 @@ MonoBehaviour:
   retreatChance: 0.3
   retreatForce: 8
   retreatCooldown: 5
+  walkingSounds:
+  - {fileID: 8300000, guid: 5401201776ce46159bcf8d53ca9ae56b, type: 3}
+  - {fileID: 8300000, guid: 21224e3e4a404f2baec63aad0385f414, type: 3}
+  - {fileID: 8300000, guid: f95eaf7cf5cd42209278bd6e1f978e36, type: 3}
+  - {fileID: 8300000, guid: 64fbbf2865174ea0a8ca5948f34b82bc, type: 3}
+  - {fileID: 8300000, guid: 1b36a7030c3f49f1a4356d349022f488, type: 3}
+  - {fileID: 8300000, guid: 4838dfead5cb422bb8e57d5c78a9ff0b, type: 3}
+  - {fileID: 8300000, guid: 708a2536156843e583e65338002e1388, type: 3}
+  walkingSoundVolume: 0.5
+  stepInterval: 0.18
 --- !u!114 &5632678571611438161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -227,17 +239,17 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  globalDropChance: 1
+  globalDropChance: 0.35
   itemAmount: 1
   lootPool:
   - itemPrefab: {fileID: 1495922075848748667, guid: 417128186985204448aaa5560b90319f, type: 3}
-    weight: 40
+    weight: 60
   - itemPrefab: {fileID: 7791058586759529343, guid: e91e2a132d9169e4c9ec01b17cdbddeb, type: 3}
-    weight: 30
+    weight: 25
   - itemPrefab: {fileID: 2535762749556102514, guid: 1854f31ac5b398647a13cd8764eecc30, type: 3}
-    weight: 20
-  - itemPrefab: {fileID: 6487865155247758211, guid: 39d888ac082214746bff22ec7715abe4, type: 3}
     weight: 10
+  - itemPrefab: {fileID: 6487865155247758211, guid: 39d888ac082214746bff22ec7715abe4, type: 3}
+    weight: 5
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3

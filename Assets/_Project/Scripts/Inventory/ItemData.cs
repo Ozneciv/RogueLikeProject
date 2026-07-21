@@ -19,6 +19,7 @@ public enum AttributeType
     BounceCount, 
     MultiShotChance, 
     Spread,
+    SlowOnHit,
     
     // === DEFENSIVOS E VIDA ===
     MaxHealth, 

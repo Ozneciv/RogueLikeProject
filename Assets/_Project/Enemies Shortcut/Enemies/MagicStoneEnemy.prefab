@@ -51,6 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
+  isSlowed: 0
   maxHealth: 100
   healthBarSlider: {fileID: 6981643806915397011}
   normalColor: {r: 0.27056146, g: 1, b: 0, a: 1}
@@ -61,6 +62,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &3035752867005567637
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -153,9 +155,17 @@ MonoBehaviour:
   essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 15
   essenceVariation: 3
-  globalDropChance: 0.3
+  globalDropChance: 0.35
   itemAmount: 1
-  lootPool: []
+  lootPool:
+  - itemPrefab: {fileID: 7158612879417249299, guid: 263c6514df71129478fd365faec77927, type: 3}
+    weight: 60
+  - itemPrefab: {fileID: 4004670167205129257, guid: a85fb57f367a6354298f60b38ae2444c, type: 3}
+    weight: 25
+  - itemPrefab: {fileID: 1249224272769253639, guid: 114b648580fa9734d99661a1d5fbb75b, type: 3}
+    weight: 10
+  - itemPrefab: {fileID: 1200163971464992347, guid: aaddb9079fef32d489af014d662efc92, type: 3}
+    weight: 5
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3

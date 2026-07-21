@@ -20,7 +20,7 @@ public class AutoDropGenerator : Editor
         config.GenerateDefaultData();
 
         // Cria pastas
-        string prefabFolder = "Assets/Prefabs/Items/Drops";
+        string prefabFolder = "Assets/_Project/Items_and_Crafting/Drops";
         Directory.CreateDirectory(Path.Combine(Application.dataPath, prefabFolder.Replace("Assets/", "")));
         AssetDatabase.Refresh();
 
@@ -72,8 +72,9 @@ public class AutoDropGenerator : Editor
                 // Colore por tier
                 Color tierColor = GetTierColor(dropItem.tier);
                 var renderer = visual.GetComponent<Renderer>();
-                renderer.material = new Material(Shader.Find("Standard"));
-                renderer.material.color = tierColor;
+                Material tempMat = new Material(Shader.Find("Standard"));
+                tempMat.color = tierColor;
+                renderer.sharedMaterial = tempMat;
 
                 // Remove colisores do visual
                 DestroyImmediate(visual.GetComponent<Collider>());
@@ -152,7 +153,7 @@ public class AutoDropGenerator : Editor
 
         foreach (var dropItem in config.allItems)
         {
-            string prefabPath = $"Assets/Prefabs/Items/Drops/{dropItem.itemId}.prefab";
+            string prefabPath = $"Assets/_Project/Items_and_Crafting/Drops/{dropItem.itemId}.prefab";
             GameObject itemPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (itemPrefab == null) continue;
 
@@ -168,7 +169,11 @@ public class AutoDropGenerator : Editor
     static int ConfigureEnemyPrefabs(Dictionary<string, List<GameObject>> prefabsByEnemy)
     {
         // Procura pelos prefabs de inimigos
-        var enemyPrefabs = AssetDatabase.FindAssets("t:prefab", new[] { "Assets/Prefabs/Enemies" });
+        var enemyPrefabs = AssetDatabase.FindAssets("t:prefab", new[] { 
+            "Assets/_Project/Enemies", 
+            "Assets/_Project/Enemies Shortcut/Enemies", 
+            "Assets/GameAssets/Prefabs-Gabriel/Enemies Prefabs" 
+        });
 
         int configuredEnemies = 0;
         foreach (string guid in enemyPrefabs)

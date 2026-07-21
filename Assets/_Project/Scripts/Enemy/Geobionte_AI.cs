@@ -160,6 +160,7 @@ public class Geobionte_AI : MonoBehaviour
     /// NÃO configurar manualmente no Inspector.
     /// </summary>
     private bool isSentinel = false;
+    public bool IsSentinel => isSentinel;
 
     // ==================== SENTINELA (Semi-boss) ====================
 
@@ -258,6 +259,8 @@ public class Geobionte_AI : MonoBehaviour
     public Color baseColor = new Color(0.03f, 0.01f, 0.05f, 1f); // Preto/Roxo muito escuro
     [Tooltip("Cor quando se funde ao cristal (modo de ataque)")]
     public Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
+    [Tooltip("Cor da esfera do Geobionte Sentinela")]
+    public Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f); // Roxo/rosa brilhante
     
     private int originalLayer;
 
@@ -419,7 +422,10 @@ public class Geobionte_AI : MonoBehaviour
         // Se já foi impedido, não busca mais minério
         if (isPrevented) return;
 
-        // PROGRESSÃO MULTI-FASE: Se já absorveu um cristal nesta fase, não busca mais
+        // Se já fundiu nesta sala/fase, não busca mais minério (funciona mesmo sem RunManager)
+        if (hasFused) return;
+
+        // PROGRESSÃO MULTI-FASE: Guard adicional via RunManager (persistente entre cenas)
         if (RunManager.instance != null && RunManager.instance.geobionteAbsorbedThisLevel) return;
 
         // Verifica proximidade do player para ativar
@@ -1013,13 +1019,13 @@ public class Geobionte_AI : MonoBehaviour
     {
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        // Cria campo de cristais quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
+        // Cria campo de cristais quando está perto e cooldown pronto (usado apenas pelo Bismutado)
         if (distToPlayer <= attackRange && fieldTimer <= 0)
         {
             CreateCrystalField();
         }
 
-        // Golpe giratório quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
+        // Golpe giratório quando está perto e cooldown pronto (usado apenas pelo Bismutado)
         if (distToPlayer <= sweepRange && sweepTimer <= 0 && !isSweeping)
         {
             StartCoroutine(SweepAttack());
@@ -1279,7 +1285,7 @@ public class Geobionte_AI : MonoBehaviour
     // ========================================================================
 
     /// <summary>
-    /// [SENTINELA] Cria campo de cristais debuffer. Reservado para o Geobionte Sentinela.
+    /// [BISMUTADO] Cria campo de cristais debuffer. Usado apenas pelo Bismutado (Sentinela NÃO usa).
     /// </summary>
     void CreateCrystalField()
     {
@@ -1396,16 +1402,16 @@ public class Geobionte_AI : MonoBehaviour
         }
         else
         {
-            // PROGRESSÃO MULTI-FASE: Reverter ao Geobionte passivo (já usou a absorção desta fase)
-            StartCoroutine(RevertToBaseSequence());
+            // PROGRESSÃO MULTI-FASE: Foge da sala após ser derrotado (só reaparece na próxima sala)
+            StartCoroutine(FleeAfterDefeatSequence());
         }
     }
 
     /// <summary>
-    /// Sequência de reversão: Bismutado (cubo) → Geobionte padrão (esfera).
-    /// Encolhe, troca mesh, muda cor e volta ao estado Idle para buscar mais minérios.
+    /// Sequência pós-derrota do Bismutado: reverte o visual (cubo → esfera),
+    /// depois foge da sala e despawna. O Geobionte só reaparece na próxima sala.
     /// </summary>
-    IEnumerator RevertToBaseSequence()
+    IEnumerator FleeAfterDefeatSequence()
     {
         // Torna invulnerável durante a reversão
         if (health != null)
@@ -1454,30 +1460,26 @@ public class Geobionte_AI : MonoBehaviour
         // Restaura pernas do Mimic
         if (mimicComponent != null)
         {
-            // Recalcula parâmetros para o tamanho original antes de reativar as pernas
             mimicComponent.numberOfLegs = originalNumberOfLegs;
             mimicComponent.partsPerLeg = originalPartsPerLeg;
             mimicComponent.newLegRadius = originalNewLegRadius;
-            mimicComponent.legsDealDamage = false; // Desativa dano das pernas
+            mimicComponent.legsDealDamage = false;
             mimicComponent.RecalculateParameters();
             mimicComponent.SetLegsActive(true);
         }
 
-        // Reset de estado para Geobionte padrão
-        hasFused = false;
-        isPrevented = false;
+        // Marca que já fundiu nesta sala (impede nova transformação)
+        hasFused = true;
         absorbedOreValue = 0;
         hasSpeedBuff = false;
         targetOre = null;
         sweepTimer = 0f;
         isSweeping = false;
 
-        // PROGRESSÃO MULTI-FASE: Não busca novo minério — já absorveu nesta fase
-        // O Geobionte volta ao Idle passivo até a próxima fase
-        ChangeState(GeobionteState.Idle);
-        PickNewWanderDirection();
+        // Entra no estado Fleeing — foge para longe do player e despawna
+        ChangeState(GeobionteState.Fleeing);
 
-        Debug.Log("[GEOBIONTE] Revertido ao padrão! Derrota " + bismutadoDefeatCount + "/" + fusionsToSentinel + ". Aguardando próxima fase para absorver novamente.");
+        Debug.Log("[GEOBIONTE] Derrotado como Bismutado (" + bismutadoDefeatCount + "/" + fusionsToSentinel + ")! Fugindo da sala...");
     }
 
     // ========================================================================
@@ -1517,9 +1519,6 @@ public class Geobionte_AI : MonoBehaviour
         float elapsed = 0f;
         Vector3 startScale = transform.localScale;
         Vector3 endScale = originalScale * sentinelScale;
-
-        // Cor do Sentinela: roxo mais intenso/brilhante
-        Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f);
 
         while (elapsed < growDuration)
         {
@@ -1602,14 +1601,11 @@ public class Geobionte_AI : MonoBehaviour
     /// - Se acertar: dano + knockback, volta a subir sem ficar stunado
     /// - Se errar: fica stunado (vulnerável) por sentinelVulnerableWindow segundos
     /// - Pernas dão dano automaticamente (gerenciado pelo Leg.cs)
-    /// - Campo de cristais é criado periodicamente
+    /// - NÃO cria campo de cristais (mecânica exclusiva do Bismutado)
     /// </summary>
     void HandleSentinelCombat()
     {
         if (health != null && health.CurrentHealth <= 0) return;
-
-        // Timer do campo de cristais
-        if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
 
         // Rotação lenta para olhar o player (não rotaciona durante slam/stun)
         if (!sentinelIsSlaming && !sentinelVulnerable)
@@ -1623,20 +1619,10 @@ public class Geobionte_AI : MonoBehaviour
 
         if (!sentinelVulnerable)
         {
-            // FASE: Esfera ALTA (invulnerável) — anda e cria campos de cristais
+            // FASE: Esfera ALTA (invulnerável) — anda, pernas dão dano
             sentinelTargetHeight = sentinelHighHeight;
 
             if (health != null) health.isInvulnerable = true;
-
-            // Cria campo de cristais periodicamente
-            if (fieldTimer <= 0 && playerTransform != null)
-            {
-                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-                if (distToPlayer <= attackRange * 2f)
-                {
-                    CreateCrystalField();
-                }
-            }
 
             // Após sentinelInvulnerableDuration, inicia o SLAM
             if (sentinelPhaseTimer >= sentinelInvulnerableDuration)
@@ -2080,21 +2066,12 @@ public class Geobionte_AI : MonoBehaviour
 
     void HandleFleeing()
     {
-        // Verifica distância do player — se longe o bastante, some
+        // Verifica distância do player — se longe o bastante, despawna
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distToPlayer > fleeDestroyDistance)
         {
-            Debug.Log("[GEOBIONTE] Fugiu com sucesso! Distância: " + distToPlayer.ToString("F1") + "m");
-
-            // Agenda respawn se configurado
-            if (respawnDelay > 0f)
-            {
-                StartCoroutine(ScheduleRespawn());
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            Debug.Log("[GEOBIONTE] Fugiu com sucesso! Distância: " + distToPlayer.ToString("F1") + "m. Reaparecerá na próxima sala.");
+            Destroy(gameObject);
         }
     }
 
