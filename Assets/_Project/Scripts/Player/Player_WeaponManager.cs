@@ -94,6 +94,30 @@ public class Player_WeaponManager : MonoBehaviour
         }
     }
 
+    public void HolsterWeaponImmediate()
+    {
+        if (holsterCoroutine != null) StopCoroutine(holsterCoroutine);
+        if (drawCoroutine != null) StopCoroutine(drawCoroutine);
+
+        isWeaponDrawn = false;
+
+        if (attackScript != null)
+        {
+            attackScript.hasWeapon = false;
+        }
+
+        if (playerAnimator != null && defaultAnimatorController != null)
+        {
+            playerAnimator.runtimeAnimatorController = defaultAnimatorController;
+        }
+
+        if (currentWeapon != null)
+        {
+            currentWeapon.SetActive(false);
+            Debug.Log("[Player_WeaponManager] Arma guardada imediatamente.");
+        }
+    }
+
     public void HolsterWeapon()
     {
         if (currentWeapon == null) return;
