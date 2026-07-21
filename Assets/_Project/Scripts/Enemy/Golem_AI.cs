@@ -74,6 +74,14 @@ public class Golem_AI : MonoBehaviour
         // Configura Rigidbody
         rb.freezeRotation = true;
 
+        // Snap de segurança no chão para evitar clipagem no mapa
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit navHit, 5f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            Vector3 pos = transform.position;
+            pos.y = navHit.position.y;
+            transform.position = pos;
+        }
+
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)

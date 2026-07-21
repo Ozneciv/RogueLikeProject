@@ -448,43 +448,37 @@ public class RoomController : MonoBehaviour
         float halfX = (size.x < 2f ? 8f : size.x * 0.5f) * 0.85f;
         float halfZ = (size.z < 2f ? 8f : size.z * 0.5f) * 0.85f;
 
-        float floorY = bounds.min.y;
-
-        // Tenta até 10 vezes encontrar uma posição no chão válido (e não no topo de cristais/paredes)
+        // Tenta até 10 vezes encontrar uma posição no chão válido do NavMesh ou por Raycast
         for (int i = 0; i < 10; i++)
         {
             float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
             float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
-            Vector3 candidatePos = new Vector3(x, bounds.center.y + 0.5f, z);
+            Vector3 candidatePos = new Vector3(x, bounds.center.y, z);
 
-            // 1. Tenta NavMesh com raio preciso e garante que esteja na altura do chão
-            if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+            // 1. Tenta NavMesh com amostragem válida da área
+            if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 5f, UnityEngine.AI.NavMesh.AllAreas))
             {
-                if (navHit.position.y <= floorY + 1.2f)
-                {
-                    return navHit.position;
-                }
+                return navHit.position;
             }
 
             // 2. Raycast de cima para baixo
-            Vector3 rayStart = new Vector3(x, bounds.center.y + 10f, z);
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 30f))
+            Vector3 rayStart = new Vector3(x, bounds.center.y + 15f, z);
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 35f))
             {
-                if (!hit.collider.isTrigger)
+                if (!hit.collider.isTrigger && !hit.collider.CompareTag("Player"))
                 {
-                    // Se o impacto for no chão da sala e NÃO no topo de um cristal alto ou borda de parede
-                    if (hit.point.y <= floorY + 1.2f)
-                    {
-                        return hit.point;
-                    }
+                    return hit.point;
                 }
             }
         }
 
-        // Fallback centralizado no chão base
-        float finalX = Random.Range(bounds.center.x - halfX * 0.7f, bounds.center.x + halfX * 0.7f);
-        float finalZ = Random.Range(bounds.center.z - halfZ * 0.7f, bounds.center.z + halfZ * 0.7f);
-        return new Vector3(finalX, floorY + 0.1f, finalZ);
+        // Fallback final seguro: amostragem no NavMesh no centro da área ou na posição da sala
+        if (UnityEngine.AI.NavMesh.SamplePosition(bounds.center, out UnityEngine.AI.NavMeshHit centerHit, 20f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            return centerHit.position;
+        }
+
+        return transform.position + Vector3.up * 0.1f;
     }
 
     private Vector3 GetRandomPositionForCollectible(BoxCollider box, bool isHigh, bool isNearWall)

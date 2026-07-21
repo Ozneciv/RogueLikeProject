@@ -63,6 +63,14 @@ public class SharpBlur : MonoBehaviour
             playerRb = player.GetComponent<Rigidbody>();
         }
 
+        // Snap de segurança no chão para evitar clipagem no piso da sala
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit navHit, 5f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            Vector3 pos = transform.position;
+            pos.y = navHit.position.y;
+            transform.position = pos;
+        }
+
         rb.useGravity = false;
         rb.freezeRotation = true;
         rb.constraints |= RigidbodyConstraints.FreezePositionY;
