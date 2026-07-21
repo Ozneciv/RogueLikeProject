@@ -39,17 +39,17 @@ public class GoblinAI_Transform : MonoBehaviour
     // ── Speeds ──────────────────────────────────────────────────
     [Header("Speeds")]
     [FormerlySerializedAs("velocidadePerseguicao")]
-    public float chaseSpeed = 7f;
+    public float chaseSpeed = 5.5f;
     
     [FormerlySerializedAs("velocidadeFuga")]
-    public float fleeSpeed = 11f;
+    public float fleeSpeed = 7.5f;
     
     [FormerlySerializedAs("velocidadeStrafe")]
-    public float strafeSpeed = 4f;
+    public float strafeSpeed = 3.2f;
     
-    [Tooltip("Movement acceleration (higher = more responsive).")]
+    [Tooltip("Movement acceleration (lower = smoother acceleration).")]
     [FormerlySerializedAs("aceleracao")]
-    public float acceleration = 5f;
+    public float acceleration = 2.4f;
 
     // ── Ranged Attack (Bomb) ────────────────────────────────────
     [Header("Ranged - Bomb Throw")]
