@@ -5221,7 +5221,7 @@ MonoBehaviour:
   weaponType: 0
   equipPosition: {x: -0.17, y: 0.1, z: 0}
   equipRotation: {x: -90, y: 90, z: 0}
-  weaponAnimatorOverride: {fileID: 0}
+  weaponAnimatorOverride: {fileID: 9100000, guid: 0d68be6d0cbdadf4f8c34770b3885f84, type: 2}
 --- !u!1 &3142732048361692479
 GameObject:
   m_ObjectHideFlags: 0

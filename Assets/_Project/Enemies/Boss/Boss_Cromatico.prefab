@@ -16,9 +16,10 @@ GameObject:
   - component: {fileID: 7888690823959187624}
   - component: {fileID: -3789803415784734762}
   - component: {fileID: -6292105213825464846}
+  - component: {fileID: 3623146103869598672}
   m_Layer: 0
   m_Name: Boss_Cromatico
-  m_TagString: Untagged
+  m_TagString: Boss
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -207,6 +208,28 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3623146103869598672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 202263891992115952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d724f2fbcc9123a49bc51a1fa35f3f9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase1_MestreDoSolo
+  pilarPrefab: {fileID: 4472762181640442788, guid: ab9ff4047c87ac74ba656648e4ec1fa8, type: 3}
+  espinhoPrefab: {fileID: 2988646942043275965, guid: b7140d41c98fbac4086c980884f274ed, type: 3}
+  cristalusPrefab: {fileID: 5390169502761059047, guid: ac128f3903b4ea142b3ab43e791ce0f2, type: 3}
+  offsetAlturaFinal: -3
+  tempoEntreAtaques: 1
+  raioDaPrisao: 2
+  profundidadeSpawn: 4
+  tempoEmergindo: 0.5
+  distanciaRecuo: 20
+  tempoVidaPrisao: 6
 --- !u!1001 &5023829095492737172
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -274,6 +297,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 48683e5482882b34f8cfeee63cf973f3, type: 3}
       propertyPath: m_Name
       value: Orc Idle
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 48683e5482882b34f8cfeee63cf973f3, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

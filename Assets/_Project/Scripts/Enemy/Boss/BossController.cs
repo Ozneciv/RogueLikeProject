@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using UnityEngine.AI;
 using System.Collections;
 
@@ -25,6 +26,8 @@ using System.Collections;
 ///   4. Adicione um NavMeshAgent (configurado pelo script no Start)
 /// </summary>
 [RequireComponent(typeof(DummyHealth))]
+
+
 public class BossController : MonoBehaviour
 {
     // =====================================================
@@ -54,6 +57,7 @@ public class BossController : MonoBehaviour
     [Tooltip("O selo/barreira que bloqueia a saída da arena.\n" +
              "Será destruído quando o boss morrer.")]
     public GameObject arenaSeal;
+    public bool OverrideMovement { get; set; } = false;
 
     [Header("Animação")]
     [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
@@ -269,6 +273,7 @@ public class BossController : MonoBehaviour
     // =====================================================
     // TRANSIÇÃO DE FASES
     // =====================================================
+    public event Action OnTookDamage;
 
     private void CheckHealthTransitions()
     {
@@ -276,6 +281,11 @@ public class BossController : MonoBehaviour
 
         lastCheckedHP = health.CurrentHealth;
         float hpPercent = HealthPercent;
+
+        if (health.CurrentHealth < lastCheckedHP)
+        {
+            OnTookDamage?.Invoke(); 
+        }
 
         // Notifica mudança de HP
         BossEvents.RaiseBossHealthChanged(hpPercent);
@@ -330,29 +340,21 @@ public class BossController : MonoBehaviour
 
     private void HandleCombatUpdate()
     {
-        if (playerTransform == null || isAttacking) return;
+        if (playerTransform == null || isAttacking || OverrideMovement) return;
 
-        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
 
-        // Perseguição via NavMesh
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        if (CurrentPhase != 1) 
         {
-            agent.SetDestination(playerTransform.position);
-
-            // Para perto do player para atacar
-            agent.stoppingDistance = meleeRange * 0.8f;
-        }
-
-        // Rotação suave para o player
-        HandleRotation();
-
-        // Ataque melee base
-        if (distToPlayer <= meleeRange && meleeTimer <= 0)
-        {
-            StartCoroutine(PerformMeleeAttack());
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.SetDestination(playerTransform.position);
+                
+                float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
+                agent.stoppingDistance = meleeRange * 0.8f;
+            }
         }
     }
+    // --------------------
 
     private void HandleRotation()
     {
