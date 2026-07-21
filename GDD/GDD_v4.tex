@@ -148,6 +148,22 @@ Apesar de sua aparência canina, Eptinho é um ser de inteligência aguçada, at
 
 Para permitir uma profundidade estratégica nas \textit{builds}, o jogo utiliza um conjunto extenso de variáveis que podem ser modificadas por Infusões (Partes do Corpo), Itens do Mercador e Upgrades da Base.
 
+\section{Atributos Base do Jogador (Balanceamento Oficial)}
+\begin{center}
+\begin{tabular}{|l|c|l|}
+    \hline
+    \textbf{Atributo} & \textbf{Valor Base} & \textbf{Descrição / Mecânica} \\
+    \hline
+    HP Máximo (Health) & \textbf{100 HP} & Barra de vida física do personagem. \\
+    Armadura Máxima (Armor) & \textbf{300 AP} & \textbf{Escudo regenerável.} Total de \textbf{400 EHP}. \\
+    Regeneração de Armadura & \textbf{5 AP / s} & Inicia após 4,0s sem receber dano. \\
+    Multiplicador de Dano Base & \textbf{1,0x} & Multiplicador inicial limpo. \\
+    Chance de Acerto Crítico & \textbf{5,0\%} & Chance padrão de dano crítico (1,5x). \\
+    Mitigação / Esquiva Base & \textbf{0,0\%} & Sem mitigação passiva inicial. \\
+    \hline
+\end{tabular}
+\end{center}
+
 \section{Atributos Ofensivos}
 \begin{description}
     \item[Attack Speed (Melee):] Reduz o intervalo entre os golpes de armas de curto alcance.
@@ -885,20 +901,27 @@ Este capítulo detalha as fórmulas e parâmetros do sistema econômico \textbf{
 \[
 P(n) = B_{spawn} + G_{spawn} \times n
 \]
-Onde $B_{spawn} = 10$, $G_{spawn} = 0{,}9$, e $n$ = índice da sala (começa em 1).
+Onde $B_{spawn} = 5$, $G_{spawn} = 0{,}65$, e $n$ = índice da sala (começa em 1).
+\textit{Nota: As duas primeiras salas são limitadas a 1 onda leve (2 a 3 mobs menores) para curva de aprendizado suave.}
 
 \begin{center}
 \begin{tabular}{|c|c|l|}
     \hline
     \textbf{Sala} & \textbf{Budget Total} & \textbf{Composição possível (por onda)} \\
     \hline
-    1  & 11 pts & $\approx$ 11 Mob Menores \\
-    5  & 15 pts & 1 Elite (10) + 5 Mob Menores \\
-    10 & 19 pts & 1 Elite + 2 Tanques + 1 Mob Menor \\
-    20 & 28 pts & 1 Elite + 4 Tanques + 2 Atiradores + extras \\
+    1  & 5,65 pts & $\approx$ 2 a 3 Mobs Menores (1 onda suave) \\
+    5  & 8,25 pts & 2 Tanques / Atiradores + Mobs Menores \\
+    10 & 11,5 pts & 1 Elite (10) + Mobs Menores \\
+    20 & 18,0 pts & 1 Elite + 2 Tanques + Atiradores \\
     \hline
 \end{tabular}
 \end{center}
+
+\subsection{Fórmula de Escalonamento de HP dos Inimigos}
+\[
+HP(n) = HP_{base} \times (1 + 0{,}03 \times (n - 1))
+\]
+A cada sala avançada $n$, a vida máxima de todos os inimigos aumenta \textbf{+3\%}.
 
 \subsection{Budget por Onda}
 \[
