@@ -16,6 +16,8 @@ GameObject:
   - component: {fileID: 7888690823959187624}
   - component: {fileID: -3789803415784734762}
   - component: {fileID: -6292105213825464846}
+  - component: {fileID: 3724460904401237682}
+  - component: {fileID: 6831200880444395433}
   m_Layer: 0
   m_Name: Boss_Cromatico
   m_TagString: Untagged
@@ -207,6 +209,41 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3724460904401237682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 202263891992115952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74faec359655c445aeae7fb755382b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3Modifiers
+  speedMultiplier: 1.4
+  attackCooldownMultiplier: 0.5
+  showDebugLog: 1
+--- !u!114 &6831200880444395433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 202263891992115952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 292c5e3549394fc48ac38cd94cc35c83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3AcidPuddles
+  acidPuddlePrefab: {fileID: 0}
+  bossController: {fileID: 4966253884742131004}
+  spawnIntervalMin: 3
+  spawnIntervalMax: 6
+  slamCooldownBase: 8
+  slamTelegraphDuration: 1.2
+  maxSimultaneousPuddles: 6
+  showDebugLog: 1
 --- !u!1001 &5023829095492737172
 PrefabInstance:
   m_ObjectHideFlags: 0

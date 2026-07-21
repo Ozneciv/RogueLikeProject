@@ -503,6 +503,7 @@ MonoBehaviour:
   pressFUI: {fileID: 0}
   pickupDelay: 0.5
   lifetime: 60
+  forceCategory: 
 --- !u!114 &331283790
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1372,7 +1373,7 @@ MonoBehaviour:
   dropInflationAlpha: 0.05
   spawnPointsBase: 10
   spawnPointsGrowth: 0.9
-  totalLevels: 4
+  totalLevels: 1
   roomsPerLevel: 050000000700000009000000
   currentLevel: 1
   geobionteDefeatCount: 0
@@ -1736,6 +1737,7 @@ MonoBehaviour:
   pressFUI: {fileID: 0}
   pickupDelay: 0.5
   lifetime: 60
+  forceCategory: 
 --- !u!114 &1429851590
 MonoBehaviour:
   m_ObjectHideFlags: 0
