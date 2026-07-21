@@ -137,7 +137,13 @@ public class CrystalDragon_AI : MonoBehaviour
 
     private void Start()
     {
-        // 1. Fallback dinâmico para o projectile prefab
+        // 1. Auto-busca Animator se não foi arrastado no Inspector
+        if (modelAnimator == null)
+        {
+            modelAnimator = GetComponentInChildren<Animator>();
+        }
+
+        // 2. Fallback dinâmico para o projectile prefab
         if (crystalSpikeProjectilePrefab == null)
         {
             crystalSpikeProjectilePrefab = Resources.Load<GameObject>("Crystal Spike");
@@ -151,7 +157,7 @@ public class CrystalDragon_AI : MonoBehaviour
             }
         }
 
-        // 2. Garante que o root tenha um colisor adequado para o jogador conseguir acertá-lo
+        // 3. Garante que o root tenha um colisor adequado para o jogador conseguir acertá-lo
         Collider existingCollider = GetComponent<Collider>();
         if (existingCollider == null)
         {
@@ -185,19 +191,16 @@ public class CrystalDragon_AI : MonoBehaviour
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-        {
-            playerTransform = player.transform;
-        }
-        else
-        {
-            Debug.LogError("CrystalDragon_AI: Player não encontrado! Verifique a tag 'Player'.");
-        }
+        // 4. Auto-busca dinâmica do Player no Start()
+        FindPlayerReference();
 
+        // 5. Auto-busca do spikeOrigin se null
         if (spikeOrigin == null)
         {
-            spikeOrigin = transform;
+            Transform foundOrigin = transform.Find("spikeOrigin");
+            if (foundOrigin == null) foundOrigin = transform.Find("Mouth");
+            if (foundOrigin == null) foundOrigin = transform.Find("Head");
+            spikeOrigin = foundOrigin != null ? foundOrigin : transform;
         }
 
         // Init orbit angle/direction
@@ -225,13 +228,31 @@ public class CrystalDragon_AI : MonoBehaviour
             {
                 desiredModelLocalRotation = Quaternion.Euler(modelLocalEulerOffset);
                 modelTransform.localRotation = desiredModelLocalRotation;
-                lastLoggedModelLocalRotation = modelTransform.localRotation;
-                Debug.Log("[CRYSTAL DRAGON] Applied model local Euler offset: " + modelLocalEulerOffset);
+                lastLoggedModelLocalRotation = desiredModelLocalRotation;
+                Debug.Log("[CRYSTAL DRAGON] Applied local euler offset: " + modelLocalEulerOffset);
             }
             else
             {
                 Debug.Log("[CRYSTAL DRAGON] Preserving manual model local rotation: " + modelTransform.localEulerAngles);
             }
+        }
+    }
+
+    private void FindPlayerReference()
+    {
+        if (playerTransform != null) return;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+        {
+            PlayerHealth ph = Object.FindFirstObjectByType<PlayerHealth>();
+            if (ph != null) player = ph.gameObject;
+        }
+
+        if (player != null)
+        {
+            playerTransform = player.transform;
+            Debug.Log("[CrystalDragon_AI] Referência do Player localizada com sucesso!");
         }
     }
 
@@ -277,8 +298,23 @@ public class CrystalDragon_AI : MonoBehaviour
 
     private void Update()
     {
-        if (playerTransform == null) return;
-        if (health != null && health.CurrentHealth <= 0) return;
+        // Garante busca dinâmica do Player no Update caso não estivesse presente na cena ao instanciar
+        if (playerTransform == null)
+        {
+            FindPlayerReference();
+            if (playerTransform == null) return;
+        }
+
+        if (health != null)
+        {
+            if (health.CurrentHealth <= 0) return;
+            // Se sofrer dano de longe, ativa o combate imediatamente
+            if (health.CurrentHealth < health.maxHealth && !isActivated)
+            {
+                isActivated = true;
+                Debug.Log("[CRYSTAL DRAGON] Ativado por dano sofrido!");
+            }
+        }
 
         if (spikeTimer > 0f) spikeTimer -= Time.deltaTime;
         if (tailTimer > 0f) tailTimer -= Time.deltaTime;
