@@ -357,17 +357,14 @@ public class LevelGenerator : MonoBehaviour
         if (openOutputs.Count > 0 && !exitRoomSpawned)
         {
             List<ConnectionPoint> mainOutputs = openOutputs.Where(op => {
-                if (op == null || op.transform.root == null) return false;
+                if (op == null || op.isOccupied || op.transform.root == null) return false;
                 string rootName = op.transform.root.gameObject.name;
                 if (startRoomPrefab != null && rootName.Contains(startRoomPrefab.name)) return false;
                 if (rootName.Contains("Safe")) return false;
                 return true;
-            }).ToList();
+            }).OrderByDescending(op => Vector3.Distance(Vector3.zero, op.transform.position)).ToList();
 
-            mainOutputs.Sort((a, b) => 
-                Vector3.Distance(Vector3.zero, b.transform.position)
-                .CompareTo(Vector3.Distance(Vector3.zero, a.transform.position)));
-
+            // Tenta primeiro com transição
             for (int i = 0; i < mainOutputs.Count; i++)
             {
                 if (TrySpawnSpecialRoom(exitRoomPrefab, mainOutputs[i], "Sala de Saída", useTransition: true))
@@ -377,20 +374,33 @@ public class LevelGenerator : MonoBehaviour
                     break;
                 }
             }
+
+            // Se falhar com transição, tenta conexão direta sem transição nas mesmas saídas principais
+            if (!exitRoomSpawned)
+            {
+                for (int i = 0; i < mainOutputs.Count; i++)
+                {
+                    if (TrySpawnSpecialRoom(exitRoomPrefab, mainOutputs[i], "Sala de Saída (direta)", useTransition: false))
+                    {
+                        openOutputs.Remove(mainOutputs[i]);
+                        exitRoomSpawned = true;
+                        break;
+                    }
+                }
+            }
         }
 
-        // Fallback da fase 1 se a ExitRoom ainda não foi colocada nas salas principais
+        // Fallback de fase 2 em todas as saídas livres
         if (openOutputs.Count > 0 && !exitRoomSpawned)
         {
-            openOutputs.Sort((a, b) => 
-                Vector3.Distance(Vector3.zero, b.transform.position)
-                .CompareTo(Vector3.Distance(Vector3.zero, a.transform.position)));
+            List<ConnectionPoint> sortedOutputs = openOutputs.Where(op => op != null && !op.isOccupied)
+                .OrderByDescending(op => Vector3.Distance(Vector3.zero, op.transform.position)).ToList();
 
-            for (int i = 0; i < openOutputs.Count; i++)
+            for (int i = 0; i < sortedOutputs.Count; i++)
             {
-                if (TrySpawnSpecialRoom(exitRoomPrefab, openOutputs[i], "Sala de Saída (fallback)", useTransition: true))
+                if (TrySpawnSpecialRoom(exitRoomPrefab, sortedOutputs[i], "Sala de Saída (fallback)", useTransition: false))
                 {
-                    openOutputs.RemoveAt(i);
+                    openOutputs.Remove(sortedOutputs[i]);
                     exitRoomSpawned = true;
                     break;
                 }
@@ -418,51 +428,58 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        // Garantia: se ExitRoom não foi colocada
-        if (!exitRoomSpawned)
+        // 3. Garantia Absoluta: se ExitRoom ainda não foi conectada, força conexão à saída mais distante disponível
+        if (!exitRoomSpawned && exitRoomPrefab != null)
         {
-            Debug.LogError("[LevelGenerator] ❌ ExitRoom não colocada nas saídas diretas. Buscando saída disponível na cena...");
+            Debug.LogWarning("[LevelGenerator] ⚠️ Buscando qualquer porta livre para conectar a ExitRoom...");
 
             ConnectionPoint[] allCPs = FindObjectsByType<ConnectionPoint>(FindObjectsSortMode.None);
-            var sortedCPs = allCPs.OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position));
+            var sortedCPs = allCPs.Where(cp => cp != null && cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
+                                  .OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position));
 
             foreach (var cp in sortedCPs)
             {
-                if (cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
-                {
-                    if (startRoomPrefab != null && cp.transform.root.gameObject.name.Contains(startRoomPrefab.name)) continue;
-                    if (cp.transform.root.gameObject.name.Contains("Safe")) continue;
+                if (startRoomPrefab != null && cp.transform.root.gameObject.name.Contains(startRoomPrefab.name)) continue;
+                if (cp.transform.root.gameObject.name.Contains("Safe")) continue;
 
-                    if (TrySpawnSpecialRoom(exitRoomPrefab, cp, "Sala de Saída (recuperação)", useTransition: true))
-                    {
-                        exitRoomSpawned = true;
-                        Debug.LogWarning("[LevelGenerator] ⚠️ ExitRoom conectada a saída de recuperação. Mapa pode ter layout não ideal.");
-                        break;
-                    }
+                if (TrySpawnSpecialRoom(exitRoomPrefab, cp, "Sala de Saída (recuperação)", useTransition: false))
+                {
+                    exitRoomSpawned = true;
+                    Debug.Log("[LevelGenerator] ✅ ExitRoom conectada com sucesso na saída de recuperação!");
+                    break;
                 }
             }
 
-            if (!exitRoomSpawned && exitRoomPrefab != null)
+            // Se mesmo assim não conseguiu por causa de verificação de sobreposição estrita, força acoplamento direto no conector da porta
+            if (!exitRoomSpawned)
             {
-                Debug.LogError("[LevelGenerator] ❌ Nenhuma saída sem sobreposição encontrada na cena. ExitRoom colocada nivelada no chão.");
-                GameObject lastResortExit = Instantiate(exitRoomPrefab);
-
-                var allRooms = FindObjectsByType<RoomController>(FindObjectsSortMode.None);
-                Vector3 basePos = Vector3.zero;
-                if (allRooms.Length > 0)
+                ConnectionPoint bestCP = sortedCPs.FirstOrDefault();
+                if (bestCP == null)
                 {
-                    var furthestRoom = allRooms.OrderByDescending(r => Vector3.Distance(Vector3.zero, r.transform.position)).First();
-                    basePos = furthestRoom.transform.position;
-                }
-                else if (playerSpawnPoint != null)
-                {
-                    basePos = playerSpawnPoint.position;
+                    bestCP = FindObjectsByType<ConnectionPoint>(FindObjectsSortMode.None)
+                        .Where(cp => cp != null && cp.pointType == ConnectionPoint.PointType.Saida)
+                        .OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position))
+                        .FirstOrDefault();
                 }
 
-                Vector3 spawnPos = basePos + new Vector3(40f, 0f, 40f);
-                spawnPos.y = 0f; // Garante alinhamento nivelado no chão!
-                lastResortExit.transform.position = spawnPos;
-                exitRoomSpawned = true;
+                if (bestCP != null)
+                {
+                    Debug.LogWarning($"[LevelGenerator] 🚨 Conectando ExitRoom diretamente à porta '{bestCP.gameObject.name}'!");
+                    GameObject forcedExit = Instantiate(exitRoomPrefab);
+                    ConnectionPoint entradaExit = GetInputPoint(forcedExit, bestCP.connectionTag, bestCP.transform);
+                    if (entradaExit != null)
+                    {
+                        AlignRooms(bestCP.transform, entradaExit.transform);
+                        bestCP.isOccupied = true;
+                        entradaExit.isOccupied = true;
+                        RegisterRoomBounds(forcedExit);
+                        exitRoomSpawned = true;
+                    }
+                    else
+                    {
+                        Destroy(forcedExit);
+                    }
+                }
             }
         }
 

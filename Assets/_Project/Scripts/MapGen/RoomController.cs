@@ -36,8 +36,18 @@ public class RoomController : MonoBehaviour
     // CONFIGURAÇÃO DA SALA
     // =====================================================
 
+    public enum RoomCategory
+    {
+        Combat,
+        SafeRoom,
+        Contemplation,
+        Merchant
+    }
+
     [Header("Sala")]
     public bool isSafeRoom = false;
+    [Tooltip("Categoria da sala (Combat = combate normal, Contemplation = sala pacífica sem combate, SafeRoom = sala inicial, Merchant = mercador).")]
+    public RoomCategory roomCategory = RoomCategory.Combat;
     [HideInInspector] public bool doorsAreLocked = false;
 
     [Header("Índice (definido pelo LevelGenerator)")]
@@ -143,7 +153,12 @@ public class RoomController : MonoBehaviour
 
     void Start()
     {
-        if (isSafeRoom) return;
+        if (gameObject.name.ToLower().Contains("3way") || gameObject.name.ToLower().Contains("treeway"))
+        {
+            roomCategory = RoomCategory.Contemplation;
+        }
+
+        if (isSafeRoom || roomCategory != RoomCategory.Combat) return;
         totalWavesThisRoom = Random.Range(minWaves, maxWaves + 1);
         UnlockDoors();
     }
@@ -166,7 +181,7 @@ public class RoomController : MonoBehaviour
     /// </summary>
     public void OnPlayerEnteredRoom(Collider other)
     {
-        if (other.CompareTag("Player") && !isSafeRoom && !hasTriggered)
+        if (other.CompareTag("Player") && !isSafeRoom && roomCategory == RoomCategory.Combat && !hasTriggered)
         {
             hasTriggered = true;
 
