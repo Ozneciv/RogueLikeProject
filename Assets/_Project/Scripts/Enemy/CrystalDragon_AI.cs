@@ -157,6 +157,19 @@ public class CrystalDragon_AI : MonoBehaviour
             }
         }
 
+        // Garante a tag "Enemy" e a Layer "Enemy" no root e em todos os filhos
+        gameObject.tag = "Enemy";
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer != -1)
+        {
+            gameObject.layer = enemyLayer;
+            foreach (Transform child in GetComponentsInChildren<Transform>(true))
+            {
+                child.gameObject.layer = enemyLayer;
+                child.gameObject.tag = "Enemy";
+            }
+        }
+
         // 3. Garante que o root tenha um colisor adequado para o jogador conseguir acertá-lo
         Collider existingCollider = GetComponent<Collider>();
         if (existingCollider == null)
@@ -164,6 +177,7 @@ public class CrystalDragon_AI : MonoBehaviour
             BoxCollider bc = gameObject.AddComponent<BoxCollider>();
             bc.center = new Vector3(0f, 1f, 0f);
             bc.size = new Vector3(2.5f, 2f, 2.5f);
+            bc.isTrigger = true;
             Debug.Log("[CrystalDragon_AI] BoxCollider adicionado automaticamente ao root do dragão.");
         }
         else
@@ -173,6 +187,7 @@ public class CrystalDragon_AI : MonoBehaviour
                 BoxCollider bc = (BoxCollider)existingCollider;
                 bc.center = new Vector3(0f, 1f, 0f);
                 bc.size = new Vector3(2.5f, 2f, 2.5f);
+                bc.isTrigger = true;
             }
             else if (existingCollider is CapsuleCollider)
             {
@@ -180,6 +195,29 @@ public class CrystalDragon_AI : MonoBehaviour
                 cc.center = new Vector3(0f, 1f, 0f);
                 cc.height = 2f;
                 cc.radius = 1.25f;
+                cc.isTrigger = true;
+            }
+        }
+
+        // Garante que todos os colidores do dragão sejam triggers e ignorem colisão com outros inimigos (para não servirem de rampa ao Golem)
+        Collider[] dragonColliders = GetComponentsInChildren<Collider>(true);
+        foreach (Collider dc in dragonColliders)
+        {
+            dc.isTrigger = true;
+        }
+
+        Collider[] allColliders = FindObjectsByType<Collider>(FindObjectsSortMode.None);
+        foreach (Collider otherCol in allColliders)
+        {
+            if (otherCol != null && otherCol.transform.root != transform.root)
+            {
+                if (otherCol.gameObject.layer == enemyLayer || otherCol.CompareTag("Enemy"))
+                {
+                    foreach (Collider dc in dragonColliders)
+                    {
+                        Physics.IgnoreCollision(dc, otherCol, true);
+                    }
+                }
             }
         }
 
