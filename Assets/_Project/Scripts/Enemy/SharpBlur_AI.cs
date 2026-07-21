@@ -146,6 +146,11 @@ public class SharpBlur : MonoBehaviour
         // Verifica se o jogador ainda está perto no momento do impacto para dar o dano
         if (Vector3.Distance(transform.position, playerTransform.position) <= meleeTriggerDistance + 1f)
         {
+            PlayerHealth ph = playerTransform.GetComponent<PlayerHealth>() ?? playerTransform.GetComponentInParent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.TakeDamage(meleeDamage, gameObject);
+            }
             Debug.Log($"[SharpBlur] acertou o jogador de perto e causou {meleeDamage} de dano.");
         }
 
@@ -265,14 +270,28 @@ public class SharpBlur : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (currentState == State.Dashing && other.CompareTag("Player"))
-            Debug.Log($"[SharpBlur] causou {dashDamage} de dano com o Dash.");
+        if (currentState == State.Dashing)
+        {
+            PlayerHealth ph = other.GetComponent<PlayerHealth>() ?? other.GetComponentInParent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.TakeDamage(dashDamage, gameObject);
+                Debug.Log($"[SharpBlur] causou {dashDamage} de dano com o Dash.");
+            }
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (currentState == State.Dashing && collision.gameObject.CompareTag("Player"))
-            Debug.Log($"[SharpBlur] causou {dashDamage} de dano com o Dash.");
+        if (currentState == State.Dashing)
+        {
+            PlayerHealth ph = collision.gameObject.GetComponent<PlayerHealth>() ?? collision.gameObject.GetComponentInParent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.TakeDamage(dashDamage, gameObject);
+                Debug.Log($"[SharpBlur] causou {dashDamage} de dano com o Dash.");
+            }
+        }
     }
 
     void LookAtPosition(Vector3 target, float rotationSpeed)
