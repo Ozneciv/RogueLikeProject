@@ -217,20 +217,26 @@ public class RoomController : MonoBehaviour
 
     void SpawnNextWave()
     {
-        currentWave++;
+        // Nas salas iniciais (1 e 2), limita a 1 onda leve para introdução suave
+        if (roomIndex <= 2)
+        {
+            totalWavesThisRoom = 1;
+        }
 
         // O budget total da sala é dividido igualmente entre as ondas.
         // Isso garante curva de dificuldade uniforme independente do número de ondas.
         int totalBudget = RunManager.instance != null
             ? RunManager.instance.GetSpawnBudget(roomIndex)
-            : Mathf.RoundToInt(10 + 0.9f * roomIndex);
-        int waveBudget = Mathf.Max(4, Mathf.RoundToInt(totalBudget / (float)totalWavesThisRoom));
+            : Mathf.RoundToInt(5 + 0.65f * roomIndex);
+        int waveBudget = Mathf.Max(3, Mathf.RoundToInt(totalBudget / (float)totalWavesThisRoom));
+
+        int effectiveMinEnemies = Mathf.Clamp(Mathf.RoundToInt(2 + (roomIndex * 0.35f)), 2, minEnemiesPerWave);
 
         if (showSpawnLog)
-            Debug.Log($"[ROOM {roomIndex}] ONDA {currentWave}/{totalWavesThisRoom} | Budget: {waveBudget} pts | Mín. inimigos: {minEnemiesPerWave}");
+            Debug.Log($"[ROOM {roomIndex}] ONDA {currentWave}/{totalWavesThisRoom} | Budget: {waveBudget} pts | Mín. inimigos: {effectiveMinEnemies}");
 
         // Gera a lista de inimigos desta onda pelo algoritmo de pontos
-        List<GameObject> waveEnemies = BuildWaveFromPoints(waveBudget);
+        List<GameObject> waveEnemies = BuildWaveFromPoints(waveBudget, effectiveMinEnemies);
 
         // Flag de pendentes para o CheckWaveStatus
         enemiesPendingSpawn += waveEnemies.Count;
@@ -246,7 +252,7 @@ public class RoomController : MonoBehaviour
     /// Monta a lista de inimigos de uma onda usando o sistema de pontos do GDD.
     /// Respeita os limites GLOBAIS de Elite (1/sala) e Tanque (4/sala).
     /// </summary>
-    List<GameObject> BuildWaveFromPoints(int waveBudget)
+    List<GameObject> BuildWaveFromPoints(int waveBudget, int minEnemies)
     {
         int maxMobPoints = Mathf.FloorToInt(waveBudget * mobCapFraction);
         int remainingPts = waveBudget;
@@ -319,10 +325,9 @@ public class RoomController : MonoBehaviour
         }
 
         // Garante mínimo de inimigos por onda preenchendo com Mob Menor
-        // (sem custo adicional de pontos — apenas quantidade mínima de jogabilidade)
         if (mobMenorPrefabs.Count > 0)
         {
-            while (result.Count < minEnemiesPerWave)
+            while (result.Count < minEnemies)
                 result.Add(GetRandom(mobMenorPrefabs));
         }
 

@@ -24,10 +24,10 @@ public class RunManager : MonoBehaviour
     public float dropInflationAlpha = 0.05f;
 
     [Header("Parâmetros de Spawn (GDD §1.2)")]
-    [Tooltip("Pontos base de spawn na sala 1.")]
-    public float spawnPointsBase = 10f;
+    [Tooltip("Pontos base de spawn na sala 1 (reduzido para início suave).")]
+    public float spawnPointsBase = 5f;
     [Tooltip("Incremento de pontos de spawn por sala.")]
-    public float spawnPointsGrowth = 0.9f;
+    public float spawnPointsGrowth = 0.65f;
 
     [Header("Progressão de Rounds")]
     [Tooltip("Total de rounds por run. O ÚLTIMO round é sempre Boss Fight.")]
