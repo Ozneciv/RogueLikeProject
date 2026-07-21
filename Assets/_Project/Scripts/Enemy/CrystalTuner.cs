@@ -328,9 +328,18 @@ public class CrystalTuner : MonoBehaviour
 
             Vector3 targetPos = td.obj.transform.position;
             if (td.center != null)
+            {
                 targetPos = td.center.position;
-            else if (td.renderer != null)
+            }
+            else if (td.renderer != null && td.renderer.bounds.center.y > td.obj.transform.position.y + 0.3f)
+            {
                 targetPos = td.renderer.bounds.center;
+            }
+            else
+            {
+                // Offset de segurança no tronco (1.0m acima dos pés)
+                targetPos = td.obj.transform.position + Vector3.up * 1.0f;
+            }
 
             UpdateBeam(td.beam, origin, targetPos, i);
         }

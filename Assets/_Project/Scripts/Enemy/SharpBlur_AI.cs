@@ -56,15 +56,25 @@ public class SharpBlur : MonoBehaviour
         health = GetComponent<DummyHealth>();
         anim = GetComponentInChildren<Animator>();
 
-        rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
-
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
             playerTransform = player.transform;
             playerRb = player.GetComponent<Rigidbody>();
         }
+
+        // Garante que o SharpBlur flutue no ar (1.2m acima do chão/player) e não fique enterrado no piso
+        Vector3 pos = transform.position;
+        float targetY = (playerTransform != null) ? (playerTransform.position.y + 1.2f) : 1.2f;
+        if (pos.y < targetY)
+        {
+            pos.y = targetY;
+            transform.position = pos;
+        }
+
+        rb.useGravity = false;
+        rb.freezeRotation = true;
+        rb.constraints |= RigidbodyConstraints.FreezePositionY;
     }
 
     void Update()
