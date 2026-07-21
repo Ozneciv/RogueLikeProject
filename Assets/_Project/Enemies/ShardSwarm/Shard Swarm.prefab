@@ -402,6 +402,7 @@ GameObject:
   - component: {fileID: 684567685902536809}
   - component: {fileID: 8393829902720031018}
   - component: {fileID: 774622250610056252}
+  - component: {fileID: 6093329094897740566}
   m_Layer: 6
   m_Name: Shard Swarm
   m_TagString: Untagged
@@ -468,23 +469,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f11cf1329f8e0124b807f64b4b65d502, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShardSwarm_AI
-  shardSwarmPrefab: {fileID: 0}
+  shardSwarmPrefab: {fileID: 6240220712296181312}
   generation: 0
-  splitCount: 4
-  childScale: 0.45
+  childScale: 0.8
   splitSpawnRadius: 1.5
+  gen0HP: 150
+  gen0Damage: 25
+  gen1HP: 60
+  gen1Damage: 15
+  gen2HP: 25
+  gen2Damage: 8
   moveSpeed: 5
   rotationSpeed: 8
-  attackRange: 5
   activationDistance: 10
-  orbitRadius: 1.5
-  orbitSpeed: 2
+  stopDistance: 2.5
+  orbitSpeed: 80
   attackCooldown: 2
-  contactDamage: 20
-  attackDuration: 0.5
-  deathExplosionRadius: 3
-  deathExplosionDamage: 15
-  deathExplosionVFX: {fileID: 0}
+  chargeSpeed: 9
+  chargeCooldown: 3
+  chargeDuration: 0.35
 --- !u!114 &2021144116388504265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -521,7 +524,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  enemyData: {fileID: 11400000, guid: ca05bfc7404be94498898296bc40d90d, type: 2}
+  enemyData: {fileID: 11400000, guid: d60e684ec33dac34d960be6dee28a184, type: 2}
   foiEncontrado: 0
 --- !u!114 &8393829902720031018
 MonoBehaviour:
@@ -569,6 +572,28 @@ MonoBehaviour:
   usarDistancia: 0
   distanciaDeteccao: 12
   debugLogs: 0
+--- !u!114 &6093329094897740566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6240220712296181312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ce7845d12a23e84f85901fd8ad9bec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShardSwarmHealth
+  maxHealth: 100
+  healthBarSlider: {fileID: 0}
+  normalColor: {r: 1, g: 0, b: 0, a: 1}
+  buffedColor: {r: 0, g: 1, b: 1, a: 1}
+  floatingDamageTextPrefab: {fileID: 0}
+  textOffset: {x: 0, y: 2, z: 0}
+  hitColor: {r: 1, g: 0, b: 0, a: 1}
+  hitFlashTime: 0.2
+  isInvulnerable: 0
+  isBuffed: 0
 --- !u!1 &8664405017096199446
 GameObject:
   m_ObjectHideFlags: 0

@@ -30,6 +30,12 @@ public class ShardSwarmHealth : MonoBehaviour
     [HideInInspector] public bool isInvulnerable = false;
     [HideInInspector] public bool isBuffed = false;
 
+    /// <summary>
+    /// Se definido, substitui a lógica padrão de morte (drops + Destroy).
+    /// Usado pelo ShardSwarm_AI para controlar o split de gerações.
+    /// </summary>
+    [HideInInspector] public System.Action onDeathOverride = null;
+
     private Color originalRenderColor;
     private Color originalBaseColor;
     private bool hasBaseColor = false;
@@ -158,6 +164,14 @@ public class ShardSwarmHealth : MonoBehaviour
 
     private void Die()
     {
+        // Se um override foi definido (ex: ShardSwarm_AI controla o split),
+        // chama o callback e retorna sem executar a lógica padrão.
+        if (onDeathOverride != null)
+        {
+            onDeathOverride.Invoke();
+            return;
+        }
+
         Debug.Log(gameObject.name + " foi destruído.");
 
         EnemyDrops drops = GetComponent<EnemyDrops>()
