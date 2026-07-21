@@ -17,7 +17,7 @@ public class Spider_AI : MonoBehaviour
     private SpiderDashVFX dashVFX;
 
     [Header("Ativação")]
-    public float activationDistance = 20f;
+    public float activationDistance = 35f;
     private bool isActivated = false;
 
     [Header("Movimento")]
@@ -32,7 +32,7 @@ public class Spider_AI : MonoBehaviour
     [Tooltip("Força vertical do pulo")]
     public float leapUpForce = 5f;
     [Tooltip("Distância para iniciar o leap attack")]
-    public float leapRange = 5f;
+    public float leapRange = 8f;
     [Tooltip("Cooldown entre leaps")]
     public float leapCooldown = 2f;
     [Tooltip("Dano causado pelo leap")]
