@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// IA do Shard Swarm â€” 3 geraÃ§Ãµes de split.
@@ -100,6 +100,19 @@ public class ShardSwarm_AI : MonoBehaviour
         health = GetComponent<ShardSwarmHealth>();
         drops  = GetComponent<EnemyDrops>();
 
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+            playerTransform = player.transform;
+
+        // Garante que o ShardSwarm flutue no ar (1.5m acima do chão/player) e não fique preso no chão
+        Vector3 pos = transform.position;
+        float minHeight = (playerTransform != null) ? (playerTransform.position.y + 1.4f) : 1.5f;
+        if (pos.y < minHeight)
+        {
+            pos.y = minHeight;
+            transform.position = pos;
+        }
+
         rb.useGravity     = false;
         rb.freezeRotation = true;
         rb.constraints   |= RigidbodyConstraints.FreezePositionY;
@@ -118,12 +131,6 @@ public class ShardSwarm_AI : MonoBehaviour
         DummyHealth dummy = GetComponent<DummyHealth>();
         if (dummy != null)
             dummy.onDeathOverride = OnDeath;
-
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-            playerTransform = player.transform;
-        else
-            Debug.LogError("[SHARD SWARM] Player nÃ£o encontrado! Verifique a tag 'Player'.");
     }
 
     void Update()

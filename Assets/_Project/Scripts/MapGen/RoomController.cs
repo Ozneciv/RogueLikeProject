@@ -410,33 +410,47 @@ public class RoomController : MonoBehaviour
         Bounds bounds = area.bounds;
         Vector3 size = bounds.size;
 
-        // Se a área de spawn for muito pequena em world space (erro de escala no prefab),
-        // expande para um raio útil de 8 metros ao redor do centro.
-        float halfX = size.x < 2f ? 8f : size.x * 0.5f;
-        float halfZ = size.z < 2f ? 8f : size.z * 0.5f;
+        // Inset das margens para não spawnar colado em paredes ou bordas externas
+        float halfX = (size.x < 2f ? 8f : size.x * 0.5f) * 0.85f;
+        float halfZ = (size.z < 2f ? 8f : size.z * 0.5f) * 0.85f;
 
-        float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
-        float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
+        float floorY = bounds.min.y;
 
-        // Projetar a posição no NavMesh para garantir que nasça exatamente no chão válido
-        Vector3 candidatePos = new Vector3(x, bounds.center.y, z);
-        if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 15f, UnityEngine.AI.NavMesh.AllAreas))
+        // Tenta até 10 vezes encontrar uma posição no chão válido (e não no topo de cristais/paredes)
+        for (int i = 0; i < 10; i++)
         {
-            return navHit.position;
-        }
+            float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
+            float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
+            Vector3 candidatePos = new Vector3(x, bounds.center.y + 0.5f, z);
 
-        // Se NavMesh falhar, faz raycast de cima para baixo a partir de uma altura segura dentro do quarto
-        Vector3 rayStart = new Vector3(x, bounds.center.y + 10f, z);
-        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 30f))
-        {
-            if (!hit.collider.isTrigger)
+            // 1. Tenta NavMesh com raio preciso e garante que esteja na altura do chão
+            if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 3f, UnityEngine.AI.NavMesh.AllAreas))
             {
-                return hit.point;
+                if (navHit.position.y <= floorY + 1.2f)
+                {
+                    return navHit.position;
+                }
+            }
+
+            // 2. Raycast de cima para baixo
+            Vector3 rayStart = new Vector3(x, bounds.center.y + 10f, z);
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 30f))
+            {
+                if (!hit.collider.isTrigger)
+                {
+                    // Se o impacto for no chão da sala e NÃO no topo de um cristal alto ou borda de parede
+                    if (hit.point.y <= floorY + 1.2f)
+                    {
+                        return hit.point;
+                    }
+                }
             }
         }
 
-        // Fallback final usando bounds.min.y com offset baixo seguro
-        return new Vector3(x, bounds.min.y + 0.1f, z);
+        // Fallback centralizado no chão base
+        float finalX = Random.Range(bounds.center.x - halfX * 0.7f, bounds.center.x + halfX * 0.7f);
+        float finalZ = Random.Range(bounds.center.z - halfZ * 0.7f, bounds.center.z + halfZ * 0.7f);
+        return new Vector3(finalX, floorY + 0.1f, finalZ);
     }
 
     private Vector3 GetRandomPositionForCollectible(BoxCollider box, bool isHigh, bool isNearWall)

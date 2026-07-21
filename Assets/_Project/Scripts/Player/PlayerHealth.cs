@@ -470,13 +470,56 @@ public class PlayerHealth : MonoBehaviour
         UpdateHealthBar();
     }
     
+    [Header("Luz de Dano (DAMAGELIGHT)")]
+    public GameObject damageLightObj;
+    private Coroutine damageLightCoroutine;
+
     [Header("Damage Flash no Modelo do Player")]
     private Coroutine playerFlashCoroutine;
     private Renderer[] playerRenderers;
     private Color[] playerOriginalColors;
 
+    private void TriggerDamageLight()
+    {
+        if (damageLightObj == null)
+        {
+            Transform found = transform.Find("DAMAGELIGHT");
+            if (found == null)
+            {
+                Light[] lights = GetComponentsInChildren<Light>(true);
+                foreach (var l in lights)
+                {
+                    if (l != null && (l.name == "DAMAGELIGHT" || l.name.ToUpper().Contains("DAMAGE")))
+                    {
+                        damageLightObj = l.gameObject;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                damageLightObj = found.gameObject;
+            }
+        }
+
+        if (damageLightObj != null)
+        {
+            if (damageLightCoroutine != null) StopCoroutine(damageLightCoroutine);
+            damageLightCoroutine = StartCoroutine(AnimateDamageLight());
+        }
+    }
+
+    private IEnumerator AnimateDamageLight()
+    {
+        damageLightObj.SetActive(true);
+        yield return new WaitForSeconds(0.35f);
+        if (damageLightObj != null) damageLightObj.SetActive(false);
+    }
+
     private void TriggerPlayerRedFlash()
     {
+        TriggerDamageLight();
+
         if (playerRenderers == null || playerRenderers.Length == 0)
         {
             playerRenderers = GetComponentsInChildren<Renderer>();
