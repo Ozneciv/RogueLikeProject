@@ -562,7 +562,7 @@ public class RoomController : MonoBehaviour
         if (crystalPrefab == null) crystalPrefab = Resources.Load<GameObject>("SpawnItems/stone_low+");
         if (faunaPrefab == null) faunaPrefab = Resources.Load<GameObject>("SpawnItems/tinker");
 
-        // 1. Spawn Minerals (Cube, on ground)
+        // 1. Spawn Minerals (Cube, on ground - targets for Geobionte fusion)
         if (crystalPrefab != null)
         {
             Vector3 pos = GetRandomPositionForCollectible(area, false, false);
@@ -570,6 +570,11 @@ public class RoomController : MonoBehaviour
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
             if (pickup != null) pickup.InitializeItem("Minerals");
+
+            if (obj.GetComponent<OreNode>() == null)
+            {
+                obj.AddComponent<OreNode>();
+            }
         }
 
         // 2. Spawn Fauna (High/floating, glowing)
