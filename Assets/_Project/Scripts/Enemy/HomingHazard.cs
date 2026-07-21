@@ -210,22 +210,41 @@ public class HomingHazard : MonoBehaviour
         Vector3 explosionCenter = transform.position;
         Debug.Log("[GOBLIN SKULL BOMB] BOOM! Caveira explodiu!");
 
-        // Aplica dano ao jogador se estiver no raio de explosão
+        bool dealtDamage = false;
+
+        // 1. Aplica dano via OverlapSphere
         Collider[] hitColliders = Physics.OverlapSphere(explosionCenter, explosionRadius);
         foreach (var col in hitColliders)
         {
-            if (col.CompareTag("Player"))
+            if (col != null && (col.CompareTag("Player") || col.name.Contains("Player") || col.GetComponent<PlayerHealth>() != null || col.GetComponentInParent<PlayerHealth>() != null))
             {
                 PlayerHealth ph = col.GetComponent<PlayerHealth>() ?? col.GetComponentInParent<PlayerHealth>();
                 if (ph != null)
                 {
                     ph.TakeDamage(explosionDamage, gameObject);
-                    Debug.Log($"[GOBLIN SKULL BOMB] Dano de explosão ({explosionDamage}) causado ao Player!");
+                    dealtDamage = true;
+                    Debug.Log($"[GOBLIN SKULL BOMB] Dano de explosão ({explosionDamage}) causado via Overlap!");
+                    break;
                 }
             }
         }
 
-        // Gera o efeito visual da explosão (onda de choque + flash de fogo)
+        // 2. Se não encontrou por Overlap (ex: colisor do player em filho), checa distância direta do playerTransform
+        if (!dealtDamage && playerTransform != null)
+        {
+            float distToPlayer = Vector3.Distance(explosionCenter, playerTransform.position);
+            if (distToPlayer <= explosionRadius + 0.8f)
+            {
+                PlayerHealth ph = playerTransform.GetComponent<PlayerHealth>() ?? playerTransform.GetComponentInParent<PlayerHealth>();
+                if (ph != null)
+                {
+                    ph.TakeDamage(explosionDamage, gameObject);
+                    Debug.Log($"[GOBLIN SKULL BOMB] Dano de explosão ({explosionDamage}) causado via Distância ({distToPlayer:F1}m)!");
+                }
+            }
+        }
+
+        // 3. Gera o efeito visual da explosão independente (para não ser cancelado com a destruição da caveira)
         CreateExplosionVFX(explosionCenter);
 
         if (explosionVFXPrefab != null)
@@ -245,7 +264,7 @@ public class HomingHazard : MonoBehaviour
         Light light = expObj.AddComponent<Light>();
         light.color = new Color(1f, 0.4f, 0.1f);
         light.range = explosionRadius * 2f;
-        light.intensity = 6f;
+        light.intensity = 7f;
 
         // Esfera de Impacto / Onda de choque
         GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -263,42 +282,9 @@ public class HomingHazard : MonoBehaviour
             rend.material = mat;
         }
 
-        StartCoroutine(AnimateExplosion(expObj, sphere, rend, light));
-    }
-
-    private IEnumerator AnimateExplosion(GameObject container, GameObject sphere, Renderer rend, Light light)
-    {
-        float duration = 0.35f;
-        float elapsed = 0f;
-        Vector3 startScale = Vector3.one * 0.4f;
-        Vector3 endScale = Vector3.one * (explosionRadius * 1.8f);
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-
-            if (sphere != null)
-            {
-                sphere.transform.localScale = Vector3.Lerp(startScale, endScale, t);
-                if (rend != null && rend.material != null)
-                {
-                    Color c = rend.material.color;
-                    c.a = Mathf.Lerp(0.85f, 0f, t);
-                    rend.material.color = c;
-                }
-            }
-
-            if (light != null)
-            {
-                light.intensity = Mathf.Lerp(6f, 0f, t);
-            }
-
-            yield return null;
-        }
-
-        if (sphere != null) Destroy(sphere);
-        if (container != null) Destroy(container);
+        // Componente auxiliar para animar no próprio objeto independente
+        SkullExplosionFX fxHelper = expObj.AddComponent<SkullExplosionFX>();
+        fxHelper.Init(sphere, rend, light, explosionRadius * 1.8f, 0.35f);
     }
 
     void OnDrawGizmosSelected()
@@ -308,5 +294,52 @@ public class HomingHazard : MonoBehaviour
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, explosionRadius);
+    }
+}
+
+public class SkullExplosionFX : MonoBehaviour
+{
+    private GameObject sphere;
+    private Renderer rend;
+    private Light lightComp;
+    private float maxRadius;
+    private float duration;
+    private float elapsed = 0f;
+
+    public void Init(GameObject sphereObj, Renderer r, Light l, float targetRadius, float animTime)
+    {
+        sphere = sphereObj;
+        rend = r;
+        lightComp = l;
+        maxRadius = targetRadius;
+        duration = animTime;
+    }
+
+    void Update()
+    {
+        elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(elapsed / duration);
+
+        if (sphere != null)
+        {
+            sphere.transform.localScale = Vector3.Lerp(Vector3.one * 0.4f, Vector3.one * maxRadius, t);
+            if (rend != null && rend.material != null)
+            {
+                Color c = rend.material.color;
+                c.a = Mathf.Lerp(0.85f, 0f, t);
+                rend.material.color = c;
+            }
+        }
+
+        if (lightComp != null)
+        {
+            lightComp.intensity = Mathf.Lerp(7f, 0f, t);
+        }
+
+        if (elapsed >= duration)
+        {
+            if (sphere != null) Destroy(sphere);
+            Destroy(gameObject);
+        }
     }
 }

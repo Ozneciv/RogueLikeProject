@@ -470,12 +470,81 @@ public class PlayerHealth : MonoBehaviour
         UpdateHealthBar();
     }
     
+    [Header("UI Damage Flash")]
+    private Image damageFlashOverlay;
+    private Coroutine flashCoroutine;
+
+    private void TriggerDamageFlash()
+    {
+        if (damageFlashOverlay == null)
+        {
+            CreateDamageFlashOverlay();
+        }
+
+        if (damageFlashOverlay != null)
+        {
+            if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+            flashCoroutine = StartCoroutine(AnimateDamageFlash());
+        }
+    }
+
+    private void CreateDamageFlashOverlay()
+    {
+        Canvas targetCanvas = FindFirstObjectByType<Canvas>();
+        if (healthFillImage != null && healthFillImage.canvas != null)
+        {
+            targetCanvas = healthFillImage.canvas;
+        }
+
+        if (targetCanvas != null)
+        {
+            GameObject flashObj = new GameObject("DamageFlashOverlay");
+            flashObj.transform.SetParent(targetCanvas.transform, false);
+            RectTransform rect = flashObj.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            damageFlashOverlay = flashObj.AddComponent<Image>();
+            damageFlashOverlay.color = new Color(0.8f, 0f, 0f, 0f);
+            damageFlashOverlay.raycastTarget = false;
+        }
+    }
+
+    private IEnumerator AnimateDamageFlash()
+    {
+        float duration = 0.35f;
+        float elapsed = 0f;
+        Color startColor = new Color(0.8f, 0f, 0f, 0.45f);
+        Color endColor = new Color(0.8f, 0f, 0f, 0f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            if (damageFlashOverlay != null)
+            {
+                damageFlashOverlay.color = Color.Lerp(startColor, endColor, t);
+            }
+            yield return null;
+        }
+
+        if (damageFlashOverlay != null)
+        {
+            damageFlashOverlay.color = endColor;
+        }
+    }
+
     /// <summary>
     /// Aplica dano ao jogador com todos os atributos defensivos.
     /// </summary>
     public void TakeDamage(int damage, GameObject attacker = null)
     {
         if (isDead || isInvulnerable) return;
+
+        // Dispara indicador visual de dano na tela
+        TriggerDamageFlash();
 
         // Se estivermos no modo Endless e o level for maior que 3, aumenta o dano recebido pelo jogador
         if (RunManager.instance != null && RunManager.instance.isEndlessMode && RunManager.instance.currentLevel > 3)
