@@ -444,30 +444,51 @@ public class RoomController : MonoBehaviour
         Bounds bounds = area.bounds;
         Vector3 size = bounds.size;
 
-        // Inset das margens para não spawnar colado em paredes ou bordas externas
-        float halfX = (size.x < 2f ? 8f : size.x * 0.5f) * 0.85f;
-        float halfZ = (size.z < 2f ? 8f : size.z * 0.5f) * 0.85f;
+        // Inset das margens (0.70f = 30% de recuo das bordas) para não spawnar em cristais e paredes do perímetro
+        float halfX = (size.x < 2f ? 6f : size.x * 0.5f) * 0.70f;
+        float halfZ = (size.z < 2f ? 6f : size.z * 0.5f) * 0.70f;
 
-        // Tenta até 10 vezes encontrar uma posição no chão válido do NavMesh ou por Raycast
-        for (int i = 0; i < 10; i++)
+        // Tenta até 15 vezes encontrar uma posição no centro caminhável do NavMesh
+        for (int i = 0; i < 15; i++)
         {
             float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
             float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
             Vector3 candidatePos = new Vector3(x, bounds.center.y, z);
 
-            // 1. Tenta NavMesh com amostragem válida da área
-            if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 5f, UnityEngine.AI.NavMesh.AllAreas))
+            // 1. Tenta NavMesh e garante distância mínima das paredes/bordas
+            if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 4f, UnityEngine.AI.NavMesh.AllAreas))
             {
+                // Verifica se não está colado na borda do NavMesh (mínimo 1.2m da parede)
+                if (UnityEngine.AI.NavMesh.FindClosestEdge(navHit.position, out UnityEngine.AI.NavMeshHit edgeHit, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    if (edgeHit.distance < 1.2f) continue;
+                }
+
+                // Raycast de confirmação para garantir que não caiu no topo de um cristal decorativo
+                Vector3 checkRayStart = navHit.position + Vector3.up * 5f;
+                if (Physics.Raycast(checkRayStart, Vector3.down, out RaycastHit surfaceHit, 8f))
+                {
+                    string nameLower = surfaceHit.collider.gameObject.name.ToLower();
+                    if (nameLower.Contains("crystal") || nameLower.Contains("prop") || surfaceHit.collider.CompareTag("Prop"))
+                    {
+                        continue; // Rejeita e sorteia outro ponto se for no topo de um cristal
+                    }
+                }
+
                 return navHit.position;
             }
 
-            // 2. Raycast de cima para baixo
+            // 2. Raycast de cima para baixo como fallback secundário
             Vector3 rayStart = new Vector3(x, bounds.center.y + 15f, z);
             if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 35f))
             {
                 if (!hit.collider.isTrigger && !hit.collider.CompareTag("Player"))
                 {
-                    return hit.point;
+                    string hitName = hit.collider.gameObject.name.ToLower();
+                    if (!hitName.Contains("crystal") && !hitName.Contains("prop") && !hit.collider.CompareTag("Prop"))
+                    {
+                        return hit.point;
+                    }
                 }
             }
         }
