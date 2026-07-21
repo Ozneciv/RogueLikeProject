@@ -1896,8 +1896,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
-  maxArmor: 100
-  armorRegenRate: 5
+  maxArmor: 300
+  armorRegenRate: 1
   isInvulnerable: 0
   playerMovement: {fileID: 0}
   playerAttack: {fileID: 399265535294509767}
