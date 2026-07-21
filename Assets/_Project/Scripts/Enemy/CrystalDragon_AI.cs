@@ -32,7 +32,7 @@ public class CrystalDragon_AI : MonoBehaviour
     private float flightCooldownTimer = 0f;
 
     [Header("Ataques")]
-    public float spikeRange = 8f;
+    public float spikeRange = 18f;
     public float tailRange = 3f;
 
     [Header("Voo (animação de baixa altitude)")]
@@ -507,8 +507,8 @@ public class CrystalDragon_AI : MonoBehaviour
         // Pequena telegraph
         yield return new WaitForSeconds(0.4f);
 
-        Vector3 spawnPosition = spikeOrigin != null ? spikeOrigin.position : transform.position + transform.forward * 1.2f + Vector3.up * spikeProjectileVerticalOffset;
-        if (spikeOrigin == null) spawnPosition += Vector3.up * spikeProjectileVerticalOffset;
+        Vector3 spawnPosition = (spikeOrigin != null && spikeOrigin != transform) ? spikeOrigin.position : (transform.position + transform.forward * 1.5f + Vector3.up * 1.6f);
+        if (spawnPosition.y < transform.position.y + 0.8f) spawnPosition.y = transform.position.y + 1.6f;
 
         // Spawn a single volley of N projectiles distributed in a cone
         Vector3 baseTarget = playerTransform != null ? playerTransform.position : (spawnPosition + transform.forward * 10f);
