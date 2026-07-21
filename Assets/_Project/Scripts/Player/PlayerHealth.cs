@@ -86,15 +86,10 @@ public class PlayerHealth : MonoBehaviour
         isDead = false;
         gameObject.layer = playerLayer;
 
-        // Reset rotação do pai e dos filhos para posição limpa e em pé
+        // Reset rotação do pai para posição limpa e em pé
         transform.rotation = Quaternion.identity;
-        foreach (Transform child in transform)
-        {
-            child.localPosition = Vector3.zero;
-            child.localRotation = Quaternion.identity;
-        }
 
-        // Restaura o Animator para estado Idle em pé, sem root motion e sem animações de acoradagem
+        // Restaura o Animator para estado Idle em pé, sem root motion e sem animações de acordar
         if (playerAnimator != null)
         {
             playerAnimator.applyRootMotion = false;
