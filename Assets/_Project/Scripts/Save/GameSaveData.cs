@@ -32,5 +32,6 @@ public class PersistentSaveData
     public string selectedSkinID = "astronaut";
     public List<string> craftedEquipmentIds = new List<string>();
     public List<string> equippedEquipmentIds = new List<string>();
+    public List<string> inimigosDescobertos = new List<string>();
 }
 

@@ -629,7 +629,7 @@ public class InventoryUI : MonoBehaviour
         DontDestroyOnLoad(canvasObject);
 
         // Garante EventSystem
-        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
             GameObject esObj = new GameObject("EventSystem");
             esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();

@@ -188,7 +188,7 @@ public class GameManager : MonoBehaviour
         }
 
         // 2. Generate level immediately so the player snaps to the correct floor/spawn point
-        LevelGenerator levelGen = FindObjectOfType<LevelGenerator>();
+        LevelGenerator levelGen = Object.FindFirstObjectByType<LevelGenerator>();
         if (levelGen != null)
         {
             levelGen.GenerateLevel();
@@ -259,7 +259,7 @@ public class GameManager : MonoBehaviour
             DashM pDash = currentPlayer.GetComponent<DashM>();
             if (pDash != null) pDash.FindUIReferences();
 
-            MerchantUIController merchantUI = FindObjectOfType<MerchantUIController>(true);
+            MerchantUIController merchantUI = Object.FindFirstObjectByType<MerchantUIController>(FindObjectsInactive.Include);
             if (merchantUI != null) merchantUI.ConnectPlayer(pHealth);
         }
 

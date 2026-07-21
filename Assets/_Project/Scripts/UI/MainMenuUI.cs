@@ -60,7 +60,7 @@ public class MainMenuUI : MonoBehaviour
         sc.referenceResolution = new Vector2(1920, 1080);
         cObj.AddComponent<GraphicRaycaster>();
 
-        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
             var es = new GameObject("EventSystem");
             es.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -142,7 +142,7 @@ public class MainMenuUI : MonoBehaviour
         // Gameplay
         y = Section(p.transform, "GAMEPLAY", y);
         y = NavRow(p.transform, "Controles", "->", y, () => {
-            var ctrl = FindObjectOfType<ControlsReferenceMenu>(true);
+            var ctrl = Object.FindFirstObjectByType<ControlsReferenceMenu>(FindObjectsInactive.Include);
             if (ctrl != null)
             {
                 // Simulate pressing the toggle key
@@ -153,6 +153,11 @@ public class MainMenuUI : MonoBehaviour
             {
                 Debug.LogWarning("ControlsReferenceMenu not found in scene.");
             }
+        });
+
+        y = NavRow(p.transform, "Resetar Progresso", "RESET", y, () => {
+            SaveManager.ResetProfile();
+            Debug.Log("[DEBUG] Progresso do jogo resetado via menu principal.");
         });
         y -= 28f;
 
@@ -463,7 +468,7 @@ public class MainMenuUI : MonoBehaviour
         go.transform.SetParent(p, false);
         var t = go.AddComponent<TextMeshProUGUI>();
         t.text = text; t.fontSize = size; t.color = c;
-        t.richText = true; t.enableWordWrapping = true;
+        t.richText = true; t.textWrappingMode = TextWrappingModes.Normal;
         t.overflowMode = TextOverflowModes.Overflow;
         return t;
     }

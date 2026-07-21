@@ -28,25 +28,32 @@ public class RoomControllerEnemyPopulator : EditorWindow
     private static readonly string[] MOB_MENOR_PATHS = new[]
     {
         "Assets/_Project/Enemies/Spider/Spider.prefab",
-        "Assets/_Project/Enemies/Totem/SkullController 1.prefab",
+        "Assets/_Project/Enemies/SharpBlur/Sh.prefab",
+        "Assets/_Project/Enemies/Totem/Totem 1.prefab",
     };
 
     private static readonly string[] ATIRADOR_PATHS = new[]
     {
-        "Assets/_Project/Enemies/Goblin/Goblin.prefab",
+        "Assets/_Project/Enemies/CrystalDragon/cristaldrag.prefab",
         "Assets/_Project/Enemies/CrystalWatcher/CrystalWatcher.prefab",
+        "Assets/_Project/Enemies/Goblin/Goblin.prefab",
     };
 
     private static readonly string[] TANQUE_PATHS = new[]
     {
         "Assets/_Project/Enemies/Golem/Golem.prefab",
+        "Assets/_Project/Enemies/CrystalWatcher/CrystalWatcher.prefab",
         "Assets/_Project/Enemies/MagicStone/MagicStoneEnemy.prefab",
-        "Assets/_Project/Enemies/Totem/Totem_3_FBX_low.prefab",
     };
 
     private static readonly string[] ELITE_PATHS = new[]
     {
-        "Assets/_Project/Enemies/ShardSwarm/Shard Swarm.prefab",
+        "Assets/GameAssets/Prefabs-Gabriel/Enemies Prefabs/Geobionte.prefab",
+    };
+
+    private static readonly string[] SUPORTE_PATHS = new[]
+    {
+        "Assets/_Project/Enemies/Cristalus/Cristalus.prefab",
         "Assets/_Project/Enemies/CrystalTunner/CrystalTuner_Root.prefab",
     };
 
@@ -62,8 +69,9 @@ public class RoomControllerEnemyPopulator : EditorWindow
         List<GameObject> atirador  = LoadPrefabs(ATIRADOR_PATHS,   "Atirador");
         List<GameObject> tanque    = LoadPrefabs(TANQUE_PATHS,      "Tanque");
         List<GameObject> elite     = LoadPrefabs(ELITE_PATHS,       "Elite");
+        List<GameObject> suporte   = LoadPrefabs(SUPORTE_PATHS,     "Suporte");
 
-        if (mobMenor.Count == 0 && atirador.Count == 0 && tanque.Count == 0 && elite.Count == 0)
+        if (mobMenor.Count == 0 && atirador.Count == 0 && tanque.Count == 0 && elite.Count == 0 && suporte.Count == 0)
         {
             EditorUtility.DisplayDialog(
                 "Erro",
@@ -113,6 +121,7 @@ public class RoomControllerEnemyPopulator : EditorWindow
                         editRc.atiradorPrefabs  = new List<GameObject>(atirador);
                         editRc.tanquePrefabs    = new List<GameObject>(tanque);
                         editRc.elitePrefabs     = new List<GameObject>(elite);
+                        editRc.suportePrefabs   = new List<GameObject>(suporte);
                     }
 
                     modified = true;
@@ -136,7 +145,8 @@ public class RoomControllerEnemyPopulator : EditorWindow
             $"Mob Menor : {mobMenor.Count} prefabs\n" +
             $"Atirador  : {atirador.Count} prefabs\n" +
             $"Tanque    : {tanque.Count} prefabs\n" +
-            $"Elite     : {elite.Count} prefabs";
+            $"Elite     : {elite.Count} prefabs\n" +
+            $"Suporte   : {suporte.Count} prefabs";
 
         Debug.Log($"[EnemyPopulator] {summary}");
         EditorUtility.DisplayDialog("EPTA Tools — Enemy Pools", summary, "OK");

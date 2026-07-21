@@ -19,9 +19,9 @@ public class SpawnIndicator : MonoBehaviour
 
     [Header("Cores (HDR / Glow)")]
     [Tooltip("Cor base do glow de carregamento.")]
-    public Color glowColor = new Color(0.55f, 0.1f, 0.9f, 1f); // roxo
+    public Color glowColor = new Color(0.95f, 0.35f, 0.05f, 1f); // Laranja quente
     [Tooltip("Cor de pico de energia e do flash final.")]
-    public Color peakColor = new Color(0.15f, 0.85f, 1f, 1f);   // ciano elétrico
+    public Color peakColor = new Color(1f, 0.85f, 0.1f, 1f);   // Amarelo/Ciano elétrico
 
     [Header("Velocidades Dinâmicas")]
     [Tooltip("Velocidade inicial de rotação dos anéis (graus por segundo).")]
@@ -34,7 +34,9 @@ public class SpawnIndicator : MonoBehaviour
     private LineRenderer outerRing;  // Anel de mira que encolhe de fora para dentro
     private LineRenderer wavyRing;   // Anel interno ondulado que mostra acúmulo de energia
     private LineRenderer innerRing;  // Pequeno anel interno rotatório
+    private LineRenderer centerBeam; // Pilar de energia vertical central
     private ParticleSystem sparks;
+    private ParticleSystem centerGeyser; // Geyser de partículas subindo no centro
 
     // --- Internos ---
     private float time = 0f;
@@ -42,6 +44,12 @@ public class SpawnIndicator : MonoBehaviour
 
     void Awake()
     {
+        // Se as cores forem os valores padrão antigos (roxo/ciano), substitui pelos novos quentes
+        if (glowColor == new Color(0.55f, 0.1f, 0.9f, 1f))
+            glowColor = new Color(0.95f, 0.35f, 0.05f, 1f);
+        if (peakColor == new Color(0.15f, 0.85f, 1f, 1f))
+            peakColor = new Color(1.0f, 0.85f, 0.1f, 1f);
+
         // Cria material aditivo compatível com URP e Standard para efeito de Glow/Neon
         Shader additiveShader = Shader.Find("Legacy Shaders/Particles/Additive");
         if (additiveShader == null)
@@ -100,7 +108,21 @@ public class SpawnIndicator : MonoBehaviour
         innerColor.a = Mathf.Lerp(0.2f, 0.8f, progress);
         DrawCircle(innerRing, radius * 0.35f, 0.04f, innerColor, -time * (currentRotationSpeed * 2f));
 
-        // --- 5. Controle Dinâmico das Partículas ---
+        // --- 5. Desenho do Pilar de Energia Central (Cresce verticalmente e expande) ---
+        if (centerBeam != null)
+        {
+            centerBeam.startColor = currentColor;
+            centerBeam.endColor = new Color(currentColor.r, currentColor.g, currentColor.b, 0f);
+            
+            float beamWidth = Mathf.Lerp(0.01f, radius * 0.45f, Mathf.Pow(progress, 3.5f));
+            centerBeam.startWidth = beamWidth;
+            centerBeam.endWidth = beamWidth * 0.2f;
+            
+            centerBeam.SetPosition(0, new Vector3(0f, 0.03f, 0f));
+            centerBeam.SetPosition(1, new Vector3(0f, 3.5f * progress, 0f));
+        }
+
+        // --- 6. Controle Dinâmico das Partículas ---
         if (sparks != null)
         {
             var emission = sparks.emission;
@@ -110,6 +132,16 @@ public class SpawnIndicator : MonoBehaviour
             var main = sparks.main;
             // Partículas se movem mais rápido no final
             main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f * Mathf.Lerp(1f, 2.5f, progress));
+        }
+
+        if (centerGeyser != null)
+        {
+            var emission = centerGeyser.emission;
+            // Erupção de partículas aumenta exponencialmente conforme chega perto do spawn
+            emission.rateOverTime = Mathf.Lerp(25f, 130f, Mathf.Pow(progress, 2.2f));
+
+            var main = centerGeyser.main;
+            main.startSpeed = new ParticleSystem.MinMaxCurve(3.0f * Mathf.Lerp(1f, 2.0f, progress));
         }
     }
 
@@ -129,6 +161,10 @@ public class SpawnIndicator : MonoBehaviour
         wavyRing = CreateChildRing("WavyRing");
         // Anel interno
         innerRing = CreateChildRing("InnerRing");
+        // Pilar central vertical
+        centerBeam = CreateChildRing("CenterBeam");
+        centerBeam.loop = false;
+        centerBeam.positionCount = 2;
     }
 
     LineRenderer CreateChildRing(string name)
@@ -207,7 +243,7 @@ public class SpawnIndicator : MonoBehaviour
         );
         colorOverLifetime.color = grad;
 
-        // Ruído orgânico tridimensional para simular calor ondulante/espiral
+        // Ruído orgânico tridimensional para simular calor ondulante/espir
         var noise = sparks.noise;
         noise.enabled = true;
         noise.strength = 0.6f;
@@ -219,6 +255,70 @@ public class SpawnIndicator : MonoBehaviour
         renderer.renderMode = ParticleSystemRenderMode.Billboard;
 
         sparks.Play();
+
+        // Geyser Central (fountain of energy/dust shooting up from center)
+        GameObject geyserObj = new GameObject("CenterGeyser");
+        geyserObj.transform.SetParent(transform, false);
+        geyserObj.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+
+        centerGeyser = geyserObj.AddComponent<ParticleSystem>();
+
+        var gMain = centerGeyser.main;
+        gMain.loop            = true;
+        gMain.startLifetime   = new ParticleSystem.MinMaxCurve(0.35f, 0.75f);
+        gMain.startSpeed      = new ParticleSystem.MinMaxCurve(3.0f, 6.0f);
+        gMain.startSize       = new ParticleSystem.MinMaxCurve(0.06f, 0.16f);
+        gMain.gravityModifier = -0.6f;
+        gMain.maxParticles    = 150;
+        gMain.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var gEmission = centerGeyser.emission;
+        gEmission.enabled = true;
+        gEmission.rateOverTime = 25f;
+
+        var gShape = centerGeyser.shape;
+        gShape.enabled = true;
+        gShape.shapeType = ParticleSystemShapeType.Circle;
+        gShape.radius = radius * 0.15f;
+        gShape.radiusThickness = 0.02f;
+
+        var gSize = centerGeyser.sizeOverLifetime;
+        gSize.enabled = true;
+        AnimationCurve gSizeCurve = new AnimationCurve();
+        gSizeCurve.AddKey(0f, 0.2f);
+        gSizeCurve.AddKey(0.15f, 1f);
+        gSizeCurve.AddKey(0.7f, 0.8f);
+        gSizeCurve.AddKey(1f, 0f);
+        gSize.size = new ParticleSystem.MinMaxCurve(1f, gSizeCurve);
+
+        var gColor = centerGeyser.colorOverLifetime;
+        gColor.enabled = true;
+        Gradient gGrad = new Gradient();
+        gGrad.SetKeys(
+            new GradientColorKey[] { 
+                new GradientColorKey(Color.white, 0f), 
+                new GradientColorKey(peakColor, 0.25f), 
+                new GradientColorKey(glowColor, 0.65f) 
+            },
+            new GradientAlphaKey[] { 
+                new GradientAlphaKey(1f, 0f), 
+                new GradientAlphaKey(0.85f, 0.4f), 
+                new GradientAlphaKey(0f, 1f) 
+            }
+        );
+        gColor.color = gGrad;
+
+        var gNoise = centerGeyser.noise;
+        gNoise.enabled = true;
+        gNoise.strength = 0.8f;
+        gNoise.frequency = 2.0f;
+        gNoise.scrollSpeed = 2.0f;
+
+        var gRenderer = geyserObj.GetComponent<ParticleSystemRenderer>();
+        gRenderer.material = sharedMaterial;
+        gRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+
+        centerGeyser.Play();
     }
 
     // =========================================================

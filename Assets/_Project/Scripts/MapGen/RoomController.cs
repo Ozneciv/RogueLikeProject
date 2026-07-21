@@ -64,6 +64,10 @@ public class RoomController : MonoBehaviour
     [Tooltip("Todos os prefabs que podem aparecer como Elite neste bioma.")]
     public List<GameObject> elitePrefabs = new List<GameObject>();
 
+    [Header("Suporte — 3 pontos | máx. 2 por onda")]
+    [Tooltip("Todos os prefabs que podem aparecer como Suporte neste bioma.")]
+    public List<GameObject> suportePrefabs = new List<GameObject>();
+
     // =====================================================
     // CONFIGURAÇÃO DE ONDAS
     // =====================================================
@@ -110,6 +114,7 @@ public class RoomController : MonoBehaviour
     // Restrições globais (não por onda) — reiniciam apenas ao entrar na sala
     private int eliteSpawnedTotal  = 0;
     private int tanqueSpawnedTotal = 0;
+    private int suporteSpawnedTotal = 0;
 
     private int   totalWavesThisRoom = 1;
     private int   currentWave        = 0;
@@ -118,7 +123,7 @@ public class RoomController : MonoBehaviour
     private bool  hasTriggered  = false;
     private bool  combatActive  = false;
 
-    private enum EnemyClass { Elite, Tanque, Atirador, MobMenor }
+    private enum EnemyClass { Elite, Tanque, Atirador, MobMenor, Suporte }
 
     // =====================================================
     // API PÚBLICA
@@ -234,6 +239,14 @@ public class RoomController : MonoBehaviour
 
         List<GameObject> result = new List<GameObject>();
 
+        // Força exatamente 1 inimigo de suporte por sala, spawnado na primeira onda
+        if (currentWave == 1 && suportePrefabs.Count > 0 && suporteSpawnedTotal < 1)
+        {
+            result.Add(GetRandom(suportePrefabs));
+            suporteSpawnedTotal++;
+            remainingPts -= 3;
+        }
+
         bool addedSomething = true;
         while (remainingPts > 0 && addedSomething)
         {
@@ -248,6 +261,8 @@ public class RoomController : MonoBehaviour
             if (atiradorPrefabs.Count > 0 && remainingPts >= 4)                           validOptions.Add(EnemyClass.Atirador);
             // Mob Menor: máx. 50% do budget da onda
             if (mobMenorPrefabs.Count > 0 && remainingPts >= 1 && mobPointsUsed < maxMobPoints) validOptions.Add(EnemyClass.MobMenor);
+            // Suporte: 3 pontos | máx. 1 POR SALA (limite global)
+            if (suportePrefabs.Count > 0 && remainingPts >= 3 && suporteSpawnedTotal < 1)  validOptions.Add(EnemyClass.Suporte);
 
             if (validOptions.Count == 0) break;
 
@@ -280,6 +295,11 @@ public class RoomController : MonoBehaviour
                     mobPointsUsed++;
                     remainingPts -= 1;
                     break;
+
+                case EnemyClass.Suporte:
+                    result.Add(GetRandom(suportePrefabs));
+                    remainingPts -= 3;
+                    break;
             }
         }
 
@@ -292,7 +312,7 @@ public class RoomController : MonoBehaviour
         }
 
         if (showSpawnLog)
-            Debug.Log($"[ROOM {roomIndex}] Onda {currentWave}: {result.Count} inimigos gerados (Elite:{eliteSpawnedTotal} Tanque:{tanqueSpawnedTotal})");
+            Debug.Log($"[ROOM {roomIndex}] Onda {currentWave}: {result.Count} inimigos gerados (Elite:{eliteSpawnedTotal} Tanque:{tanqueSpawnedTotal} Suporte:{suporteSpawnedTotal})");
 
         return result;
     }
@@ -313,7 +333,7 @@ public class RoomController : MonoBehaviour
         GameObject indicator = null;
         if (spawnIndicatorPrefab != null)
         {
-            Vector3 indicatorPos = new Vector3(spawnPos.x, chosenArea.transform.position.y + 0.05f, spawnPos.z);
+            Vector3 indicatorPos = new Vector3(spawnPos.x, spawnPos.y + 0.05f, spawnPos.z);
             indicator = Instantiate(spawnIndicatorPrefab, indicatorPos, Quaternion.identity);
         }
 
@@ -388,12 +408,35 @@ public class RoomController : MonoBehaviour
     {
         if (area == null) return transform.position;
         Bounds bounds = area.bounds;
-        float x = Random.Range(bounds.min.x, bounds.max.x);
-        float z = Random.Range(bounds.min.z, bounds.max.z);
-        // Usa bounds.min.y (chão da BoxCollider) como referência base.
-        // Isso é correto independente de onde o pivot/root da área estiver.
-        float y = bounds.min.y + spawnHeightOffset;
-        return new Vector3(x, y, z);
+        Vector3 size = bounds.size;
+
+        // Se a área de spawn for muito pequena em world space (erro de escala no prefab),
+        // expande para um raio útil de 8 metros ao redor do centro.
+        float halfX = size.x < 2f ? 8f : size.x * 0.5f;
+        float halfZ = size.z < 2f ? 8f : size.z * 0.5f;
+
+        float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
+        float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
+
+        // Projetar a posição no NavMesh para garantir que nasça exatamente no chão válido
+        Vector3 candidatePos = new Vector3(x, bounds.center.y, z);
+        if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 15f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            return navHit.position;
+        }
+
+        // Se NavMesh falhar, faz raycast de cima para baixo a partir de uma altura segura dentro do quarto
+        Vector3 rayStart = new Vector3(x, bounds.center.y + 10f, z);
+        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 30f))
+        {
+            if (!hit.collider.isTrigger)
+            {
+                return hit.point;
+            }
+        }
+
+        // Fallback final usando bounds.min.y com offset baixo seguro
+        return new Vector3(x, bounds.min.y + 0.1f, z);
     }
 
     private Vector3 GetRandomPositionForCollectible(BoxCollider box, bool isHigh, bool isNearWall)
@@ -401,33 +444,73 @@ public class RoomController : MonoBehaviour
         if (box == null) return transform.position;
         
         Bounds bounds = box.bounds;
-        float x = Random.Range(bounds.min.x, bounds.max.x);
-        float z = Random.Range(bounds.min.z, bounds.max.z);
+        Vector3 size = bounds.size;
+
+        // Se a área for muito pequena (erro de escala no prefab), expande para um raio útil de 7 metros
+        float halfX = size.x < 2f ? 7f : size.x * 0.5f;
+        float halfZ = size.z < 2f ? 7f : size.z * 0.5f;
+
+        float x = Random.Range(bounds.center.x - halfX, bounds.center.x + halfX);
+        float z = Random.Range(bounds.center.z - halfZ, bounds.center.z + halfZ);
 
         if (isNearWall)
         {
-            // Project to the nearest edge/wall of the BoxCollider bounds
-            float distToMinX = Mathf.Abs(x - bounds.min.x);
-            float distToMaxX = Mathf.Abs(bounds.max.x - x);
-            float distToMinZ = Mathf.Abs(z - bounds.min.z);
-            float distToMaxZ = Mathf.Abs(bounds.max.z - z);
+            float distToMinX = Mathf.Abs(x - (bounds.center.x - halfX));
+            float distToMaxX = Mathf.Abs((bounds.center.x + halfX) - x);
+            float distToMinZ = Mathf.Abs(z - (bounds.center.z - halfZ));
+            float distToMaxZ = Mathf.Abs((bounds.center.z + halfZ) - z);
 
             float minDist = Mathf.Min(Mathf.Min(distToMinX, distToMaxX), Mathf.Min(distToMinZ, distToMaxZ));
 
-            // Move the coordinate exactly towards the closest boundary edge (inwards slightly by 5% buffer)
             float margin = 0.05f;
-            if (minDist == distToMinX) x = bounds.min.x + (bounds.size.x * margin);
-            else if (minDist == distToMaxX) x = bounds.max.x - (bounds.size.x * margin);
-            else if (minDist == distToMinZ) z = bounds.min.z + (bounds.size.z * margin);
-            else if (minDist == distToMaxZ) z = bounds.max.z - (bounds.size.z * margin);
+            float sizeX = halfX * 2f;
+            float sizeZ = halfZ * 2f;
+
+            if (minDist == distToMinX) x = (bounds.center.x - halfX) + (sizeX * margin);
+            else if (minDist == distToMaxX) x = (bounds.center.x + halfX) - (sizeX * margin);
+            else if (minDist == distToMinZ) z = (bounds.center.z - halfZ) + (sizeZ * margin);
+            else if (minDist == distToMaxZ) z = (bounds.center.z + halfZ) - (sizeZ * margin);
         }
 
-        // Base ground level of the BoxCollider bounds
-        float y = bounds.min.y + spawnHeightOffset;
+        // Snap to ground using NavMesh or Raycast downwards
+        float y = bounds.center.y;
+        Vector3 candidatePos = new Vector3(x, y, z);
+        bool foundGround = false;
+
+        // 1. Tenta NavMesh primeiro
+        if (UnityEngine.AI.NavMesh.SamplePosition(candidatePos, out UnityEngine.AI.NavMeshHit navHit, 15f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            y = navHit.position.y;
+            foundGround = true;
+        }
+
+        // 2. Se NavMesh falhar, tenta Raycast de cima para baixo
+        if (!foundGround)
+        {
+            Vector3 rayStart = new Vector3(x, bounds.center.y + 8f, z);
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 20f))
+            {
+                if (!hit.collider.isTrigger)
+                {
+                    y = hit.point.y;
+                    foundGround = true;
+                }
+            }
+        }
+
+        // 3. Fallback final seguro
+        if (!foundGround)
+        {
+            y = bounds.min.y + 0.1f;
+        }
 
         if (isHigh)
         {
-            y += 2.0f; // Floating above the ground
+            y += 1.8f; // Floating above the ground
+        }
+        else
+        {
+            y += 0.05f; // Slightly above ground to prevent clipping
         }
 
         return new Vector3(x, y, z);
@@ -455,10 +538,9 @@ public class RoomController : MonoBehaviour
         {
             Vector3 pos = GetRandomPositionForCollectible(area, false, false);
             GameObject obj = Instantiate(crystalPrefab, pos, Quaternion.identity);
-            obj.transform.SetParent(transform);
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
-            if (pickup != null) pickup.forceCategory = "Minerals";
+            if (pickup != null) pickup.InitializeItem("Minerals");
         }
 
         // 2. Spawn Fauna (High/floating, glowing)
@@ -466,10 +548,9 @@ public class RoomController : MonoBehaviour
         {
             Vector3 pos = GetRandomPositionForCollectible(area, true, false);
             GameObject obj = Instantiate(faunaPrefab, pos, Quaternion.identity);
-            obj.transform.SetParent(transform);
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
-            if (pickup != null) pickup.forceCategory = "Fauna";
+            if (pickup != null) pickup.InitializeItem("Fauna");
         }
 
         // 3. Spawn Flora (Flat on ground, near walls, glowing)
@@ -477,10 +558,9 @@ public class RoomController : MonoBehaviour
         {
             Vector3 pos = GetRandomPositionForCollectible(area, false, true);
             GameObject obj = Instantiate(plantPrefab, pos, Quaternion.identity);
-            obj.transform.SetParent(transform);
             
             ItemPickup pickup = obj.GetComponent<ItemPickup>();
-            if (pickup != null) pickup.forceCategory = "Flora";
+            if (pickup != null) pickup.InitializeItem("Flora");
         }
     }
 

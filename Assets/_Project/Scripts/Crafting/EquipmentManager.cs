@@ -484,4 +484,30 @@ public class EquipmentManager : MonoBehaviour
         Debug.LogWarning("[EQUIPMENT] Player não encontrado via GameManager.");
         return null;
     }
+
+    /// <summary>
+    /// Desequipa todos os equipamentos ativos e remove seus efeitos do jogador.
+    /// </summary>
+    public void ResetAllEquippedEffects()
+    {
+        List<string> currentlyEquipped = new List<string>();
+        foreach (var equip in allEquipmentDefinitions)
+        {
+            if (equip != null && IsEquipped(equip.equipmentId))
+            {
+                currentlyEquipped.Add(equip.equipmentId);
+            }
+        }
+
+        foreach (string id in currentlyEquipped)
+        {
+            EquipmentData data = GetEquipmentData(id);
+            if (data != null)
+            {
+                RemoveEffect(data);
+            }
+        }
+        
+        OnEquipmentStateChanged?.Invoke();
+    }
 }

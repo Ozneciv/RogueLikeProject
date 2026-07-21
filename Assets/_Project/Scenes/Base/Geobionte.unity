@@ -1515,6 +1515,10 @@ PrefabInstance:
       propertyPath: primaryAttackScript
       value: 
       objectReference: {fileID: 1550285008}
+    - target: {fileID: 6813814540401641559, guid: 268c4ba7ab8083f4d8bfa33acf93caba, type: 3}
+      propertyPath: weaponAnimatorOverride
+      value: 
+      objectReference: {fileID: 9100000, guid: 0d68be6d0cbdadf4f8c34770b3885f84, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

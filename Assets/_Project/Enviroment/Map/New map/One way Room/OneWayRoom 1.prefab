@@ -146,7 +146,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 78.727234, y: 72.826744, z: 7.2428217}
-  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 92310863216537170}
@@ -219,11 +219,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5966136455932572873, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2415.9985
+      value: 2400
       objectReference: {fileID: 0}
     - target: {fileID: 5966136455932572873, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       propertyPath: m_LocalScale.y
-      value: 2299.7354
+      value: 2284.5068
+      objectReference: {fileID: 0}
+    - target: {fileID: 5966136455932572873, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1986.7563
       objectReference: {fileID: 0}
     - target: {fileID: 5966136455932572873, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       propertyPath: m_LocalPosition.x
@@ -321,6 +325,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6449200655628119667, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 254635890343087026}
+    - targetCorrespondingSourceObject: {fileID: 6449200655628119667, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3086138972767543558}
   m_SourcePrefab: {fileID: 100100000, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}
 --- !u!4 &92310863216537170 stripped
 Transform:
@@ -349,16 +356,19 @@ MonoBehaviour:
   roomIndex: 1
   mobMenorPrefabs:
   - {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
-  - {fileID: 1155010451884850368, guid: 17526d5d2a1393e438fd19d86fdfed1c, type: 3}
+  - {fileID: 4268998290841704769, guid: 54907d67b9c4ae344968f4a78411c6ac, type: 3}
+  - {fileID: 326464074420430212, guid: 75587e19386eb024c8b895034e0d087d, type: 3}
   atiradorPrefabs:
-  - {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
+  - {fileID: 1755253575158604347, guid: d54e315a1f763424b99a1d4255734563, type: 3}
   - {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
   tanquePrefabs:
   - {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
+  - {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
   - {fileID: 4138484601771036003, guid: ab85fa72aae18184ea4dcf33ea87c8ff, type: 3}
-  - {fileID: 858715619969859873, guid: 0b97d8f3b378b6b4a9daca50cf3273c8, type: 3}
   elitePrefabs:
-  - {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
+  - {fileID: 2219830635270719724, guid: d8bf9856a9590de499ed775858ed6a48, type: 3}
+  suportePrefabs:
+  - {fileID: 626950691794527064, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
   - {fileID: 5661634700527789902, guid: f9613e6db495cb64b8bf4f44589c7230, type: 3}
   minWaves: 1
   maxWaves: 3
@@ -374,6 +384,28 @@ MonoBehaviour:
   - {fileID: 9193743793584865140}
   - {fileID: 7468929209566918263}
   showSpawnLog: 1
+--- !u!64 &3086138972767543558
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723993845965927656}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 7027636043351174211, guid: 3ab7618e21668f940ad78ed829307570, type: 3}
 --- !u!4 &2885099675760511027 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8900770498141278888, guid: 5f03fcdcf8a8e454a8c4431a542119c2, type: 3}

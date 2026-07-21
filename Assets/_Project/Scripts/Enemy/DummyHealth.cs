@@ -55,6 +55,14 @@ public class DummyHealth : MonoBehaviour
 
     private void Start()
     {
+        // Se estivermos no modo Endless e o level for maior que 3, aumenta a vida máxima do inimigo
+        if (RunManager.instance != null && RunManager.instance.isEndlessMode && RunManager.instance.currentLevel > 3)
+        {
+            float hpMultiplier = 1f + (RunManager.instance.currentLevel - 3) * 0.15f; // +15% HP por level acima do 3
+            maxHealth = Mathf.RoundToInt(maxHealth * hpMultiplier);
+            CurrentHealth = maxHealth;
+        }
+
         dummyRenderer = GetComponentInChildren<Renderer>();
         if (dummyRenderer != null)
         {

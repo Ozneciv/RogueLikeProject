@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class Player_WeaponManager : MonoBehaviour
 {
@@ -9,18 +10,177 @@ public class Player_WeaponManager : MonoBehaviour
     public Animator playerAnimator; 
     private RuntimeAnimatorController defaultAnimatorController;
 
+    [Header("Arma Ativa / Coldre")]
+    public GameObject currentWeapon;
+    public bool isWeaponDrawn = true;
+    public KeyCode holsterKey = KeyCode.G;
+    [Tooltip("Tempo em segundos para a arma sumir da mão após iniciar a animação de guardar.")]
+    public float holsterDelay = 0.6f;
+    [Tooltip("Tempo em segundos para a arma aparecer na mão após iniciar a animação de empunhar.")]
+    public float drawDelay = 0.3f;
+    private RuntimeAnimatorController activeWeaponController;
+    private Coroutine holsterCoroutine;
+    private Coroutine drawCoroutine;
+    private string lastSceneName;
+
     void Start()
     {
-
         if (playerAnimator != null)
         {
             defaultAnimatorController = playerAnimator.runtimeAnimatorController;
+        }
+
+        lastSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        // Tenta detectar arma já acoplada na inicialização
+        if (rightHand == null)
+        {
+            rightHand = transform.Find("RightHand") ?? transform.Find("Hand_R") ?? transform.Find("Hand.R");
+        }
+        if (rightHand != null && rightHand.childCount > 0)
+        {
+            // Filtra os filhos para garantir que apenas objetos com WeaponOffset sejam considerados armas
+            foreach (Transform child in rightHand)
+            {
+                WeaponOffset offset = child.GetComponent<WeaponOffset>();
+                if (offset != null)
+                {
+                    currentWeapon = child.gameObject;
+                    isWeaponDrawn = currentWeapon.activeSelf;
+                    if (offset.weaponAnimatorOverride != null)
+                    {
+                        activeWeaponController = offset.weaponAnimatorOverride;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    void Update()
+    {
+        string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        // Se mudou de cena e NÃO está na base, força a empunhar a arma imediatamente
+        if (activeScene != lastSceneName)
+        {
+            lastSceneName = activeScene;
+            bool isInBase = (activeScene == "Base" || activeScene == "BaseLab");
+            if (!isInBase && currentWeapon != null && !isWeaponDrawn)
+            {
+                DrawWeapon();
+            }
+        }
+
+        // Só permite guardar/empunhar manualmente se estiver na Base (Base ou BaseLab)
+        bool isInBaseNow = (activeScene == "Base" || activeScene == "BaseLab");
+        if (isInBaseNow && Input.GetKeyDown(holsterKey))
+        {
+            ToggleWeaponDrawState();
+        }
+    }
+
+    public void ToggleWeaponDrawState()
+    {
+        if (currentWeapon == null) return;
+
+        if (isWeaponDrawn)
+        {
+            HolsterWeapon();
+        }
+        else
+        {
+            DrawWeapon();
+        }
+    }
+
+    public void HolsterWeapon()
+    {
+        if (currentWeapon == null) return;
+
+        if (holsterCoroutine != null) StopCoroutine(holsterCoroutine);
+        if (drawCoroutine != null) StopCoroutine(drawCoroutine);
+
+        holsterCoroutine = StartCoroutine(DoHolsterWeapon());
+    }
+
+    private IEnumerator DoHolsterWeapon()
+    {
+        isWeaponDrawn = false;
+
+        // Desativa a capacidade de ataque do script de ataque primário imediatamente
+        if (attackScript != null)
+        {
+            attackScript.hasWeapon = false;
+        }
+
+        // Restaura o Animator Controller padrão (Unarmed) e dispara o trigger
+        if (playerAnimator != null)
+        {
+            playerAnimator.runtimeAnimatorController = defaultAnimatorController;
+            playerAnimator.SetTrigger("HolsterWeapon");
+        }
+
+        // Espera o tempo da animação antes de sumir com o visual da arma
+        yield return new WaitForSeconds(holsterDelay);
+
+        if (currentWeapon != null && !isWeaponDrawn)
+        {
+            currentWeapon.SetActive(false);
+            Debug.Log("[Player_WeaponManager] Arma guardada (Holstered) no final da animação.");
+        }
+    }
+
+    public void DrawWeapon()
+    {
+        if (currentWeapon == null) return;
+
+        if (holsterCoroutine != null) StopCoroutine(holsterCoroutine);
+        if (drawCoroutine != null) StopCoroutine(drawCoroutine);
+
+        drawCoroutine = StartCoroutine(DoDrawWeapon());
+    }
+
+    private IEnumerator DoDrawWeapon()
+    {
+        isWeaponDrawn = true;
+
+        // Reativa a capacidade de ataque imediatamente ao puxar a arma
+        if (attackScript != null)
+        {
+            attackScript.hasWeapon = true;
+        }
+
+        // Aplica o moveset específico da arma e dispara o trigger
+        if (playerAnimator != null)
+        {
+            if (activeWeaponController != null)
+            {
+                playerAnimator.runtimeAnimatorController = activeWeaponController;
+            }
+            else
+            {
+                playerAnimator.runtimeAnimatorController = defaultAnimatorController;
+            }
+            playerAnimator.SetTrigger("DrawWeapon");
+        }
+
+        // Espera o tempo do saque (meio da animação) antes de tornar a arma visível
+        yield return new WaitForSeconds(drawDelay);
+
+        if (currentWeapon != null && isWeaponDrawn)
+        {
+            currentWeapon.SetActive(true);
+            Debug.Log("[Player_WeaponManager] Arma empunhada (Drawn) e visível.");
         }
     }
 
     public void EquipDagger(GameObject weapon)
     {
         Debug.Log($"[Player_WeaponManager] EquipDagger chamado para o objeto: {weapon.name}");
+        currentWeapon = weapon;
+        isWeaponDrawn = true;
+        weapon.SetActive(true); // Garante que a arma fique ativa no momento do equip
         WeaponOffset offsetData = weapon.GetComponent<WeaponOffset>();
         
         if (offsetData == null)
@@ -49,20 +209,20 @@ public class Player_WeaponManager : MonoBehaviour
         weapon.transform.localRotation = Quaternion.Euler(offsetData.equipRotation);
         Debug.Log($"[Player_WeaponManager] Objeto {weapon.name} acoplado à mão: {(rightHand != null ? rightHand.name : "null")}");
 
-        
+        // Salva o controller da nova arma
+        if (offsetData.weaponAnimatorOverride != null)
+        {
+            activeWeaponController = offsetData.weaponAnimatorOverride;
+        }
+        else
+        {
+            activeWeaponController = defaultAnimatorController;
+        }
+
         if (playerAnimator != null)
         {
-            if (offsetData.weaponAnimatorOverride != null)
-            {
-                
-                playerAnimator.runtimeAnimatorController = offsetData.weaponAnimatorOverride;
-                Debug.Log("Moveset alterado para: " + weapon.name);
-            }
-            else
-            {
-
-                playerAnimator.runtimeAnimatorController = defaultAnimatorController;
-            }
+            playerAnimator.runtimeAnimatorController = activeWeaponController;
+            Debug.Log("Moveset alterado para: " + weapon.name);
         }
         // -------------------------------------------------------
 

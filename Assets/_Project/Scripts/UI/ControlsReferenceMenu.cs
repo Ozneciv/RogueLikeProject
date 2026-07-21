@@ -254,7 +254,7 @@ public class ControlsReferenceMenu : MonoBehaviour
         t.fontSize = size;
         t.color = color;
         t.richText = true;
-        t.enableWordWrapping = false;
+        t.textWrappingMode = TextWrappingModes.NoWrap;
         t.overflowMode = TextOverflowModes.Overflow;
         return t;
     }
