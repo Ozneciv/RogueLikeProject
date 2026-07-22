@@ -64,6 +64,20 @@ public class CraftingManager : MonoBehaviour
             Debug.Log($"[CRAFTING] Mesclou {loaded.Length} receitas do Resources. Total: {allRecipes.Count}");
         }
 
+        // Garante que a receita gratuita do Detector de Barreiras esteja disponível no Crafting
+        if (!allRecipes.Exists(r => r != null && r.recipeId == "recipe_detector_barreiras"))
+        {
+            CraftingRecipe barrierRecipe = ScriptableObject.CreateInstance<CraftingRecipe>();
+            barrierRecipe.recipeId     = "recipe_detector_barreiras";
+            barrierRecipe.recipeName   = "Detector de Barreiras";
+            barrierRecipe.description  = "Mapeador portátil gratuito que exibe na tela o progresso das salas do nível.";
+            barrierRecipe.ingredients  = new List<CraftingIngredient>(); // 0 Ingredientes = GRATUITO!
+            barrierRecipe.resultType   = CraftingResultType.Equipment;
+            barrierRecipe.resultEquipment = EquipmentManager.Instance != null ? EquipmentManager.Instance.GetEquipmentData("equip_detector_barreiras") : null;
+
+            allRecipes.Add(barrierRecipe);
+        }
+
         Debug.Log($"[CRAFTING] CraftingManager inicializado com {allRecipes.Count} receitas.");
     }
 
@@ -174,11 +188,24 @@ public class CraftingManager : MonoBehaviour
                 break;
 
             case CraftingResultType.Equipment:
-                // Registra a melhoria craftada no save
-                if (recipe.resultEquipment != null)
+                EquipmentData equipData = recipe.resultEquipment;
+                if (equipData == null && EquipmentManager.Instance != null)
                 {
-                    SaveManager.instance.AddCraftedEquipment(recipe.resultEquipment.equipmentId);
-                    Debug.Log($"[CRAFTING] Melhoria craftada: {recipe.resultEquipment.equipmentName}");
+                    string targetEquipId = recipe.recipeId.StartsWith("recipe_") ? recipe.recipeId.Replace("recipe_", "equip_") : recipe.recipeId;
+                    equipData = EquipmentManager.Instance.GetEquipmentData(targetEquipId);
+                    recipe.resultEquipment = equipData;
+                }
+
+                // Registra a melhoria craftada no save
+                if (equipData != null)
+                {
+                    SaveManager.instance.AddCraftedEquipment(equipData.equipmentId);
+                    Debug.Log($"[CRAFTING] Melhoria craftada: {equipData.equipmentName}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[CRAFTING] AVISO: resultEquipment era nulo para a receita '{recipe.recipeName}'. Usando ID genérico.");
+                    SaveManager.instance.AddCraftedEquipment(recipe.recipeId.Replace("recipe_", "equip_"));
                 }
                 break;
         }

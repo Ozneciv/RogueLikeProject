@@ -193,6 +193,9 @@ public class PlayerHealth : MonoBehaviour
 
         // Limpa o inventário de run (descarta itens comuns, mantém recursos de base)
         SaveManager.instance?.OnPlayerDied(this.gameObject);
+
+        // Reseta todos os atributos acumulados durante a run ao morrer
+        ResetAttributesOnDeath();
         
         // Trava física ao morrer também
         if (rb != null) 
@@ -207,6 +210,31 @@ public class PlayerHealth : MonoBehaviour
             else { diedFallingForward = false; playerAnimator.SetTrigger("DeathBackward"); }
         }
         StartCoroutine(RespawnSequence());
+    }
+
+    private void ResetAttributesOnDeath()
+    {
+        PlayerAttributesDefensive defStats = GetComponent<PlayerAttributesDefensive>() ?? GetComponentInChildren<PlayerAttributesDefensive>();
+        if (defStats != null) defStats.ResetToDefaults();
+
+        PlayerAttributesOffensive offStats = GetComponent<PlayerAttributesOffensive>() ?? GetComponentInChildren<PlayerAttributesOffensive>();
+        if (offStats != null) offStats.ResetToDefaults();
+
+        InfusionManager infusion = GetComponent<InfusionManager>() ?? GetComponentInChildren<InfusionManager>();
+        if (infusion != null)
+        {
+            infusion.ResetRunInflation();
+            if (infusion.infusedItems != null) infusion.infusedItems.Clear();
+        }
+
+        if (EquipmentManager.Instance != null)
+        {
+            EquipmentManager.Instance.ReapplyAllEquippedEffects();
+        }
+
+        FullHeal();
+
+        Debug.Log("[PLAYER HEALTH] Todos os atributos de run, infusões e maldições foram resetados após a morte.");
     }
 
     IEnumerator RespawnSequence()

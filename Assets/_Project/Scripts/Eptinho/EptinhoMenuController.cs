@@ -73,12 +73,7 @@ public class EptinhoMenuController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.I))
-        {
-            if (isOpen) FecharMenu();
-            else AbrirMenu();
-        }
-
+        // O menu do Eptinho agora abre apenas ao interagir diretamente com ele no mundo (Interação F).
         if (isOpen && Input.GetKeyDown(KeyCode.Escape))
             FecharMenu();
     }

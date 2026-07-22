@@ -379,12 +379,13 @@ public class SyntheticBagUI : MonoBehaviour
         float h   = rows    * (slotSize + slotSpacing) + slotSpacing;
         gridRect.sizeDelta = new Vector2(w, h);
 
-        // Ajusta painel para conter o grid + header + margens
+        // Painel fixo na altura exata de 2 LINHAS de slots (+ cabeçalho e margens)
         if (panelObject != null)
         {
+            float max2RowsHeight = 2f * (slotSize + slotSpacing) + slotSpacing;
             RectTransform panelRect = panelObject.GetComponent<RectTransform>();
             if (panelRect != null)
-                panelRect.sizeDelta = new Vector2(w + 32f, h + 64f);
+                panelRect.sizeDelta = new Vector2(w + 32f, max2RowsHeight + 64f);
         }
     }
 
@@ -539,15 +540,44 @@ public class SyntheticBagUI : MonoBehaviour
         headerText.color     = HEADER_COLOR;
         headerText.raycastTarget = false;
 
-        // === Grade de slots ===
+        // === Container ScrollView (Fixado em 2 linhas de altura) ===
+        float viewHeight = 2f * (slotSize + slotSpacing) + slotSpacing;
+        float viewWidth  = columns * (slotSize + slotSpacing) + slotSpacing;
+
+        GameObject scrollObj = new GameObject("BagScrollView");
+        scrollObj.transform.SetParent(panelObject.transform, false);
+
+        RectTransform scrollR = scrollObj.AddComponent<RectTransform>();
+        scrollR.anchorMin = new Vector2(0.5f, 0f);
+        scrollR.anchorMax = new Vector2(0.5f, 0f);
+        scrollR.pivot     = new Vector2(0.5f, 0f);
+        scrollR.anchoredPosition = new Vector2(0f, 16f);
+        scrollR.sizeDelta = new Vector2(viewWidth, viewHeight);
+
+        Image scrollMaskImg = scrollObj.AddComponent<Image>();
+        scrollMaskImg.color = new Color(0f, 0f, 0f, 0.01f);
+        scrollMaskImg.raycastTarget = true;
+
+        Mask mask = scrollObj.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+
+        ScrollRect scroll = scrollObj.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 25f;
+
+        // === Grade de slots (Content do ScrollRect) ===
         slotGrid = new GameObject("SlotGrid");
-        slotGrid.transform.SetParent(panelObject.transform, false);
+        slotGrid.transform.SetParent(scrollObj.transform, false);
 
         RectTransform gridRect = slotGrid.AddComponent<RectTransform>();
-        gridRect.anchorMin       = new Vector2(0.5f, 0.5f);
-        gridRect.anchorMax       = new Vector2(0.5f, 0.5f);
-        gridRect.pivot           = new Vector2(0.5f, 0.5f);
-        gridRect.anchoredPosition = new Vector2(0f, -16f);
+        gridRect.anchorMin       = new Vector2(0f, 1f);
+        gridRect.anchorMax       = new Vector2(1f, 1f);
+        gridRect.pivot           = new Vector2(0.5f, 1f);
+        gridRect.anchoredPosition = Vector2.zero;
+
+        scroll.content = gridRect;
 
         GridLayoutGroup grid = slotGrid.AddComponent<GridLayoutGroup>();
         grid.cellSize        = new Vector2(slotSize, slotSize);

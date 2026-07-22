@@ -102,6 +102,81 @@ MonoBehaviour:
   connectionTag: Standard
   floorOffset: 0
   isOccupied: 0
+--- !u!1 &3593280537788776198
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2987331223624413248}
+  - component: {fileID: 4917675205998182725}
+  - component: {fileID: 7511850574620901471}
+  m_Layer: 0
+  m_Name: SpawnArea (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2987331223624413248
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3593280537788776198}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.00477, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2857361651716296271}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4917675205998182725
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3593280537788776198}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.008140534, y: 0.0032185512, z: 0.004597863}
+  m_Center: {x: -0.0045213387, y: -0.004, z: 0.0010330637}
+--- !u!65 &7511850574620901471
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3593280537788776198}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.008140534, y: 0.0032185512, z: 0.004597863}
+  m_Center: {x: -0.0045213387, y: 0.0042768237, z: 0.0010330637}
 --- !u!1 &3951891373472094066
 GameObject:
   m_ObjectHideFlags: 0
@@ -264,6 +339,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1288856161025401679}
   - component: {fileID: 400274787300369604}
+  - component: {fileID: 3905637100243131166}
   m_Layer: 0
   m_Name: SpawnArea
   m_TagString: Untagged
@@ -305,8 +381,29 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.01, y: 0.01, z: 0.004597863}
-  m_Center: {x: 0, y: -8.195327e-18, z: 0.0010330637}
+  m_Size: {x: 0.0016426968, y: 0.01, z: 0.004597863}
+  m_Center: {x: -0.0041786316, y: -5.1862454e-18, z: 0.0010330637}
+--- !u!65 &3905637100243131166
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8370364037117529163}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0015, y: 0.009, z: 0.004}
+  m_Center: {x: 0.005, y: -5.1862454e-18, z: 0.0010330637}
 --- !u!1 &9024645306577737030
 GameObject:
   m_ObjectHideFlags: 0
@@ -438,6 +535,9 @@ PrefabInstance:
       addedObject: {fileID: 1288856161025401679}
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 48dc599cb83491f45ac2ec6891e9aef7, type: 3}
       insertIndex: -1
+      addedObject: {fileID: 2987331223624413248}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 48dc599cb83491f45ac2ec6891e9aef7, type: 3}
+      insertIndex: -1
       addedObject: {fileID: 4916394190316206800}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 48dc599cb83491f45ac2ec6891e9aef7, type: 3}
@@ -496,6 +596,7 @@ MonoBehaviour:
   mobCapFraction: 0.7
   spawnAreas:
   - {fileID: 400274787300369604}
+  - {fileID: 4917675205998182725}
   spawnIndicatorPrefab: {fileID: 0}
   spawnDelay: 1.5
   spawnHeightOffset: 0.1

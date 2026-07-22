@@ -22,7 +22,8 @@ public enum EquipmentEffectType
     DashCooldownBoost,       // Diminui o cooldown do dash (multiplicador)
     DashCountsBoost,         // Aumenta a quantidade de cargas de dash
     DashInvulnerabilityBoost, // Aumenta o tempo de invulnerabilidade do dash
-    MagnetRangeBoost         // Aumenta o raio de atração de essências
+    MagnetRangeBoost,        // Aumenta o raio de atração de essências
+    BarrierCounterDisplay    // Exibe o contador de salas/barreiras na UI (Detector de Barreiras)
 }
 
 /// <summary>

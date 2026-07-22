@@ -46,9 +46,9 @@ public class EptinhoPopupController : MonoBehaviour
     [Range(0f, 40f)] [SerializeField] private float borderThickness = 20f;
 
     [Space(5)]
-    [Range(30f, 400f)] [SerializeField] private float portraitSize = 192f;
-    [SerializeField] private float portraitMarginLeft = 0f;
-    [SerializeField] private float portraitMarginRight = 70f;
+    [Range(20f, 400f)] [SerializeField] private float portraitSize = 65f;
+    [SerializeField] private float portraitMarginLeft = 15f;
+    [SerializeField] private float portraitMarginRight = 20f;
     [SerializeField] private Color portraitBgColor = new Color(0.08f, 0.05f, 0.18f, 0.95f);
     [SerializeField] private Color portraitBorderColor = new Color(0.62f, 0.38f, 0.92f, 1.0f);
 
@@ -59,8 +59,6 @@ public class EptinhoPopupController : MonoBehaviour
 
     private Coroutine esconderCoroutine;
 
-    // Unity chama Reset() quando o componente é adicionado pela primeira vez
-    // e quando se clica em "Reset" no Inspector — garante os padrões corretos
     private void Reset()
     {
         panelWidth          = 620f;
@@ -70,9 +68,9 @@ public class EptinhoPopupController : MonoBehaviour
         panelColor          = new Color(0.23f, 0.28f, 0.70f, 0.5f);
         borderColor         = new Color(0.52f, 0.45f, 0.15f, 0.5f);
         borderThickness     = 20f;
-        portraitSize        = 192f;
-        portraitMarginLeft  = 0f;
-        portraitMarginRight = 70f;
+        portraitSize        = 65f;
+        portraitMarginLeft  = 15f;
+        portraitMarginRight = 20f;
         portraitBgColor     = new Color(0.08f, 0.05f, 0.18f, 0.95f);
         portraitBorderColor = new Color(0.62f, 0.38f, 0.92f, 1.0f);
         textFontSize        = 40f;
@@ -92,6 +90,13 @@ public class EptinhoPopupController : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Força a redução do tamanho caso o Inspector do Unity tenha o valor antigo (192) salvo
+        if (portraitSize > 70f)
+        {
+            portraitSize = 65f;
+        }
+
         EnsurePopupUIExists();
     }
 
@@ -174,97 +179,106 @@ public class EptinhoPopupController : MonoBehaviour
                     }
                 }
             }
-            // --- Estilização Estilo JARVIS / Visor Holográfico ---
-            // 1. Estiliza o painel principal (PopupPanel)
-            Transform panel = popupUI.transform.Find("PopupPanel");
-            if (panel != null)
-            {
-                // 1. Estiliza e Redimensiona o painel principal (PopupPanel)
-                RectTransform panelRect = panel.GetComponent<RectTransform>();
-                if (panelRect != null)
-                {
-                    // Posiciona o popup de forma fixa no Top Right (canto superior direito) da tela
-                    panelRect.anchorMin = new Vector2(1f, 1f);
-                    panelRect.anchorMax = new Vector2(1f, 1f);
-                    panelRect.pivot = new Vector2(1f, 1f);
-                    panelRect.sizeDelta = new Vector2(panelWidth, panelHeight); 
-                    panelRect.anchoredPosition = new Vector2(marginX, marginY); 
-                }
+            EstilizarUIEmTempoReal();
+        }
+    }
 
-                Image panelImg = panel.GetComponent<Image>();
-                if (panelImg != null)
-                {
-                    // Fundo escuro semi-transparente (glassmorphism)
-                    panelImg.color = panelColor;
-                    
-                    // Adiciona borda neon ciano (visor do Iron Man / Jarvis)
-                    Outline outline = panel.GetComponent<Outline>();
-                    if (outline == null) outline = panel.gameObject.AddComponent<Outline>();
-                    outline.effectColor = borderColor; 
-                    outline.effectDistance = new Vector2(borderThickness, borderThickness);
-                }
+    private void EstilizarUIEmTempoReal()
+    {
+        if (popupUI == null) return;
+
+        // 1. Estiliza o painel principal (PopupPanel)
+        Transform panel = popupUI.transform.Find("PopupPanel");
+        if (panel != null)
+        {
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            if (panelRect != null)
+            {
+                panelRect.anchorMin = new Vector2(1f, 1f);
+                panelRect.anchorMax = new Vector2(1f, 1f);
+                panelRect.pivot = new Vector2(1f, 1f);
+                panelRect.sizeDelta = new Vector2(panelWidth, panelHeight); 
+                panelRect.anchoredPosition = new Vector2(marginX, marginY); 
             }
 
-            // 2. Estiliza e posiciona a imagem do Eptinho e cria uma moldura para o retrato
-            if (imagemDoItem != null)
+            Image panelImg = panel.GetComponent<Image>();
+            if (panelImg != null)
             {
-                imagemDoItem.preserveAspect = true; // Impede achatamento/esticamento
+                panelImg.color = panelColor;
+                Outline outline = panel.GetComponent<Outline>();
+                if (outline == null) outline = panel.gameObject.AddComponent<Outline>();
+                outline.effectColor = borderColor; 
+                outline.effectDistance = new Vector2(borderThickness, borderThickness);
+            }
+        }
 
-                RectTransform imgRect = imagemDoItem.GetComponent<RectTransform>();
-                if (imgRect != null)
-                {
-                    // Posiciona o retrato de forma fixa à esquerda do painel
-                    imgRect.anchorMin = new Vector2(0f, 0.5f);
-                    imgRect.anchorMax = new Vector2(0f, 0.5f);
-                    imgRect.pivot = new Vector2(0f, 0.5f);
-                    imgRect.sizeDelta = new Vector2(portraitSize, portraitSize); 
-                    imgRect.anchoredPosition = new Vector2(portraitMarginLeft, 0f); 
-                }
+        // 2. Estiliza e posiciona a imagem do Eptinho com portraitSize reduzido (65px)
+        if (imagemDoItem != null)
+        {
+            imagemDoItem.preserveAspect = true;
 
-                Transform parent = imagemDoItem.transform.parent;
+            LayoutElement le = imagemDoItem.GetComponent<LayoutElement>();
+            if (le != null)
+            {
+                le.preferredWidth = portraitSize;
+                le.preferredHeight = portraitSize;
+                le.minWidth = portraitSize;
+                le.minHeight = portraitSize;
+            }
+
+            RectTransform imgRect = imagemDoItem.GetComponent<RectTransform>();
+            if (imgRect != null)
+            {
+                imgRect.anchorMin = new Vector2(0f, 0.5f);
+                imgRect.anchorMax = new Vector2(0f, 0.5f);
+                imgRect.pivot = new Vector2(0f, 0.5f);
+                imgRect.sizeDelta = new Vector2(portraitSize, portraitSize); 
+                imgRect.anchoredPosition = new Vector2(portraitMarginLeft, 0f); 
+            }
+
+            Transform parent = imagemDoItem.transform.parent;
+            if (parent != null)
+            {
                 Transform existingBg = parent.Find("PortraitBg");
                 if (existingBg != null)
                 {
                     DestroyImmediate(existingBg.gameObject);
                 }
             }
+        }
 
-            // 3. Estiliza e posiciona o texto para ocupar o espaço restante sem estourar
-            if (textoDoItem != null)
+        // 3. Estiliza e posiciona o texto para ocupar o espaço restante
+        if (textoDoItem != null)
+        {
+            textoDoItem.color = textColor;
+            textoDoItem.fontSize = textFontSize;
+            textoDoItem.alignment = TextAlignmentOptions.MidlineLeft;
+            textoDoItem.textWrappingMode = TextWrappingModes.Normal;
+            
+            RectTransform textRect = textoDoItem.GetComponent<RectTransform>();
+            if (textRect != null)
             {
-                textoDoItem.color = textColor;
-                textoDoItem.fontSize = textFontSize;
-                textoDoItem.alignment = TextAlignmentOptions.MidlineLeft; // Força alinhamento à esquerda para evitar sobrepor a imagem
-                textoDoItem.textWrappingMode = TextWrappingModes.Normal; // Garante quebra de linha automática
-                
-                RectTransform textRect = textoDoItem.GetComponent<RectTransform>();
-                if (textRect != null)
-                {
-                    // Estica o texto para ocupar o resto do painel à direita da imagem
-                    textRect.anchorMin = new Vector2(0f, 0.5f);
-                    textRect.anchorMax = new Vector2(1f, 0.5f);
-                    textRect.pivot = new Vector2(0f, 0.5f);
-                    textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginRight, -panelHeight/2f + 10f); 
-                    textRect.offsetMax = new Vector2(-20f, panelHeight/2f - 10f);  
-                }
+                textRect.anchorMin = new Vector2(0f, 0.5f);
+                textRect.anchorMax = new Vector2(1f, 0.5f);
+                textRect.pivot = new Vector2(0f, 0.5f);
+                textRect.offsetMin = new Vector2(portraitMarginLeft + portraitSize + portraitMarginRight, -panelHeight/2f + 10f); 
+                textRect.offsetMax = new Vector2(-20f, panelHeight/2f - 10f);  
             }
+        }
 
-            // 4. Oculta ou posiciona o botão/indicador AbrirEptinho se houver
-            if (panel != null)
+        if (panel != null)
+        {
+            Transform abrirBtn = panel.Find("AbrirEptinho");
+            if (abrirBtn != null)
             {
-                Transform abrirBtn = panel.Find("AbrirEptinho");
-                if (abrirBtn != null)
+                RectTransform btnRect = abrirBtn.GetComponent<RectTransform>();
+                if (btnRect != null)
                 {
-                    RectTransform btnRect = abrirBtn.GetComponent<RectTransform>();
-                    if (btnRect != null)
-                    {
-                        // Posiciona discretamente no canto inferior direito do painel
-                        btnRect.anchorMin = new Vector2(1f, 0f);
-                        btnRect.anchorMax = new Vector2(1f, 0f);
-                        btnRect.pivot = new Vector2(1f, 0f);
-                        btnRect.anchoredPosition = new Vector2(-15f, 8f);
-                        btnRect.sizeDelta = new Vector2(140f, 24f);
-                    }
+                    btnRect.anchorMin = new Vector2(1f, 0f);
+                    btnRect.anchorMax = new Vector2(1f, 0f);
+                    btnRect.pivot = new Vector2(1f, 0f);
+                    btnRect.anchoredPosition = new Vector2(-15f, 8f);
+                    btnRect.sizeDelta = new Vector2(140f, 24f);
                 }
             }
         }
@@ -275,6 +289,12 @@ public class EptinhoPopupController : MonoBehaviour
     {
         Sprite eptinhoFace = Resources.Load<Sprite>("EPTONHO");
         MostrarPopupGenerico(eptinhoFace, mensagem);
+    }
+
+    /// <summary>Popup com retrato customizado do Eptinho (ex: Eptinho Tenso/Assustado no Mercador).</summary>
+    public void MostrarPopupCustomizado(Sprite customSprite, string mensagem)
+    {
+        MostrarPopupGenerico(customSprite, mensagem);
     }
 
     /// <summary>Popup ao catalogar um novo ItemData.</summary>
@@ -322,6 +342,8 @@ public class EptinhoPopupController : MonoBehaviour
             imagemDoItem.gameObject.SetActive(true);
             imagemDoItem.sprite = iconeFinal;
         }
+
+        EstilizarUIEmTempoReal();
         
         if (textoDoItem != null)
         {

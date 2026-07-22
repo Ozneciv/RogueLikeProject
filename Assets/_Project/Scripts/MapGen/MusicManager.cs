@@ -145,6 +145,43 @@ public class MusicManager : MonoBehaviour
         else        { sourceA.UnPause(); sourceB.UnPause(); }
     }
 
+    private float duckMultiplier = 1.0f;
+    private Coroutine duckCoroutine;
+
+    /// <summary>
+    /// Reduz ou restaura temporariamente o volume da música de fundo (ex: 0.0f perto do Mercador) sem cortar a faixa.
+    /// </summary>
+    public void SetMusicDucking(float targetMultiplier, float duration = 1.0f)
+    {
+        if (duckCoroutine != null) StopCoroutine(duckCoroutine);
+        duckCoroutine = StartCoroutine(AnimateDucking(Mathf.Clamp01(targetMultiplier), duration));
+    }
+
+    private IEnumerator AnimateDucking(float target, float duration)
+    {
+        float start = duckMultiplier;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            duckMultiplier = Mathf.Lerp(start, target, elapsed / duration);
+            ApplyDuckingVolume();
+            yield return null;
+        }
+        duckMultiplier = target;
+        ApplyDuckingVolume();
+        duckCoroutine = null;
+    }
+
+    private void ApplyDuckingVolume()
+    {
+        AudioSource active = usingSourceA ? sourceA : sourceB;
+        if (active != null && active.isPlaying)
+        {
+            active.volume = masterVolume * GetCurrentTrackVolume() * duckMultiplier;
+        }
+    }
+
     public int GetCurrentTrackIndex() => currentTrackIndex;
 
     // ─────────────────────────────────────────

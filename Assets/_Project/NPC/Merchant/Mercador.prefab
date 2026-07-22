@@ -108,8 +108,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1.5219661, y: 2.5781412, z: 1.3209321}
+  m_Center: {x: -0.06615859, y: 0.7890706, z: 0.16046607}
 --- !u!114 &4779523069871077659
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -122,6 +122,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d5140312a2b08044b52e5cf089741e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Merchant
+  detectionRadius: 22
+  interactionRadius: 5.5
+  whisperingClip: {fileID: 8300000, guid: a6bac14ed4b71714da8418e4deb20ae2, type: 3}
+  whisperingVolume: 0.6
+  eptinhoTensoSprite: {fileID: 1960042803, guid: eb2dc13b79fdb4d48b789d791729681d, type: 3}
+  eptinhoWarningMessage: Estou sentindo uma energia perturbadora vindo dele... Tenha
+    muito cuidado!
+  occultFonts:
+  - {fileID: 11400000, guid: 5714efc53ea6a1e4082235f4d4b726da, type: 2}
+  - {fileID: 11400000, guid: 16d19903888bedb48808db2f77804e01, type: 2}
+  - {fileID: 11400000, guid: b2c548b190118984c895f7070d6fbc7d, type: 2}
+  - {fileID: 11400000, guid: 30623ce910a3b73489513136390f0152, type: 2}
+  - {fileID: 11400000, guid: c40c06b28fc62bb4abcdafb54ececb6e, type: 2}
+  - {fileID: 11400000, guid: 80ba7fa18db91974d91be183fb19a7bb, type: 2}
+  - {fileID: 11400000, guid: 90f95552e44365b40b3b43b13711cca4, type: 2}
+  fontShiftInterval: 0.4
 --- !u!1001 &5017336418289495456
 PrefabInstance:
   m_ObjectHideFlags: 0

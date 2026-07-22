@@ -49,6 +49,10 @@ public class RoomController : MonoBehaviour
     [Tooltip("Categoria da sala (Combat = combate normal, Contemplation = sala pacífica sem combate, SafeRoom = sala inicial, Merchant = mercador).")]
     public RoomCategory roomCategory = RoomCategory.Combat;
     [HideInInspector] public bool doorsAreLocked = false;
+    public bool isCleared { get; private set; } = false;
+
+    /// <summary>Disparado quando uma sala de combate é limpa e as portas destravam.</summary>
+    public static event System.Action<RoomController> OnRoomCleared;
 
     [Header("Índice (definido pelo LevelGenerator)")]
     [Tooltip("Número desta sala na sequência da Run (1–32). Não editar manualmente.")]
@@ -139,6 +143,11 @@ public class RoomController : MonoBehaviour
     // API PÚBLICA
     // =====================================================
 
+    public int CurrentWaveNumber => currentWave;
+    public int TotalWaves => totalWavesThisRoom;
+    public bool IsCombatActive => combatActive;
+    public bool HasTriggered => hasTriggered;
+
     /// <summary>
     /// Chamado pelo LevelGenerator ao instanciar a sala.
     /// </summary>
@@ -160,7 +169,10 @@ public class RoomController : MonoBehaviour
 
         if (isSafeRoom || roomCategory != RoomCategory.Combat) return;
         totalWavesThisRoom = Random.Range(minWaves, maxWaves + 1);
-        UnlockDoors();
+
+        doorsAreLocked = false;
+        isCleared = false;
+        foreach (GameObject d in doors) if (d) d.SetActive(false);
     }
 
     void Update()
@@ -217,20 +229,25 @@ public class RoomController : MonoBehaviour
 
     void SpawnNextWave()
     {
+        currentWave++;
+
         // Nas salas iniciais (1 e 2), limita a 1 onda leve para introdução suave
         if (roomIndex <= 2)
         {
             totalWavesThisRoom = 1;
         }
+        else if (roomIndex <= 4)
+        {
+            totalWavesThisRoom = Mathf.Min(totalWavesThisRoom, 2);
+        }
 
         // O budget total da sala é dividido igualmente entre as ondas.
-        // Isso garante curva de dificuldade uniforme independente do número de ondas.
         int totalBudget = RunManager.instance != null
             ? RunManager.instance.GetSpawnBudget(roomIndex)
-            : Mathf.RoundToInt(5 + 0.65f * roomIndex);
+            : Mathf.RoundToInt(3 + 0.9f * roomIndex);
         int waveBudget = Mathf.Max(3, Mathf.RoundToInt(totalBudget / (float)totalWavesThisRoom));
 
-        int effectiveMinEnemies = Mathf.Clamp(Mathf.RoundToInt(2 + (roomIndex * 0.35f)), 2, minEnemiesPerWave);
+        int effectiveMinEnemies = Mathf.Clamp(Mathf.RoundToInt(2 + (roomIndex * 0.25f)), 2, minEnemiesPerWave);
 
         if (showSpawnLog)
             Debug.Log($"[ROOM {roomIndex}] ONDA {currentWave}/{totalWavesThisRoom} | Budget: {waveBudget} pts | Mín. inimigos: {effectiveMinEnemies}");
@@ -250,7 +267,7 @@ public class RoomController : MonoBehaviour
 
     /// <summary>
     /// Monta a lista de inimigos de uma onda usando o sistema de pontos do GDD.
-    /// Respeita os limites GLOBAIS de Elite (1/sala) e Tanque (4/sala).
+    /// Respeita a progressão por salas e limites GLOBAIS.
     /// </summary>
     List<GameObject> BuildWaveFromPoints(int waveBudget, int minEnemies)
     {
@@ -260,8 +277,8 @@ public class RoomController : MonoBehaviour
 
         List<GameObject> result = new List<GameObject>();
 
-        // Força exatamente 1 inimigo de suporte por sala, spawnado na primeira onda
-        if (currentWave == 1 && suportePrefabs.Count > 0 && suporteSpawnedTotal < 1)
+        // Suporte / Base: Apenas da Sala 2 em diante (NUNCA na Sala 1!), no máximo 1 por sala
+        if (roomIndex >= 2 && currentWave == 1 && suportePrefabs.Count > 0 && suporteSpawnedTotal < 1)
         {
             result.Add(GetRandom(suportePrefabs));
             suporteSpawnedTotal++;
@@ -274,21 +291,38 @@ public class RoomController : MonoBehaviour
             addedSomething = false;
             List<EnemyClass> validOptions = new List<EnemyClass>();
 
-            // Elite: máx. 1 POR SALA (limite global, ratio 2:1 com drop base 20)
-            if (elitePrefabs.Count   > 0 && remainingPts >= 10 && eliteSpawnedTotal < 1) validOptions.Add(EnemyClass.Elite);
-            // Tanque: máx. 4 POR SALA (limite global)
-            if (tanquePrefabs.Count  > 0 && remainingPts >=  4 && tanqueSpawnedTotal < 4) validOptions.Add(EnemyClass.Tanque);
-            // Atirador: par (4 pts)
-            if (atiradorPrefabs.Count > 0 && remainingPts >= 4)                           validOptions.Add(EnemyClass.Atirador);
-            // Mob Menor: máx. 50% do budget da onda
-            if (mobMenorPrefabs.Count > 0 && remainingPts >= 1 && mobPointsUsed < maxMobPoints) validOptions.Add(EnemyClass.MobMenor);
-            // Suporte: 3 pontos | máx. 1 POR SALA (limite global)
-            if (suportePrefabs.Count > 0 && remainingPts >= 3 && suporteSpawnedTotal < 1)  validOptions.Add(EnemyClass.Suporte);
+            // Elite: máx. 1 POR SALA, apenas da Sala 5 em diante
+            if (roomIndex >= 5 && elitePrefabs.Count > 0 && remainingPts >= 10 && eliteSpawnedTotal < 1)
+                validOptions.Add(EnemyClass.Elite);
+
+            // Tanque: máx. 4 POR SALA, apenas da Sala 3 em diante
+            if (roomIndex >= 3 && tanquePrefabs.Count > 0 && remainingPts >= 4 && tanqueSpawnedTotal < 4)
+                validOptions.Add(EnemyClass.Tanque);
+
+            // Atirador: par (4 pts), apenas da Sala 2 em diante
+            if (roomIndex >= 2 && atiradorPrefabs.Count > 0 && remainingPts >= 4)
+                validOptions.Add(EnemyClass.Atirador);
+
+            // Mob Menor: sempre permitido para preencher a onda
+            if (mobMenorPrefabs.Count > 0 && remainingPts >= 1)
+                validOptions.Add(EnemyClass.MobMenor);
 
             if (validOptions.Count == 0) break;
 
-            addedSomething = true;
-            EnemyClass chosen = validOptions[Random.Range(0, validOptions.Count)];
+            // Prioriza Mobs Menores nas escolhas (ponderado) para não entulhar inimigos pesados nas salas iniciais
+            EnemyClass chosen = EnemyClass.MobMenor;
+            if (validOptions.Count > 1 && Random.value < 0.35f)
+            {
+                chosen = validOptions[Random.Range(0, validOptions.Count)];
+            }
+            else if (validOptions.Contains(EnemyClass.MobMenor))
+            {
+                chosen = EnemyClass.MobMenor;
+            }
+            else
+            {
+                chosen = validOptions[Random.Range(0, validOptions.Count)];
+            }
 
             switch (chosen)
             {
@@ -430,8 +464,10 @@ public class RoomController : MonoBehaviour
 
     void UnlockDoors()
     {
+        isCleared = true;
         doorsAreLocked = false;
         foreach (GameObject d in doors) if (d) d.SetActive(false);
+        OnRoomCleared?.Invoke(this);
     }
 
     // =====================================================

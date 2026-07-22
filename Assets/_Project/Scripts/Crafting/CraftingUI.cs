@@ -528,6 +528,9 @@ public class CraftingUI : MonoBehaviour
         // Botão de fechar
         CreateCloseButton(panelObject.transform);
 
+        // Botão de Cheats (Recursos Infinitos)
+        CreateCheatButton(panelObject.transform);
+
         // Tooltip flutuante de melhorias (por cima de tudo)
         CreateUpgradeTooltip(panelObject.transform);
 
@@ -584,6 +587,59 @@ public class CraftingUI : MonoBehaviour
         txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
         if (customFont != null) txt.font = customFont;
+    }
+
+    private void CreateCheatButton(Transform parent)
+    {
+        GameObject btnObj = new GameObject("CheatButton");
+        btnObj.transform.SetParent(parent, false);
+
+        RectTransform r = btnObj.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0f, 1f);
+        r.anchorMax = new Vector2(0f, 1f);
+        r.pivot = new Vector2(0f, 1f);
+        r.anchoredPosition = new Vector2(16f, -10f);
+        r.sizeDelta = new Vector2(180f, 30f);
+
+        btnObj.AddComponent<CanvasRenderer>();
+        Image bg = btnObj.AddComponent<Image>();
+        bg.color = new Color(0.20f, 0.55f, 0.30f, 0.90f);
+
+        Button btn = btnObj.AddComponent<Button>();
+        btn.onClick.AddListener(() =>
+        {
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.GiveAllResources(999);
+            }
+            else
+            {
+                // Fallback direto
+                if (SaveManager.instance != null && ItemDatabase.Instance != null)
+                {
+                    foreach (var item in ItemDatabase.Instance.allItems)
+                    {
+                        if (item != null) SaveManager.instance.AddResourceToBase(item.itemId, 999);
+                    }
+                }
+            }
+            RefreshUI();
+        });
+
+        GameObject txtObj = new GameObject("Text");
+        txtObj.transform.SetParent(btnObj.transform, false);
+        RectTransform tr = txtObj.AddComponent<RectTransform>();
+        tr.anchorMin = Vector2.zero;
+        tr.anchorMax = Vector2.one;
+        tr.sizeDelta = Vector2.zero;
+
+        txtObj.AddComponent<CanvasRenderer>();
+        TextMeshProUGUI txt = txtObj.AddComponent<TextMeshProUGUI>();
+        txt.text = "🎁 CHEAT: +999 RECURSOS";
+        txt.fontSize = 11f;
+        txt.fontStyle = FontStyles.Bold;
+        txt.color = Color.white;
+        txt.alignment = TextAlignmentOptions.Center;
     }
 
     private void CreateRecipeListSection(Transform parent)

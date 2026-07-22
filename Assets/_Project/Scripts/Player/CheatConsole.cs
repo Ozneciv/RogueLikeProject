@@ -224,9 +224,63 @@ public class CheatConsole : MonoBehaviour
                 }
             }
         }
+        else if (string.Equals(command, "recursos", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "allitems", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "giveall", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "cheats", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Recursos Infinitos! Adicionando +999 de todos os materiais...");
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.GiveAllResources(999);
+            }
+            else
+            {
+                if (SaveManager.instance != null && ItemDatabase.Instance != null)
+                {
+                    foreach (var item in ItemDatabase.Instance.allItems)
+                    {
+                        if (item != null && !string.IsNullOrEmpty(item.itemId))
+                            SaveManager.instance.AddResourceToBase(item.itemId, 999);
+                    }
+                    SaveManager.instance.SavePersistentData();
+                }
+            }
+
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("+999 Recursos Adicionados!");
+            }
+        }
+        else if (string.Equals(command, "unlockall", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "equip", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Destravando todas as melhorias!");
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.UnlockAllEquipment();
+            }
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("Todas as Melhorias Destravadas!");
+            }
+        }
+        else if (string.Equals(command, "orbs", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "money", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: +99.999 Orbs!");
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.GiveMaxOrbs(99999);
+            }
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("+99.999 Orbs Adicionados!");
+            }
+        }
         else
         {
-            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é igual a EPTA, killall ou endless.");
+            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é reconhecida. Tente: EPTA, killall, endless, recursos, unlockall ou orbs.");
         }
 
         // Depois de tentar o cheat, fecha o console pro jogo voltar ao normal

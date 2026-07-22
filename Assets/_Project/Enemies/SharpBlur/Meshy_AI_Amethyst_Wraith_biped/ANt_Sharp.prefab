@@ -821,7 +821,7 @@ MonoBehaviour:
   anticipationTime: 0.2
   leadPrediction: 0.541
   retreatDistance: 4
-  dashDamage: 15
+  dashDamage: 10
   hologramPrefab: {fileID: 4003337562454944380, guid: 92ec80068f9a9234ba6e3dd5d7a80d41, type: 3}
   hologramMaterial: {fileID: 2100000, guid: 70a32a940b8e3e042a142b4897bfe3f3, type: 2}
   hologramAlpha: 0.1

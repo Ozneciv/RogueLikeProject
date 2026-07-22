@@ -27,8 +27,25 @@ using System.IO;
 /// </summary>
 public class SaveManager : MonoBehaviour
 {
-    public static SaveManager instance;
-
+    private static SaveManager _instance;
+    public static SaveManager instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<SaveManager>();
+                if (_instance == null)
+                {
+                    GameObject go = new GameObject("SaveManager_Auto");
+                    _instance = go.AddComponent<SaveManager>();
+                    DontDestroyOnLoad(go);
+                }
+            }
+            return _instance;
+        }
+        private set { _instance = value; }
+    }
     private const string SaveFileName = "player_progress.json";
     private string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
 
@@ -78,12 +95,12 @@ public class SaveManager : MonoBehaviour
 
     void Awake()
     {
-        if (instance == null)
+        if (_instance == null)
         {
-            instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (_instance != this)
         {
             Destroy(gameObject);
         }

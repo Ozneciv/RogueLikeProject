@@ -112,6 +112,16 @@ public class LevelGenerator : MonoBehaviour
     /// <summary>Chamado pelo GameManager para iniciar a geração.</summary>
     public void GenerateLevel()
     {
+        // Destroi salas antigas da geração anterior se existirem na cena
+        RoomController[] oldRooms = Object.FindObjectsByType<RoomController>(FindObjectsSortMode.None);
+        foreach (var r in oldRooms)
+        {
+            if (r != null && r.gameObject != null)
+            {
+                Destroy(r.gameObject);
+            }
+        }
+
         roomCounts.Clear();
         openOutputs.Clear();
         placedRoomBounds.Clear();
@@ -537,6 +547,9 @@ public class LevelGenerator : MonoBehaviour
         TriggerItemSpawning();
 
         BakeGlobalNavMesh();
+
+        if (BarrierCounterUI.Instance != null)
+            BarrierCounterUI.Instance.UpdateDisplay();
 
         if (GameManager.instance != null)
             GameManager.instance.OnLevelReady(playerSpawnPoint);

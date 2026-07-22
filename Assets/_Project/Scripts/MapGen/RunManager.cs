@@ -228,10 +228,11 @@ public class RunManager : MonoBehaviour
 
     /// <summary>
     /// Orçamento de pontos de spawn para a sala n.
-    /// P(n) = 10 + 0,9 × n
+    /// P(1) = 4 pts (apenas mobs leves), crescendo gradualmente a cada sala.
     /// </summary>
     public int GetSpawnBudget(int roomNumber)
     {
-        return Mathf.RoundToInt(spawnPointsBase + spawnPointsGrowth * roomNumber);
+        int n = Mathf.Max(1, roomNumber);
+        return Mathf.RoundToInt(3f + 1.1f * n);
     }
 }

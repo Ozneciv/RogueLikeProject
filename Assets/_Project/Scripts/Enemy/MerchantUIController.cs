@@ -55,11 +55,41 @@ public class MerchantUIController : MonoBehaviour
     };
     private float[] cardHealthCostPercent = { 0.20f, 0.25f, 0.30f, 0.15f, 0.50f };
 
-    public static MerchantUIController Instance { get; private set; }
+    private static MerchantUIController _instance;
+    public static MerchantUIController Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<MerchantUIController>(FindObjectsInactive.Include);
+                if (_instance == null)
+                {
+                    GameObject prefab = Resources.Load<GameObject>("MerchantUI");
+                    if (prefab != null)
+                    {
+                        GameObject go = Instantiate(prefab);
+                        _instance = go.GetComponent<MerchantUIController>();
+                    }
+                    else
+                    {
+                        GameObject go = new GameObject("MerchantUIController_Auto");
+                        _instance = go.AddComponent<MerchantUIController>();
+                    }
+                    if (_instance != null) DontDestroyOnLoad(_instance.gameObject);
+                }
+            }
+            return _instance;
+        }
+        private set { _instance = value; }
+    }
 
     void Awake()
     {
-        Instance = this;
+        if (_instance == null)
+        {
+            _instance = this;
+        }
         if (closeButton != null) closeButton.onClick.AddListener(ClosePanel);
         
         if (btnPactoDeSangue != null) btnPactoDeSangue.onClick.AddListener(ShowTarotCards);
@@ -138,9 +168,28 @@ public class MerchantUIController : MonoBehaviour
     public void OpenPanel(Transform merchantPos = null)
     {
         if (hasMadePact) return;
+
+        if (playerHealth == null)
+        {
+            PlayerHealth p = Object.FindFirstObjectByType<PlayerHealth>();
+            if (p != null) ConnectPlayer(p);
+        }
         
         merchantTransform = merchantPos;
         SetupPactCamera();
+
+        if (rootPanel == null)
+        {
+            foreach (Transform t in transform)
+            {
+                if (t.name.ToLower().Contains("panel") || t.name.ToLower().Contains("root"))
+                {
+                    rootPanel = t.gameObject;
+                    break;
+                }
+            }
+            if (rootPanel == null && transform.childCount > 0) rootPanel = transform.GetChild(0).gameObject;
+        }
 
         if (rootPanel != null) rootPanel.SetActive(true);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
@@ -149,6 +198,7 @@ public class MerchantUIController : MonoBehaviour
 
         Time.timeScale = 0f;
         ShowPrompt(false);
+        Debug.Log("[MERCHANT UI] Painel do Pacto de Sangue aberto com sucesso.");
     }
 
     public void ShowTarotCards()
