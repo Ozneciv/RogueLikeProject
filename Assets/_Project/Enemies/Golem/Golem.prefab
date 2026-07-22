@@ -118,7 +118,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 1, y: 2, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!54 &6993781675378912075
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -165,7 +165,7 @@ MonoBehaviour:
   normalColor: {r: 0.45705712, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
   floatingDamageTextPrefab: {fileID: 7217528928149285678, guid: d0cfc8be9256baf4d853d1a092c24d9d, type: 3}
-  textOffset: {x: 0, y: 2, z: 0}
+  textOffset: {x: 0, y: 3, z: 0}
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   hitFlashTime: 0.2
   isInvulnerable: 0
@@ -185,18 +185,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Golem_AI
   stunMarkerPrefab: {fileID: 0}
   stunBeamPrefab: {fileID: 3156189663886257779, guid: 7eb942f03da6e7241af7035e7d2a0fa9, type: 3}
-  activationDistance: 12
+  activationDistance: 15
   moveSpeed: 4
   rotationSpeed: 5
   meleeRange: 3
   meleeCooldown: 3
   meleeDamage: 35
-  meleeHitRadius: 2
+  meleeHitRadius: 3
   stunMaxRange: 10
   stunCooldown: 12
   stunDuration: 1.5
   stunTelegraphTime: 1.5
-  stunRadius: 4
+  stunRadius: 5
   comboHitsForStun: 2
 --- !u!114 &343962479280987070
 MonoBehaviour:
@@ -388,7 +388,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1.405
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -446,7 +446,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fcc80844bcd6a044eaa33cdef5c407d3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fcc80844bcd6a044eaa33cdef5c407d3, type: 3}
       propertyPath: m_LocalPosition.z
