@@ -19,6 +19,8 @@ GameObject:
   - component: {fileID: 3623146103869598672}
   - component: {fileID: 3724460904401237682}
   - component: {fileID: 6831200880444395433}
+  - component: {fileID: 1185927364958233710}
+  - component: {fileID: 2397048516129404881}
   m_Layer: 0
   m_Name: Boss_Cromatico
   m_TagString: Boss
@@ -204,7 +206,7 @@ MeshRenderer:
   m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
---- !u!136 &-3789803415784734762
+--- !u!136 &1185927364958233710
 CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -227,7 +229,7 @@ CapsuleCollider:
   m_Height: 3
   m_Direction: 1
   m_Center: {x: 0, y: 1.5, z: 0}
---- !u!195 &-6292105213825464846
+--- !u!195 &2397048516129404881
 NavMeshAgent:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

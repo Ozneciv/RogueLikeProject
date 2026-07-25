@@ -54,6 +54,14 @@ public class RunManager : MonoBehaviour
     /// </summary>
     [HideInInspector] public bool geobionteAbsorbedThisLevel = false;
 
+    // ==================== CHEAT: FORÇAR BOSS ====================
+
+    /// <summary>
+    /// Flag de cheat: quando true, a próxima run inicia direto no Boss Round.
+    /// Consumida automaticamente por StartNewRun() e resetada após uso.
+    /// </summary>
+    [HideInInspector] public bool forceBossNextRun = false;
+
     // =====================================================
 
     void Awake()
@@ -81,13 +89,24 @@ public class RunManager : MonoBehaviour
     public void StartNewRun()
     {
         currentRoomNumber = 1;
-        currentLevel = 1;
+
+        // Cheat: se forceBossNextRun está ativo, pula direto pro boss
+        if (forceBossNextRun)
+        {
+            currentLevel = totalLevels;
+            forceBossNextRun = false;
+            Debug.Log($"[RunManager] 🎮 CHEAT BOSS: Run iniciada direto no Boss Round! (Level {currentLevel}/{totalLevels})");
+        }
+        else
+        {
+            currentLevel = 1;
+        }
 
         // Reset do progresso do Geobionte
         geobionteDefeatCount = 0;
         geobionteAbsorbedThisLevel = false;
 
-        Debug.Log("[RunManager] 🆕 Nova run iniciada. Sala 1 | Round 1.");
+        Debug.Log($"[RunManager] 🆕 Nova run iniciada. Sala 1 | Round {currentLevel}.");
         UpdateEndlessUI();
     }
 
