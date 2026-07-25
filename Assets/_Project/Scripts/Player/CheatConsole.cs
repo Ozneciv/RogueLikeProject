@@ -278,9 +278,31 @@ public class CheatConsole : MonoBehaviour
                 EptinhoPopupController.instancia.MostrarPopupAviso("+99.999 Orbs Adicionados!");
             }
         }
+        else if (string.Equals(command, "boss", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Forçando Boss Round!");
+            if (RunManager.instance != null)
+            {
+                // Efeito imediato: seta currentLevel pro boss round (funciona se já estiver na run)
+                RunManager.instance.currentLevel = RunManager.instance.totalLevels;
+                // Flag persistente: garante que funciona mesmo ao iniciar nova run da Base
+                RunManager.instance.forceBossNextRun = true;
+
+                Debug.Log($"💻 CHEAT: currentLevel setado para {RunManager.instance.currentLevel}/{RunManager.instance.totalLevels}. isBossRound = {RunManager.instance.isBossRound}");
+
+                if (EptinhoPopupController.instancia != null)
+                {
+                    EptinhoPopupController.instancia.MostrarPopupAviso("Boss Round ATIVADO!\nInicie uma run ou avance de nível.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("💻 CHEAT: RunManager.instance é null! O cheat boss precisa ser usado em jogo.");
+            }
+        }
         else
         {
-            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é reconhecida. Tente: EPTA, killall, endless, recursos, unlockall ou orbs.");
+            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é reconhecida. Tente: EPTA, killall, endless, recursos, unlockall, orbs ou boss.");
         }
 
         // Depois de tentar o cheat, fecha o console pro jogo voltar ao normal
