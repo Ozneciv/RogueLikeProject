@@ -207,6 +207,8 @@ public class Player_WeaponManager : MonoBehaviour
             {
                 playerAnimator.runtimeAnimatorController = defaultAnimatorController;
             }
+            playerAnimator.Rebind();
+            playerAnimator.Update(0f);
             playerAnimator.SetTrigger("DrawWeapon");
         }
 
@@ -267,6 +269,8 @@ public class Player_WeaponManager : MonoBehaviour
         if (playerAnimator != null)
         {
             playerAnimator.runtimeAnimatorController = activeWeaponController;
+            playerAnimator.Rebind();
+            playerAnimator.Update(0f);
             if (attackScript != null)
             {
                 attackScript.animator = playerAnimator;
