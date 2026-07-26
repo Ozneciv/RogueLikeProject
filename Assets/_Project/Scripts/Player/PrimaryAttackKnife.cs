@@ -516,32 +516,26 @@ public class PrimaryAttackKnife : MonoBehaviour
         else
         {
             canAttack = true;
+            isAttacking = false;
         }
     }
 
     // Reset Combo
     public void ResetCombo()
     {
-        // Se a janela de ataque estiver fechada (canAttack == false), significa que o jogador
-        // já emendou o próximo golpe do combo e a nova animação está iniciando/fazendo blend.
-        // Ignoramos este reset para evitar que eventos de animação antigos cortem o combo ativo.
-        if (!canAttack) return;
-
         isAttacking = false;
         isHitboxActive = false;
         hasBufferedAttack = false;
         comboStep = 0;
-        animator.SetInteger("ComboStep", 0);
         canAttack = true;
 
-        if (currentHitbox != null) currentHitbox.enabled = false;
-
-        // Resetar velocidade da animação
         if (animator != null)
         {
+            animator.SetInteger("ComboStep", 0);
             animator.speed = 1f;
         }
 
+        if (currentHitbox != null) currentHitbox.enabled = false;
         if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
     }
 

@@ -178,12 +178,7 @@ public class PlayerM : MonoBehaviour
         
         try
         {
-            // Se o player estiver no meio de um ataque, o script de ataque (PrimaryAttackKnife) assume controle absoluto das velocidades e parâmetros
-            if (attackScript != null && attackScript.isAttacking)
-            {
-                return;
-            }
-
+            // Se o colisor de dano estiver ativo (momento exato do golpe), o ataque controla as velocidades
             bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
 
             // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---
