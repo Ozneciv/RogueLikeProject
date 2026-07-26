@@ -304,7 +304,7 @@ public class SyntheticBagUI : MonoBehaviour
         Debug.Log("[BAG UI] Bolsa Sintética fechada.");
     }
 
-    public bool IsOpen() => isOpen;
+    public bool IsOpen() => gameObject.activeInHierarchy && isOpen;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Refresh

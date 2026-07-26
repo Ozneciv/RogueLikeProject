@@ -473,6 +473,7 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     public bool IsOpen()
     {
+        if (!gameObject.activeInHierarchy) return false;
         return isOpen;
     }
 

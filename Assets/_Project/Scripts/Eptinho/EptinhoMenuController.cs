@@ -82,7 +82,7 @@ public class EptinhoMenuController : MonoBehaviour
     // API Pública
     // ─────────────────────────────────────────────────────────────────────────
 
-    public bool IsOpen() => isOpen;
+    public bool IsOpen() => gameObject.activeInHierarchy && isOpen;
 
     public void AbrirMenu()
     {

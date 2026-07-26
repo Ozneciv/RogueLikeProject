@@ -162,6 +162,8 @@ public class MerchantUIController : MonoBehaviour
 
     public bool IsUiOpen()
     {
+        if (!gameObject.activeInHierarchy) return false;
+        if (rootPanel != null && !rootPanel.activeInHierarchy) return false;
         return rootPanel != null && rootPanel.activeSelf;
     }
 

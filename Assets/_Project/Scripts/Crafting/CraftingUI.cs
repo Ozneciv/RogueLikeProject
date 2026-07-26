@@ -224,7 +224,7 @@ public class CraftingUI : MonoBehaviour
     }
 
     /// <summary>Retorna se a UI está aberta.</summary>
-    public bool IsOpen() => isOpen;
+    public bool IsOpen() => gameObject.activeInHierarchy && isOpen;
 
     // ─── REFRESH ─────────────────────────────────────────────────────────────
 
