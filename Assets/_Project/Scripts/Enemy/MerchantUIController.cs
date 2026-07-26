@@ -745,7 +745,6 @@ public class MerchantUIController : MonoBehaviour
         {
             chosenCardImage.color = new Color(0.20f, 0.20f, 0.22f, 1.0f);
         }
-        MerchantCardHover hoverScript = chosenBtn.GetComponent<MerchantCardHover>();
         if (hoverScript != null)
         {
             hoverScript.enableColorChange = false; // Preserva o tom escuro no verso revelado
