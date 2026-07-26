@@ -23,8 +23,25 @@ public class Player_WeaponManager : MonoBehaviour
     private Coroutine drawCoroutine;
     private string lastSceneName;
 
+    void Awake()
+    {
+        if (attackScript == null)
+        {
+            attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>() ?? GetComponentInParent<PrimaryAttackKnife>();
+        }
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+        }
+    }
+
     void Start()
     {
+        if (attackScript == null)
+        {
+            attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>() ?? GetComponentInParent<PrimaryAttackKnife>();
+        }
+
         if (playerAnimator != null)
         {
             defaultAnimatorController = playerAnimator.runtimeAnimatorController;

@@ -111,18 +111,8 @@ public class PrimaryAttackKnife : MonoBehaviour
         enemiesHitInThisAttack = new List<Collider>();
         EquipDefaultWeapon();
         
-        // Garante que se um Player_WeaponManager existir na inicialização, ele dite se a arma está desembainhada;
-        // caso contrário, permite ataque por padrão com a arma/mão equipada.
-        Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
-        if (wm != null && wm.currentWeapon != null)
-        {
-            hasWeapon = wm.isWeaponDrawn;
-        }
-        else
-        {
-            hasWeapon = true;
-        }
-
+        // Permite ataque por padrão com a mão/arma equipada
+        hasWeapon = true;
         isAttacking = false;
         isHitboxActive = false;
 
