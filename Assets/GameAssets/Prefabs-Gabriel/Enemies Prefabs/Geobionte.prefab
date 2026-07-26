@@ -31,10 +31,10 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2219830635270719724}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.65, y: 0.66, z: 39.32}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 3.5, y: 3.5, z: 3.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2035064353514317532}
   m_Father: {fileID: 0}
@@ -101,6 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   isSlowed: 0
   maxHealth: 250
+  debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -123,7 +124,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
-  essencePrefab: {fileID: 0}
+  essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
   globalDropChance: 0.35
@@ -209,6 +210,8 @@ MonoBehaviour:
   baseColor: {r: 0.03, g: 0.01, b: 0.05, a: 1}
   transformedColor: {r: 0.7, g: 0.3, b: 0.6, a: 1}
   sentinelColor: {r: 0.9, g: 0.2, b: 0.8, a: 1}
+  bismutadoModelPrefab: {fileID: 6152432553688559953, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
+  bismutado3DModelScale: {x: 1, y: 1, z: 1}
 --- !u!114 &344258591659258005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -225,11 +228,11 @@ MonoBehaviour:
   legGenerationSounds: []
   legSoundVolume: 1
   numberOfLegs: 5
-  partsPerLeg: 4
+  partsPerLeg: 3
   legCount: 0
   deployedLegs: 0
   minimumAnchoredLegs: 2
-  minimumAnchoredParts: 8
+  minimumAnchoredParts: 6
   minLegLifetime: 5
   maxLegLifetime: 15
   legPlacerOrigin: {x: 0, y: 0, z: 0}
@@ -274,8 +277,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 2849499921605988716}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

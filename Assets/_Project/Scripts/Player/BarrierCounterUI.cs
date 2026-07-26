@@ -297,6 +297,7 @@ public class BarrierCounterUI : MonoBehaviour
         labelText.fontStyle = FontStyles.Bold;
         labelText.alignment = TextAlignmentOptions.Center;
         labelText.color = labelColor;
+        labelText.raycastTarget = false;
 
         // Valor / Contador
         GameObject valGO = new GameObject("Value");
@@ -314,6 +315,7 @@ public class BarrierCounterUI : MonoBehaviour
         counterText.fontStyle = FontStyles.Bold;
         counterText.alignment = TextAlignmentOptions.Center;
         counterText.color = textColor;
+        counterText.raycastTarget = false;
     }
 
     private static Image MakeImgFull(Transform parent, string name, Color color, int layer)

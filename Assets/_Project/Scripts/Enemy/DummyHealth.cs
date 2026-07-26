@@ -211,13 +211,13 @@ public class DummyHealth : MonoBehaviour
         UpdateHealthBar();
     }
 
-    void ShowHealthBar()
+    public void ShowHealthBar()
     {
         if (healthBarSlider == null) return;
         healthBarSlider.gameObject.SetActive(true);
     }
 
-    void UpdateHealthBar()
+    public void UpdateHealthBar()
     {
         if (healthBarSlider != null)
         {

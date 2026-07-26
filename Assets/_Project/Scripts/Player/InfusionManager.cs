@@ -286,4 +286,9 @@ public class InfusionManager : MonoBehaviour
         }
         return false;
     }
+
+    public System.Collections.Generic.List<ItemData> GetInfusedItems()
+    {
+        return infusedItems;
+    }
 }

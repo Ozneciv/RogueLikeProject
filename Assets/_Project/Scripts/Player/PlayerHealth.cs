@@ -37,13 +37,23 @@ public class PlayerHealth : MonoBehaviour
     public TextMeshProUGUI percentageText; // O texto de %
 
     [Header("Pactos")]
+    public bool hasPactCorrupted = false;
+    public Color darkPactHealthColor = new Color(0.38f, 0.04f, 0.08f, 1.0f); // Sangue Escuro Obscuro (#610a14)
+    private Color originalHealthFillColor = Color.white;
+    private bool hasSavedOriginalColor = false;
+
     [HideInInspector] public float damageMultiplier = 1.0f;
     [HideInInspector] public float damageTakenMultiplier = 1.0f;
+    [Header("Efeitos dos Pactos do Mercador")]
     [HideInInspector] public bool canHeal = true;
     [HideInInspector] public bool hasDoubleLoot = false;
     [HideInInspector] public bool hasVampirism = false;
     [HideInInspector] public bool hasNecrosis = false;
     [HideInInspector] public float lastKillTime = 0f;
+    [HideInInspector] public bool hasSelfDamageOnAttack = false;
+    [HideInInspector] public bool isKnockbackImmune = false;
+    [HideInInspector] public float abilityCooldownMultiplier = 1.0f;
+    [HideInInspector] public bool enemiesBuffed = false;
 
     [Header("Stun")]
     public bool isStunned { get; private set; } = false;
@@ -183,6 +193,18 @@ public class PlayerHealth : MonoBehaviour
         if (currentHealth <= 0) Die();
         UpdateHealthBar();
     }
+
+    /// <summary>
+    /// Aplica dano direto de Sacrifício à Vida Atual do jogador (sem alterar a Vida Máxima).
+    /// </summary>
+    public void TakeSacrificeDamage(int amount)
+    {
+        if (isDead) return;
+        currentHealth = Mathf.Max(1, currentHealth - amount);
+        TriggerPlayerRedFlash();
+        UpdateHealthBar();
+        Debug.Log($"🩸 [SACRIFÍCIO] Dano de Pacto aplicado! Vida Atual: {currentHealth}/{maxHealth}");
+    }
     
     void Die()
     {
@@ -232,6 +254,11 @@ public class PlayerHealth : MonoBehaviour
             EquipmentManager.Instance.ReapplyAllEquippedEffects();
         }
 
+        if (MerchantUIController.HasInstance)
+        {
+            MerchantUIController.Instance.ResetPactState();
+        }
+
         FullHeal();
 
         Debug.Log("[PLAYER HEALTH] Todos os atributos de run, infusões e maldições foram resetados após a morte.");
@@ -248,8 +275,17 @@ public class PlayerHealth : MonoBehaviour
 
     public void HandleReviveCompletion() { UnlockPlayer(); }
 
+    public void SetPactCorrupted(bool corrupted)
+    {
+        hasPactCorrupted = corrupted;
+        UpdateHealthBar();
+        Debug.Log($"🩸 [BLOOD PACT] Barra de Vida alterada para Sangue Escuro Corrompido: {corrupted}");
+    }
+
     void FullHeal()
     {
+        hasPactCorrupted = false;
+        canRegenArmor = true;
         cursedHealthLost = 0;
         currentHealth = maxHealth;
         currentArmor = maxArmor;
@@ -259,7 +295,7 @@ public class PlayerHealth : MonoBehaviour
     
     public void RestoreArmor(int amount)
     {
-        if (isDead) return;
+        if (isDead || maxArmor <= 0 || !canRegenArmor) return;
         currentArmor += amount;
         if (currentArmor > maxArmor) currentArmor = maxArmor;
         UpdateArmorBar();
@@ -269,7 +305,14 @@ public class PlayerHealth : MonoBehaviour
     {
         if (healthFillImage != null)
         {
+            if (!hasSavedOriginalColor)
+            {
+                originalHealthFillColor = healthFillImage.color;
+                hasSavedOriginalColor = true;
+            }
+
             healthFillImage.fillAmount = (float)currentHealth / maxHealth;
+            healthFillImage.color = hasPactCorrupted ? darkPactHealthColor : originalHealthFillColor;
         }
 
         if (percentageText != null)
@@ -292,10 +335,29 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    private void UpdateArmorBar()
+    public bool canRegenArmor = true;
+
+    public void UpdateArmorBar()
     {
-        if (armorBarImage != null) armorBarImage.fillAmount = (float)currentArmor / maxArmor;
-        if (armorText != null) armorText.text = currentArmor + "/" + maxArmor;
+        if (maxArmor <= 0 || !canRegenArmor)
+        {
+            if (armorBarImage != null) armorBarImage.fillAmount = 0f;
+            if (armorText != null) armorText.text = "0/0";
+        }
+        else
+        {
+            if (armorBarImage != null) armorBarImage.fillAmount = (float)currentArmor / maxArmor;
+            if (armorText != null) armorText.text = currentArmor + "/" + maxArmor;
+        }
+    }
+
+    public void SetArmorToZero()
+    {
+        maxArmor = 0;
+        currentArmor = 0;
+        canRegenArmor = false;
+        UpdateArmorBar();
+        Debug.Log("🛡️ [PACTO DE SANGUE] Armadura reduzida a ZERO! Regeneração de armadura bloqueada!");
     }
     
     public void SetCurrentSpawnPoint(Transform newSpawnPoint) { }
@@ -400,7 +462,7 @@ public class PlayerHealth : MonoBehaviour
         }
         
         // === REGENERAÇÃO DE ARMADURA ===
-        if (!isDead && currentArmor < maxArmor && playerAttributes != null)
+        if (!isDead && maxArmor > 0 && canRegenArmor && currentArmor < maxArmor && playerAttributes != null)
         {
             armorRegenAccumulator += armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
             if (armorRegenAccumulator >= 1.0f)

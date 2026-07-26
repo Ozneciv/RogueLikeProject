@@ -445,9 +445,18 @@ public class InventoryUI : MonoBehaviour
             PlayerPreviewManager.Instance.Deactivate();
         }
 
-        // Esconde cursor e trava para gameplay
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        // Esconde cursor e trava para gameplay apenas se o Mercador não estiver aberto
+        bool isMerchantOpen = MerchantUIController.HasInstance && MerchantUIController.Instance.IsUiOpen();
+        if (!isMerchantOpen)
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+        else
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
 
         if (tooltip != null)
             tooltip.Hide();

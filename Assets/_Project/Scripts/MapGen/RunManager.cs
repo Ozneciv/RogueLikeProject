@@ -42,15 +42,12 @@ public class RunManager : MonoBehaviour
     // ==================== GEOBIONTE — PROGRESSO MULTI-FASE ====================
 
     /// <summary>
-    /// Quantas vezes o Geobionte já foi derrotado como Bismutado durante esta run (0–3).
-    /// Ao atingir fusionsToSentinel (3), o Geobionte evolui para Sentinela.
-    /// Persiste entre cenas via DontDestroyOnLoad.
+    /// Quantos Geobiontes foram derrotados na run atual (0 a 3).
     /// </summary>
     [HideInInspector] public int geobionteDefeatCount = 0;
 
     /// <summary>
-    /// Se o Geobionte já absorveu um cristal NESTA fase (round).
-    /// Impede absorção dupla na mesma fase. Resetado ao avançar de fase.
+    /// Trava de segurança: impede absorver o mesmo Geobionte mais de uma vez no mesmo nível.
     /// </summary>
     [HideInInspector] public bool geobionteAbsorbedThisLevel = false;
 

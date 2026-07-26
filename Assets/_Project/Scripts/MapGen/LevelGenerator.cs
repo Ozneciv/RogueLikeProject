@@ -658,6 +658,13 @@ public class LevelGenerator : MonoBehaviour
     {
         if (merchantRoomPrefab == null || merchantPrefab == null) return false;
 
+        // Se o pacto já foi realizado nesta run, impede a criação da Sala do Mercador
+        if (MerchantUIController.HasInstance && MerchantUIController.Instance.HasMadePactInRun)
+        {
+            Debug.Log("[LevelGenerator] 🚫 Pacto já realizado nesta run. Sala do Mercador cancelada.");
+            return false;
+        }
+
         GameObject room = Instantiate(merchantRoomPrefab);
         ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);
 

@@ -110,8 +110,6 @@ public class PrimaryAttackKnife : MonoBehaviour
         defaultAttackSpeed = attackAnimationSpeed; // Salva a velocidade customizada do Inspector (como a da Adaga) antes de qualquer troca
         enemiesHitInThisAttack = new List<Collider>();
         EquipDefaultWeapon();
-        
-        // Permite ataque por padrão com a mão/arma equipada
         hasWeapon = true;
         isAttacking = false;
         isHitboxActive = false;
@@ -228,7 +226,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         if (SyntheticBagUI.Instance != null && SyntheticBagUI.Instance.IsOpen()) return true;
         if (CraftingUI.Instance != null && CraftingUI.Instance.IsOpen()) return true;
         if (EptinhoMenuController.instancia != null && EptinhoMenuController.instancia.IsOpen()) return true;
-        if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsUiOpen()) return true;
+        if (MerchantUIController.HasInstance && MerchantUIController.Instance.IsUiOpen()) return true;
         return false;
     }
 

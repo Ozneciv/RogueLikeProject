@@ -1,15 +1,32 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
+using System.Collections.Generic;
 
+/// <summary>
+/// =================================================================================
+/// CONTROLADOR DA INTERFACE DO MERCADOR E SISTEMA DO TARÔ PROIBIDO
+/// =================================================================================
+/// Desenvolvido por: Vicenzo (Branch: VicenzoWS)
+/// 
+/// Funcionalidades Principais Implementadas:
+/// 1. Pool Expandido de 8 Pactos de Sangue com Seleção Aleatória de 3 Cartas por visita.
+/// 2. Animação Procedural 3D de Revelação de Carta (Rotação de 0° a 90° e 90° a 0° no eixo Y com Lerp Suave).
+/// 3. Troca Dinâmica do Texto da Carta no Ponto Cego da Animação (90° de Rotação).
+/// 4. Efeito de Zoom (1.85x Scale) e Camera Shake (Tremor da Câmera) ao Confirmar o Pacto.
+/// 5. Notificação Automática com o Sprite do Eptinho Medo (eptinhomedo) ao Realizar o Pacto.
+/// 6. Suporte Completo à Confirmação/Cancelamento e Encerramento Dinâmico com a Tecla ESC.
+/// =================================================================================
+/// </summary>
 public class MerchantUIController : MonoBehaviour
 {
     [Header("Referências da UI Geral")]
     public GameObject interactionPrompt; 
-    public GameObject rootPanel; // Fundo escuro
+    public GameObject rootPanel; // Fundo escuro / Canvas Principal
     
     [Header("Menu Principal de Seleção")]
-    public GameObject mainMenuPanel; // Contém as 4 opções principais
+    public GameObject mainMenuPanel; // Contém as opções do pacto
     public Button btnPactoDeSangue; // Abre as cartas de Tarô
     public Button btnCambioSangue;
     public Button btnRemocao; // Abre a lista de remoção
@@ -34,6 +51,12 @@ public class MerchantUIController : MonoBehaviour
     [Header("Geral")]
     public Button closeButton;
 
+    [Header("Câmera do Pacto (Ajustes em Tempo Real)")]
+    public bool enablePactCamera = true;
+    public Vector3 cameraOffset = new Vector3(0f, 0.35f, 2.2f);
+    public float cameraLookAtHeight = 2.0f;
+    public float cameraFOV = 52f;
+
     [HideInInspector]
     public PlayerHealth playerHealth;
     private InfusionManager infusionManager;
@@ -41,19 +64,111 @@ public class MerchantUIController : MonoBehaviour
     private PlayerInventory playerInventory;
 
     private bool hasMadePact = false;
+    public bool HasMadePactInRun { get; private set; } = false;
+
+    // Estado de Animação e Revelação da Carta 3D
+    private bool isRevealingPactCard = false;
+    private int pendingPactIndex = -1;
+    private int pendingHealthCost = 0;
+    private Vector2[] originalCardPositions = new Vector2[3];
+    private Vector3[] originalCardScales = new Vector3[3];
+
+    public void ResetPactState()
+    {
+        HasMadePactInRun = false;
+        hasMadePact = false;
+        isRevealingPactCard = false;
+        pendingPactIndex = -1;
+    }
+
+    private void OnPactCompleted()
+    {
+        HasMadePactInRun = true;
+        hasMadePact = true;
+
+        if (playerHealth != null)
+        {
+            playerHealth.SetPactCorrupted(true);
+        }
+
+        if (merchantTransform != null)
+        {
+            Merchant m = merchantTransform.GetComponent<Merchant>() ?? merchantTransform.GetComponentInParent<Merchant>();
+            if (m != null)
+            {
+                m.VanishAfterPact();
+            }
+            else
+            {
+                merchantTransform.gameObject.SetActive(false);
+            }
+        }
+
+        ClosePanel();
+    }
+
     private Camera pactCamera; 
+    private GameObject pactCameraObj;
+    private Camera cachedMainCamera;
+    private bool isDynamicPactCamera = false;
     private Transform merchantTransform;
 
-    // Definição das 5 Maldições do Tarô Proibido
-    private string[] cardNames = { "A Ganância", "O Frenesi", "O Parasita", "O Espectro", "O Sacrifício" };
-    private string[] cardDescriptions = {
-        "Dropa dobro de loot/essência.\nVocê sofre 50% mais dano.",
-        "Velocidade e Ataque +40%.\nArmadura Máxima cai a ZERO.",
-        "Vampirismo ao matar inimigos.\nNecrose contínua após 5s sem matar.",
-        "Esquiva (Dodge) +50%.\nSeu dano é reduzido em 30%.",
-        "Dano Base +150%.\nVocê nunca mais poderá se curar."
+    [System.Serializable]
+    public class PactData
+    {
+        public string name;
+        public string description;
+        public float healthCostPercent;
+    }
+
+    // Pool de 8 Maldições do Tarô Proibido
+    private PactData[] pactPool = new PactData[]
+    {
+        new PactData {
+            name = "A GANÂNCIA",
+            description = "<color=#00ff99>✦ Dobro de loot e essência ao eliminar inimigos.</color>\n<color=#ff4455>✖ Você sofre 50% a mais de dano.</color>",
+            healthCostPercent = 0.20f
+        },
+        new PactData {
+            name = "O FRENESI",
+            description = "<color=#00ff99>✦ Vel. Movimento +20% e Ataque +40%.</color>\n<color=#ff4455>✖ Armadura reduzida a ZERO (Sem Regen).</color>",
+            healthCostPercent = 0.25f
+        },
+        new PactData {
+            name = "O PARASITA",
+            description = "<color=#00ff99>✦ Vampirismo (+Vida ao matar inimigos).</color>\n<color=#ff4455>✖ Dano de Necrose contínua após 5s sem matar.</color>",
+            healthCostPercent = 0.30f
+        },
+        new PactData {
+            name = "O ESPECTRO",
+            description = "<color=#00ff99>✦ Chance de Esquiva (Dodge) +50%.</color>\n<color=#ff4455>✖ Seu Dano causado é reduzido em 30%.</color>",
+            healthCostPercent = 0.15f
+        },
+        new PactData {
+            name = "O SACRIFÍCIO",
+            description = "<color=#00ff99>✦ Dano Base massivamente aumentado em +150%.</color>\n<color=#ff4455>✖ Bloqueia totalmente qualquer tipo de cura.</color>",
+            healthCostPercent = 0.50f
+        },
+        new PactData {
+            name = "SANGUE CRÍTICO",
+            description = "<color=#00ff99>✦ 100% Chance de Crítico & +50% Dano Crítico.</color>\n<color=#ff4455>✖ Cada ataque seu consome 2 de Vida.</color>",
+            healthCostPercent = 0.25f
+        },
+        new PactData {
+            name = "O TITÃ DE CRISTAL",
+            description = "<color=#00ff99>✦ +100% de Vida Máxima e Imunidade a Knockback.</color>\n<color=#ff4455>✖ Velocidade de Movimento reduzida em 35%.</color>",
+            healthCostPercent = 0.30f
+        },
+        new PactData {
+            name = "O COLAPSO TEMPORAL",
+            description = "<color=#00ff99>✦ Recarga de Habilidades reduzida em 60%.</color>\n<color=#ff4455>✖ Inimigos causam +25% de dano e correm +20%.</color>",
+            healthCostPercent = 0.20f
+        }
     };
-    private float[] cardHealthCostPercent = { 0.20f, 0.25f, 0.30f, 0.15f, 0.50f };
+
+    private int[] currentDisplayedPactIndices = new int[3];
+
+    public static bool HasInstance => _instance != null;
 
     private static MerchantUIController _instance;
     public static MerchantUIController Instance
@@ -65,11 +180,15 @@ public class MerchantUIController : MonoBehaviour
                 _instance = FindFirstObjectByType<MerchantUIController>(FindObjectsInactive.Include);
                 if (_instance == null)
                 {
-                    GameObject prefab = Resources.Load<GameObject>("MerchantUI");
+                    GameObject prefab = Resources.Load<GameObject>("MerchantCanvas");
+                    if (prefab == null) prefab = Resources.Load<GameObject>("MerchantCanva");
+                    if (prefab == null) prefab = Resources.Load<GameObject>("MerchantUI");
+
                     if (prefab != null)
                     {
                         GameObject go = Instantiate(prefab);
                         _instance = go.GetComponent<MerchantUIController>();
+                        if (_instance == null) _instance = go.AddComponent<MerchantUIController>();
                     }
                     else
                     {
@@ -90,12 +209,14 @@ public class MerchantUIController : MonoBehaviour
         {
             _instance = this;
         }
-        if (closeButton != null) closeButton.onClick.AddListener(ClosePanel);
+        if (closeButton != null) closeButton.onClick.AddListener(OnCloseButtonClicked);
         
         if (btnPactoDeSangue != null) btnPactoDeSangue.onClick.AddListener(ShowTarotCards);
         if (btnCambioSangue != null) btnCambioSangue.onClick.AddListener(OnCambioSangueClicked);
         if (btnRemocao != null) btnRemocao.onClick.AddListener(ShowRemovalList);
         if (btnComprarArtefato != null) btnComprarArtefato.onClick.AddListener(OnComprarArtefatoClicked);
+
+        EnsurePanelReferences();
 
         if (interactionPrompt != null) interactionPrompt.SetActive(false);
         if (rootPanel != null) rootPanel.SetActive(false);
@@ -103,52 +224,300 @@ public class MerchantUIController : MonoBehaviour
         if (removalListPanel != null) removalListPanel.SetActive(false);
         if (tarotCardsPanel != null) tarotCardsPanel.SetActive(false);
         
-        SetupTarotButtons();
         SetupRightSideText();
+    }
+
+    private void EnsurePanelReferences()
+    {
+        if (rootPanel == null)
+        {
+            Transform canvasChild = transform.Find("Canvas");
+            if (canvasChild != null) rootPanel = canvasChild.gameObject;
+            
+            if (rootPanel == null)
+            {
+                foreach (Transform t in transform)
+                {
+                    if (t.name.ToLower().Contains("panel") || t.name.ToLower().Contains("canvas") || t.name.ToLower().Contains("root"))
+                    {
+                        rootPanel = t.gameObject;
+                        break;
+                    }
+                }
+            }
+            if (rootPanel == null && transform.childCount > 0) rootPanel = transform.GetChild(0).gameObject;
+        }
+
+        Transform searchRoot = (rootPanel != null) ? rootPanel.transform : transform;
+
+        if (mainMenuPanel == null)
+        {
+            foreach (Transform t in searchRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.ToLower().Contains("mainmenu") || t.name.ToLower().Contains("menu") || t.name.ToLower().Contains("principal"))
+                {
+                    mainMenuPanel = t.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (tarotCardsPanel == null)
+        {
+            foreach (Transform t in searchRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.ToLower().Contains("tarot") || t.name.ToLower().Contains("pacto") || t.name.ToLower().Contains("card"))
+                {
+                    tarotCardsPanel = t.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (removalListPanel == null)
+        {
+            foreach (Transform t in searchRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.ToLower().Contains("removal") || t.name.ToLower().Contains("remocao") || t.name.ToLower().Contains("cirurgia"))
+                {
+                    removalListPanel = t.gameObject;
+                    break;
+                }
+            }
+        }
     }
 
     public void ConnectPlayer(PlayerHealth player)
     {
         playerHealth = player;
-        infusionManager = player.GetComponent<InfusionManager>();
-        playerEssence = player.GetComponent<PlayerEssence>();
-        playerInventory = player.GetComponent<PlayerInventory>();
+        if (player != null)
+        {
+            infusionManager = player.GetComponent<InfusionManager>();
+            playerEssence = player.GetComponent<PlayerEssence>();
+            playerInventory = player.GetComponent<PlayerInventory>();
+        }
+    }
+
+    public void ShowTarotCards()
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (tarotCardsPanel != null) tarotCardsPanel.SetActive(true);
+
+        GenerateRandom3Pacts();
+    }
+
+    private void GenerateRandom3Pacts()
+    {
+        List<int> pool = new List<int>();
+        for (int i = 0; i < pactPool.Length; i++) pool.Add(i);
+
+        for (int i = 0; i < 3; i++)
+        {
+            int r = Random.Range(0, pool.Count);
+            currentDisplayedPactIndices[i] = pool[r];
+            pool.RemoveAt(r);
+        }
+
+        SetupTarotButtons();
     }
 
     void SetupTarotButtons()
     {
+        if (tarotCardsPanel != null)
+        {
+            Button[] foundButtons = tarotCardsPanel.GetComponentsInChildren<Button>(true);
+            if (foundButtons != null && foundButtons.Length > 0)
+            {
+                tarotButtons = foundButtons;
+            }
+        }
+
+        if (tarotButtons == null || tarotButtons.Length == 0) return;
+
+        isRevealingPactCard = false;
+        pendingPactIndex = -1;
+
+        // Ativa EXATAMENTE 3 cartões no painel e oculta os demais (ex: se havia 4 no prefab)
         for (int i = 0; i < tarotButtons.Length; i++)
         {
-            if (i >= cardNames.Length) break;
-            
-            if (tarotNames != null && i < tarotNames.Length && tarotNames[i] != null) 
-                tarotNames[i].text = cardNames[i];
-            
-            if (tarotDescriptions != null && i < tarotDescriptions.Length && tarotDescriptions[i] != null) 
-                tarotDescriptions[i].text = cardDescriptions[i];
-                
-            if (tarotCosts != null && i < tarotCosts.Length && tarotCosts[i] != null) 
-                tarotCosts[i].text = $"-{cardHealthCostPercent[i] * 100}% Vida";
-
-            int cardIndex = i;
             if (tarotButtons[i] != null)
             {
-                tarotButtons[i].onClick.RemoveAllListeners();
-                tarotButtons[i].onClick.AddListener(() => OnTarotCardClicked(cardIndex));
+                tarotButtons[i].gameObject.SetActive(i < 3);
+                tarotButtons[i].interactable = true;
             }
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (i >= tarotButtons.Length) break;
+            Button btn = tarotButtons[i];
+            if (btn == null) continue;
+
+            RectTransform btnRect = btn.GetComponent<RectTransform>();
+            if (btnRect != null)
+            {
+                btnRect.localEulerAngles = Vector3.zero;
+                btnRect.localScale = Vector3.one;
+            }
+
+            MerchantCardHover hover = btn.GetComponent<MerchantCardHover>();
+            if (hover != null)
+            {
+                hover.enabled = true;
+                hover.ResetToNormal();
+            }
+
+            int pactIndex = currentDisplayedPactIndices[i];
+            PactData pact = pactPool[pactIndex];
+
+            TextMeshProUGUI nameTxt = null;
+            TextMeshProUGUI descTxt = null;
+            TextMeshProUGUI costTxt = null;
+
+            // Busca os elementos de texto do cartão
+            TextMeshProUGUI[] childTexts = btn.GetComponentsInChildren<TextMeshProUGUI>(true);
+            foreach (var t in childTexts)
+            {
+                string objName = t.gameObject.name.ToLower();
+                if (nameTxt == null && (objName.Contains("name") || objName.Contains("nome") || objName.Contains("title") || objName.Contains("titulo")))
+                    nameTxt = t;
+                else if (descTxt == null && (objName.Contains("desc") || objName.Contains("info") || objName.Contains("text")))
+                    descTxt = t;
+                else if (costTxt == null && (objName.Contains("cost") || objName.Contains("custo") || objName.Contains("price") || objName.Contains("vida")))
+                    costTxt = t;
+            }
+
+            if (childTexts.Length > 0 && nameTxt == null) nameTxt = childTexts[0];
+            if (childTexts.Length > 1 && descTxt == null) descTxt = (childTexts[1] != nameTxt) ? childTexts[1] : (childTexts.Length > 2 ? childTexts[2] : null);
+            if (childTexts.Length > 2 && costTxt == null) costTxt = (childTexts[2] != nameTxt && childTexts[2] != descTxt) ? childTexts[2] : null;
+
+            // FRENTE DA CARTA: Mostra apenas o TÍTULO e o CUSTO DE VIDA (O segredo fica oculto até o aceite!)
+            if (nameTxt != null) nameTxt.text = $"<color=#ffd700><b>{pact.name}</b></color>";
+            if (descTxt != null) descTxt.text = "<color=#8888aa>✦ PACTO OCULTO ✦</color>\n<color=#ffaa44>(Escolha para revelar a maldição)</color>";
+            if (costTxt != null) costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
+
+            ApplyCardTextVerticalLayout(nameTxt, descTxt, costTxt);
+
+            int cardSlot = i;
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() => OnTarotCardClicked(cardSlot));
+
+            if (btn.GetComponent<MerchantCardHover>() == null)
+                btn.gameObject.AddComponent<MerchantCardHover>();
+        }
+    }
+
+    private void ApplyCardTextVerticalLayout(TextMeshProUGUI nameTxt, TextMeshProUGUI descTxt, TextMeshProUGUI costTxt)
+    {
+        if (nameTxt != null)
+        {
+            RectTransform rt = nameTxt.rectTransform;
+            rt.anchorMin = new Vector2(0.05f, 0.72f);
+            rt.anchorMax = new Vector2(0.95f, 0.95f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            nameTxt.alignment = TextAlignmentOptions.Center;
+            nameTxt.enableWordWrapping = true;
+            nameTxt.enableAutoSizing = true;
+            nameTxt.fontSizeMin = 14;
+            nameTxt.fontSizeMax = 22;
+        }
+
+        if (descTxt != null)
+        {
+            RectTransform rt = descTxt.rectTransform;
+            rt.anchorMin = new Vector2(0.05f, 0.25f);
+            rt.anchorMax = new Vector2(0.95f, 0.68f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            descTxt.alignment = TextAlignmentOptions.Center;
+            descTxt.enableWordWrapping = true;
+            descTxt.enableAutoSizing = true;
+            descTxt.fontSizeMin = 10;
+            descTxt.fontSizeMax = 15;
+        }
+
+        if (costTxt != null)
+        {
+            RectTransform rt = costTxt.rectTransform;
+            rt.anchorMin = new Vector2(0.05f, 0.05f);
+            rt.anchorMax = new Vector2(0.95f, 0.22f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            costTxt.alignment = TextAlignmentOptions.Center;
+            costTxt.enableWordWrapping = true;
+            costTxt.enableAutoSizing = true;
+            costTxt.fontSizeMin = 12;
+            costTxt.fontSizeMax = 18;
         }
     }
 
     void SetupRightSideText()
     {
-        if (txtCambioCost != null) txtCambioCost.text = "-15% Vida\n+300 Essências";
-        if (txtRemocaoCost != null) txtRemocaoCost.text = "Remove Infusão\n-150 Essências";
-        if (txtArtefatoCost != null) txtArtefatoCost.text = "Artefato Tier Alto\n-600 Essências";
+        if (txtCambioCost != null) txtCambioCost.text = "<color=#ff3344>-15% Vida Máxima</color>\n<color=#ffcc00>+300 Essências</color>";
+        if (txtRemocaoCost != null) txtRemocaoCost.text = "<color=#88ccff>Remove 1 Infusão</color>\n<color=#ffcc00>-150 Essências</color>";
+        if (txtArtefatoCost != null) txtArtefatoCost.text = "<color=#ffaa00>Artefato Tier Alto</color>\n<color=#ffcc00>-600 Essências</color>";
+    }
+
+    private void AddHoverEffectToButtons()
+    {
+        Button[] allButtons = GetComponentsInChildren<Button>(true);
+        foreach (Button b in allButtons)
+        {
+            if (b != null && b.GetComponent<MerchantCardHover>() == null)
+            {
+                b.gameObject.AddComponent<MerchantCardHover>();
+            }
+        }
     }
 
     void Update()
     {
-        if (IsUiOpen() && Input.GetKeyDown(KeyCode.Escape))
+        if (IsUiOpen())
+        {
+            // Garante cursor visível e livre enquanto qualquer menu do Mercador estiver aberto!
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+            if (enablePactCamera && merchantTransform != null)
+            {
+                SetupPactCamera();
+            }
+
+            // Tecla ESC para sair ou confirmar carta revelada
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                OnCloseButtonClicked();
+            }
+        }
+    }
+
+    private void OnCloseButtonClicked()
+    {
+        if (isRevealingPactCard)
+        {
+            ConfirmRevealedPactAndClose();
+        }
+        else
+        {
+            ClosePanel();
+        }
+    }
+
+    private void ConfirmRevealedPactAndClose()
+    {
+        if (!isRevealingPactCard) return;
+
+        isRevealingPactCard = false;
+        if (pendingPactIndex >= 0)
+        {
+            ApplyTarotEffect(pendingPactIndex, pendingHealthCost);
+            OnPactCompleted();
+        }
+        else
         {
             ClosePanel();
         }
@@ -164,33 +533,32 @@ public class MerchantUIController : MonoBehaviour
     {
         if (!gameObject.activeInHierarchy) return false;
         if (rootPanel != null && !rootPanel.activeInHierarchy) return false;
-        return rootPanel != null && rootPanel.activeSelf;
+        return (rootPanel != null && rootPanel.activeSelf) || (mainMenuPanel != null && mainMenuPanel.activeSelf) || (tarotCardsPanel != null && tarotCardsPanel.activeSelf);
     }
 
     public void OpenPanel(Transform merchantPos = null)
     {
-        if (hasMadePact) return;
+        merchantTransform = merchantPos;
+
+        gameObject.SetActive(true);
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
 
         if (playerHealth == null)
         {
             PlayerHealth p = Object.FindFirstObjectByType<PlayerHealth>();
             if (p != null) ConnectPlayer(p);
         }
-        
-        merchantTransform = merchantPos;
-        SetupPactCamera();
 
-        if (rootPanel == null)
+        EnsurePanelReferences();
+
+        Canvas c = GetComponent<Canvas>();
+        if (c == null) c = GetComponentInChildren<Canvas>(true);
+        if (c != null)
         {
-            foreach (Transform t in transform)
-            {
-                if (t.name.ToLower().Contains("panel") || t.name.ToLower().Contains("root"))
-                {
-                    rootPanel = t.gameObject;
-                    break;
-                }
-            }
-            if (rootPanel == null && transform.childCount > 0) rootPanel = transform.GetChild(0).gameObject;
+            c.enabled = true;
+            c.sortingOrder = 999;
         }
 
         if (rootPanel != null) rootPanel.SetActive(true);
@@ -198,48 +566,95 @@ public class MerchantUIController : MonoBehaviour
         if (tarotCardsPanel != null) tarotCardsPanel.SetActive(false);
         if (removalListPanel != null) removalListPanel.SetActive(false);
 
+        AddHoverEffectToButtons();
+
+        if (enablePactCamera)
+        {
+            SetupPactCamera();
+        }
+
         Time.timeScale = 0f;
         ShowPrompt(false);
         Debug.Log("[MERCHANT UI] Painel do Pacto de Sangue aberto com sucesso.");
     }
 
-    public void ShowTarotCards()
-    {
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (tarotCardsPanel != null) tarotCardsPanel.SetActive(true);
-    }
-
     private void SetupPactCamera()
     {
-        if (merchantTransform == null || playerHealth == null) return;
-        if (Camera.main == null) return;
+        if (!enablePactCamera) return;
 
-        GameObject camObj = new GameObject("PactCamera_Temporary");
-        pactCamera = camObj.AddComponent<Camera>();
-        pactCamera.CopyFrom(Camera.main); 
+        if (cachedMainCamera == null)
+        {
+            cachedMainCamera = Camera.main;
+        }
 
-        Vector3 eyeOffset = Vector3.up * 1.6f;
-        camObj.transform.position = playerHealth.transform.position + eyeOffset;
-        camObj.transform.LookAt(merchantTransform.position + eyeOffset);
+        pactCamera = null;
+        if (merchantTransform != null)
+        {
+            pactCamera = merchantTransform.GetComponentInChildren<Camera>(true);
+        }
 
-        pactCamera.depth = Camera.main.depth + 1;
+        if (pactCamera == null)
+        {
+            GameObject camObj = GameObject.Find("MerchantCamera");
+            if (camObj != null) pactCamera = camObj.GetComponent<Camera>();
+        }
+
+        if (pactCamera == null)
+        {
+            Camera[] allCams = Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (Camera c in allCams)
+            {
+                if (c.gameObject != null && c.gameObject.name.ToLower().Contains("merchant"))
+                {
+                    pactCamera = c;
+                    break;
+                }
+            }
+        }
+
+        if (pactCamera == null)
+        {
+            Debug.LogWarning("[MerchantUIController] MerchantCamera não foi encontrada no prefab ou cena.");
+            return;
+        }
+
+        pactCameraObj = pactCamera.gameObject;
+
+        if (cachedMainCamera != null && cachedMainCamera != pactCamera)
+        {
+            cachedMainCamera.enabled = false;
+        }
+
+        pactCamera.depth = 100;
+        pactCameraObj.SetActive(true);
+        pactCamera.enabled = true;
+
+        Canvas cComp = GetComponent<Canvas>();
+        if (cComp == null) cComp = GetComponentInChildren<Canvas>(true);
+        if (cComp != null && cComp.renderMode == RenderMode.ScreenSpaceCamera)
+        {
+            cComp.worldCamera = pactCamera;
+        }
     }
 
     // ============================================
-    // SERVIÇO 1: O Tarô Proibido
+    // SERVIÇO 1: O Tarô Proibido & Animação 3D de Virada (Card Flip)
     // ============================================
-    public void OnTarotCardClicked(int index)
+    public void OnTarotCardClicked(int cardSlot)
     {
-        if (playerHealth == null || hasMadePact) return;
+        if (playerHealth == null || isRevealingPactCard) return;
+        if (cardSlot < 0 || cardSlot >= currentDisplayedPactIndices.Length) return;
 
-        float percentCost = cardHealthCostPercent[index];
+        int pactIndex = currentDisplayedPactIndices[cardSlot];
+        PactData pact = pactPool[pactIndex];
+
+        float percentCost = pact.healthCostPercent;
         int healthCost = Mathf.RoundToInt(playerHealth.maxHealth * percentCost);
 
-        if (playerHealth.maxHealth - healthCost > 0)
+        if (playerHealth.currentHealth - healthCost >= 1)
         {
-            ApplyTarotEffect(index, healthCost);
-            hasMadePact = true;
-            ClosePanel();
+            // Inicia a Animação Cinemática de Virada de Carta 3D e Camera Shake!
+            StartCoroutine(AnimateCardFlipSequence(cardSlot, pactIndex, healthCost));
         }
         else
         {
@@ -247,161 +662,354 @@ public class MerchantUIController : MonoBehaviour
         }
     }
 
-    private void ApplyTarotEffect(int index, int maxHealthCost)
+    /// <summary>
+    /// Coroutine da Animação 3D:
+    /// 1. Dispara um tremor rápido e sutil na Câmera 3D.
+    /// 2. Esconde os outros 2 cartões.
+    /// 3. Destaca e move o cartão escolhido para o centro da tela, aumentando a escala (1.85x).
+    /// 4. Gira a carta 3D no eixo Y (0° ➔ 90°). No ponto cego de 90°, revela o verso com a maldição completa!
+    /// 5. Termina a virada 3D (90° ➔ 0°) e dispara a fala assustada do Eptinho: "O que você fez?!"
+    /// </summary>
+    private IEnumerator AnimateCardFlipSequence(int cardSlot, int pactIndex, int healthCost)
     {
-        playerHealth.ModifyAttribute("maxhealth", -maxHealthCost, false);
+        isRevealingPactCard = true;
+        pendingPactIndex = pactIndex;
+        pendingHealthCost = healthCost;
+
+        PactData pact = pactPool[pactIndex];
+
+        // Desativa a interatividade dos botões para evitar duplo clique
+        foreach (Button b in tarotButtons)
+        {
+            if (b != null) b.interactable = false;
+        }
+
+        // 1. CAMERA SHAKE RÁPIDO E SUTIL (Impacto seco sem tremer demais)
+        StartCoroutine(CameraShakeRoutine(0.15f, 0.06f));
+
+        // 2. Oculta os outros 2 cartões
+        for (int i = 0; i < tarotButtons.Length; i++)
+        {
+            if (i < 3 && i != cardSlot && tarotButtons[i] != null)
+            {
+                tarotButtons[i].gameObject.SetActive(false);
+            }
+        }
+
+        Button chosenBtn = tarotButtons[cardSlot];
+        chosenBtn.transform.SetAsLastSibling(); // Coloca no topo da hierarquia visual
+        
+        // Desativa o MerchantCardHover para que a animação não dispute a posição no Update()
+        MerchantCardHover hoverScript = chosenBtn.GetComponent<MerchantCardHover>();
+        if (hoverScript != null) hoverScript.enabled = false;
+
+        LayoutElement le = chosenBtn.GetComponent<LayoutElement>();
+        if (le == null) le = chosenBtn.gameObject.AddComponent<LayoutElement>();
+        le.ignoreLayout = true; // Libera do LayoutGroup para poder crescer livremente no centro
+
+        RectTransform cardRect = chosenBtn.GetComponent<RectTransform>();
+
+        Vector2 startPos = cardRect.anchoredPosition;
+        Vector3 startScale = cardRect.localScale;
+        Vector2 startSize = cardRect.sizeDelta;
+
+        Vector2 centerPos = Vector2.zero;
+        Vector3 targetScale = new Vector3(1.85f, 1.85f, 1.85f);
+        Vector2 targetSize = new Vector2(340f, 520f);
+
+        float duration = 0.25f;
+        float elapsed = 0f;
+
+        // FASE 1: Move para o centro da tela, expande o tamanho e gira 3D até 90° (perfil da carta)
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float smoothT = t * t * (3f - 2f * t);
+
+            cardRect.anchoredPosition = Vector2.Lerp(startPos, centerPos, smoothT);
+            cardRect.localScale = Vector3.Lerp(startScale, targetScale, smoothT);
+            cardRect.sizeDelta = Vector2.Lerp(startSize, targetSize, smoothT);
+
+            float rotY = Mathf.Lerp(0f, 90f, smoothT);
+            cardRect.localEulerAngles = new Vector3(0f, rotY, 0f);
+
+            yield return null;
+        }
+
+        // FASE 2: PONTO MÉDIO DA VIRADA (90° = Carta de Perfil / Invisível)
+        // Revela o verso da carta com o texto da maldição!
+        TextMeshProUGUI nameTxt = null;
+        TextMeshProUGUI descTxt = null;
+        TextMeshProUGUI costTxt = null;
+
+        TextMeshProUGUI[] childTexts = chosenBtn.GetComponentsInChildren<TextMeshProUGUI>(true);
+        foreach (var txt in childTexts)
+        {
+            string objName = txt.gameObject.name.ToLower();
+            if (nameTxt == null && (objName.Contains("name") || objName.Contains("nome") || objName.Contains("title"))) nameTxt = txt;
+            else if (descTxt == null && (objName.Contains("desc") || objName.Contains("info") || objName.Contains("text"))) descTxt = txt;
+            else if (costTxt == null && (objName.Contains("cost") || objName.Contains("custo") || objName.Contains("price"))) costTxt = txt;
+        }
+        if (childTexts.Length > 0 && nameTxt == null) nameTxt = childTexts[0];
+        if (childTexts.Length > 1 && descTxt == null) descTxt = (childTexts[1] != nameTxt) ? childTexts[1] : (childTexts.Length > 2 ? childTexts[2] : null);
+        if (childTexts.Length > 2 && costTxt == null) costTxt = (childTexts[2] != nameTxt && childTexts[2] != descTxt) ? childTexts[2] : null;
+
+        if (nameTxt != null) nameTxt.text = $"<color=#ffcc00><b>✦ {pact.name} ✦</b></color>";
+        if (descTxt != null) descTxt.text = pact.description; // REVELA O VERSO COM O SEGREDO COMPLETO!
+        if (costTxt != null) costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
+
+        // FASE 3: Gira de 90° até 0°, desdobrando a face traseira no centro!
+        elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float smoothT = t * t * (3f - 2f * t);
+
+            float rotY = Mathf.Lerp(90f, 0f, smoothT);
+            cardRect.localEulerAngles = new Vector3(0f, rotY, 0f);
+
+            yield return null;
+        }
+
+        cardRect.localEulerAngles = Vector3.zero;
+        chosenBtn.interactable = true;
+
+        // Dispara o Popup do Eptinho com a nova expressão 'eptinhomedo'!
+        if (EptinhoPopupController.instancia != null)
+        {
+            EptinhoPopupController.instancia.MostrarPopupPactoMedo("O que você fez?!");
+        }
+
+        Debug.Log($"🎴 [CARTA REVELADA] {pact.name} virada e revelada no centro da tela!");
+    }
+
+    /// <summary>
+    /// Coroutine de Camera Shake suave e rápido 3D durante o aceite da carta.
+    /// </summary>
+    private IEnumerator CameraShakeRoutine(float duration, float magnitude)
+    {
+        Camera targetCam = (pactCamera != null && pactCamera.enabled) ? pactCamera : Camera.main;
+        if (targetCam == null) yield break;
+
+        Vector3 originalPos = targetCam.transform.localPosition;
+        float elapsed = 0.0f;
+
+        while (elapsed < duration)
+        {
+            float x = Random.Range(-1f, 1f) * magnitude;
+            float y = Random.Range(-1f, 1f) * magnitude;
+
+            targetCam.transform.localPosition = originalPos + new Vector3(x, y, 0);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        targetCam.transform.localPosition = originalPos;
+    }
+
+    private void ApplyTarotEffect(int index, int healthCost)
+    {
+        playerHealth.TakeSacrificeDamage(healthCost);
+
         switch(index)
         {
-            case 0:
+            case 0: // A GANÂNCIA
                 playerHealth.hasDoubleLoot = true;
                 playerHealth.damageTakenMultiplier += 0.5f;
                 break;
-            case 1:
-                playerHealth.damageMultiplier += 0.4f;
-                if (playerHealth.playerMovement != null) playerHealth.playerMovement.hitboxMoveSpeed *= 1.4f;
-                if (playerHealth.playerAttack != null) playerHealth.playerAttack.attackAnimationSpeed *= 1.4f;
-                playerHealth.ModifyAttribute("maxarmor", -playerHealth.maxArmor, false);
+
+            case 1: // O FRENESI
+                playerHealth.SetArmorToZero();
+
+                PlayerM moveScript = playerHealth.playerMovement ?? playerHealth.GetComponent<PlayerM>();
+                if (moveScript != null)
+                {
+                    moveScript.walkSpeed *= 1.20f;
+                    moveScript.sprintSpeed *= 1.20f;
+                }
+                PlayerAttributesDefensive defStats = playerHealth.GetComponent<PlayerAttributesDefensive>() ?? playerHealth.GetComponentInChildren<PlayerAttributesDefensive>();
+                if (defStats != null) defStats.speedMultiplier *= 1.20f;
+
+                PrimaryAttackKnife attackScript = playerHealth.playerAttack ?? playerHealth.GetComponent<PrimaryAttackKnife>();
+                if (attackScript != null)
+                {
+                    attackScript.attackAnimationSpeed *= 1.40f;
+                    attackScript.defaultAttackSpeed *= 1.40f;
+                }
+                PlayerAttributesOffensive offStats = playerHealth.GetComponent<PlayerAttributesOffensive>() ?? playerHealth.GetComponentInChildren<PlayerAttributesOffensive>();
+                if (offStats != null) offStats.attackSpeedMelee *= 1.40f;
                 break;
-            case 2:
+
+            case 2: // O PARASITA
                 playerHealth.hasVampirism = true;
                 playerHealth.hasNecrosis = true;
                 break;
-            case 3:
-                PlayerAttributesDefensive def = playerHealth.GetComponent<PlayerAttributesDefensive>();
-                if (def != null) def.dodgeChance += 50f;
-                playerHealth.damageMultiplier -= 0.3f;
+
+            case 3: // O ESPECTRO
+                playerHealth.ModifyAttribute("dodgechance", 50f, false);
+                playerHealth.damageMultiplier -= 0.30f;
                 break;
-            case 4:
-                playerHealth.damageMultiplier += 1.5f;
+
+            case 4: // O SACRIFÍCIO
+                playerHealth.damageMultiplier += 1.50f;
                 playerHealth.canHeal = false;
+                break;
+
+            case 5: // SANGUE CRÍTICO
+                playerHealth.ModifyAttribute("critchance", 100f, false);
+                playerHealth.ModifyAttribute("critdamage", 50f, false);
+                playerHealth.hasSelfDamageOnAttack = true;
+                break;
+
+            case 6: // O TITÃ DE CRISTAL
+                playerHealth.ModifyAttribute("maxhealth", playerHealth.maxHealth, false); // +100% Vida Máxima
+                playerHealth.isKnockbackImmune = true;
+                PlayerM moveScript2 = playerHealth.playerMovement ?? playerHealth.GetComponent<PlayerM>();
+                if (moveScript2 != null)
+                {
+                    moveScript2.walkSpeed *= 0.65f;
+                    moveScript2.sprintSpeed *= 0.65f;
+                }
+                break;
+
+            case 7: // O COLAPSO TEMPORAL
+                playerHealth.abilityCooldownMultiplier *= 0.40f; // -60% Cooldown
+                playerHealth.enemiesBuffed = true;
                 break;
         }
     }
 
     // ============================================
-    // SERVIÇO 2: Câmbio de Sangue
+    // SERVIÇO 2: Câmbio de Sangue por Essência
     // ============================================
     public void OnCambioSangueClicked()
     {
-        if (playerHealth == null || playerEssence == null || hasMadePact) return;
+        if (playerHealth == null || playerEssence == null) return;
 
-        int cost = Mathf.RoundToInt(playerHealth.maxHealth * 0.15f);
-        if (playerHealth.maxHealth - cost > 0)
+        int healthCost = Mathf.RoundToInt(playerHealth.maxHealth * 0.15f);
+        if (playerHealth.currentHealth - healthCost >= 1)
         {
-            playerHealth.ModifyAttribute("maxhealth", -cost, false);
+            playerHealth.TakeSacrificeDamage(healthCost);
             playerEssence.AddEssence(300);
-            Debug.Log("[Mercador] Câmbio de Sangue efetuado. +300 Essências.");
-            hasMadePact = true;
-            ClosePanel();
-        }
-        else
-        {
-            Debug.LogWarning("Sangue insuficiente!");
+            OnPactCompleted();
         }
     }
 
     // ============================================
-    // SERVIÇO 3: Cirurgia de Remoção
+    // SERVIÇO 3: Cirurgia de Remoção de Infusão
     // ============================================
     public void ShowRemovalList()
     {
-        if (infusionManager == null || hasMadePact) return;
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (removalListPanel != null) removalListPanel.SetActive(true);
 
-        // Limpa a lista visual
+        PopulateRemovalList();
+    }
+
+    private void PopulateRemovalList()
+    {
+        if (removalListContent == null || infusionManager == null) return;
+
         foreach (Transform child in removalListContent)
         {
             Destroy(child.gameObject);
         }
 
-        // Popula a lista baseada nos infusedItems
-        if (infusionManager.infusedItems.Count == 0)
+        List<ItemData> activeInfusions = infusionManager.infusedItems;
+        if (activeInfusions == null || activeInfusions.Count == 0)
         {
-            // Criar um texto "Nenhum item infundido" pode ser feito, mas pra simplificar o guia, ignoramos
-            Debug.Log("Nenhum item infundido para remover.");
+            Debug.Log("[Mercador] Player não possui infusões para remover.");
             return;
         }
 
-        foreach (ItemData item in infusionManager.infusedItems)
+        foreach (ItemData inf in activeInfusions)
         {
-            if (removalItemButtonPrefab != null)
-            {
-                GameObject btnObj = Instantiate(removalItemButtonPrefab, removalListContent);
-                TextMeshProUGUI txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = $"{item.itemName} (Tier {item.tier})";
+            if (removalItemButtonPrefab == null) break;
 
-                Button btn = btnObj.GetComponent<Button>();
-                if (btn != null)
-                {
-                    btn.onClick.AddListener(() => OnConfirmRemovalClicked(item));
-                }
+            GameObject btnObj = Instantiate(removalItemButtonPrefab, removalListContent);
+            Button btn = btnObj.GetComponent<Button>();
+            TextMeshProUGUI txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
+
+            if (txt != null) txt.text = $"Remover {inf.itemName} (150 Essências)";
+
+            ItemData targetInf = inf;
+            if (btn != null)
+            {
+                btn.onClick.AddListener(() => OnRemoveInfusionClicked(targetInf));
             }
         }
     }
 
-    public void OnConfirmRemovalClicked(ItemData item)
+    private void OnRemoveInfusionClicked(ItemData inf)
     {
         if (playerEssence == null || infusionManager == null) return;
 
-        int removeCost = 150;
-        if (playerEssence.GetEssence() >= removeCost)
+        if (playerEssence.currentEssence >= 150)
         {
-            playerEssence.SpendEssence(removeCost);
-            infusionManager.RemoveInfusion(item);
-            Debug.Log($"[Mercador] Cirurgia concluída! {item.itemName} removido. Custo: 150.");
-            hasMadePact = true;
-            ClosePanel();
+            playerEssence.SpendEssence(150);
+            infusionManager.RemoveInfusion(inf);
+            OnPactCompleted();
         }
         else
         {
-            Debug.LogWarning("Essência insuficiente para a Cirurgia de Remoção!");
+            Debug.LogWarning("[Mercador] Essência insuficiente para remover infusão!");
         }
     }
 
     // ============================================
-    // SERVIÇO 4: Artefatos Refinados
+    // SERVIÇO 4: Comprar Artefato Tier Alto
     // ============================================
     public void OnComprarArtefatoClicked()
     {
-        if (playerEssence == null || playerInventory == null || hasMadePact) return;
+        if (playerEssence == null || playerInventory == null) return;
 
-        int cost = 600;
-        if (playerEssence.GetEssence() >= cost)
+        if (playerEssence.currentEssence >= 600)
         {
-            // Pega um item tier alto (ex: T3 ou T4) do banco de dados (supondo que o DB permite pegar random)
-            // Como não temos a função pronta de pegar random por tier, vamos pegar qualquer item por enquanto
-            if (ItemDatabase.Instance != null && ItemDatabase.Instance.allItems.Count > 0)
-            {
-                ItemData randomItem = ItemDatabase.Instance.allItems[Random.Range(0, ItemDatabase.Instance.allItems.Count)];
-                
-                playerEssence.SpendEssence(cost);
-                playerInventory.AddItem(randomItem.itemId, 1);
-                
-                Debug.Log($"[Mercador] Artefato comprado! {randomItem.itemName} adquirido por 600 Essências.");
-                hasMadePact = true;
-                ClosePanel();
-            }
+            playerEssence.SpendEssence(600);
+            Debug.Log("[Mercador] Artefato High Tier Adquirido!");
+            OnPactCompleted();
         }
         else
         {
-            Debug.LogWarning("Essência insuficiente para comprar o Artefato!");
+            Debug.LogWarning("[Mercador] Essência insuficiente para o Artefato!");
         }
     }
 
     public void ClosePanel()
     {
-        if (rootPanel != null) rootPanel.SetActive(false);
-        if (removalListPanel != null) removalListPanel.SetActive(false);
-        
-        if (pactCamera != null)
+        if (isDynamicPactCamera && pactCameraObj != null)
         {
-            Destroy(pactCamera.gameObject);
-            pactCamera = null;
+            Destroy(pactCameraObj);
+            pactCameraObj = null;
+        }
+        else if (pactCameraObj != null)
+        {
+            pactCameraObj.SetActive(false);
+        }
+
+        if (cachedMainCamera != null)
+        {
+            cachedMainCamera.enabled = true;
         }
 
         Time.timeScale = 1f;
-        
-        if (!hasMadePact) ShowPrompt(true);
+
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (tarotCardsPanel != null) tarotCardsPanel.SetActive(false);
+        if (removalListPanel != null) removalListPanel.SetActive(false);
+        if (rootPanel != null) rootPanel.SetActive(false);
+        gameObject.SetActive(false);
+
+        ShowPrompt(false);
+
+        // Só trava e esconde o cursor se o inventário não estiver aberto
+        bool isInventoryOpen = InventoryUI.Instance != null && InventoryUI.Instance.IsOpen();
+        if (!isInventoryOpen)
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
     }
 }
