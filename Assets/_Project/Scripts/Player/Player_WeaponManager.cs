@@ -47,6 +47,10 @@ public class Player_WeaponManager : MonoBehaviour
                 {
                     currentWeapon = child.gameObject;
                     isWeaponDrawn = currentWeapon.activeSelf;
+                    if (attackScript != null)
+                    {
+                        attackScript.hasWeapon = isWeaponDrawn;
+                    }
                     if (offset.weaponAnimatorOverride != null)
                     {
                         activeWeaponController = offset.weaponAnimatorOverride;
