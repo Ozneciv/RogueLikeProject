@@ -163,18 +163,15 @@ public class PlayerM : MonoBehaviour
 
     private void UpdateAnimations()
     {
-        // Recupera dinamicamente o Animator ativo se estiver nulo ou desativado
-        if (animator == null || !animator.isActiveAndEnabled)
+        // Sempre sincroniza com o playerAnimator ativo do Player_WeaponManager se ele existir
+        Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+        if (wm != null && wm.playerAnimator != null && wm.playerAnimator.isActiveAndEnabled)
         {
-            Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
-            if (wm != null && wm.playerAnimator != null && wm.playerAnimator.isActiveAndEnabled)
-            {
-                animator = wm.playerAnimator;
-            }
-            else
-            {
-                animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
-            }
+            animator = wm.playerAnimator;
+        }
+        else if (animator == null || !animator.isActiveAndEnabled)
+        {
+            animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
         }
 
         if (animator == null || !animator.isActiveAndEnabled) return;
