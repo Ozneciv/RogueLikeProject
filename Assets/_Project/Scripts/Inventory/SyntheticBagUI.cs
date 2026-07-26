@@ -26,7 +26,7 @@ public class SyntheticBagUI : MonoBehaviour
 
     [Header("Layout")]
     [Tooltip("Número de colunas na grade")]
-    public int columns = 5;
+    public int columns = 3;
     [Tooltip("Tamanho de cada slot em pixels")]
     public float slotSize = 72f;
     [Tooltip("Espaçamento entre slots")]
@@ -377,17 +377,17 @@ public class SyntheticBagUI : MonoBehaviour
         if (gridRect == null) return;
 
         int rows  = Mathf.Max(1, Mathf.CeilToInt((float)count / columns));
-        float w   = columns * (slotSize + slotSpacing) + slotSpacing;
+        float w   = columns * (slotSize + slotSpacing) - slotSpacing;
         float h   = rows    * (slotSize + slotSpacing) + slotSpacing;
-        gridRect.sizeDelta = new Vector2(w, h);
+        gridRect.sizeDelta = new Vector2(w + 12f, h);
 
-        // Painel fixo na altura exata de 2 LINHAS de slots (+ cabeçalho e margens)
+        // Painel proporcional à largura exata da grade (+ margens limpas)
         if (panelObject != null)
         {
             float max2RowsHeight = 2f * (slotSize + slotSpacing) + slotSpacing;
             RectTransform panelRect = panelObject.GetComponent<RectTransform>();
             if (panelRect != null)
-                panelRect.sizeDelta = new Vector2(w + 32f, max2RowsHeight + 64f);
+                panelRect.sizeDelta = new Vector2(w + 44f, max2RowsHeight + 64f);
         }
     }
 
@@ -574,8 +574,8 @@ public class SyntheticBagUI : MonoBehaviour
         slotGrid.transform.SetParent(scrollObj.transform, false);
 
         RectTransform gridRect = slotGrid.AddComponent<RectTransform>();
-        gridRect.anchorMin       = new Vector2(0f, 1f);
-        gridRect.anchorMax       = new Vector2(1f, 1f);
+        gridRect.anchorMin       = new Vector2(0.5f, 1f); // Centralizado no topo
+        gridRect.anchorMax       = new Vector2(0.5f, 1f);
         gridRect.pivot           = new Vector2(0.5f, 1f);
         gridRect.anchoredPosition = Vector2.zero;
 
@@ -584,12 +584,10 @@ public class SyntheticBagUI : MonoBehaviour
         GridLayoutGroup grid = slotGrid.AddComponent<GridLayoutGroup>();
         grid.cellSize        = new Vector2(slotSize, slotSize);
         grid.spacing         = new Vector2(slotSpacing, slotSpacing);
-        grid.padding         = new RectOffset(
-            (int)slotSpacing, (int)slotSpacing,
-            (int)slotSpacing, (int)slotSpacing);
+        grid.padding         = new RectOffset(0, 0, (int)slotSpacing, (int)slotSpacing);
         grid.startCorner     = GridLayoutGroup.Corner.UpperLeft;
         grid.startAxis       = GridLayoutGroup.Axis.Horizontal;
-        grid.childAlignment  = TextAnchor.UpperLeft;
+        grid.childAlignment  = TextAnchor.UpperCenter; // Centralizado no painel
         grid.constraint      = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = columns;
 
