@@ -17,25 +17,36 @@ public class WeaponHitbox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Ao colidir com algo, primeiro verificamos se é um inimigo.
-        // Busca no próprio collider primeiro; se não achar, busca no pai
-        // (necessário para inimigos com fragmentos filhos, como o ShardSwarm).
+        ProcessHit(other);
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        ProcessHit(other);
+    }
+
+    private void ProcessHit(Collider other)
+    {
+        if (other == null) return;
+
+        // Ao colidir ou permanecer na área, verificamos se é um inimigo (DummyHealth ou ShardSwarmHealth)
         DummyHealth enemyHealth = other.GetComponent<DummyHealth>()
                                 ?? other.GetComponentInParent<DummyHealth>();
 
-        // ShardSwarm usa ShardSwarmHealth em vez de DummyHealth
         ShardSwarmHealth swarmHealth = other.GetComponent<ShardSwarmHealth>()
                                     ?? other.GetComponentInParent<ShardSwarmHealth>();
 
         if (enemyHealth != null || swarmHealth != null)
         {
+            if (primaryAttackScript == null)
+            {
+                primaryAttackScript = GetComponentInParent<PrimaryAttackKnife>()
+                                   ?? Object.FindFirstObjectByType<PrimaryAttackKnife>();
+            }
+
             if (primaryAttackScript != null)
             {
                 primaryAttackScript.RegisterHit(other);
-            }
-            else
-            {
-                Debug.LogError("ERRO CRÍTICO: O WeaponHitbox não encontrou o script PrimaryAttackKnife no Player!");
             }
         }
     }

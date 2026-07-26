@@ -482,7 +482,19 @@ public class PrimaryAttackKnife : MonoBehaviour
         eventFiredEnableHitbox = true;
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
-        if (currentHitbox != null) currentHitbox.enabled = true;
+
+        if (currentHitbox != null)
+        {
+            currentHitbox.isTrigger = true;
+            currentHitbox.enabled = true;
+
+            WeaponHitbox hb = currentHitbox.GetComponent<WeaponHitbox>();
+            if (hb == null)
+            {
+                hb = currentHitbox.gameObject.AddComponent<WeaponHitbox>();
+            }
+            hb.primaryAttackScript = this;
+        }
     }
 
     public void DisableHitbox()
