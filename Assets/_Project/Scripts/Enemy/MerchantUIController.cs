@@ -304,6 +304,40 @@ public class MerchantUIController : MonoBehaviour
         if (tarotCardsPanel != null) tarotCardsPanel.SetActive(true);
 
         GenerateRandom3Pacts();
+        SetupTarotPanelHeader();
+    }
+
+    private void SetupTarotPanelHeader()
+    {
+        if (tarotCardsPanel == null) return;
+
+        // Procura ou cria o título de cabeçalho "BLOOD PACT" ACIMA do painel de cartas
+        Transform headerTr = tarotCardsPanel.transform.Find("txtPactHeader");
+        TextMeshProUGUI headerTxt = null;
+        if (headerTr != null)
+        {
+            headerTxt = headerTr.GetComponent<TextMeshProUGUI>();
+        }
+        else
+        {
+            GameObject headerGo = new GameObject("txtPactHeader");
+            headerGo.transform.SetParent(tarotCardsPanel.transform, false);
+            headerTxt = headerGo.AddComponent<TextMeshProUGUI>();
+        }
+
+        if (headerTxt != null)
+        {
+            headerTxt.gameObject.SetActive(true);
+            headerTxt.text = "<size=28><color=#ffd700><b>✦ BLOOD PACT ✦</b></color></size>\n<size=15><color=#ffaa44><i>Escolha uma carta de tarô para selar seu destino...</i></color></size>";
+            headerTxt.alignment = TextAlignmentOptions.Center;
+
+            RectTransform rt = headerTxt.rectTransform;
+            rt.anchorMin = new Vector2(0.05f, 0.83f); // Posicionado no topo ACIMA das cartas
+            rt.anchorMax = new Vector2(0.95f, 0.97f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+        }
     }
 
     private void GenerateRandom3Pacts()
@@ -408,8 +442,9 @@ public class MerchantUIController : MonoBehaviour
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() => OnTarotCardClicked(cardSlot));
 
-            if (btn.GetComponent<MerchantCardHover>() == null)
-                btn.gameObject.AddComponent<MerchantCardHover>();
+            if (hover == null) hover = btn.gameObject.AddComponent<MerchantCardHover>();
+            hover.isPactCard = true;
+            hover.enableGlitchFont = true;
         }
     }
 
@@ -440,9 +475,65 @@ public class MerchantUIController : MonoBehaviour
 
     void SetupRightSideText()
     {
-        if (txtCambioCost != null) txtCambioCost.text = "<color=#ff3344>-15% Vida Máxima</color>\n<color=#ffcc00>+300 Essências</color>";
-        if (txtRemocaoCost != null) txtRemocaoCost.text = "<color=#88ccff>Remove 1 Infusão</color>\n<color=#ffcc00>-150 Essências</color>";
-        if (txtArtefatoCost != null) txtArtefatoCost.text = "<color=#ffaa00>Artefato Tier Alto</color>\n<color=#ffcc00>-600 Essências</color>";
+        // 1. Estilização dos Botões do Menu Principal para combinar com a tipografia das Cartas
+        if (btnPactoDeSangue != null)
+        {
+            TextMeshProUGUI txt = btnPactoDeSangue.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (txt != null)
+            {
+                txt.text = "<size=20><color=#ffd700><b>✦ PACTO DE SANGUE ✦</b></color></size>\n<size=12><color=#ffaa44><i>Selar Sacrifício do Tarô Proibido</i></color></size>";
+                txt.alignment = TextAlignmentOptions.Center;
+            }
+        }
+
+        if (btnCambioSangue != null)
+        {
+            TextMeshProUGUI txt = btnCambioSangue.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (txt != null)
+            {
+                txt.text = "<size=20><color=#ff4455><b>✦ CÂMBIO DE SANGUE ✦</b></color></size>\n<size=12><color=#00ff99><i>-15% Vida Máxima  ➔  +300 Essências</i></color></size>";
+                txt.alignment = TextAlignmentOptions.Center;
+            }
+        }
+
+        if (btnRemocao != null)
+        {
+            TextMeshProUGUI txt = btnRemocao.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (txt != null)
+            {
+                txt.text = "<size=20><color=#88ccff><b>✦ CIRURGIA DE REMOÇÃO ✦</b></color></size>\n<size=12><color=#88ccff><i>Remove 1 Infusão Ativa (-150 Essências)</i></color></size>";
+                txt.alignment = TextAlignmentOptions.Center;
+            }
+        }
+
+        if (btnComprarArtefato != null)
+        {
+            TextMeshProUGUI txt = btnComprarArtefato.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (txt != null)
+            {
+                txt.text = "<size=20><color=#ffaa00><b>✦ ARTEFATO REFINADO ✦</b></color></size>\n<size=12><color=#ffcc00><i>Adquirir Relíquia de Tier Alto (-600 Essências)</i></color></size>";
+                txt.alignment = TextAlignmentOptions.Center;
+            }
+        }
+
+        // 2. Textos descritivos das opções
+        if (txtCambioCost != null)
+        {
+            txtCambioCost.text = "<size=17><color=#ffcc00><b>✦ CÂMBIO DE SANGUE ✦</b></color></size>\n<color=#ff3344>-15% Vida Máxima</color>  ➔  <color=#00ff99><b>+300 Essências</b></color>";
+            txtCambioCost.alignment = TextAlignmentOptions.Center;
+        }
+
+        if (txtRemocaoCost != null)
+        {
+            txtRemocaoCost.text = "<size=17><color=#88ccff><b>✦ CIRURGIA DE REMOÇÃO ✦</b></color></size>\n<color=#88ccff>Remove 1 Infusão</color>  ➔  <color=#ffcc00><b>-150 Essências</b></color>";
+            txtRemocaoCost.alignment = TextAlignmentOptions.Center;
+        }
+
+        if (txtArtefatoCost != null)
+        {
+            txtArtefatoCost.text = "<size=17><color=#ffaa00><b>✦ ARTEFATO REFINADO ✦</b></color></size>\n<color=#ffaa00>Artefato Tier Alto</color>  ➔  <color=#ffcc00><b>-600 Essências</b></color>";
+            txtArtefatoCost.alignment = TextAlignmentOptions.Center;
+        }
     }
 
     private void AddHoverEffectToButtons()
@@ -450,9 +541,15 @@ public class MerchantUIController : MonoBehaviour
         Button[] allButtons = GetComponentsInChildren<Button>(true);
         foreach (Button b in allButtons)
         {
-            if (b != null && b.GetComponent<MerchantCardHover>() == null)
+            if (b != null)
             {
-                b.gameObject.AddComponent<MerchantCardHover>();
+                MerchantCardHover hover = b.GetComponent<MerchantCardHover>();
+                if (hover == null) hover = b.gameObject.AddComponent<MerchantCardHover>();
+
+                // Apenas botões de cartas do Tarô/Pacto recebem isPactCard = true
+                bool isTarotBtn = System.Array.IndexOf(tarotButtons, b) >= 0;
+                hover.isPactCard = isTarotBtn;
+                hover.enableGlitchFont = isTarotBtn;
             }
         }
     }

@@ -39,7 +39,7 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public Color hoverBorderColor = new Color(1.0f, 0.40f, 0.40f, 1.0f); // Leve tom avermelhado no hover
 
     [Header(" Efeito Glitch de Fonte (Apenas em Cartas de Pacto)")]
-    public bool isPactCard = true;
+    public bool isPactCard = false; // Por padrão falso, apenas ativado em cartas de pacto
     public bool enableGlitchFont = true;
 
     private Vector3 initialScale;
@@ -54,7 +54,7 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private bool isHovered = false;
     private bool isPressed = false;
 
-    // Glitch Animation System
+    // Glitch Animation System (Menor frequência / intervalo maior)
     private float glitchTimer = 0f;
     private float glitchDurationTimer = 0f;
     private bool isGlitching = false;
@@ -75,6 +75,9 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             originalTitlePos = cardTitleText.transform.localPosition;
         }
+
+        // Garante temporizador inicial desfasado para evitar disparos simultâneos
+        glitchTimer = Random.Range(2.0f, 5.0f);
     }
 
     void OnEnable()
@@ -114,7 +117,7 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
             borderImage.color = Color.Lerp(borderImage.color, currentTargetColor, Time.unscaledDeltaTime * transitionSpeed);
         }
 
-        // 4. Efeito Glitch Digital / Dark Fantasy na Fonte do Título (Micro-deslocamentos e Flashes de Cor)
+        // 4. Efeito Glitch Digital / Dark Fantasy na Fonte do Título (Apenas cartas de pacto com intervalo maior)
         UpdateGlitchFontAnimation();
     }
 
@@ -138,13 +141,14 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
             originalTitlePos = cardTitleText.transform.localPosition;
         }
 
-        // Intervalo de disparo de Glitch
+        // Intervalo de disparo de Glitch (Subtil, menos recorrente)
         glitchTimer -= Time.unscaledDeltaTime;
         if (glitchTimer <= 0f)
         {
             isGlitching = true;
-            glitchDurationTimer = Random.Range(0.04f, 0.08f); // Surto curto de glitch
-            float nextInterval = isHovered ? Random.Range(0.08f, 0.22f) : Random.Range(0.25f, 0.60f);
+            glitchDurationTimer = Random.Range(0.03f, 0.06f); // Surto muito rápido de glitch (30-60ms)
+            // Intervalo espaçado: 3.5s a 7.0s em repouso; 1.2s a 2.5s no hover
+            float nextInterval = isHovered ? Random.Range(1.2f, 2.5f) : Random.Range(3.5f, 7.0f);
             glitchTimer = nextInterval;
         }
 
