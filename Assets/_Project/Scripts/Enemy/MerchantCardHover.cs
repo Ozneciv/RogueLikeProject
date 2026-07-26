@@ -33,10 +33,14 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public float floatSpeed = 2.2f;
     private float floatPhase;
 
-    [Header(" Tint 80% Mais Escura (Quase Preta) & Hover Crimson")]
+    [Header(" Tint Avermelhada no Hover")]
     public bool enableColorChange = true;
-    public Color normalBorderColor = new Color(0.20f, 0.20f, 0.22f, 1.0f); // 80% mais escura (quase preta #333338)
-    public Color hoverBorderColor = new Color(0.55f, 0.15f, 0.15f, 1.0f); // Tom carmesim escuro e sinistro no hover
+    public Color normalBorderColor = Color.white; // Preserva a cor original das cartas
+    public Color hoverBorderColor = new Color(1.0f, 0.40f, 0.40f, 1.0f); // Leve tom avermelhado no hover
+
+    [Header(" Efeito Glitch de Fonte (Apenas em Cartas de Pacto)")]
+    public bool isPactCard = true;
+    public bool enableGlitchFont = true;
 
     private Vector3 initialScale;
     private Vector3 initialPosition;
@@ -116,6 +120,8 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void UpdateGlitchFontAnimation()
     {
+        if (!enableGlitchFont || !isPactCard) return;
+
         if (cardTitleText == null)
         {
             cardTitleText = GetComponentInChildren<TextMeshProUGUI>();

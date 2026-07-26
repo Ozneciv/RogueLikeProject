@@ -418,18 +418,18 @@ public class MerchantUIController : MonoBehaviour
         if (nameTxt != null)
         {
             RectTransform rt = nameTxt.rectTransform;
-            // Posiciona o título ACIMA da borda superior da carta (anchor Y > 1.0)
-            rt.anchorMin = new Vector2(-0.2f, 1.05f);
-            rt.anchorMax = new Vector2(1.2f, 1.30f);
+            // Centraliza o título perfeitamente ACIMA da respectiva carta
+            rt.anchorMin = new Vector2(0f, 1.02f);
+            rt.anchorMax = new Vector2(1f, 1.25f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             rt.pivot = new Vector2(0.5f, 0.5f);
             nameTxt.alignment = TextAlignmentOptions.Center;
-            nameTxt.enableWordWrapping = false;
+            nameTxt.enableWordWrapping = true;
             nameTxt.overflowMode = TextOverflowModes.Overflow;
             nameTxt.enableAutoSizing = true;
-            nameTxt.fontSizeMin = 18;
-            nameTxt.fontSizeMax = 28;
+            nameTxt.fontSizeMin = 14;
+            nameTxt.fontSizeMax = 22;
         }
 
         // Garante que descTxt e costTxt permaneçam ocultos dentro da carta
@@ -739,6 +739,18 @@ public class MerchantUIController : MonoBehaviour
 
         if (nameTxt != null) nameTxt.text = $"<color=#ffcc00><b>✦ {pact.name.ToUpper()} ✦</b></color>";
         
+        // Deixa APENAS a carta escolhida 80% mais escura (quase preta #333338) ao virar no 90°, para facilitar a leitura das informações!
+        Image chosenCardImage = chosenBtn.GetComponent<Image>();
+        if (chosenCardImage != null)
+        {
+            chosenCardImage.color = new Color(0.20f, 0.20f, 0.22f, 1.0f);
+        }
+        MerchantCardHover hoverScript = chosenBtn.GetComponent<MerchantCardHover>();
+        if (hoverScript != null)
+        {
+            hoverScript.enableColorChange = false; // Preserva o tom escuro no verso revelado
+        }
+
         // Ativa e revela a descrição e o custo de vida ao virar a carta!
         if (descTxt != null)
         {
