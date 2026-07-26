@@ -418,21 +418,22 @@ public class MerchantUIController : MonoBehaviour
         if (nameTxt != null)
         {
             RectTransform rt = nameTxt.rectTransform;
-            // Centraliza o título perfeitamente ACIMA da respectiva carta
-            rt.anchorMin = new Vector2(0f, 1.02f);
-            rt.anchorMax = new Vector2(1f, 1.25f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.pivot = new Vector2(0.5f, 0.5f);
+            // Âncoras fixas no Topo-Centro da carta (X=0.5, Y=1.0)
+            rt.anchorMin = new Vector2(0.5f, 1.0f);
+            rt.anchorMax = new Vector2(0.5f, 1.0f);
+            rt.pivot = new Vector2(0.5f, 0.0f); // Pivot no centro inferior da caixa do texto
+            rt.anchoredPosition = new Vector2(0f, 15f); // 15px diretamente acima do topo da carta
+            rt.sizeDelta = new Vector2(260f, 45f); // Caixa de texto com largura suficiente para o título
+
             nameTxt.alignment = TextAlignmentOptions.Center;
-            nameTxt.enableWordWrapping = true;
+            nameTxt.enableWordWrapping = false;
             nameTxt.overflowMode = TextOverflowModes.Overflow;
             nameTxt.enableAutoSizing = true;
             nameTxt.fontSizeMin = 14;
             nameTxt.fontSizeMax = 22;
         }
 
-        // Garante que descTxt e costTxt permaneçam ocultos dentro da carta
+        // Garante que descTxt e costTxt permaneçam ocultos dentro da carta antes da escolha
         if (descTxt != null) descTxt.gameObject.SetActive(false);
         if (costTxt != null) costTxt.gameObject.SetActive(false);
     }

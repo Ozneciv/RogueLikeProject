@@ -133,6 +133,11 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         if (cardTitleText == null) return;
 
+        if (!isGlitching && cardTitleText.transform.localPosition != Vector3.zero)
+        {
+            originalTitlePos = cardTitleText.transform.localPosition;
+        }
+
         // Intervalo de disparo de Glitch
         glitchTimer -= Time.unscaledDeltaTime;
         if (glitchTimer <= 0f)
