@@ -33,10 +33,10 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public float floatSpeed = 2.2f;
     private float floatPhase;
 
-    [Header(" Tint Avermelhada no Hover")]
+    [Header(" Tint 80% Mais Escura (Quase Preta) & Hover Crimson")]
     public bool enableColorChange = true;
-    public Color normalBorderColor = Color.white; // Preserva a cor original do Canvas
-    public Color hoverBorderColor = new Color(1.0f, 0.40f, 0.40f, 1.0f); // Leve tom avermelhado rubi
+    public Color normalBorderColor = new Color(0.20f, 0.20f, 0.22f, 1.0f); // 80% mais escura (quase preta #333338)
+    public Color hoverBorderColor = new Color(0.55f, 0.15f, 0.15f, 1.0f); // Tom carmesim escuro e sinistro no hover
 
     private Vector3 initialScale;
     private Vector3 initialPosition;
@@ -45,8 +45,15 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private Image borderImage;
     private TextMeshProUGUI cardTitleText;
+    private Vector3 originalTitlePos;
+
     private bool isHovered = false;
     private bool isPressed = false;
+
+    // Glitch Animation System
+    private float glitchTimer = 0f;
+    private float glitchDurationTimer = 0f;
+    private bool isGlitching = false;
 
     void Awake()
     {
@@ -55,11 +62,15 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
         targetScale = initialScale;
         targetPositionOffset = Vector3.zero;
 
-        // Fase aleatória para que cada carta flutue de forma desincronizada e orgânica
+        // Fase aleatória para o temporizador de glitch
         floatPhase = Random.Range(0f, Mathf.PI * 2f);
 
         borderImage = GetComponent<Image>();
         cardTitleText = GetComponentInChildren<TextMeshProUGUI>();
+        if (cardTitleText != null)
+        {
+            originalTitlePos = cardTitleText.transform.localPosition;
+        }
     }
 
     void OnEnable()
@@ -84,44 +95,86 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     void Update()
     {
-        // 1. Calcula a flutuação mística sinusoidal (subindo e descendo suavemente)
+        // 1. Calcula a flutuação mística sinusoidal da CARTA (subindo e descendo suavemente)
         float floatOffsetY = (enableFloating && !isPressed) ? Mathf.Sin(Time.unscaledTime * floatSpeed + floatPhase) * floatAmplitude : 0f;
 
-        // 2. Animação de lerp fluida para posição (elevação + flutuação) e escala
+        // 2. Animação de lerp fluida para posição da carta (elevação + flutuação) e escala
         Vector3 targetPos = initialPosition + targetPositionOffset + new Vector3(0f, floatOffsetY, 0f);
         transform.localPosition = Vector3.Lerp(transform.localPosition, targetPos, Time.unscaledDeltaTime * transitionSpeed);
         transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.unscaledDeltaTime * transitionSpeed);
 
-        // 3. Animação de transição de cor da borda da carta (Levemente avermelhada no hover)
+        // 3. Animação de cor da carta: 80% mais escura (quase preta), destacando tom carmesim no hover
         if (enableColorChange && borderImage != null)
         {
             Color currentTargetColor = isHovered ? hoverBorderColor : normalBorderColor;
             borderImage.color = Color.Lerp(borderImage.color, currentTargetColor, Time.unscaledDeltaTime * transitionSpeed);
         }
 
-        // 4. Animação Orgânica da Fonte do Título (Pulsar de Escala, Brilho Dark Fantasy e Balanço Místico)
+        // 4. Efeito Glitch Digital / Dark Fantasy na Fonte do Título (Micro-deslocamentos e Flashes de Cor)
+        UpdateGlitchFontAnimation();
+    }
+
+    private void UpdateGlitchFontAnimation()
+    {
         if (cardTitleText == null)
         {
             cardTitleText = GetComponentInChildren<TextMeshProUGUI>();
+            if (cardTitleText != null)
+            {
+                originalTitlePos = cardTitleText.transform.localPosition;
+            }
         }
 
-        if (cardTitleText != null)
+        if (cardTitleText == null) return;
+
+        // Intervalo de disparo de Glitch
+        glitchTimer -= Time.unscaledDeltaTime;
+        if (glitchTimer <= 0f)
         {
-            float pulseFreq = isHovered ? 5.0f : 2.5f;
-            float pulseAmp = isHovered ? 0.12f : 0.05f;
-            float textScale = 1.0f + Mathf.Sin(Time.unscaledTime * pulseFreq + floatPhase) * pulseAmp;
+            isGlitching = true;
+            glitchDurationTimer = Random.Range(0.04f, 0.08f); // Surto curto de glitch
+            float nextInterval = isHovered ? Random.Range(0.08f, 0.22f) : Random.Range(0.25f, 0.60f);
+            glitchTimer = nextInterval;
+        }
 
-            float tiltAngle = Mathf.Sin(Time.unscaledTime * 2.0f + floatPhase) * (isHovered ? 3.0f : 1.2f);
-            
-            cardTitleText.transform.localScale = new Vector3(textScale, textScale, 1f);
-            cardTitleText.transform.localRotation = Quaternion.Euler(0f, 0f, tiltAngle);
+        if (isGlitching)
+        {
+            glitchDurationTimer -= Time.unscaledDeltaTime;
+            if (glitchDurationTimer <= 0f)
+            {
+                isGlitching = false;
+                cardTitleText.transform.localPosition = originalTitlePos;
+                cardTitleText.transform.localScale = Vector3.one;
+            }
+            else
+            {
+                // Micro-deslocamento (Saltos de posição tipo Glitch)
+                float offsetX = Random.Range(-2.2f, 2.2f);
+                float offsetY = Random.Range(-1.2f, 1.2f);
+                cardTitleText.transform.localPosition = originalTitlePos + new Vector3(offsetX, offsetY, 0f);
 
-            Color goldGlow = new Color(1.0f, 0.85f, 0.20f, 1.0f);
-            Color crimsonGlow = new Color(1.0f, 0.25f, 0.35f, 1.0f);
-            float colorLerpFactor = (Mathf.Sin(Time.unscaledTime * 3.0f + floatPhase) + 1.0f) * 0.5f;
-            
-            Color targetTextColor = isHovered ? crimsonGlow : Color.Lerp(goldGlow, crimsonGlow, colorLerpFactor * 0.3f);
-            cardTitleText.color = Color.Lerp(cardTitleText.color, targetTextColor, Time.unscaledDeltaTime * 10f);
+                // Distorção rápida de escala
+                float scaleGlitch = Random.Range(0.94f, 1.14f);
+                cardTitleText.transform.localScale = new Vector3(scaleGlitch, scaleGlitch, 1f);
+
+                // Flashes de Cores Glitch (Ouro, Carmesim Dark Fantasy e Cianita)
+                Color[] glitchColors = {
+                    new Color(1.0f, 0.85f, 0.20f, 1.0f), // Ouro
+                    new Color(1.0f, 0.15f, 0.25f, 1.0f), // Carmesim
+                    new Color(0.0f, 0.90f, 1.0f, 1.0f)   // Cianita
+                };
+                cardTitleText.color = glitchColors[Random.Range(0, glitchColors.Length)];
+            }
+        }
+        else
+        {
+            // Estado Firme Normal: Sem flutuacão senoidal na fonte, mantém posição limpa e tom dourado/carmesim
+            cardTitleText.transform.localPosition = originalTitlePos;
+            cardTitleText.transform.localScale = Vector3.one;
+            cardTitleText.transform.localRotation = Quaternion.identity;
+
+            Color baseGold = isHovered ? new Color(1.0f, 0.30f, 0.35f, 1.0f) : new Color(1.0f, 0.85f, 0.20f, 1.0f);
+            cardTitleText.color = Color.Lerp(cardTitleText.color, baseGold, Time.unscaledDeltaTime * 12f);
         }
     }
 

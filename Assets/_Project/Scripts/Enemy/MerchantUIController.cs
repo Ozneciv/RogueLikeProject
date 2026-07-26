@@ -720,7 +720,7 @@ public class MerchantUIController : MonoBehaviour
         }
 
         // FASE 2: PONTO MÉDIO DA VIRADA (90° = Carta de Perfil / Invisível)
-        // Revela o verso da carta com o texto da maldição!
+        // Revela o verso da carta com TODAS AS INFORMAÇÕES COMPLETAS!
         TextMeshProUGUI nameTxt = null;
         TextMeshProUGUI descTxt = null;
         TextMeshProUGUI costTxt = null;
@@ -737,9 +737,36 @@ public class MerchantUIController : MonoBehaviour
         if (childTexts.Length > 1 && descTxt == null) descTxt = (childTexts[1] != nameTxt) ? childTexts[1] : (childTexts.Length > 2 ? childTexts[2] : null);
         if (childTexts.Length > 2 && costTxt == null) costTxt = (childTexts[2] != nameTxt && childTexts[2] != descTxt) ? childTexts[2] : null;
 
-        if (nameTxt != null) nameTxt.text = $"<color=#ffcc00><b>✦ {pact.name} ✦</b></color>";
-        if (descTxt != null) descTxt.text = pact.description; // REVELA O VERSO COM O SEGREDO COMPLETO!
-        if (costTxt != null) costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
+        if (nameTxt != null) nameTxt.text = $"<color=#ffcc00><b>✦ {pact.name.ToUpper()} ✦</b></color>";
+        
+        // Ativa e revela a descrição e o custo de vida ao virar a carta!
+        if (descTxt != null)
+        {
+            descTxt.gameObject.SetActive(true);
+            descTxt.text = $"<color=#ffffff>{pact.description}</color>";
+            RectTransform rt = descTxt.rectTransform;
+            rt.anchorMin = new Vector2(0.08f, 0.25f);
+            rt.anchorMax = new Vector2(0.92f, 0.68f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            descTxt.alignment = TextAlignmentOptions.Center;
+            descTxt.fontSizeMin = 10;
+            descTxt.fontSizeMax = 15;
+        }
+
+        if (costTxt != null)
+        {
+            costTxt.gameObject.SetActive(true);
+            costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
+            RectTransform rt = costTxt.rectTransform;
+            rt.anchorMin = new Vector2(0.08f, 0.06f);
+            rt.anchorMax = new Vector2(0.92f, 0.22f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            costTxt.alignment = TextAlignmentOptions.Center;
+            costTxt.fontSizeMin = 12;
+            costTxt.fontSizeMax = 18;
+        }
 
         // FASE 3: Gira de 90° até 0°, desdobrando a face traseira no centro!
         elapsed = 0f;
