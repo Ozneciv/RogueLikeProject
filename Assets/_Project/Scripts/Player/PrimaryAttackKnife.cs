@@ -198,12 +198,6 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
             {
-                // Impede ataque se o mouse estiver sobre elementos de UI (botões, slots, menus de infusão/crafting)
-                if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                {
-                    return;
-                }
-
                 // Impede ataque se qualquer janela de menu/inventário/console estiver aberta
                 if (IsAnyUIOpen())
                 {

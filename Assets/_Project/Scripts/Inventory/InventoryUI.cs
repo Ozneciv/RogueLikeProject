@@ -162,6 +162,7 @@ public class InventoryUI : MonoBehaviour
         // Começa fechado (garante que todos os painéis e overlays estejam desativados)
         isOpen = false;
         if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         if (screenOverlayObject != null) screenOverlayObject.SetActive(false);
         if (previewPanelObject != null) previewPanelObject.SetActive(false);
         if (statsPanelObject != null) statsPanelObject.SetActive(false);
@@ -206,6 +207,7 @@ public class InventoryUI : MonoBehaviour
         // Garante que TODOS os elementos do inventário (incluindo painel de orbs/status e preview 3D) estejam fechados ao trocar de cena
         isOpen = false;
         if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         if (screenOverlayObject != null) screenOverlayObject.SetActive(false);
         if (previewPanelObject != null) previewPanelObject.SetActive(false);
         if (statsPanelObject != null) statsPanelObject.SetActive(false);
@@ -430,13 +432,12 @@ public class InventoryUI : MonoBehaviour
     /// </summary>
     public void CloseInventory()
     {
-        if (!isOpen) return;
-
         isOpen = false;
         if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         if (screenOverlayObject != null) screenOverlayObject.SetActive(false);
-        if (showPlayerPreview && previewPanelObject != null) previewPanelObject.SetActive(false);
-        if (showPlayerPreview && statsPanelObject != null) statsPanelObject.SetActive(false);
+        if (previewPanelObject != null) previewPanelObject.SetActive(false);
+        if (statsPanelObject != null) statsPanelObject.SetActive(false);
 
         // Desativa o preview 3D do player
         if (showPlayerPreview && PlayerPreviewManager.Instance != null)

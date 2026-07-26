@@ -122,7 +122,8 @@ public class SyntheticBagUI : MonoBehaviour
     void Start()
     {
         CreateBagUI();
-        panelObject.SetActive(false);
+        if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         uiBuilt = true;
     }
 
@@ -142,6 +143,7 @@ public class SyntheticBagUI : MonoBehaviour
     {
         isOpen = false;
         if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         if (tooltip != null) tooltip.Hide();
     }
 
