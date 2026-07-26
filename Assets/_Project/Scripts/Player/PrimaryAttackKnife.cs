@@ -236,18 +236,23 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         try
         {
-            if (animator == null)
+            // Garante que o animator seja dinamicamente recuperado do modelo ativo ou do WeaponManager se estiver nulo ou desativado
+            Player_WeaponManager wmRef = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+            if (wmRef != null && wmRef.playerAnimator != null && wmRef.playerAnimator.isActiveAndEnabled)
             {
-                Debug.LogWarning("[PrimaryAttackKnife] Animator is null! Finding animator dynamically...");
-                animator = GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
-                
-                if (animator == null)
-                {
-                    Debug.LogError("[PrimaryAttackKnife] Critical: Animator not found! Aborting attack sequence.");
-                    canAttack = true;
-                    isAttacking = false;
-                    return;
-                }
+                animator = wmRef.playerAnimator;
+            }
+            else if (animator == null || !animator.isActiveAndEnabled)
+            {
+                animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
+            }
+
+            if (animator == null || !animator.isActiveAndEnabled)
+            {
+                Debug.LogError("[PrimaryAttackKnife] Critical: Active Animator not found or disabled! Aborting attack sequence.");
+                canAttack = true;
+                isAttacking = false;
+                return;
             }
 
             // Garante que o colisor esteja desativado ao iniciar um novo golpe para evitar hitboxes fantasmas residuais
@@ -265,6 +270,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 comboStep = 1;
             }
 
+            animator.ResetTrigger("Attack");
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
 

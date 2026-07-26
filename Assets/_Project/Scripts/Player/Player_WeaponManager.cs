@@ -267,6 +267,10 @@ public class Player_WeaponManager : MonoBehaviour
         if (playerAnimator != null)
         {
             playerAnimator.runtimeAnimatorController = activeWeaponController;
+            if (attackScript != null)
+            {
+                attackScript.animator = playerAnimator;
+            }
             Debug.Log("Moveset alterado para: " + weapon.name);
         }
         // -------------------------------------------------------
