@@ -42,8 +42,22 @@ public class PlayerM : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-        if (attackScript == null) attackScript = GetComponent<PrimaryAttackKnife>();
+        if (attackScript == null) attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>();
         
+        // Busca automática do Animator no Start para evitar ficar nulo
+        if (animator == null)
+        {
+            Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+            if (wm != null && wm.playerAnimator != null && wm.playerAnimator.isActiveAndEnabled)
+            {
+                animator = wm.playerAnimator;
+            }
+            else
+            {
+                animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
+            }
+        }
+
         // Buscar PlayerAttributesDefensive
         playerAttributes = GetComponent<PlayerAttributesDefensive>();
         if (playerAttributes == null)
@@ -149,6 +163,20 @@ public class PlayerM : MonoBehaviour
 
     private void UpdateAnimations()
     {
+        // Recupera dinamicamente o Animator ativo se estiver nulo ou desativado
+        if (animator == null || !animator.isActiveAndEnabled)
+        {
+            Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+            if (wm != null && wm.playerAnimator != null && wm.playerAnimator.isActiveAndEnabled)
+            {
+                animator = wm.playerAnimator;
+            }
+            else
+            {
+                animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
+            }
+        }
+
         if (animator == null || !animator.isActiveAndEnabled) return;
         
         try
@@ -164,10 +192,8 @@ public class PlayerM : MonoBehaviour
             // --- LÓGICA DE VELOCIDADE DA ANIMAÇÃO ---
             if (inDamageWindow)
             {
-                // AQUI ESTÁ A MUDANÇA: O código agora obedece o valor do Inspector
                 animator.speed = hitboxAnimSpeed; 
 
-                // Se você quer que as pernas parem de mexer visualmente se o moveSpeed for 0:
                 if (hitboxMoveSpeed < 0.1f)
                 {
                     animator.SetFloat("Speed", 0f);
@@ -175,12 +201,14 @@ public class PlayerM : MonoBehaviour
             }
             else
             {
-                // Velocidade normal fora do impacto
                 animator.speed = 1f; 
 
-                // Lógica normal de pernas correndo/paradas
+                // Lógica normal de pernas correndo/paradas (verifica entrada de movimento E velocidade do Rigidbody)
+                float moveMagnitude = moveDirection.sqrMagnitude;
                 float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-                animator.SetFloat("Speed", velocityMagnitude > 0.1f ? 1f : 0f);
+                float speedParam = (moveMagnitude > 0.01f || velocityMagnitude > 0.1f) ? 1f : 0f;
+
+                animator.SetFloat("Speed", speedParam);
             }
         }
         catch (System.Exception)

@@ -271,6 +271,11 @@ public class Player_WeaponManager : MonoBehaviour
             {
                 attackScript.animator = playerAnimator;
             }
+            PlayerM pm = GetComponent<PlayerM>() ?? GetComponentInParent<PlayerM>();
+            if (pm != null)
+            {
+                pm.animator = playerAnimator;
+            }
             Debug.Log("Moveset alterado para: " + weapon.name);
         }
         // -------------------------------------------------------
