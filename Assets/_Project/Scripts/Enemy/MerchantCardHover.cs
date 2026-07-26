@@ -44,6 +44,7 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private Vector3 targetPositionOffset;
 
     private Image borderImage;
+    private TextMeshProUGUI cardTitleText;
     private bool isHovered = false;
     private bool isPressed = false;
 
@@ -58,6 +59,7 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
         floatPhase = Random.Range(0f, Mathf.PI * 2f);
 
         borderImage = GetComponent<Image>();
+        cardTitleText = GetComponentInChildren<TextMeshProUGUI>();
     }
 
     void OnEnable()
@@ -90,11 +92,36 @@ public class MerchantCardHover : MonoBehaviour, IPointerEnterHandler, IPointerEx
         transform.localPosition = Vector3.Lerp(transform.localPosition, targetPos, Time.unscaledDeltaTime * transitionSpeed);
         transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.unscaledDeltaTime * transitionSpeed);
 
-        // 3. Animação de transição de cor (Levemente avermelhada no hover)
+        // 3. Animação de transição de cor da borda da carta (Levemente avermelhada no hover)
         if (enableColorChange && borderImage != null)
         {
             Color currentTargetColor = isHovered ? hoverBorderColor : normalBorderColor;
             borderImage.color = Color.Lerp(borderImage.color, currentTargetColor, Time.unscaledDeltaTime * transitionSpeed);
+        }
+
+        // 4. Animação Orgânica da Fonte do Título (Pulsar de Escala, Brilho Dark Fantasy e Balanço Místico)
+        if (cardTitleText == null)
+        {
+            cardTitleText = GetComponentInChildren<TextMeshProUGUI>();
+        }
+
+        if (cardTitleText != null)
+        {
+            float pulseFreq = isHovered ? 5.0f : 2.5f;
+            float pulseAmp = isHovered ? 0.12f : 0.05f;
+            float textScale = 1.0f + Mathf.Sin(Time.unscaledTime * pulseFreq + floatPhase) * pulseAmp;
+
+            float tiltAngle = Mathf.Sin(Time.unscaledTime * 2.0f + floatPhase) * (isHovered ? 3.0f : 1.2f);
+            
+            cardTitleText.transform.localScale = new Vector3(textScale, textScale, 1f);
+            cardTitleText.transform.localRotation = Quaternion.Euler(0f, 0f, tiltAngle);
+
+            Color goldGlow = new Color(1.0f, 0.85f, 0.20f, 1.0f);
+            Color crimsonGlow = new Color(1.0f, 0.25f, 0.35f, 1.0f);
+            float colorLerpFactor = (Mathf.Sin(Time.unscaledTime * 3.0f + floatPhase) + 1.0f) * 0.5f;
+            
+            Color targetTextColor = isHovered ? crimsonGlow : Color.Lerp(goldGlow, crimsonGlow, colorLerpFactor * 0.3f);
+            cardTitleText.color = Color.Lerp(cardTitleText.color, targetTextColor, Time.unscaledDeltaTime * 10f);
         }
     }
 

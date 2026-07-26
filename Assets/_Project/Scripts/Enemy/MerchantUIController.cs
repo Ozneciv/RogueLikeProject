@@ -391,10 +391,16 @@ public class MerchantUIController : MonoBehaviour
             if (childTexts.Length > 1 && descTxt == null) descTxt = (childTexts[1] != nameTxt) ? childTexts[1] : (childTexts.Length > 2 ? childTexts[2] : null);
             if (childTexts.Length > 2 && costTxt == null) costTxt = (childTexts[2] != nameTxt && childTexts[2] != descTxt) ? childTexts[2] : null;
 
-            // FRENTE DA CARTA: Mostra apenas o TÍTULO e o CUSTO DE VIDA (O segredo fica oculto até o aceite!)
-            if (nameTxt != null) nameTxt.text = $"<color=#ffd700><b>{pact.name}</b></color>";
-            if (descTxt != null) descTxt.text = "<color=#8888aa>✦ PACTO OCULTO ✦</color>\n<color=#ffaa44>(Escolha para revelar a maldição)</color>";
-            if (costTxt != null) costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
+            // Apenas o TÍTULO ACIMA da carta; NENHUMA informação dentro da carta em si!
+            if (nameTxt != null)
+            {
+                nameTxt.gameObject.SetActive(true);
+                nameTxt.text = $"<color=#ffd700><b>✦ {pact.name.ToUpper()} ✦</b></color>";
+            }
+            
+            // Oculta textos internos da carta para manter a arte interna totalmente limpa
+            if (descTxt != null) descTxt.gameObject.SetActive(false);
+            if (costTxt != null) costTxt.gameObject.SetActive(false);
 
             ApplyCardTextVerticalLayout(nameTxt, descTxt, costTxt);
 
@@ -412,47 +418,24 @@ public class MerchantUIController : MonoBehaviour
         if (nameTxt != null)
         {
             RectTransform rt = nameTxt.rectTransform;
-            rt.anchorMin = new Vector2(0.05f, 0.72f);
-            rt.anchorMax = new Vector2(0.95f, 0.95f);
+            // Posiciona o título ACIMA da borda superior da carta (anchor Y > 1.0)
+            rt.anchorMin = new Vector2(-0.2f, 1.05f);
+            rt.anchorMax = new Vector2(1.2f, 1.30f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             rt.pivot = new Vector2(0.5f, 0.5f);
             nameTxt.alignment = TextAlignmentOptions.Center;
-            nameTxt.enableWordWrapping = true;
+            nameTxt.enableWordWrapping = false;
+            nameTxt.overflowMode = TextOverflowModes.Overflow;
             nameTxt.enableAutoSizing = true;
-            nameTxt.fontSizeMin = 14;
-            nameTxt.fontSizeMax = 22;
+            nameTxt.fontSizeMin = 18;
+            nameTxt.fontSizeMax = 28;
         }
 
-        if (descTxt != null)
-        {
-            RectTransform rt = descTxt.rectTransform;
-            rt.anchorMin = new Vector2(0.05f, 0.25f);
-            rt.anchorMax = new Vector2(0.95f, 0.68f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            descTxt.alignment = TextAlignmentOptions.Center;
-            descTxt.enableWordWrapping = true;
-            descTxt.enableAutoSizing = true;
-            descTxt.fontSizeMin = 10;
-            descTxt.fontSizeMax = 15;
-        }
-
-        if (costTxt != null)
-        {
-            RectTransform rt = costTxt.rectTransform;
-            rt.anchorMin = new Vector2(0.05f, 0.05f);
-            rt.anchorMax = new Vector2(0.95f, 0.22f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            costTxt.alignment = TextAlignmentOptions.Center;
-            costTxt.enableWordWrapping = true;
-            costTxt.enableAutoSizing = true;
-            costTxt.fontSizeMin = 12;
-            costTxt.fontSizeMax = 18;
-        }
+        // Garante que descTxt e costTxt permaneçam ocultos dentro da carta
+        if (descTxt != null) descTxt.gameObject.SetActive(false);
+        if (costTxt != null) costTxt.gameObject.SetActive(false);
+    }
     }
 
     void SetupRightSideText()
