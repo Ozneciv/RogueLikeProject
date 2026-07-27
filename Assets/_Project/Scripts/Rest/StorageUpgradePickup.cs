@@ -82,7 +82,7 @@ public class StorageUpgradePickup : MonoBehaviour
 
         if (inventory == null)
         {
-            inventory = FindObjectOfType<PlayerInventory>();
+            inventory = Object.FindFirstObjectByType<PlayerInventory>();
         }
 
         if (inventory == null)

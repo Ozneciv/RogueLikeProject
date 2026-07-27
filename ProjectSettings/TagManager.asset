@@ -7,6 +7,8 @@ TagManager:
   - Dummy
   - Enemy
   - SpawnPoint
+  - PilarBoss
+  - Boss
   layers:
   - Default
   - TransparentFX

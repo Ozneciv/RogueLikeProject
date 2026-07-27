@@ -35,6 +35,12 @@ public class CrystalSpikeProjectile : MonoBehaviour
         {
             rb.useGravity = false;
         }
+
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            col.isTrigger = true;
+        }
     }
 
     private void Update()
@@ -47,18 +53,15 @@ public class CrystalSpikeProjectile : MonoBehaviour
 
     private void HandleHit(GameObject hitObject)
     {
-        // Ignore if this component is not a real projectile (owner should be set on spawned projectiles).
-        if (owner == null) return;
-        if (hitObject == owner) return;
-        if (!hitObject.CompareTag("Player")) return;
+        if (hitObject == null) return;
+        if (owner != null && (hitObject == owner || hitObject.transform.IsChildOf(owner.transform))) return;
 
-        PlayerHealth playerHealth = hitObject.GetComponent<PlayerHealth>();
+        PlayerHealth playerHealth = hitObject.GetComponent<PlayerHealth>() ?? hitObject.GetComponentInParent<PlayerHealth>();
         if (playerHealth != null)
         {
-            playerHealth.TakeDamage(damage, owner);
+            playerHealth.TakeDamage(damage, owner != null ? owner : gameObject);
+            Destroy(gameObject);
         }
-
-        Destroy(gameObject);
     }
 
     private void OnTriggerEnter(Collider other)

@@ -11,17 +11,24 @@ public class CheatConsole : MonoBehaviour
     [Tooltip("O Animator do personagem que onde vai tocar o breakdance")]
     public Animator playerAnimator; 
     
-    // Variável para sabermos se o console tá aberto ou fechado
+    // Propriedade estática global para sabermos se o console tá aberto ou fechado
+    public static bool IsOpen { get; private set; } = false;
     private bool isConsoleActive = false;
 
     // Scripts para congelar o jogador
     private PlayerM movementScript;
     private PrimaryAttackKnife attackScript;
+    private DashM dashScript;
+    private PlayerInteraction interactionScript;
+    private Player_WeaponManager weaponManagerScript;
 
     void Start()
     {
-        movementScript = GetComponent<PlayerM>();
-        attackScript = GetComponent<PrimaryAttackKnife>();
+        movementScript = GetComponent<PlayerM>() ?? GetComponentInChildren<PlayerM>();
+        attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>();
+        dashScript = GetComponent<DashM>() ?? GetComponentInChildren<DashM>();
+        interactionScript = GetComponent<PlayerInteraction>() ?? GetComponentInChildren<PlayerInteraction>();
+        weaponManagerScript = GetComponent<Player_WeaponManager>() ?? GetComponentInChildren<Player_WeaponManager>();
 
         if (playerAnimator == null)
         {
@@ -60,6 +67,14 @@ public class CheatConsole : MonoBehaviour
 
     void Update()
     {
+        // Se o console está aberto e o jogador aperta ESC, fecha o console
+        if (isConsoleActive && Input.GetKeyDown(KeyCode.Escape))
+        {
+            Debug.Log("🔍 CHEAT: Tecla 'ESC' pressionada, fechando console.");
+            ToggleConsole();
+            return;
+        }
+
         // Ligar o console
         if (Input.GetKeyDown(KeyCode.Slash) || Input.GetKeyDown(KeyCode.KeypadDivide))
         {
@@ -76,7 +91,6 @@ public class CheatConsole : MonoBehaviour
         if (isConsoleActive && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
         {
             Debug.Log("🔍 CHEAT: Tecla 'Enter' pressionada com o painel aberto!");
-            // O próprio código aciona a função sem você precisar clicar no menu chato do Unity
             if (consoleInput != null)
             {
                 Debug.Log($"🔍 CHEAT: A caixa de texto no momento do clique estava com o valor: '{consoleInput.text}'");
@@ -94,24 +108,27 @@ public class CheatConsole : MonoBehaviour
         if (consoleInput == null) return;
 
         isConsoleActive = !isConsoleActive; // Inverte o estado
+        IsOpen = isConsoleActive;
         
         // Ativa ou desativa a telinha do console
         consoleInput.gameObject.SetActive(isConsoleActive);
 
-        // Congela/Descongela o movimento e ataque
+        // Congela/Descongela o movimento, dash, interação e ataque
         if (movementScript != null) movementScript.enabled = !isConsoleActive;
         if (attackScript != null) attackScript.enabled = !isConsoleActive;
+        if (dashScript != null) dashScript.enabled = !isConsoleActive;
+        if (interactionScript != null) interactionScript.enabled = !isConsoleActive;
+        if (weaponManagerScript != null) weaponManagerScript.enabled = !isConsoleActive;
+
         // Congela fisicamente (zera velocidade) para ele não deslizar se abriu o console correndo
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null && isConsoleActive) rb.linearVelocity = Vector3.zero;
         
         if (isConsoleActive)
         {
-            // Limpa o texto da última tentativa
             consoleInput.text = ""; 
-            // Já foca o cursor pra você não precisar clicar com o mouse lá
             consoleInput.ActivateInputField();
-            Debug.Log("🔍 CHEAT: Console ABERTO eocado na tela.");
+            Debug.Log("🔍 CHEAT: Console ABERTO e focado na tela.");
         }
         else
         {
@@ -192,9 +209,100 @@ public class CheatConsole : MonoBehaviour
 
             Debug.Log($"💻 CHEAT: {count} inimigos eliminados com sucesso.");
         }
+        else if (string.Equals(command, "endless", System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (RunManager.instance != null)
+            {
+                RunManager.instance.isEndlessMode = !RunManager.instance.isEndlessMode;
+                RunManager.instance.UpdateEndlessUI();
+                Debug.Log($"💻 CHEAT: Modo Endless alterado para: {RunManager.instance.isEndlessMode}");
+
+                if (EptinhoPopupController.instancia != null)
+                {
+                    string statusText = RunManager.instance.isEndlessMode ? "Modo Endless ATIVADO!" : "Modo Endless DESATIVADO!";
+                    EptinhoPopupController.instancia.MostrarPopupAviso(statusText);
+                }
+            }
+        }
+        else if (string.Equals(command, "recursos", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "allitems", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "giveall", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "cheats", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Recursos Infinitos! Adicionando +999 de todos os materiais...");
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.GiveAllResources(999);
+            }
+            else
+            {
+                if (SaveManager.instance != null && ItemDatabase.Instance != null)
+                {
+                    foreach (var item in ItemDatabase.Instance.allItems)
+                    {
+                        if (item != null && !string.IsNullOrEmpty(item.itemId))
+                            SaveManager.instance.AddResourceToBase(item.itemId, 999);
+                    }
+                    SaveManager.instance.SavePersistentData();
+                }
+            }
+
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("+999 Recursos Adicionados!");
+            }
+        }
+        else if (string.Equals(command, "unlockall", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "equip", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Destravando todas as melhorias!");
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.UnlockAllEquipment();
+            }
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("Todas as Melhorias Destravadas!");
+            }
+        }
+        else if (string.Equals(command, "orbs", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "money", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: +99.999 Orbs!");
+            if (DevCheatConsole.Instance != null)
+            {
+                DevCheatConsole.Instance.GiveMaxOrbs(99999);
+            }
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("+99.999 Orbs Adicionados!");
+            }
+        }
+        else if (string.Equals(command, "boss", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Forçando Boss Round!");
+            if (RunManager.instance != null)
+            {
+                // Efeito imediato: seta currentLevel pro boss round (funciona se já estiver na run)
+                RunManager.instance.currentLevel = RunManager.instance.totalLevels;
+                // Flag persistente: garante que funciona mesmo ao iniciar nova run da Base
+                RunManager.instance.forceBossNextRun = true;
+
+                Debug.Log($"💻 CHEAT: currentLevel setado para {RunManager.instance.currentLevel}/{RunManager.instance.totalLevels}. isBossRound = {RunManager.instance.isBossRound}");
+
+                if (EptinhoPopupController.instancia != null)
+                {
+                    EptinhoPopupController.instancia.MostrarPopupAviso("Boss Round ATIVADO!\nInicie uma run ou avance de nível.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("💻 CHEAT: RunManager.instance é null! O cheat boss precisa ser usado em jogo.");
+            }
+        }
         else
         {
-            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é igual a EPTA ou killall.");
+            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é reconhecida. Tente: EPTA, killall, endless, recursos, unlockall, orbs ou boss.");
         }
 
         // Depois de tentar o cheat, fecha o console pro jogo voltar ao normal

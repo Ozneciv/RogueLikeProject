@@ -107,8 +107,8 @@ public class EconomyHUD : MonoBehaviour
     void FindRefs()
     {
         if (runManager     == null) runManager     = RunManager.instance;
-        if (playerEssence  == null) playerEssence  = FindObjectOfType<PlayerEssence>();
-        if (infusionManager == null) infusionManager = FindObjectOfType<InfusionManager>();
+        if (playerEssence  == null) playerEssence  = Object.FindFirstObjectByType<PlayerEssence>();
+        if (infusionManager == null) infusionManager = Object.FindFirstObjectByType<InfusionManager>();
     }
 
     // ─────────────────────────────────────────
@@ -128,10 +128,21 @@ public class EconomyHUD : MonoBehaviour
         int   biome     = Mathf.CeilToInt((float)n / 8f);
 
         // ── Sala ──
-        txtRoom.text =
-            $"<color=#BBAAFF>Sala</color> <b>{n}</b><color=#666688> / {TOTAL_ROOMS}</color>" +
-            $"     <color=#BBAAFF>Bioma</color> <b>{biome}</b>";
-        roomBar.fillAmount = Mathf.Clamp01((float)n / TOTAL_ROOMS);
+        if (runManager != null && runManager.isEndlessMode)
+        {
+            txtRoom.text =
+                $"<color=#FF4444>[MODO ENDLESS - Nível {runManager.currentLevel}]</color>\n" +
+                $"<color=#BBAAFF>Sala</color> <b>{n}</b><color=#666688> / ♾️</color>" +
+                $"     <color=#BBAAFF>Bioma</color> <b>{biome}</b>";
+            roomBar.fillAmount = 1f;
+        }
+        else
+        {
+            txtRoom.text =
+                $"<color=#BBAAFF>Sala</color> <b>{n}</b><color=#666688> / {TOTAL_ROOMS}</color>" +
+                $"     <color=#BBAAFF>Bioma</color> <b>{biome}</b>";
+            roomBar.fillAmount = Mathf.Clamp01((float)n / TOTAL_ROOMS);
+        }
 
         // ── Essência ──
         string mc = dropMult >= 1.5f ? "#FF8844" : dropMult >= 1.2f ? "#FFCC44" : "#88FF99";
@@ -368,7 +379,7 @@ public class EconomyHUD : MonoBehaviour
         t.fontSize          = size;
         t.color             = color;
         t.richText          = true;
-        t.enableWordWrapping = false;
+        t.textWrappingMode = TextWrappingModes.NoWrap;
         t.overflowMode      = TextOverflowModes.Overflow;
         return t;
     }

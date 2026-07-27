@@ -46,16 +46,30 @@ public class ItemPickup : MonoBehaviour
     [HideInInspector]
     public string forceCategory = "";
 
+    private bool isInitialized = false;
+
+    public void InitializeItem(string category)
+    {
+        forceCategory = category;
+        RandomizeItemData();
+    }
+
     void Start()
     {
         spawnTime = Time.time;
         if (lifetime > 0) Destroy(gameObject, lifetime);
         
-        RandomizeItemData();
+        if (!isInitialized)
+        {
+            RandomizeItemData();
+        }
     }
 
     private void RandomizeItemData()
     {
+        if (isInitialized) return;
+        isInitialized = true;
+
         if (interactable == null || interactable.itemData == null) return;
 
         bool isGenericPlaceholder = !string.IsNullOrEmpty(forceCategory) ||
@@ -198,7 +212,33 @@ public class ItemPickup : MonoBehaviour
 
         // Coleta por tecla F (somente quando player está na zona)
         if (playerNearby != null && canBePickedUp && Input.GetKeyDown(KeyCode.F))
+        {
+            // Bloqueia coleta se há inimigos ativos
+            bool hasActiveEnemies = false;
+            GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (var enemy in enemies)
+            {
+                if (enemy == null || !enemy.activeInHierarchy) continue;
+                DummyHealth health = enemy.GetComponentInChildren<DummyHealth>();
+                if (health != null)
+                {
+                    if (health.CurrentHealth > 0) { hasActiveEnemies = true; break; }
+                }
+                else
+                {
+                    hasActiveEnemies = true; break;
+                }
+            }
+
+            if (hasActiveEnemies)
+            {
+                if (EptinhoPopupController.instancia != null)
+                    EptinhoPopupController.instancia.MostrarPopupAviso("Não é hora de distrações — há inimigos por aqui!");
+                return;
+            }
+
             TryCollect(playerNearby);
+        }
     }
 
     void OnTriggerEnter(Collider other)

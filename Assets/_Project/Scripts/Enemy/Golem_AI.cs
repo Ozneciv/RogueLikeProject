@@ -36,7 +36,7 @@ public class Golem_AI : MonoBehaviour
     [Tooltip("Cooldown entre ataques melee")]
     public float meleeCooldown = 3f;
     [Tooltip("Dano do ataque melee")]
-    public int meleeDamage = 35;
+    public int meleeDamage = 30;
     [Tooltip("Raio da hitbox do melee")]
     public float meleeHitRadius = 2f;
 
@@ -73,6 +73,14 @@ public class Golem_AI : MonoBehaviour
 
         // Configura Rigidbody
         rb.freezeRotation = true;
+
+        // Snap de segurança no chão para evitar clipagem no mapa
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit navHit, 5f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            Vector3 pos = transform.position;
+            pos.y = navHit.position.y;
+            transform.position = pos;
+        }
 
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");

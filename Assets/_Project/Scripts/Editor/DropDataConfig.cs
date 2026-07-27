@@ -410,6 +410,7 @@ public class DropDataConfig : ScriptableObject
         });
 
         // ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
         // 🐉 CRYSTAL DRAGON (4 items: T1-T4)
         // ════════════════════════════════════════════════════════════════
 
@@ -454,6 +455,34 @@ public class DropDataConfig : ScriptableObject
             enemyName = "Crystal Dragon",
             tier = 4,
             attributes = new List<string> { "CritMultiplier", "BaseDamageMultiplier", "Piercing", "Special_DragonFlight" },
+            essenceCost = 420f
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        // 💎 GEOBIONTE (1 item: T2)
+        // ════════════════════════════════════════════════════════════════
+        
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "geobionte_bismuto_t2",
+            itemName = "Cristal de Bismuto",
+            enemyName = "Geobionte",
+            tier = 2,
+            attributes = new List<string> { "SlowOnHit" },
+            essenceCost = 180f
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        // 💎 GEOBIONTE SENTINELA (1 item: T4)
+        // ════════════════════════════════════════════════════════════════
+        
+        allItems.Add(new DropItemConfig
+        {
+            itemId = "sentinel_leg_t4",
+            itemName = "Perna de Sentinela",
+            enemyName = "Geobionte",
+            tier = 4,
+            attributes = new List<string> { "Special_SentinelLeg" },
             essenceCost = 420f
         });
 

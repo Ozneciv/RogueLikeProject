@@ -31,10 +31,10 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2219830635270719724}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.65, y: 0.66, z: 39.32}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 3.5, y: 3.5, z: 3.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2035064353514317532}
   m_Father: {fileID: 0}
@@ -99,7 +99,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 100
+  isSlowed: 0
+  maxHealth: 250
+  debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
@@ -109,6 +111,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!114 &2107083964686136380
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,12 +124,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 182d9df1045b668438bf37c0018f5e08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDrops
-  essencePrefab: {fileID: 0}
+  essencePrefab: {fileID: 1526004001283604428, guid: aac8898d50c757240944683fe67b0d7c, type: 3}
   essenceAmount: 10
   essenceVariation: 3
-  globalDropChance: 0.3
+  globalDropChance: 0.35
   itemAmount: 1
-  lootPool: []
+  lootPool:
+  - itemPrefab: {fileID: 4556253161868932902, guid: 29e4faefc1c7bca49bab3a0f38ea201c, type: 3}
+    weight: 25
+  - itemPrefab: {fileID: 1035917559036730698, guid: 99514fc2f438d754bb49db2aace05a2e, type: 3}
+    weight: 5
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
@@ -158,22 +165,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geobionte_AI
   currentState: 0
   activationDistance: 20
+  bodyHoverHeight: 1.2
+  hoverLerpSpeed: 8
   wanderSpeed: 2
   wanderChangeInterval: 3
   oreSearchRadius: 30
   seekSpeed: 5
   oreReachDistance: 1.5
+  bismutadoDefeatCount: 0
+  preventionMaxHP: 7
+  interruptedFleeSpeed: 8
   fusionDuration: 1.5
   transformedScale: 2.5
   chaseSpeed: 4
   rotationSpeed: 8
   attackRange: 8
+  sweepDamage: 8
+  sweepRange: 2
+  sweepCooldown: 6
+  sweepDuration: 0.6
+  sweepIndicatorColor: {r: 1, g: 0.2, b: 0.2, a: 0.4}
+  fusionsToSentinel: 3
+  sentinelNumberOfLegs: 12
+  sentinelPartsPerLeg: 5
+  sentinelLegRadius: 6
+  sentinelScale: 2.5
+  sentinelHighHeight: 5
+  sentinelLowHeight: 1.2
+  sentinelInvulnerableDuration: 3
+  sentinelVulnerableWindow: 1
+  sentinelMaxHP: 10
+  sentinelLegDamage: 10
+  sentinelLegDamageCooldown: 0.5
+  sentinelLegDamageRadius: 1
+  sentinelSlamDamage: 15
+  sentinelSlamRadius: 3
+  sentinelSlamSpeed: 20
   fieldCooldown: 6
   fieldDuration: 10
   fieldRadius: 4
   fleeSpeed: 10
   fleeDestroyDistance: 50
   respawnDelay: 30
+  baseColor: {r: 0.03, g: 0.01, b: 0.05, a: 1}
+  transformedColor: {r: 0.7, g: 0.3, b: 0.6, a: 1}
+  sentinelColor: {r: 0.9, g: 0.2, b: 0.8, a: 1}
+  bismutadoModelPrefab: {fileID: 6152432553688559953, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
+  bismutado3DModelScale: {x: 1, y: 1, z: 1}
 --- !u!114 &344258591659258005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -187,12 +225,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MimicSpace.Mimic
   legPrefab: {fileID: 1682633662898237459, guid: fb7bce2dee9494540a1866bb5d230a51, type: 3}
+  legGenerationSounds: []
+  legSoundVolume: 1
   numberOfLegs: 5
-  partsPerLeg: 4
+  partsPerLeg: 3
   legCount: 0
   deployedLegs: 0
   minimumAnchoredLegs: 2
-  minimumAnchoredParts: 8
+  minimumAnchoredParts: 6
   minLegLifetime: 5
   maxLegLifetime: 15
   legPlacerOrigin: {x: 0, y: 0, z: 0}
@@ -204,6 +244,10 @@ MonoBehaviour:
   maxGrowCoef: 6.5
   newLegCooldown: 0.3
   velocity: {x: -0.5991216, y: 0, z: -0.08149819}
+  legsDealDamage: 0
+  legDamageAmount: 10
+  legDamageCooldown: 0.5
+  legDamageRadius: 1
 --- !u!1 &8312534338257933218
 GameObject:
   m_ObjectHideFlags: 0
@@ -233,8 +277,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 2849499921605988716}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

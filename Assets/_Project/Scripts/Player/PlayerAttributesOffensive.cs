@@ -46,6 +46,9 @@ public class PlayerAttributesOffensive : MonoBehaviour
     
     [Tooltip("Ângulo de dispersão dos disparos. 0 = preciso, valores maiores = mais spread")]
     public float spread = 0f;
+    
+    [Tooltip("Percentual de slow aplicado aos inimigos ao atacar (0-1)")]
+    public float slowOnHit = 0f;
 
     /// <summary>
     /// Modifica um atributo pelo nome.
@@ -58,7 +61,7 @@ public class PlayerAttributesOffensive : MonoBehaviour
                 baseDamageMultiplier = isMultiplier ? baseDamageMultiplier * value : baseDamageMultiplier + value;
                 break;
             case "attackspeedmelee":
-                attackSpeedMelee = isMultiplier ? attackSpeedMelee * value : attackSpeedMelee + value;
+                attackSpeedMelee = Mathf.Clamp(isMultiplier ? attackSpeedMelee * value : attackSpeedMelee + value, 0.2f, 2.5f);
                 break;
             case "critchance":
                 critChance = Mathf.Clamp(isMultiplier ? critChance * value : critChance + value, 0f, 100f);
@@ -90,6 +93,9 @@ public class PlayerAttributesOffensive : MonoBehaviour
             case "spread":
                 spread = isMultiplier ? spread * value : spread + value;
                 break;
+            case "slowonhit":
+                slowOnHit = isMultiplier ? slowOnHit * value : slowOnHit + value;
+                break;
             default:
                 Debug.LogWarning($"PlayerAttributesOffensive: Atributo '{attributeName}' não encontrado!");
                 break;
@@ -115,6 +121,7 @@ public class PlayerAttributesOffensive : MonoBehaviour
             case "bouncecount": return bounceCount;
             case "multishotchance": return multiShotChance;
             case "spread": return spread;
+            case "slowonhit": return slowOnHit;
             default:
                 Debug.LogWarning($"PlayerAttributesOffensive: Atributo '{attributeName}' não encontrado!");
                 return 0f;
@@ -138,6 +145,7 @@ public class PlayerAttributesOffensive : MonoBehaviour
         bounceCount = 0;
         multiShotChance = 0f;
         spread = 0f;
+        slowOnHit = 0f;
         
         Debug.Log("PlayerAttributesOffensive: Atributos ofensivos resetados.");
     }

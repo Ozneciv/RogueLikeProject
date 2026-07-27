@@ -56,6 +56,21 @@ public class EquipmentManager : MonoBehaviour
         BuildLookup();
     }
 
+    void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        ReapplyAllEquippedEffects();
+    }
+
     void Start()
     {
         // Garante que todas as definições no Resources sejam carregadas e mescladas
@@ -71,6 +86,21 @@ public class EquipmentManager : MonoBehaviour
             }
             BuildLookup();
             Debug.Log($"[EQUIPMENT] Mesclou {loaded.Length} definições do Resources. Total: {allEquipmentDefinitions.Count}");
+        }
+
+        // Garante que o Detector de Barreiras esteja registrado
+        if (GetEquipmentData(BarrierCounterUI.EQUIPMENT_ID) == null)
+        {
+            EquipmentData barrierData = ScriptableObject.CreateInstance<EquipmentData>();
+            barrierData.equipmentId   = BarrierCounterUI.EQUIPMENT_ID;
+            barrierData.equipmentName = "Detector de Barreiras";
+            barrierData.description   = "Exibe na tela a contagem de salas restantes para a liberação das barreiras no bioma.";
+            barrierData.effectType    = EquipmentEffectType.BarrierCounterDisplay;
+            barrierData.effectValue   = 1.0f;
+            barrierData.maxStack      = 1;
+
+            allEquipmentDefinitions.Add(barrierData);
+            BuildLookup();
         }
 
         // Re-aplica efeitos de equipamentos equipados (após carregar o save)
@@ -350,6 +380,10 @@ public class EquipmentManager : MonoBehaviour
                 if (magnetStats != null)
                     magnetStats.ModifyAttribute("MagnetRange", data.effectValue, true);
                 break;
+
+            case EquipmentEffectType.BarrierCounterDisplay:
+                BarrierCounterUI.EnsureExistsAndSetVisible(true);
+                break;
         }
     }
 
@@ -470,6 +504,10 @@ public class EquipmentManager : MonoBehaviour
                 if (magnetStats != null)
                     magnetStats.ModifyAttribute("MagnetRange", 1f / data.effectValue, true);
                 break;
+
+            case EquipmentEffectType.BarrierCounterDisplay:
+                BarrierCounterUI.EnsureExistsAndSetVisible(false);
+                break;
         }
     }
 
@@ -483,5 +521,31 @@ public class EquipmentManager : MonoBehaviour
 
         Debug.LogWarning("[EQUIPMENT] Player não encontrado via GameManager.");
         return null;
+    }
+
+    /// <summary>
+    /// Desequipa todos os equipamentos ativos e remove seus efeitos do jogador.
+    /// </summary>
+    public void ResetAllEquippedEffects()
+    {
+        List<string> currentlyEquipped = new List<string>();
+        foreach (var equip in allEquipmentDefinitions)
+        {
+            if (equip != null && IsEquipped(equip.equipmentId))
+            {
+                currentlyEquipped.Add(equip.equipmentId);
+            }
+        }
+
+        foreach (string id in currentlyEquipped)
+        {
+            EquipmentData data = GetEquipmentData(id);
+            if (data != null)
+            {
+                RemoveEffect(data);
+            }
+        }
+        
+        OnEquipmentStateChanged?.Invoke();
     }
 }

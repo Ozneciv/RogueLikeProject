@@ -57,10 +57,10 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float hit4SpeedMultiplier = 1.0f;
 
     [Header("Weapon Damages")]
-    public int[] defaultDamages = { 10, 15, 30 };
-    public int[] daggerDamages = { 25, 35, 60 };
-    public int[] swordDamages = { 30, 40, 75 };
-    public int[] axeDamages = { 45, 60, 110, 150 }; // Dano pesado de impacto para o Machado (4 Combos!)
+    public int[] defaultDamages = { 20, 25, 35 };
+    public int[] daggerDamages = { 30, 35, 40 }; // Conforme Hp_Dano_Inimigos.pdf (Combo total = 105)
+    public int[] swordDamages = { 35, 45, 60 };
+    public int[] axeDamages = { 40, 45, 55, 55 }; // Conforme Hp_Dano_Inimigos.pdf (Combo total = 195)
     private int[] currentDamages;
 
     [Header("Combo Settings")]
@@ -110,7 +110,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         defaultAttackSpeed = attackAnimationSpeed; // Salva a velocidade customizada do Inspector (como a da Adaga) antes de qualquer troca
         enemiesHitInThisAttack = new List<Collider>();
         EquipDefaultWeapon();
-        hasWeapon = false;
+        hasWeapon = true;
         isAttacking = false;
         isHitboxActive = false;
 
@@ -186,6 +186,12 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
             {
+                // Impede ataque se qualquer janela de menu/inventário/console estiver aberta
+                if (IsAnyUIOpen())
+                {
+                    return;
+                }
+
                 if (hasWeapon)
                 {
                     if (canAttack)
@@ -213,22 +219,38 @@ public class PrimaryAttackKnife : MonoBehaviour
         }
     }
 
+    private bool IsAnyUIOpen()
+    {
+        if (CheatConsole.IsOpen) return true;
+        if (InventoryUI.Instance != null && InventoryUI.Instance.IsOpen()) return true;
+        if (SyntheticBagUI.Instance != null && SyntheticBagUI.Instance.IsOpen()) return true;
+        if (CraftingUI.Instance != null && CraftingUI.Instance.IsOpen()) return true;
+        if (EptinhoMenuController.instancia != null && EptinhoMenuController.instancia.IsOpen()) return true;
+        if (MerchantUIController.HasInstance && MerchantUIController.Instance.IsUiOpen()) return true;
+        return false;
+    }
+
     private void PerformNextAttack()
     {
         try
         {
-            if (animator == null)
+            // Garante que o animator seja dinamicamente recuperado do modelo ativo ou do WeaponManager se estiver nulo ou desativado
+            Player_WeaponManager wmRef = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+            if (wmRef != null && wmRef.playerAnimator != null && wmRef.playerAnimator.isActiveAndEnabled)
             {
-                Debug.LogWarning("[PrimaryAttackKnife] Animator is null! Finding animator dynamically...");
-                animator = GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
-                
-                if (animator == null)
-                {
-                    Debug.LogError("[PrimaryAttackKnife] Critical: Animator not found! Aborting attack sequence.");
-                    canAttack = true;
-                    isAttacking = false;
-                    return;
-                }
+                animator = wmRef.playerAnimator;
+            }
+            else if (animator == null || !animator.isActiveAndEnabled)
+            {
+                animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
+            }
+
+            if (animator == null || !animator.isActiveAndEnabled)
+            {
+                Debug.LogError("[PrimaryAttackKnife] Critical: Active Animator not found or disabled! Aborting attack sequence.");
+                canAttack = true;
+                isAttacking = false;
+                return;
             }
 
             // Garante que o colisor esteja desativado ao iniciar um novo golpe para evitar hitboxes fantasmas residuais
@@ -246,6 +268,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 comboStep = 1;
             }
 
+            animator.ResetTrigger("Attack");
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
 
@@ -405,9 +428,21 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             // Aplica dano no componente correto
             if (enemy != null)
+            {
                 enemy.TakeDamage(finalDamage, isCritical);
+                if (playerAttributes != null && playerAttributes.slowOnHit > 0f)
+                {
+                    enemy.ApplySlow(playerAttributes.slowOnHit, 3.0f);
+                }
+            }
             else if (swarmEnemy != null)
+            {
                 swarmEnemy.TakeDamage(finalDamage, isCritical);
+                if (playerAttributes != null && playerAttributes.slowOnHit > 0f)
+                {
+                    swarmEnemy.ApplySlow(playerAttributes.slowOnHit, 3.0f);
+                }
+            }
 
             // Aplicar Knockback — o Rigidbody pode estar no pai (ex: ShardSwarm)
             if (playerAttributes != null)
@@ -445,7 +480,19 @@ public class PrimaryAttackKnife : MonoBehaviour
         eventFiredEnableHitbox = true;
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
-        if (currentHitbox != null) currentHitbox.enabled = true;
+
+        if (currentHitbox != null)
+        {
+            currentHitbox.isTrigger = true;
+            currentHitbox.enabled = true;
+
+            WeaponHitbox hb = currentHitbox.GetComponent<WeaponHitbox>();
+            if (hb == null)
+            {
+                hb = currentHitbox.gameObject.AddComponent<WeaponHitbox>();
+            }
+            hb.primaryAttackScript = this;
+        }
     }
 
     public void DisableHitbox()
@@ -469,32 +516,26 @@ public class PrimaryAttackKnife : MonoBehaviour
         else
         {
             canAttack = true;
+            isAttacking = false;
         }
     }
 
     // Reset Combo
     public void ResetCombo()
     {
-        // Se a janela de ataque estiver fechada (canAttack == false), significa que o jogador
-        // já emendou o próximo golpe do combo e a nova animação está iniciando/fazendo blend.
-        // Ignoramos este reset para evitar que eventos de animação antigos cortem o combo ativo.
-        if (!canAttack) return;
-
         isAttacking = false;
         isHitboxActive = false;
         hasBufferedAttack = false;
         comboStep = 0;
-        animator.SetInteger("ComboStep", 0);
         canAttack = true;
 
-        if (currentHitbox != null) currentHitbox.enabled = false;
-
-        // Resetar velocidade da animação
         if (animator != null)
         {
+            animator.SetInteger("ComboStep", 0);
             animator.speed = 1f;
         }
 
+        if (currentHitbox != null) currentHitbox.enabled = false;
         if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
     }
 

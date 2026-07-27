@@ -155,8 +155,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EssencePickup
   essenceValue: 10
-  attractSpeed: 6
-  attractDistance: 3
+  attractSpeed: 12
+  attractDistance: 8.5
   attractYOffset: 1.2
   rotateSpeed: 90
   bobHeight: 0.2
@@ -196,8 +196,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57e1baf30cd824e4cb5cb4e1c9f0e958, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EssenceVFX
-  coreColor: {r: 0.4, g: 0.9, b: 1, a: 1}
-  glowColor: {r: 0.3, g: 0.6, b: 1, a: 0.5}
+  coreColor: {r: 1, g: 0.88, b: 0.15, a: 1}
+  glowColor: {r: 1, g: 0.65, b: 0.05, a: 0.75}
   glowIntensity: 2
   pulseSpeed: 2
   pulseAmount: 0.3

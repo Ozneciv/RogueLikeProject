@@ -1,52 +1,165 @@
 using UnityEngine;
 
 /// <summary>
-/// Campo de cristais de bismuto criado pelo Bismutado.
-/// Funciona como uma zona no chão que aplica debuffs ao player:
-/// - Reduz 20% da velocidade enquanto o player está dentro
-/// - Se o player não tem buff de speed, reduz 40% ao invés de 20%
-/// - Após 3 segundos dentro do campo, rouba um buff de speed do player
-/// 
-/// Similar ao DamageZone existente, mas aplica debuff ao invés de dano.
+/// Campo de Debuff de Velocidade de Bismuto (Neon Speed Drain Zone).
+/// Parâmetros de Slow, Duração, Raio e Cores 100% Editáveis no Inspector da Unity.
 /// </summary>
 public class BismuthCrystalField : MonoBehaviour
 {
-    [Header("Debuff Settings")]
-    [Tooltip("Redução de velocidade base (20% = 0.2)")]
-    public float baseSlowPercent = 0.2f;
+    [Header("1. Parâmetros de Redução de Velocidade (Slow Debuff)")]
+    [Tooltip("Redução de velocidade quando o player tem buff de speed ativo (ex: 0.20 = 20% de slow)")]
+    [Range(0.05f, 0.90f)]
+    public float baseSlowPercent = 0.20f;
 
-    [Tooltip("Redução de velocidade quando player não tem buff de speed (40% = 0.4)")]
-    public float enhancedSlowPercent = 0.4f;
+    [Tooltip("Redução de velocidade quando o player NÃO tem buff de speed ativo (ex: 0.40 = 40% de slow)")]
+    [Range(0.05f, 0.90f)]
+    public float enhancedSlowPercent = 0.40f;
 
-    [Tooltip("Tempo que o player precisa ficar no campo para ter o buff roubado (segundos)")]
-    public float stealBuffTime = 3f;
+    [Tooltip("Tempo em segundos que o player precisa permanecer na área para ter seu buff de velocidade roubado")]
+    public float stealBuffTime = 3.0f;
 
-    [Header("Campo")]
-    [Tooltip("Duração do campo antes de desaparecer (segundos). 0 = permanente.")]
-    public float fieldDuration = 10f;
+    [Header("2. Parâmetros do Campo no Chão")]
+    [Tooltip("Duração em segundos antes de a área de debuff desaparecer do chão")]
+    public float fieldDuration = 3.5f;
 
-    [Tooltip("Raio do campo de cristais")]
-    public float fieldRadius = 4f;
+    [Tooltip("Raio da área de debuff no chão (em metros)")]
+    public float fieldRadius = 4.0f;
+
+    [Header("3. Aparência e Cores (VFX no Inspector)")]
+    [Tooltip("Cor do anel rúnico externo e da onda concentrica de drenagem")]
+    public Color ringColor = new Color(0.45f, 0.15f, 0.65f, 0.25f);
+
+    [Tooltip("Cor do disco holográfico translúcido no solo")]
+    public Color floorDiscColor = new Color(0.35f, 0.10f, 0.50f, 0.12f);
+
+    [Tooltip("Espessura da linha do anel rúnico néon no solo")]
+    public float ringLineWidth = 0.12f;
 
     [Header("Referências")]
-    [Tooltip("O Bismutado que criou este campo")]
     [HideInInspector] public Geobionte_AI ownerBismutado;
 
     // Estado interno
     private bool playerInside = false;
     private float playerTimeInside = 0f;
-    private bool hasStolen = false;          // Já roubou buff neste campo?
+    private bool hasStolen = false;
     private PlayerDebuffs playerDebuffs;
     private float lifeTimer = 0f;
 
-    // Visual
-    private Renderer fieldRenderer;
-    private Material fieldMaterial;
+    // Visual VFX
+    private LineRenderer outerRingLine;
+    private LineRenderer innerWaveLine;
+    private MeshRenderer floorDiscRenderer;
+    private Material ringMaterial;
+    private Material discMaterial;
 
     void Start()
     {
         SetupCollider();
-        SetupVisual();
+        CreateFloorDisc();
+        CreateNeonRings();
+    }
+
+    void SetupCollider()
+    {
+        SphereCollider col = GetComponent<SphereCollider>();
+        if (col == null) col = gameObject.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = fieldRadius;
+    }
+
+    /// <summary>
+    /// Cria o disco holográfico translúcido no solo com as cores do Inspector.
+    /// </summary>
+    void CreateFloorDisc()
+    {
+        GameObject discObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        discObj.name = "HolographicFloorDisc";
+        discObj.transform.SetParent(transform, false);
+        discObj.transform.localPosition = new Vector3(0, 0.02f, 0);
+        discObj.transform.localScale = new Vector3(fieldRadius * 2f, 0.01f, fieldRadius * 2f);
+
+        // Remove o collider do cilindro
+        Collider col = discObj.GetComponent<Collider>();
+        if (col != null) Destroy(col);
+
+        floorDiscRenderer = discObj.GetComponent<MeshRenderer>();
+        if (floorDiscRenderer != null)
+        {
+            Shader particleShader = Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (particleShader != null)
+            {
+                discMaterial = new Material(particleShader);
+                discMaterial.SetColor("_Color", floorDiscColor);
+                if (discMaterial.HasProperty("_BaseColor")) discMaterial.SetColor("_BaseColor", floorDiscColor);
+                if (discMaterial.HasProperty("_EmissionColor")) discMaterial.SetColor("_EmissionColor", floorDiscColor * 0.8f);
+                discMaterial.EnableKeyword("_EMISSION");
+                floorDiscRenderer.material = discMaterial;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cria o anel néon externo e a onda de energia concentrica interna com as cores do Inspector.
+    /// </summary>
+    void CreateNeonRings()
+    {
+        Shader particleShader = Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Mobile/Particles/Additive");
+        if (particleShader != null)
+        {
+            ringMaterial = new Material(particleShader);
+            ringMaterial.SetColor("_Color", ringColor);
+            if (ringMaterial.HasProperty("_EmissionColor")) ringMaterial.SetColor("_EmissionColor", ringColor * 1.0f);
+        }
+
+        // 1. Anel Externo Discreto
+        GameObject outerRingObj = new GameObject("OuterNeonRing");
+        outerRingObj.transform.SetParent(transform, false);
+        outerRingObj.transform.localPosition = new Vector3(0, 0.05f, 0);
+
+        outerRingLine = outerRingObj.AddComponent<LineRenderer>();
+        outerRingLine.startWidth = ringLineWidth;
+        outerRingLine.endWidth = ringLineWidth;
+        outerRingLine.useWorldSpace = false;
+        outerRingLine.loop = true;
+        SetupCirclePositions(outerRingLine, fieldRadius, 45);
+        if (ringMaterial != null) outerRingLine.material = ringMaterial;
+
+        Gradient outerGradient = new Gradient();
+        outerGradient.SetKeys(
+            new GradientColorKey[] { 
+                new GradientColorKey(ringColor, 0.0f),
+                new GradientColorKey(ringColor * 0.8f, 0.5f),
+                new GradientColorKey(ringColor * 0.6f, 1.0f) 
+            },
+            new GradientAlphaKey[] { new GradientAlphaKey(ringColor.a, 0.0f), new GradientAlphaKey(ringColor.a * 0.2f, 1.0f) }
+        );
+        outerRingLine.colorGradient = outerGradient;
+
+        // 2. Onda Interna de Drenagem
+        GameObject innerWaveObj = new GameObject("InnerDrainWave");
+        innerWaveObj.transform.SetParent(transform, false);
+        innerWaveObj.transform.localPosition = new Vector3(0, 0.06f, 0);
+
+        innerWaveLine = innerWaveObj.AddComponent<LineRenderer>();
+        innerWaveLine.startWidth = ringLineWidth * 0.7f;
+        innerWaveLine.endWidth = ringLineWidth * 0.7f;
+        innerWaveLine.useWorldSpace = false;
+        innerWaveLine.loop = true;
+        SetupCirclePositions(innerWaveLine, fieldRadius * 0.5f, 35);
+        if (ringMaterial != null) innerWaveLine.material = ringMaterial;
+        innerWaveLine.colorGradient = outerGradient;
+    }
+
+    private void SetupCirclePositions(LineRenderer lr, float radius, int segments)
+    {
+        lr.positionCount = segments;
+        for (int i = 0; i < segments; i++)
+        {
+            float angle = (i / (float)segments) * Mathf.PI * 2f;
+            float x = Mathf.Cos(angle) * radius;
+            float z = Mathf.Sin(angle) * radius;
+            lr.SetPosition(i, new Vector3(x, 0, z));
+        }
     }
 
     void Update()
@@ -66,103 +179,66 @@ public class BismuthCrystalField : MonoBehaviour
         if (playerInside && playerDebuffs != null && !hasStolen)
         {
             playerTimeInside += Time.deltaTime;
-
-            // Após stealBuffTime segundos, tenta roubar buff
             if (playerTimeInside >= stealBuffTime)
             {
                 AttemptStealBuff();
             }
         }
 
-        // Pulsação visual
-        UpdateVisualPulse();
+        // Animação de Drenagem e Pulsação Holográfica
+        UpdateHolographicPulse();
     }
 
-    void SetupCollider()
+    void UpdateHolographicPulse()
     {
-        // Garante que tem um trigger collider
-        SphereCollider col = GetComponent<SphereCollider>();
-        if (col == null)
+        float time = Time.time;
+        float pulse = Mathf.Sin(time * 3.5f) * 0.35f + 1.15f;
+
+        // Anima a onda interna encolhendo em direção ao centro para simular drenagem de velocidade
+        float waveRadiusPct = (time * 0.5f) % 1.0f;
+        float currentWaveRadius = Mathf.Lerp(fieldRadius * 0.95f, 0.2f, waveRadiusPct);
+        if (innerWaveLine != null)
         {
-            col = gameObject.AddComponent<SphereCollider>();
+            SetupCirclePositions(innerWaveLine, currentWaveRadius, 35);
         }
-        col.isTrigger = true;
-        col.radius = fieldRadius;
+
+        // Brilho pulsante no anel e disco usando as cores do Inspector
+        if (ringMaterial != null)
+        {
+            Color neonPulse = ringColor * pulse;
+            ringMaterial.SetColor("_Color", neonPulse);
+            if (ringMaterial.HasProperty("_EmissionColor")) ringMaterial.SetColor("_EmissionColor", neonPulse * 1.5f);
+        }
+
+        if (discMaterial != null)
+        {
+            Color discPulse = new Color(floorDiscColor.r, floorDiscColor.g, floorDiscColor.b, floorDiscColor.a * (pulse * 0.8f));
+            discMaterial.SetColor("_Color", discPulse);
+            if (discMaterial.HasProperty("_BaseColor")) discMaterial.SetColor("_BaseColor", discPulse);
+        }
     }
 
-    void SetupVisual()
+    private void AttemptStealBuff()
     {
-        // Cria um visual placeholder: cilindro achatado com emissão
-        // (o cristal real será adicionado depois com arte)
-        fieldRenderer = GetComponentInChildren<Renderer>();
+        if (playerDebuffs == null || hasStolen) return;
 
-        if (fieldRenderer == null)
+        bool stole = playerDebuffs.TryStealSpeedBuff(ownerBismutado != null ? ownerBismutado.gameObject : gameObject);
+        if (stole)
         {
-            // Cria placeholder visual
-            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            visual.transform.SetParent(transform);
-            visual.transform.localPosition = Vector3.zero;
-            visual.transform.localScale = new Vector3(fieldRadius * 2f, 0.05f, fieldRadius * 2f);
-
-            // Remove o collider do cilindro (já temos o SphereCollider trigger)
-            Collider visualCol = visual.GetComponent<Collider>();
-            if (visualCol != null) Destroy(visualCol);
-
-            fieldRenderer = visual.GetComponent<Renderer>();
-        }
-
-        if (fieldRenderer != null)
-        {
-            // URP usa "Universal Render Pipeline/Lit", fallback para "Standard"
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-
-            fieldMaterial = new Material(shader);
-
-            // Cor bismuto: roxo/rosa iridescente
-            Color bismuthColor = new Color(0.7f, 0.3f, 0.6f, 0.4f);
-
-            // Configurar transparência (compatível com URP e Built-in)
-            if (shader.name.Contains("Universal"))
+            hasStolen = true;
+            if (ownerBismutado != null)
             {
-                // URP: Surface Type = Transparent
-                fieldMaterial.SetFloat("_Surface", 1); // 0=Opaque, 1=Transparent
-                fieldMaterial.SetFloat("_Blend", 0);   // 0=Alpha, 1=Premultiply, 2=Additive, 3=Multiply
-                fieldMaterial.SetFloat("_ZWrite", 0);
-                fieldMaterial.SetFloat("_AlphaClip", 0);
-                fieldMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                fieldMaterial.DisableKeyword("_ALPHATEST_ON");
-                fieldMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-
-                fieldMaterial.SetColor("_BaseColor", bismuthColor);
+                ownerBismutado.OnStoleSpeedBuff();
             }
-            else
-            {
-                // Built-in pipeline fallback
-                fieldMaterial.SetFloat("_Mode", 3);
-                fieldMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                fieldMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                fieldMaterial.SetInt("_ZWrite", 0);
-                fieldMaterial.EnableKeyword("_ALPHABLEND_ON");
-                fieldMaterial.renderQueue = 3000;
-            }
-
-            fieldMaterial.color = bismuthColor;
-            fieldMaterial.EnableKeyword("_EMISSION");
-            fieldMaterial.SetColor("_EmissionColor", bismuthColor * 1.5f);
-
-            fieldRenderer.material = fieldMaterial;
+            Debug.Log("💎 [BISMUTH FIELD] Roubou um buff de velocidade do player!");
         }
     }
 
-    void UpdateVisualPulse()
+    private void DestroyField()
     {
-        if (fieldMaterial == null) return;
-
-        // Pulsação suave na emissão
-        float pulse = Mathf.Sin(Time.time * 3f) * 0.5f + 1f;
-        Color bismuthColor = new Color(0.7f, 0.3f, 0.6f, 1f);
-        fieldMaterial.SetColor("_EmissionColor", bismuthColor * pulse);
+        if (ringMaterial != null) Destroy(ringMaterial);
+        if (discMaterial != null) Destroy(discMaterial);
+        Destroy(gameObject);
     }
 
     // ==================== TRIGGER ====================
@@ -170,25 +246,23 @@ public class BismuthCrystalField : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-
-        // Não aplica slow no próprio Geobionte que criou o campo
         if (ownerBismutado != null && other.gameObject == ownerBismutado.gameObject) return;
 
-        playerDebuffs = other.GetComponent<PlayerDebuffs>();
-        if (playerDebuffs == null)
-        {
-            // Tenta adicionar automaticamente se não existir
-            playerDebuffs = other.gameObject.AddComponent<PlayerDebuffs>();
-        }
+        playerDebuffs = other.GetComponent<PlayerDebuffs>() ?? other.gameObject.AddComponent<PlayerDebuffs>();
 
         playerInside = true;
         playerTimeInside = 0f;
 
-        // Aplica slow baseado na presença de buffs de speed
-        float slowAmount = playerDebuffs.HasSpeedBuff() ? baseSlowPercent : enhancedSlowPercent;
+        bool playerHasSpeedBuff = playerDebuffs.HasSpeedBuff();
+        float slowAmount = playerHasSpeedBuff ? baseSlowPercent : enhancedSlowPercent;
         playerDebuffs.ApplySlow(slowAmount);
 
-        Debug.Log($"[BISMUTH FIELD] Player entrou no campo! Slow: {slowAmount * 100}%");
+        if (ownerBismutado != null)
+        {
+            ownerBismutado.OnPlayerTrappedInCrystalField();
+        }
+
+        Debug.Log($"💎 [BISMUTH FIELD] Player entrou na zona de velocidade! Slow: {slowAmount * 100}%. Bismutado notificado!");
     }
 
     void OnTriggerExit(Collider other)
@@ -198,79 +272,11 @@ public class BismuthCrystalField : MonoBehaviour
         playerInside = false;
         playerTimeInside = 0f;
 
-        // Remove o slow ao sair do campo
         if (playerDebuffs != null)
         {
             playerDebuffs.RemoveSlow();
-            Debug.Log("[BISMUTH FIELD] Player saiu do campo. Slow removido.");
-        }
-    }
-
-    // ==================== ROUBO DE BUFF ====================
-
-    void AttemptStealBuff()
-    {
-        if (hasStolen || playerDebuffs == null) return;
-
-        hasStolen = true;
-
-        // Tenta roubar buff de speed
-        bool stole = playerDebuffs.TryStealSpeedBuff(
-            ownerBismutado != null ? ownerBismutado.gameObject : gameObject
-        );
-
-        if (stole)
-        {
-            Debug.Log("[BISMUTH FIELD] Buff de velocidade ROUBADO!");
-
-            // Notifica o Bismutado dono para aplicar speed buff nele mesmo
-            if (ownerBismutado != null)
-            {
-                ownerBismutado.OnStoleSpeedBuff();
-            }
-        }
-        else
-        {
-            // Player não tinha buff → aplica slow mais forte (40%)
-            playerDebuffs.RemoveSlow(); // remove o 20% atual
-            playerDebuffs.ApplySlow(enhancedSlowPercent); // aplica 40%
-            Debug.Log("[BISMUTH FIELD] Player sem buff! Slow aumentado para 40%!");
-        }
-    }
-
-    // ==================== DESTRUIÇÃO ====================
-
-    void DestroyField()
-    {
-        // Remove o slow do player se ele ainda está dentro
-        if (playerInside && playerDebuffs != null)
-        {
-            playerDebuffs.RemoveSlow();
         }
 
-        Debug.Log("[BISMUTH FIELD] Campo expirou.");
-        Destroy(gameObject);
-    }
-
-    void OnDestroy()
-    {
-        // Segurança: remove slow se o campo for destruído por qualquer motivo
-        if (playerInside && playerDebuffs != null)
-        {
-            playerDebuffs.RemoveSlow();
-        }
-
-        if (fieldMaterial != null) Destroy(fieldMaterial);
-    }
-
-    // ==================== GIZMOS ====================
-
-    void OnDrawGizmos()
-    {
-        Gizmos.color = new Color(0.7f, 0.3f, 0.6f, 0.2f);
-        Gizmos.DrawSphere(transform.position, fieldRadius);
-
-        Gizmos.color = new Color(0.7f, 0.3f, 0.6f, 0.5f);
-        Gizmos.DrawWireSphere(transform.position, fieldRadius);
+        Debug.Log("💎 [BISMUTH FIELD] Player saiu da zona! Slow removido.");
     }
 }

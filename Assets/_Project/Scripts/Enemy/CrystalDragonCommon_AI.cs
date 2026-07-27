@@ -136,10 +136,46 @@ public class CrystalDragonCommon_AI : MonoBehaviour
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        anim = GetComponent<Animator>(); // pode ser null — checaremos antes de usar
+        anim = GetComponent<Animator>();
 
         rb.freezeRotation = true;
         rb.useGravity = false; // dragão voa
+
+        // Garante a tag "Enemy" e a Layer "Enemy" no root e em todos os filhos
+        gameObject.tag = "Enemy";
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer != -1)
+        {
+            gameObject.layer = enemyLayer;
+            foreach (Transform child in GetComponentsInChildren<Transform>(true))
+            {
+                child.gameObject.layer = enemyLayer;
+                child.gameObject.tag = "Enemy";
+            }
+        }
+
+        // Garante que os colidores do dragão sejam Triggers para receber dano sem servir de rampa/plataforma para outros mobs (como Golem)
+        Collider[] dragonColliders = GetComponentsInChildren<Collider>(true);
+        foreach (Collider dc in dragonColliders)
+        {
+            dc.isTrigger = true;
+        }
+
+        // Ignora colisões físicas com todos os outros inimigos para ninguém surfá-lo
+        Collider[] allColliders = FindObjectsByType<Collider>(FindObjectsSortMode.None);
+        foreach (Collider otherCol in allColliders)
+        {
+            if (otherCol != null && otherCol.transform.root != transform.root)
+            {
+                if (otherCol.gameObject.layer == enemyLayer || otherCol.CompareTag("Enemy"))
+                {
+                    foreach (Collider dc in dragonColliders)
+                    {
+                        Physics.IgnoreCollision(dc, otherCol, true);
+                    }
+                }
+            }
+        }
 
         if (player == null)
         {
@@ -159,8 +195,6 @@ public class CrystalDragonCommon_AI : MonoBehaviour
                 anguloOrbita = Mathf.Atan2(offset.x, offset.z) * Mathf.Rad2Deg;
 
             // Impede que o Rigidbody do dragão empurre o player fisicamente.
-            // O contato é tratado apenas pela IA (distância/órbita), não pela física.
-            Collider[] dragonColliders = GetComponentsInChildren<Collider>();
             Collider[] playerColliders = player.GetComponentsInChildren<Collider>();
             foreach (Collider dc in dragonColliders)
                 foreach (Collider pc in playerColliders)

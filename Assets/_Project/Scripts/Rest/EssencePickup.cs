@@ -12,9 +12,9 @@ public class EssencePickup : MonoBehaviour
 
     [Header("Movimento")]
     [Tooltip("Velocidade de atração quando perto do player")]
-    public float attractSpeed = 8f;
+    public float attractSpeed = 12f;
     [Tooltip("Distância para começar a atrair")]
-    public float attractDistance = 3f;
+    public float attractDistance = 8.5f;
     [Tooltip("Offset vertical do ponto de atração (0 = pés, 1.2 = peito)")]
     public float attractYOffset = 1.2f;
     [Tooltip("Velocidade de rotação visual")]
@@ -28,7 +28,7 @@ public class EssencePickup : MonoBehaviour
 
     [Header("Configurações")]
     [Tooltip("Tempo antes de poder ser coletada (evita coleta instantânea)")]
-    public float pickupDelay = 0.3f;
+    public float pickupDelay = 0.2f;
     [Tooltip("Tempo de vida antes de desaparecer (0 = infinito)")]
     public float lifetime = 30f;
 
@@ -38,10 +38,31 @@ public class EssencePickup : MonoBehaviour
     private float baseY;
     private bool isBeingAttracted = false;
 
+    [Header("Efeito Pop (Juice de Spawn)")]
+    public bool enablePopArc = true;
+    private Vector3 popVelocity;
+    private bool isPopping = true;
+    private float popTime = 0.35f;
+    private float currentAttractSpeed;
+    private Vector3 initialScale;
+
     void Start()
     {
         spawnTime = Time.time;
         baseY = transform.position.y;
+        initialScale = transform.localScale;
+        currentAttractSpeed = attractSpeed;
+
+        // Configura impulso de explosão física no nascimento (Pop Arc)
+        if (enablePopArc)
+        {
+            Vector2 randomCircle = Random.insideUnitCircle.normalized * Random.Range(1.5f, 2.8f);
+            popVelocity = new Vector3(randomCircle.x, Random.Range(2.5f, 4.0f), randomCircle.y);
+        }
+        else
+        {
+            isPopping = false;
+        }
 
         // Encontra o player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -50,7 +71,30 @@ public class EssencePickup : MonoBehaviour
             playerTransform = player.transform;
         }
 
-        // Destroi após lifetime se configurado
+        // Força a cor amarelada/dourada no material, luz e trail do pickup (substitui rosa)
+        Color yellowColor = new Color(1.00f, 0.85f, 0.10f, 1.00f);
+        Renderer rend = GetComponentInChildren<Renderer>();
+        if (rend != null && rend.material != null)
+        {
+            rend.material.color = yellowColor;
+            if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", yellowColor);
+            if (rend.material.HasProperty("_Color")) rend.material.SetColor("_Color", yellowColor);
+            if (rend.material.HasProperty("_EmissionColor")) rend.material.SetColor("_EmissionColor", yellowColor * 2.5f);
+        }
+
+        Light l = GetComponentInChildren<Light>();
+        if (l != null)
+        {
+            l.color = yellowColor;
+        }
+
+        TrailRenderer tr = GetComponentInChildren<TrailRenderer>();
+        if (tr != null)
+        {
+            tr.startColor = new Color(1.00f, 0.90f, 0.20f, 1.00f);
+            tr.endColor = new Color(1.00f, 0.70f, 0.00f, 0.00f);
+        }
+
         if (lifetime > 0)
         {
             Destroy(gameObject, lifetime);
@@ -59,6 +103,32 @@ public class EssencePickup : MonoBehaviour
 
     void Update()
     {
+        // 1. Fase de Pop (Arco de nascimento no ar)
+        if (isPopping)
+        {
+            popVelocity.y -= 14f * Time.deltaTime; // Gravidade do arco
+            transform.position += popVelocity * Time.deltaTime;
+
+            if (Time.time - spawnTime >= popTime || popVelocity.y < 0)
+            {
+                isPopping = false;
+
+                // Snap de segurança no chão real para evitar que a essência fique flutuando alto
+                if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit groundHit, 15f))
+                {
+                    baseY = groundHit.point.y + 0.5f;
+                    Vector3 p = transform.position;
+                    if (p.y > baseY) p.y = baseY;
+                    transform.position = p;
+                }
+                else
+                {
+                    baseY = transform.position.y;
+                }
+            }
+            return;
+        }
+
         // Delay antes de poder coletar
         if (!canBePickedUp)
         {
@@ -66,14 +136,14 @@ public class EssencePickup : MonoBehaviour
             {
                 canBePickedUp = true;
             }
-            return;
         }
 
-        // Rotação visual
-        transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime);
+        // Rotação suave no ar em múltiplos eixos
+        transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime, Space.World);
+        transform.Rotate(Vector3.right, (rotateSpeed * 0.4f) * Time.deltaTime, Space.Self);
 
         // Checa se o player está perto pra atrair
-        if (!isBeingAttracted && playerTransform != null)
+        if (!isBeingAttracted && playerTransform != null && canBePickedUp)
         {
             float currentAttractDistance = attractDistance;
             PlayerAttributesDefensive defStats = playerTransform.GetComponent<PlayerAttributesDefensive>();
@@ -86,19 +156,43 @@ public class EssencePickup : MonoBehaviour
             if (dist < currentAttractDistance)
             {
                 isBeingAttracted = true;
+
+                EssenceVFX vfx = GetComponent<EssenceVFX>();
+                if (vfx != null)
+                {
+                    vfx.StartFlyingTrail();
+                }
             }
         }
 
+        // 2. Fase de Atração Magnética Fluida e Acelerada
         if (isBeingAttracted && playerTransform != null)
         {
-            // Atração magnética - voa direto pro peito do player
+            currentAttractSpeed = Mathf.Min(currentAttractSpeed + 28f * Time.deltaTime, 26f);
             Vector3 targetPos = playerTransform.position + Vector3.up * attractYOffset;
-            transform.position = Vector3.MoveTowards(transform.position, targetPos, attractSpeed * Time.deltaTime);
+
+            // Movimento curvado e acelerado
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, currentAttractSpeed * Time.deltaTime);
+
+            float distToChest = Vector3.Distance(transform.position, targetPos);
+
+            // Encolhe suavemente ao se aproximar do peito para dar efeito de absorção física
+            if (distToChest < 1.2f)
+            {
+                float tScale = Mathf.Clamp01(distToChest / 1.2f);
+                transform.localScale = Vector3.Lerp(Vector3.zero, initialScale, tScale);
+            }
+
+            // Absorve ao encostar
+            if (distToChest < 0.35f)
+            {
+                CollectEssence(playerTransform.gameObject);
+            }
         }
         else
         {
-            // Flutuação (bobbing) - só quando está parada no chão
-            float newY = baseY + Mathf.Sin(Time.time * bobSpeed) * bobHeight;
+            // Flutuação mística (bobbing)
+            float newY = baseY + Mathf.Sin((Time.time - spawnTime) * bobSpeed) * bobHeight;
             transform.position = new Vector3(transform.position.x, newY, transform.position.z);
         }
     }
@@ -121,7 +215,7 @@ public class EssencePickup : MonoBehaviour
         // Se ainda não achar (ex: o script está num objeto irmão do colisor), procura globalmente
         if (playerEssence == null)
         {
-            playerEssence = FindObjectOfType<PlayerEssence>();
+            playerEssence = Object.FindFirstObjectByType<PlayerEssence>();
         }
         
         if (playerEssence != null)

@@ -18,4 +18,49 @@ public class EnemyIdentity : MonoBehaviour
     public string nomeInimigo => enemyData != null ? enemyData.enemyName : gameObject.name;
     public Sprite icon => enemyData != null ? enemyData.icon : null;
     public string descricao => enemyData != null ? enemyData.descricao : "";
+
+    void Awake()
+    {
+        // Garante que EnemyDataAutoLoader exista sob demanda
+        if (EnemyDataAutoLoader.instancia == null)
+        {
+            GameObject loaderGO = new GameObject("EnemyDataAutoLoader_Auto");
+            loaderGO.AddComponent<EnemyDataAutoLoader>();
+            DontDestroyOnLoad(loaderGO);
+        }
+
+        // Auto-mapeia o EnemyData se estiver nulo
+        if (enemyData == null && EnemyDataAutoLoader.instancia != null)
+        {
+            string cleanName = gameObject.name.Replace("(Clone)", "").Trim();
+            if (cleanName.Contains("Spider") || cleanName.Contains("spider") || cleanName.Contains("Aranha"))
+                cleanName = "Aranha";
+            else if (cleanName.Contains("Watcher") || cleanName.Contains("Sentinela") || cleanName.Contains("WatcherEnemy"))
+                cleanName = "Sentinela";
+            else if (cleanName.Contains("Totem"))
+                cleanName = "Totem";
+
+            enemyData = EnemyDataAutoLoader.instancia.GetByName(cleanName);
+        }
+    }
+
+    void Start()
+    {
+        // Se já está catalogado no Bestiário permanente, marca localmente e encerra
+        if (BestiarioManager.instancia != null && BestiarioManager.instancia.JaRegistrado(nomeInimigo))
+        {
+            foiEncontrado = true;
+            return;
+        }
+
+        // Se ainda não foi encontrado e não tem detector, anexa um detector de inimigo
+        if (!foiEncontrado && GetComponent<DetectorDeInimigo>() == null)
+        {
+            DetectorDeInimigo detector = gameObject.AddComponent<DetectorDeInimigo>();
+            detector.usarTrigger = true;
+            detector.usarDistancia = true;
+            detector.distanciaDeteccao = 15f;
+            detector.debugLogs = true;
+        }
+    }
 }

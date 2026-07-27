@@ -156,7 +156,7 @@ public class CrystalTuner : MonoBehaviour
 
         bool hasTargets = targets.Count > 0;
         float currentSpeed = hasTargets ? activeSpinSpeed : idleSpinSpeed;
-        visualChild.Rotate(Vector3.up, currentSpeed * Time.deltaTime, Space.Self);
+        visualChild.Rotate(Vector3.up, currentSpeed * Time.deltaTime, Space.World);
     }
 
     void FixedUpdate()
@@ -200,8 +200,13 @@ public class CrystalTuner : MonoBehaviour
 
             if (finalDirection.sqrMagnitude > 0.1f)
             {
-                Quaternion targetRot = Quaternion.LookRotation(finalDirection);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 5f * Time.fixedDeltaTime);
+                Vector3 lookDir = finalDirection;
+                lookDir.y = 0f;
+                if (lookDir.sqrMagnitude > 0.01f)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(lookDir);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 5f * Time.fixedDeltaTime);
+                }
             }
         }
 
@@ -313,7 +318,8 @@ public class CrystalTuner : MonoBehaviour
     void UpdateAllBeams()
     {
         beamPulseTimer += Time.deltaTime * 10f;
-        Vector3 origin = (beamOrigin != null) ? beamOrigin.position : transform.position;
+        Vector3 origin = (beamOrigin != null && beamOrigin != transform) ? beamOrigin.position : (transform.position + Vector3.up * 0.6f);
+        if (origin.y < transform.position.y + 0.3f) origin = transform.position + Vector3.up * 0.6f;
 
         for (int i = 0; i < targets.Count; i++)
         {
@@ -322,9 +328,18 @@ public class CrystalTuner : MonoBehaviour
 
             Vector3 targetPos = td.obj.transform.position;
             if (td.center != null)
+            {
                 targetPos = td.center.position;
-            else if (td.renderer != null)
+            }
+            else if (td.renderer != null && td.renderer.bounds.center.y > td.obj.transform.position.y + 0.3f)
+            {
                 targetPos = td.renderer.bounds.center;
+            }
+            else
+            {
+                // Offset de segurança no tronco (1.0m acima dos pés)
+                targetPos = td.obj.transform.position + Vector3.up * 1.0f;
+            }
 
             UpdateBeam(td.beam, origin, targetPos, i);
         }

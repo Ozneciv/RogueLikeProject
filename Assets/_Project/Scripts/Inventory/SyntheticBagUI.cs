@@ -26,7 +26,7 @@ public class SyntheticBagUI : MonoBehaviour
 
     [Header("Layout")]
     [Tooltip("Número de colunas na grade")]
-    public int columns = 5;
+    public int columns = 3;
     [Tooltip("Tamanho de cada slot em pixels")]
     public float slotSize = 72f;
     [Tooltip("Espaçamento entre slots")]
@@ -122,7 +122,8 @@ public class SyntheticBagUI : MonoBehaviour
     void Start()
     {
         CreateBagUI();
-        panelObject.SetActive(false);
+        if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         uiBuilt = true;
     }
 
@@ -142,6 +143,7 @@ public class SyntheticBagUI : MonoBehaviour
     {
         isOpen = false;
         if (panelObject != null) panelObject.SetActive(false);
+        if (customPanel != null) customPanel.SetActive(false);
         if (tooltip != null) tooltip.Hide();
     }
 
@@ -302,7 +304,7 @@ public class SyntheticBagUI : MonoBehaviour
         Debug.Log("[BAG UI] Bolsa Sintética fechada.");
     }
 
-    public bool IsOpen() => isOpen;
+    public bool IsOpen() => gameObject.activeInHierarchy && isOpen;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Refresh
@@ -375,16 +377,17 @@ public class SyntheticBagUI : MonoBehaviour
         if (gridRect == null) return;
 
         int rows  = Mathf.Max(1, Mathf.CeilToInt((float)count / columns));
-        float w   = columns * (slotSize + slotSpacing) + slotSpacing;
+        float w   = columns * (slotSize + slotSpacing) - slotSpacing;
         float h   = rows    * (slotSize + slotSpacing) + slotSpacing;
-        gridRect.sizeDelta = new Vector2(w, h);
+        gridRect.sizeDelta = new Vector2(w + 12f, h);
 
-        // Ajusta painel para conter o grid + header + margens
+        // Painel proporcional à largura exata da grade (+ margens limpas)
         if (panelObject != null)
         {
+            float max2RowsHeight = 2f * (slotSize + slotSpacing) + slotSpacing;
             RectTransform panelRect = panelObject.GetComponent<RectTransform>();
             if (panelRect != null)
-                panelRect.sizeDelta = new Vector2(w + 32f, h + 64f);
+                panelRect.sizeDelta = new Vector2(w + 44f, max2RowsHeight + 64f);
         }
     }
 
@@ -539,25 +542,52 @@ public class SyntheticBagUI : MonoBehaviour
         headerText.color     = HEADER_COLOR;
         headerText.raycastTarget = false;
 
-        // === Grade de slots ===
+        // === Container ScrollView (Fixado em 2 linhas de altura) ===
+        float viewHeight = 2f * (slotSize + slotSpacing) + slotSpacing;
+        float viewWidth  = columns * (slotSize + slotSpacing) + slotSpacing;
+
+        GameObject scrollObj = new GameObject("BagScrollView");
+        scrollObj.transform.SetParent(panelObject.transform, false);
+
+        RectTransform scrollR = scrollObj.AddComponent<RectTransform>();
+        scrollR.anchorMin = new Vector2(0.5f, 0f);
+        scrollR.anchorMax = new Vector2(0.5f, 0f);
+        scrollR.pivot     = new Vector2(0.5f, 0f);
+        scrollR.anchoredPosition = new Vector2(0f, 16f);
+        scrollR.sizeDelta = new Vector2(viewWidth, viewHeight);
+
+        Image scrollMaskImg = scrollObj.AddComponent<Image>();
+        scrollMaskImg.color = new Color(0f, 0f, 0f, 0.01f);
+        scrollMaskImg.raycastTarget = true;
+
+        Mask mask = scrollObj.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+
+        ScrollRect scroll = scrollObj.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 25f;
+
+        // === Grade de slots (Content do ScrollRect) ===
         slotGrid = new GameObject("SlotGrid");
-        slotGrid.transform.SetParent(panelObject.transform, false);
+        slotGrid.transform.SetParent(scrollObj.transform, false);
 
         RectTransform gridRect = slotGrid.AddComponent<RectTransform>();
-        gridRect.anchorMin       = new Vector2(0.5f, 0.5f);
-        gridRect.anchorMax       = new Vector2(0.5f, 0.5f);
-        gridRect.pivot           = new Vector2(0.5f, 0.5f);
-        gridRect.anchoredPosition = new Vector2(0f, -16f);
+        gridRect.anchorMin       = new Vector2(0.5f, 1f); // Centralizado no topo
+        gridRect.anchorMax       = new Vector2(0.5f, 1f);
+        gridRect.pivot           = new Vector2(0.5f, 1f);
+        gridRect.anchoredPosition = Vector2.zero;
+
+        scroll.content = gridRect;
 
         GridLayoutGroup grid = slotGrid.AddComponent<GridLayoutGroup>();
         grid.cellSize        = new Vector2(slotSize, slotSize);
         grid.spacing         = new Vector2(slotSpacing, slotSpacing);
-        grid.padding         = new RectOffset(
-            (int)slotSpacing, (int)slotSpacing,
-            (int)slotSpacing, (int)slotSpacing);
+        grid.padding         = new RectOffset(0, 0, (int)slotSpacing, (int)slotSpacing);
         grid.startCorner     = GridLayoutGroup.Corner.UpperLeft;
         grid.startAxis       = GridLayoutGroup.Axis.Horizontal;
-        grid.childAlignment  = TextAnchor.UpperLeft;
+        grid.childAlignment  = TextAnchor.UpperCenter; // Centralizado no painel
         grid.constraint      = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = columns;
 

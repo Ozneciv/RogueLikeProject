@@ -1526,6 +1526,133 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5894511824596707104}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2888697089655377155
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1377986563106049571}
+  - component: {fileID: 8217950367936542726}
+  - component: {fileID: 4750751079708676967}
+  m_Layer: 8
+  m_Name: DAMAGELIGHT
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1377986563106049571
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2888697089655377155}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 2, z: 0.19}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1830613685876521810}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &8217950367936542726
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2888697089655377155}
+  m_Enabled: 1
+  serializedVersion: 11
+  m_Type: 2
+  m_Color: {r: 0.6981132, g: 0, b: 0.1697374, a: 1}
+  m_Intensity: 20
+  m_Range: 2
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize: 10
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
+--- !u!114 &4750751079708676967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2888697089655377155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &2960396691680210216
 GameObject:
   m_ObjectHideFlags: 0
@@ -1634,7 +1761,7 @@ Transform:
   m_GameObject: {fileID: 3017463410146802124}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -21.85, y: 0, z: -3.28}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1.15, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1642,6 +1769,7 @@ Transform:
   - {fileID: 2111197835850830852}
   - {fileID: 7297136752264310698}
   - {fileID: 4191261865853365325}
+  - {fileID: 1377986563106049571}
   - {fileID: 1745601340556925456}
   - {fileID: 7614968322659082693}
   m_Father: {fileID: 0}
@@ -1750,6 +1878,11 @@ MonoBehaviour:
   rightHand: {fileID: 7952616563520327378}
   attackScript: {fileID: 399265535294509767}
   playerAnimator: {fileID: 3618305479678570340}
+  currentWeapon: {fileID: 0}
+  isWeaponDrawn: 1
+  holsterKey: 103
+  holsterDelay: 0.6
+  drawDelay: 0.3
 --- !u!114 &6793213990562782912
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1764,7 +1897,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
   maxArmor: 300
-  armorRegenRate: 5
+  armorRegenRate: 1
   isInvulnerable: 0
   playerMovement: {fileID: 0}
   playerAttack: {fileID: 399265535294509767}
@@ -1782,6 +1915,7 @@ MonoBehaviour:
   hasVampirism: 0
   hasNecrosis: 0
   lastKillTime: 0
+  damageLightObj: {fileID: 0}
 --- !u!114 &2877796600527432851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1833,14 +1967,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e41afc02c7fb742448a433b43e808e43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesDefensive
-  armorRegen: 10
+  armorRegen: 1
   dodgeChance: 0
-  damageNegation: 39.5
+  damageNegation: 0
   thorns: 0
+  healthRegen: 0
   dashCooldownMultiplier: 1
   dashCounts: 1
   dashInvulnerability: 0.2
-  speedMultiplier: 1
+  _speedMultiplier: 1
+  temporarySpeedBoost: 0
+  magnetRangeMultiplier: 1
 --- !u!114 &3072499769774279680
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3955,9 +4092,9 @@ MonoBehaviour:
   hit3SpeedMultiplier: 1
   hit4SpeedMultiplier: 1
   defaultDamages: 0a0000000f0000001e000000
-  daggerDamages: 19000000230000003c000000
+  daggerDamages: 1e0000002300000028000000
   swordDamages: 1e000000280000004b000000
-  axeDamages: 2d0000003c0000006e00000096000000
+  axeDamages: 280000002d0000003700000037000000
   defaultComboResetTime: 1.2
   daggerComboResetTime: 1.2
   swordComboResetTime: 1.2
@@ -3993,9 +4130,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 135dcf644ad32864e87e1a0d9e5a7198, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesOffensive
-  baseDamageMultiplier: 2
+  baseDamageMultiplier: 1
   attackSpeedMelee: 1
-  critChance: 38.3
+  critChance: 5
   critMultiplier: 1.5
   weaponRangeMelee: 1
   weaponRangeProjectile: 10
@@ -4005,6 +4142,7 @@ MonoBehaviour:
   bounceCount: 0
   multiShotChance: 0
   spread: 0
+  slowOnHit: 0
 --- !u!114 &4903610608914846769
 MonoBehaviour:
   m_ObjectHideFlags: 0

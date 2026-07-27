@@ -64583,7 +64583,7 @@ AnimationClip:
     floatParameter: 0
     intParameter: 0
     messageOptions: 0
-  - time: 0.96666664
+  - time: 1.0666667
     functionName: OpenAttackWindow
     data: 
     objectReferenceParameter: {fileID: 0}

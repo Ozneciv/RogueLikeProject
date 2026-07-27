@@ -23,6 +23,10 @@ public class Cristalus_AI : MonoBehaviour
     public float crystalSpawnInterval = 0.5f;
     public float arcOverlapThreshold = 3f;
 
+    [Header("Ajuste de Altura dos Cristais")]
+    [Tooltip("Ajuste de altura Y para o spawn dos cristais (caso o pivô esteja no centro).")]
+    public float crystalYOffset = 0.5f;
+
     [Header("Reposicionamento")]
     public float playerMovementTolerance = 2.0f;
     public float minRepositionAngle = 90f;
@@ -204,18 +208,13 @@ public class Cristalus_AI : MonoBehaviour
 
     GameObject SpawnCrystal(Vector3 position)
     {
-   
         if (crystalPrefabs == null || crystalPrefabs.Length == 0) return null;
 
-
         int randomIndex = Random.Range(0, crystalPrefabs.Length);
-        
-
         GameObject selectedPrefab = crystalPrefabs[randomIndex];
-
-   
         if (selectedPrefab == null) return null;
 
+        position.y = crystalYOffset;
 
         return Instantiate(selectedPrefab, position, Quaternion.identity);
     }

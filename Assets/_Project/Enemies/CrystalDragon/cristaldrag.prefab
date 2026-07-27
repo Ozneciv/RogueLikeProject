@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8444200189052085077}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PointDisparo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40,7 +40,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 233689325007362467}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: AttackPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -280,7 +280,7 @@ GameObject:
   - component: {fileID: 3471510296993310949}
   - component: {fileID: 2703508351237985606}
   - component: {fileID: 5828045685098338517}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: cristaldrag
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -377,11 +377,11 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &8612706578288470927
 Rigidbody:
@@ -422,7 +422,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 100
+  isSlowed: 0
+  maxHealth: 75
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
@@ -433,6 +434,7 @@ MonoBehaviour:
   hitFlashTime: 0.2
   isInvulnerable: 0
   isBuffed: 0
+  fixedDamageOverride: 0
 --- !u!65 &5278601874894100292
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -448,7 +450,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -466,7 +468,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828566207f72aaa48b5b20a3cd1155fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdentity
-  enemyData: {fileID: 11400000, guid: 7400f55b1d429b4449683f69779ac6eb, type: 2}
+  enemyData: {fileID: 0}
   foiEncontrado: 0
 --- !u!114 &2703508351237985606
 MonoBehaviour:
@@ -491,7 +493,7 @@ MonoBehaviour:
   intervaloMudancaDirecaoMin: 2
   intervaloMudancaDirecaoMax: 5
   pointDisparo: {fileID: 8444200189052085077}
-  projectilePrefab: {fileID: 3126166915568558911, guid: d038e0b9b2f61a54ab540a9d9feff0cd, type: 3}
+  projectilePrefab: {fileID: 3126166915568558911, guid: a83460615ade1204699ce1607ff72879, type: 3}
   cooldownAtaque: 3
   delayEntreDisparos: 0.2
   "velocidadeProj\xE9til": 10
@@ -510,6 +512,8 @@ MonoBehaviour:
   spinDamage: 25
   spinCooldown: 5
   animTriggerSpin: SpinAttack
+  attackEffect: {fileID: 6389406066330802589, guid: 5ef8d476ac4025a4e85cc5e7c5004889, type: 3}
+  attackPoint: {fileID: 5439841382662624795}
 --- !u!114 &5828045685098338517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -551,7 +555,7 @@ GameObject:
   - component: {fileID: 2302955673842146509}
   - component: {fileID: 7099727310495837594}
   - component: {fileID: 5338486307894759992}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Tail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -645,7 +649,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2

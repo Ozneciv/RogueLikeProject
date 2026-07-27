@@ -112,6 +112,16 @@ public class LevelGenerator : MonoBehaviour
     /// <summary>Chamado pelo GameManager para iniciar a geração.</summary>
     public void GenerateLevel()
     {
+        // Destroi salas antigas da geração anterior se existirem na cena
+        RoomController[] oldRooms = Object.FindObjectsByType<RoomController>(FindObjectsSortMode.None);
+        foreach (var r in oldRooms)
+        {
+            if (r != null && r.gameObject != null)
+            {
+                Destroy(r.gameObject);
+            }
+        }
+
         roomCounts.Clear();
         openOutputs.Clear();
         placedRoomBounds.Clear();
@@ -338,6 +348,49 @@ public class LevelGenerator : MonoBehaviour
             }
 
             if (!outputPlaced)
+            {
+                // Fallback: Tenta conectar uma mainRoom DIRETA na saída (sem corredor de transição)
+                GameObject roomPrefab = GetCompatibleRoomPrefab(currentOutput.connectionTag);
+                if (roomPrefab != null)
+                {
+                    GameObject directRoom = Instantiate(roomPrefab);
+                    ConnectionPoint directEntrada = GetInputPoint(directRoom, currentOutput.connectionTag, currentOutput.transform);
+                    if (directEntrada != null)
+                    {
+                        AlignRooms(currentOutput.transform, directEntrada.transform);
+                        if (!HasOverlapWithExistingRooms(directRoom, excludeRoom: sourceRoom))
+                        {
+                            currentOutput.isOccupied = true;
+                            directEntrada.isOccupied = true;
+                            RegisterRoomBounds(directRoom);
+
+                            roomCount++;
+                            roomSequenceCounter++;
+                            string prefabName = roomPrefab.name;
+                            if (!roomCounts.ContainsKey(prefabName)) roomCounts[prefabName] = 0;
+                            roomCounts[prefabName]++;
+
+                            RoomController roomCtrl = directRoom.GetComponentInChildren<RoomController>();
+                            if (roomCtrl != null)
+                                roomCtrl.Initialize(roomSequenceCounter);
+
+                            RegisterOutputPoints(directRoom, isStartRoom: false);
+                            Debug.Log($"[LevelGenerator] ✅ Sala '{prefabName}' adicionada via conexão direta (#{roomCount}). Saídas abertas: {openOutputs.Count}");
+                            outputPlaced = true;
+                        }
+                        else
+                        {
+                            Destroy(directRoom);
+                        }
+                    }
+                    else
+                    {
+                        Destroy(directRoom);
+                    }
+                }
+            }
+
+            if (!outputPlaced)
                 Debug.LogWarning($"[LevelGenerator] ⚠️ Saída '{currentOutput.gameObject.name}' descartada: nenhuma transição sem sobreposição.");
 
             yield return null;
@@ -353,18 +406,59 @@ public class LevelGenerator : MonoBehaviour
 
     IEnumerator ProcessRemainingOutputs()
     {
-        // 1. Escolhe a saída MAIS DISTANTE para ser a ExitRoom, testando colisões
+        // 1. Escolhe a saída MAIS DISTANTE das salas geradas (não-SafeRoom) para ser a ExitRoom
         if (openOutputs.Count > 0 && !exitRoomSpawned)
         {
-            openOutputs.Sort((a, b) => 
-                Vector3.Distance(Vector3.zero, b.transform.position)
-                .CompareTo(Vector3.Distance(Vector3.zero, a.transform.position)));
+            List<ConnectionPoint> mainOutputs = openOutputs.Where(op => {
+                if (op == null || op.isOccupied || op.transform.root == null) return false;
+                string rootName = op.transform.root.gameObject.name;
+                if (startRoomPrefab != null && rootName.Contains(startRoomPrefab.name)) return false;
+                if (rootName.Contains("Safe")) return false;
+                return true;
+            }).OrderByDescending(op => Vector3.Distance(Vector3.zero, op.transform.position)).ToList();
 
-            for (int i = 0; i < openOutputs.Count; i++)
+            // Tenta primeiro com transição
+            for (int i = 0; i < mainOutputs.Count; i++)
             {
-                if (TrySpawnSpecialRoom(exitRoomPrefab, openOutputs[i], "Sala de Saída"))
+                if (TrySpawnSpecialRoom(exitRoomPrefab, mainOutputs[i], "Sala de Saída", useTransition: true))
                 {
-                    openOutputs.RemoveAt(i);
+                    openOutputs.Remove(mainOutputs[i]);
+                    exitRoomSpawned = true;
+                    break;
+                }
+            }
+
+            // Se falhar com transição, tenta conexão direta sem transição nas mesmas saídas principais
+            if (!exitRoomSpawned)
+            {
+                for (int i = 0; i < mainOutputs.Count; i++)
+                {
+                    if (TrySpawnSpecialRoom(exitRoomPrefab, mainOutputs[i], "Sala de Saída (direta)", useTransition: false))
+                    {
+                        openOutputs.Remove(mainOutputs[i]);
+                        exitRoomSpawned = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Fallback de fase 2 em saídas livres (excluindo estritamente a SafeRoom)
+        if (openOutputs.Count > 0 && !exitRoomSpawned)
+        {
+            List<ConnectionPoint> sortedOutputs = openOutputs.Where(op => {
+                if (op == null || op.isOccupied || op.transform.root == null) return false;
+                string rootName = op.transform.root.gameObject.name;
+                if (startRoomPrefab != null && rootName.Contains(startRoomPrefab.name)) return false;
+                if (rootName.Contains("Safe")) return false;
+                return true;
+            }).OrderByDescending(op => Vector3.Distance(Vector3.zero, op.transform.position)).ToList();
+
+            for (int i = 0; i < sortedOutputs.Count; i++)
+            {
+                if (TrySpawnSpecialRoom(exitRoomPrefab, sortedOutputs[i], "Sala de Saída (fallback)", useTransition: false))
+                {
+                    openOutputs.Remove(sortedOutputs[i]);
                     exitRoomSpawned = true;
                     break;
                 }
@@ -384,44 +478,66 @@ public class LevelGenerator : MonoBehaviour
                 if (TrySpawnMerchantRoom(deadEnds[i]))
                     merchantRoomSpawned = true;
                 else
-                    TrySpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End");
+                    TrySpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End", useTransition: false);
             }
             else
             {
-                TrySpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End");
+                TrySpawnSpecialRoom(deadEndPrefab, deadEnds[i], "Dead End", useTransition: false);
             }
         }
 
-        // Garantia: se ExitRoom não foi colocada
-        if (!exitRoomSpawned)
+        // 3. Garantia Absoluta: se ExitRoom ainda não foi conectada, força conexão à saída mais distante disponível
+        if (!exitRoomSpawned && exitRoomPrefab != null)
         {
-            Debug.LogError("[LevelGenerator] ❌ ExitRoom não colocada. Buscando saída disponível na cena...");
+            Debug.LogWarning("[LevelGenerator] ⚠️ Buscando qualquer porta livre para conectar a ExitRoom...");
 
             ConnectionPoint[] allCPs = FindObjectsByType<ConnectionPoint>(FindObjectsSortMode.None);
-            var sortedCPs = allCPs.OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position));
+            var sortedCPs = allCPs.Where(cp => cp != null && cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
+                                  .OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position));
 
             foreach (var cp in sortedCPs)
             {
-                if (cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied)
-                {
-                    if (startRoomPrefab != null && cp.transform.root.gameObject.name.Contains(startRoomPrefab.name)) continue;
-                    if (cp.transform.root.gameObject.name.Contains("Safe")) continue;
+                if (startRoomPrefab != null && cp.transform.root.gameObject.name.Contains(startRoomPrefab.name)) continue;
+                if (cp.transform.root.gameObject.name.Contains("Safe")) continue;
 
-                    if (TrySpawnSpecialRoom(exitRoomPrefab, cp, "Sala de Saída (recuperação)"))
-                    {
-                        exitRoomSpawned = true;
-                        Debug.LogWarning("[LevelGenerator] ⚠️ ExitRoom conectada a saída de recuperação. Mapa pode ter layout não ideal.");
-                        break;
-                    }
+                if (TrySpawnSpecialRoom(exitRoomPrefab, cp, "Sala de Saída (recuperação)", useTransition: false))
+                {
+                    exitRoomSpawned = true;
+                    Debug.Log("[LevelGenerator] ✅ ExitRoom conectada com sucesso na saída de recuperação!");
+                    break;
                 }
             }
 
-            if (!exitRoomSpawned && exitRoomPrefab != null && playerSpawnPoint != null)
+            // Se mesmo assim não conseguiu por causa de verificação de sobreposição estrita, força acoplamento direto no conector da porta
+            if (!exitRoomSpawned)
             {
-                Debug.LogError("[LevelGenerator] ❌ Nenhuma saída sem sobreposição encontrada na cena. ExitRoom colocada solta no espaço.");
-                GameObject lastResortExit = Instantiate(exitRoomPrefab);
-                lastResortExit.transform.position = playerSpawnPoint.position + playerSpawnPoint.forward * 30f;
-                exitRoomSpawned = true;
+                ConnectionPoint bestCP = sortedCPs.FirstOrDefault();
+                if (bestCP == null)
+                {
+                    bestCP = FindObjectsByType<ConnectionPoint>(FindObjectsSortMode.None)
+                        .Where(cp => cp != null && cp.pointType == ConnectionPoint.PointType.Saida)
+                        .OrderByDescending(cp => Vector3.Distance(Vector3.zero, cp.transform.position))
+                        .FirstOrDefault();
+                }
+
+                if (bestCP != null)
+                {
+                    Debug.LogWarning($"[LevelGenerator] 🚨 Conectando ExitRoom diretamente à porta '{bestCP.gameObject.name}'!");
+                    GameObject forcedExit = Instantiate(exitRoomPrefab);
+                    ConnectionPoint entradaExit = GetInputPoint(forcedExit, bestCP.connectionTag, bestCP.transform);
+                    if (entradaExit != null)
+                    {
+                        AlignRooms(bestCP.transform, entradaExit.transform);
+                        bestCP.isOccupied = true;
+                        entradaExit.isOccupied = true;
+                        RegisterRoomBounds(forcedExit);
+                        exitRoomSpawned = true;
+                    }
+                    else
+                    {
+                        Destroy(forcedExit);
+                    }
+                }
             }
         }
 
@@ -432,47 +548,122 @@ public class LevelGenerator : MonoBehaviour
 
         BakeGlobalNavMesh();
 
+        if (BarrierCounterUI.Instance != null)
+            BarrierCounterUI.Instance.UpdateDisplay();
+
         if (GameManager.instance != null)
             GameManager.instance.OnLevelReady(playerSpawnPoint);
     }
 
     // =========================================================
-    // SPAWN DE SALAS ESPECIAIS (AGORA COM CHECAGEM DE OVERLAP)
+    // SPAWN DE SALAS ESPECIAIS (SUPORTE A TRANSIÇÃO E CHECAGEM DE OVERLAP)
     // =========================================================
 
-    bool TrySpawnSpecialRoom(GameObject prefab, ConnectionPoint targetOutput, string label)
+    bool TrySpawnSpecialRoom(GameObject prefab, ConnectionPoint targetOutput, string label, bool useTransition = true)
     {
-        if (prefab == null) return false;
+        if (prefab == null || targetOutput == null) return false;
 
-        GameObject room = Instantiate(prefab);
-        ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);
+        GameObject sourceRoom = targetOutput.transform.root.gameObject;
 
-        if (entrada == null)
+        // 1. Tenta posicionar a sala especial COM um corredor de transição para evitar colisão
+        if (useTransition && transitionRoomPrefabs != null && transitionRoomPrefabs.Count > 0)
         {
-            Destroy(room);
+            List<GameObject> shuffledTransitions = ShuffledCopy(transitionRoomPrefabs);
+            foreach (GameObject transPrefab in shuffledTransitions)
+            {
+                if (transPrefab == null) continue;
+
+                GameObject transitionRoom = Instantiate(transPrefab);
+                ConnectionPoint[] transCPs = transitionRoom.GetComponentsInChildren<ConnectionPoint>();
+                ConnectionPoint transEntrada = transCPs.FirstOrDefault(cp => cp.pointType == ConnectionPoint.PointType.Entrada && !cp.isOccupied);
+                ConnectionPoint transSaida   = transCPs.FirstOrDefault(cp => cp.pointType == ConnectionPoint.PointType.Saida && !cp.isOccupied);
+
+                if (transEntrada == null || transSaida == null)
+                {
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
+                transSaida.connectionTag = targetOutput.connectionTag;
+                AlignRooms(targetOutput.transform, transEntrada.transform);
+
+                if (HasOverlapWithExistingRooms(transitionRoom, excludeRoom: sourceRoom))
+                {
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
+                // Tenta conectar a sala especial na saída da transição
+                GameObject roomWithTrans = Instantiate(prefab);
+                ConnectionPoint entradaTrans = GetInputPoint(roomWithTrans, transSaida.connectionTag, transSaida.transform);
+
+                if (entradaTrans == null)
+                {
+                    Destroy(roomWithTrans);
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
+                AlignRooms(transSaida.transform, entradaTrans.transform);
+
+                if (HasOverlapWithExistingRooms(roomWithTrans, excludeRoom: transitionRoom))
+                {
+                    Destroy(roomWithTrans);
+                    Destroy(transitionRoom);
+                    continue;
+                }
+
+                // SUCESSO com transição!
+                targetOutput.isOccupied = true;
+                transEntrada.isOccupied = true;
+                transSaida.isOccupied = true;
+                entradaTrans.isOccupied = true;
+
+                RegisterRoomBounds(transitionRoom);
+                RegisterRoomBounds(roomWithTrans);
+
+                Debug.Log($"[LevelGenerator] ✅ {label} criado (com corredor de transição).");
+                return true;
+            }
+        }
+
+        // 2. Conexão direta sem transição (fallback)
+        GameObject directRoom = Instantiate(prefab);
+        ConnectionPoint entradaDirect = GetInputPoint(directRoom, targetOutput.connectionTag, targetOutput.transform);
+
+        if (entradaDirect == null)
+        {
+            Destroy(directRoom);
             Debug.LogWarning($"[LevelGenerator] '{label}' não tem Entrada. Descartando.");
             return false;
         }
 
-        AlignRooms(targetOutput.transform, entrada.transform);
+        AlignRooms(targetOutput.transform, entradaDirect.transform);
 
-        if (HasOverlapWithExistingRooms(room, excludeRoom: targetOutput.transform.root.gameObject))
+        if (HasOverlapWithExistingRooms(directRoom, excludeRoom: sourceRoom))
         {
-            Destroy(room);
+            Destroy(directRoom);
             Debug.Log($"[LevelGenerator] ⚠️ '{label}' sobrepôs. Tentando próxima saída...");
             return false;
         }
 
         targetOutput.isOccupied = true;
-        entrada.isOccupied = true;
-        RegisterRoomBounds(room);
-        Debug.Log($"[LevelGenerator] ✅ {label} criado.");
+        entradaDirect.isOccupied = true;
+        RegisterRoomBounds(directRoom);
+        Debug.Log($"[LevelGenerator] ✅ {label} criado (conexão direta).");
         return true;
     }
 
     bool TrySpawnMerchantRoom(ConnectionPoint targetOutput)
     {
         if (merchantRoomPrefab == null || merchantPrefab == null) return false;
+
+        // Se o pacto já foi realizado nesta run, impede a criação da Sala do Mercador
+        if (MerchantUIController.HasInstance && MerchantUIController.Instance.HasMadePactInRun)
+        {
+            Debug.Log("[LevelGenerator] 🚫 Pacto já realizado nesta run. Sala do Mercador cancelada.");
+            return false;
+        }
 
         GameObject room = Instantiate(merchantRoomPrefab);
         ConnectionPoint entrada = GetInputPoint(room, targetOutput.connectionTag);

@@ -81,7 +81,7 @@ namespace MimicSpace
 
         private void ResetMimic()
         {
-            foreach (Leg g in GameObject.FindObjectsOfType<Leg>())
+            foreach (Leg g in Object.FindObjectsByType<Leg>(FindObjectsSortMode.None))
             {
                 Destroy(g.gameObject);
             }
@@ -110,8 +110,26 @@ namespace MimicSpace
             if (!canCreateLeg)
                 return;
 
-            // New leg origin is placed in front of the mimic
-            legPlacerOrigin = transform.position + velocity.normalized * newLegRadius;
+            // === Projetar posição do corpo no chão para cálculo de pernas ===
+            // Quando o corpo está elevado (ex: Sentinela a 5m), precisamos
+            // calcular as posições das pernas no nível do chão.
+            Collider[] colsForGround = GetComponentsInChildren<Collider>();
+            foreach(var c in colsForGround) if (c != null) c.enabled = false;
+
+            float groundY = transform.position.y; // fallback: usar Y do corpo
+            RaycastHit groundCheck;
+            if (Physics.Raycast(transform.position, Vector3.down, out groundCheck, 50f))
+            {
+                groundY = groundCheck.point.y;
+            }
+
+            foreach(var c in colsForGround) if (c != null) c.enabled = true;
+
+            // Posição do corpo projetada no chão (apenas XZ do corpo, Y do chão)
+            Vector3 groundBodyPos = new Vector3(transform.position.x, groundY, transform.position.z);
+
+            // New leg origin is placed in front of the mimic, no nível do chão
+            legPlacerOrigin = groundBodyPos + velocity.normalized * newLegRadius;
 
             if (legCount <= maxLegs - partsPerLeg)
             {
@@ -123,20 +141,20 @@ namespace MimicSpace
                 // it reach in front of the mimic.
                 if (velocity.magnitude > 1f)
                 {
-                    float newLegAngle = Vector3.Angle(velocity, newLegPosition - transform.position);
+                    float newLegAngle = Vector3.Angle(velocity, newLegPosition - groundBodyPos);
 
                     if (Mathf.Abs(newLegAngle) > 90)
                     {
-                        newLegPosition = transform.position - (newLegPosition - transform.position);
+                        newLegPosition = groundBodyPos - (newLegPosition - groundBodyPos);
                     }
                 }
 
-                if (Vector3.Distance(new Vector3(transform.position.x, 0, transform.position.z), new Vector3(legPlacerOrigin.x, 0, legPlacerOrigin.z)) < minLegDistance)
-                    newLegPosition = ((newLegPosition - transform.position).normalized * minLegDistance) + transform.position;
+                if (Vector3.Distance(new Vector3(groundBodyPos.x, 0, groundBodyPos.z), new Vector3(legPlacerOrigin.x, 0, legPlacerOrigin.z)) < minLegDistance)
+                    newLegPosition = ((newLegPosition - groundBodyPos).normalized * minLegDistance) + groundBodyPos;
 
                 // if the angle is too big, adjust the new leg position towards the velocity vector
-                if (Vector3.Angle(velocity, newLegPosition - transform.position) > 45)
-                    newLegPosition = transform.position + ((newLegPosition - transform.position) + velocity.normalized * (newLegPosition - transform.position).magnitude) / 2f;
+                if (Vector3.Angle(velocity, newLegPosition - groundBodyPos) > 45)
+                    newLegPosition = groundBodyPos + ((newLegPosition - groundBodyPos) + velocity.normalized * (newLegPosition - groundBodyPos).magnitude) / 2f;
 
                 Collider[] cols = GetComponentsInChildren<Collider>();
                 foreach(var c in cols) if (c != null) c.enabled = false;
@@ -151,7 +169,8 @@ namespace MimicSpace
                 }
                 else
                 {
-                    myHit = newLegPosition; // Fallback caso não encontre o chão
+                    // Fallback: usar a posição no chão em vez de no ar
+                    myHit = new Vector3(newLegPosition.x, groundY, newLegPosition.z);
                 }
 
                 foreach(var c in cols) if (c != null) c.enabled = true;

@@ -201,6 +201,7 @@ public class InfusionManager : MonoBehaviour
             case AttributeType.BounceCount:
             case AttributeType.MultiShotChance:
             case AttributeType.Spread:
+            case AttributeType.SlowOnHit:
                 if (offensiveStats != null)
                     offensiveStats.ModifyAttribute(attrName, buff.value, buff.isMultiplier);
                 break;
@@ -250,6 +251,7 @@ public class InfusionManager : MonoBehaviour
             case AttributeType.BounceCount:
             case AttributeType.MultiShotChance:
             case AttributeType.Spread:
+            case AttributeType.SlowOnHit:
                 if (offensiveStats != null)
                     offensiveStats.ModifyAttribute(attrName, invertedValue, buff.isMultiplier);
                 break;
@@ -274,5 +276,19 @@ public class InfusionManager : MonoBehaviour
                     healthStats.ModifyAttribute(attrName, invertedValue, buff.isMultiplier);
                 break;
         }
+    }
+
+    public bool HasInfusion(string itemId)
+    {
+        foreach (var item in infusedItems)
+        {
+            if (item.itemId == itemId) return true;
+        }
+        return false;
+    }
+
+    public System.Collections.Generic.List<ItemData> GetInfusedItems()
+    {
+        return infusedItems;
     }
 }

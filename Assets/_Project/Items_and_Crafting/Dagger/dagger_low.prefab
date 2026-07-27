@@ -5221,7 +5221,7 @@ MonoBehaviour:
   weaponType: 0
   equipPosition: {x: -0.17, y: 0.1, z: 0}
   equipRotation: {x: -90, y: 90, z: 0}
-  weaponAnimatorOverride: {fileID: 0}
+  weaponAnimatorOverride: {fileID: 9100000, guid: 0d68be6d0cbdadf4f8c34770b3885f84, type: 2}
 --- !u!1 &3142732048361692479
 GameObject:
   m_ObjectHideFlags: 0
@@ -15010,8 +15010,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: -0.5, z: 0.5, w: 0.5}
   m_LocalPosition: {x: 0, y: 0, z: 0.44}
-  m_LocalScale: {x: 12, y: 12, z: 12}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 16, y: 12, z: 12}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3089269045288636403}
   - {fileID: 383426357535463336}

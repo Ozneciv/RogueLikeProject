@@ -4,6 +4,20 @@ using System.Collections;
 
 public class DummyHealth : MonoBehaviour
 {
+    [Header("Debuffs (Slow)")]
+    [HideInInspector] public bool isSlowed = false;
+    private float slowPercent = 0f;
+    private float slowTimer = 0f;
+
+    private Geobionte_AI geobionteAI;
+    private Golem_AI golemAI;
+    private Spider_AI spiderAI;
+    private GoblinAI_Transform goblinAI;
+    private ShardSwarm_AI shardSwarmAI;
+    private MagicStone_AI magicStoneAI;
+    private CrystalTuner crystalTunerAI;
+    private Cristalus_AI cristalusAI;
+
     [Header("Vida")]
     public int maxHealth = 100;
     [Tooltip("Ativa logs detalhados de dano/morte para depuração em runtime.")]
@@ -55,6 +69,23 @@ public class DummyHealth : MonoBehaviour
 
     private void Start()
     {
+        // Aplica escalonamento de HP por sala (+3% por sala avançada conforme Hp_Dano_Inimigos.pdf)
+        if (RunManager.instance != null && RunManager.instance.currentLevel > 1)
+        {
+            int roomIndex = RunManager.instance.currentLevel;
+            float hpScalingMultiplier = 1f + (0.03f * (roomIndex - 1));
+            maxHealth = Mathf.RoundToInt(maxHealth * hpScalingMultiplier);
+            CurrentHealth = maxHealth;
+        }
+
+        // Se estivermos no modo Endless e o level for maior que 3, aumenta a vida máxima do inimigo
+        if (RunManager.instance != null && RunManager.instance.isEndlessMode && RunManager.instance.currentLevel > 3)
+        {
+            float hpMultiplier = 1f + (RunManager.instance.currentLevel - 3) * 0.15f; // +15% HP por level acima do 3
+            maxHealth = Mathf.RoundToInt(maxHealth * hpMultiplier);
+            CurrentHealth = maxHealth;
+        }
+
         dummyRenderer = GetComponentInChildren<Renderer>();
         if (dummyRenderer != null)
         {
@@ -93,6 +124,19 @@ public class DummyHealth : MonoBehaviour
         }
 
         UpdateHealthBar();
+        DetectAIScripts();
+    }
+
+    private void DetectAIScripts()
+    {
+        geobionteAI = GetComponent<Geobionte_AI>();
+        golemAI = GetComponent<Golem_AI>();
+        spiderAI = GetComponent<Spider_AI>();
+        goblinAI = GetComponent<GoblinAI_Transform>();
+        shardSwarmAI = GetComponent<ShardSwarm_AI>();
+        magicStoneAI = GetComponent<MagicStone_AI>();
+        crystalTunerAI = GetComponent<CrystalTuner>();
+        cristalusAI = GetComponent<Cristalus_AI>();
     }
 
     // --- NOVA FUNÇÃO CHAMADA PELO SINTONIZADOR ---
@@ -134,6 +178,7 @@ public class DummyHealth : MonoBehaviour
         if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
 
         CurrentHealth -= damage;
+        RunStatsManager.Instance?.RecordDamageDealt(damage);
 
         UpdateHealthBar();
         ShowHealthBar();
@@ -167,13 +212,13 @@ public class DummyHealth : MonoBehaviour
         UpdateHealthBar();
     }
 
-    void ShowHealthBar()
+    public void ShowHealthBar()
     {
         if (healthBarSlider == null) return;
         healthBarSlider.gameObject.SetActive(true);
     }
 
-    void UpdateHealthBar()
+    public void UpdateHealthBar()
     {
         if (healthBarSlider != null)
         {
@@ -194,6 +239,8 @@ public class DummyHealth : MonoBehaviour
 
     private void Die()
     {
+        RunStatsManager.Instance?.RecordEnemyKilled();
+
         // Se um override foi definido (ex: Geobionte usa fuga ao invés de morte),
         // chama o callback e retorna sem executar a lógica padrão.
         if (onDeathOverride != null)
@@ -238,5 +285,82 @@ public class DummyHealth : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private void Update()
+    {
+        if (isSlowed)
+        {
+            slowTimer -= Time.deltaTime;
+            if (slowTimer <= 0f)
+            {
+                RemoveSlow();
+            }
+        }
+    }
+
+    public void ApplySlow(float percent, float duration)
+    {
+        if (percent <= 0f) return;
+
+        if (!isSlowed)
+        {
+            isSlowed = true;
+            slowPercent = percent;
+            slowTimer = duration;
+            ApplySlowToAI(percent);
+            Debug.Log($"[DEBUFF] Slow de {percent * 100}% aplicado a {gameObject.name} por {duration}s.");
+        }
+        else
+        {
+            // Atualiza tempo de duração (pega o maior)
+            slowTimer = Mathf.Max(slowTimer, duration);
+            
+            // Se o novo slow for mais forte, aplica a diferença
+            if (percent > slowPercent)
+            {
+                RemoveSlowFromAI(); // Reverte o antigo
+                slowPercent = percent;
+                ApplySlowToAI(percent); // Aplica o novo mais forte
+            }
+        }
+    }
+
+    public void RemoveSlow()
+    {
+        if (!isSlowed) return;
+
+        RemoveSlowFromAI();
+        isSlowed = false;
+        slowPercent = 0f;
+        slowTimer = 0f;
+        Debug.Log($"[DEBUFF] Slow removido de {gameObject.name}. Velocidade restaurada.");
+    }
+
+    private void ApplySlowToAI(float percent)
+    {
+        float factor = 1f - percent;
+        if (geobionteAI != null) { geobionteAI.chaseSpeed *= factor; geobionteAI.seekSpeed *= factor; geobionteAI.wanderSpeed *= factor; }
+        if (golemAI != null) { golemAI.moveSpeed *= factor; }
+        if (spiderAI != null) { spiderAI.moveSpeed *= factor; }
+        if (goblinAI != null) { goblinAI.chaseSpeed *= factor; goblinAI.fleeSpeed *= factor; goblinAI.strafeSpeed *= factor; }
+        if (shardSwarmAI != null) { shardSwarmAI.moveSpeed *= factor; }
+        if (magicStoneAI != null) { magicStoneAI.moveSpeed *= factor; }
+        if (crystalTunerAI != null) { crystalTunerAI.moveSpeed *= factor; }
+        if (cristalusAI != null) { cristalusAI.moveSpeed *= factor; }
+    }
+
+    private void RemoveSlowFromAI()
+    {
+        if (slowPercent >= 1f) return; // Evita divisão por zero
+        float factor = 1f / (1f - slowPercent);
+        if (geobionteAI != null) { geobionteAI.chaseSpeed *= factor; geobionteAI.seekSpeed *= factor; geobionteAI.wanderSpeed *= factor; }
+        if (golemAI != null) { golemAI.moveSpeed *= factor; }
+        if (spiderAI != null) { spiderAI.moveSpeed *= factor; }
+        if (goblinAI != null) { goblinAI.chaseSpeed *= factor; goblinAI.fleeSpeed *= factor; goblinAI.strafeSpeed *= factor; }
+        if (shardSwarmAI != null) { shardSwarmAI.moveSpeed *= factor; }
+        if (magicStoneAI != null) { magicStoneAI.moveSpeed *= factor; }
+        if (crystalTunerAI != null) { crystalTunerAI.moveSpeed *= factor; }
+        if (cristalusAI != null) { cristalusAI.moveSpeed *= factor; }
     }
 }

@@ -61,6 +61,10 @@ PrefabInstance:
       value: Transition
       objectReference: {fileID: 0}
     - target: {fileID: 7997736598857500843, guid: c90955ac390ee05469841f819d5a7aeb, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2200
+      objectReference: {fileID: 0}
+    - target: {fileID: 7997736598857500843, guid: c90955ac390ee05469841f819d5a7aeb, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -98,6 +102,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7997736598857500843, guid: c90955ac390ee05469841f819d5a7aeb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7997736598857500843, guid: c90955ac390ee05469841f819d5a7aeb, type: 3}
+      propertyPath: m_ConstrainProportionsScale
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

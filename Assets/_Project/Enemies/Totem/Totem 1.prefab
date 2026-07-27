@@ -51,9 +51,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 200
+  maxHealth: 150
   debugLogDamage: 0
-  healthBarSlider: {fileID: 0}
+  healthBarSlider: {fileID: 5124020315464445514}
   normalColor: {r: 0.32781482, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
   floatingDamageTextPrefab: {fileID: 7217528928149285678, guid: d0cfc8be9256baf4d853d1a092c24d9d, type: 3}
@@ -184,6 +184,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5285737211637759880}
     m_Modifications:
+    - target: {fileID: 337364292549373521, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 344
+      objectReference: {fileID: 0}
     - target: {fileID: 4911626264200761076, guid: 01139e293efaea64b85b9723c4371284, type: 3}
       propertyPath: m_Name
       value: HealthBar_Canvas
@@ -281,6 +285,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+--- !u!114 &5124020315464445514 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6100895945147630934, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+  m_PrefabInstance: {fileID: 1420483114664323868}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!224 &7659152561108024337 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}

@@ -32,7 +32,7 @@ public class CrystalDragon_AI : MonoBehaviour
     private float flightCooldownTimer = 0f;
 
     [Header("Ataques")]
-    public float spikeRange = 8f;
+    public float spikeRange = 18f;
     public float tailRange = 3f;
 
     [Header("Voo (animação de baixa altitude)")]
@@ -137,6 +137,90 @@ public class CrystalDragon_AI : MonoBehaviour
 
     private void Start()
     {
+        // 1. Auto-busca Animator se não foi arrastado no Inspector
+        if (modelAnimator == null)
+        {
+            modelAnimator = GetComponentInChildren<Animator>();
+        }
+
+        // 2. Fallback dinâmico para o projectile prefab
+        if (crystalSpikeProjectilePrefab == null)
+        {
+            crystalSpikeProjectilePrefab = Resources.Load<GameObject>("Crystal Spike");
+            if (crystalSpikeProjectilePrefab != null)
+            {
+                Debug.Log("[CrystalDragon_AI] Projétil 'Crystal Spike' carregado com sucesso via Resources.");
+            }
+            else
+            {
+                Debug.LogError("[CrystalDragon_AI] Falha ao carregar o prefab 'Crystal Spike' das Resources!");
+            }
+        }
+
+        // Garante a tag "Enemy" e a Layer "Enemy" no root e em todos os filhos
+        gameObject.tag = "Enemy";
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer != -1)
+        {
+            gameObject.layer = enemyLayer;
+            foreach (Transform child in GetComponentsInChildren<Transform>(true))
+            {
+                child.gameObject.layer = enemyLayer;
+                child.gameObject.tag = "Enemy";
+            }
+        }
+
+        // 3. Garante que o root tenha um colisor adequado para o jogador conseguir acertá-lo
+        Collider existingCollider = GetComponent<Collider>();
+        if (existingCollider == null)
+        {
+            BoxCollider bc = gameObject.AddComponent<BoxCollider>();
+            bc.center = new Vector3(0f, 1f, 0f);
+            bc.size = new Vector3(2.5f, 2f, 2.5f);
+            bc.isTrigger = true;
+            Debug.Log("[CrystalDragon_AI] BoxCollider adicionado automaticamente ao root do dragão.");
+        }
+        else
+        {
+            if (existingCollider is BoxCollider)
+            {
+                BoxCollider bc = (BoxCollider)existingCollider;
+                bc.center = new Vector3(0f, 1f, 0f);
+                bc.size = new Vector3(2.5f, 2f, 2.5f);
+                bc.isTrigger = true;
+            }
+            else if (existingCollider is CapsuleCollider)
+            {
+                CapsuleCollider cc = (CapsuleCollider)existingCollider;
+                cc.center = new Vector3(0f, 1f, 0f);
+                cc.height = 2f;
+                cc.radius = 1.25f;
+                cc.isTrigger = true;
+            }
+        }
+
+        // Garante que todos os colidores do dragão sejam triggers e ignorem colisão com outros inimigos (para não servirem de rampa ao Golem)
+        Collider[] dragonColliders = GetComponentsInChildren<Collider>(true);
+        foreach (Collider dc in dragonColliders)
+        {
+            dc.isTrigger = true;
+        }
+
+        Collider[] allColliders = FindObjectsByType<Collider>(FindObjectsSortMode.None);
+        foreach (Collider otherCol in allColliders)
+        {
+            if (otherCol != null && otherCol.transform.root != transform.root)
+            {
+                if (otherCol.gameObject.layer == enemyLayer || otherCol.CompareTag("Enemy"))
+                {
+                    foreach (Collider dc in dragonColliders)
+                    {
+                        Physics.IgnoreCollision(dc, otherCol, true);
+                    }
+                }
+            }
+        }
+
         rb = GetComponent<Rigidbody>();
         health = GetComponent<DummyHealth>();
         startPosition = transform.position;
@@ -145,19 +229,16 @@ public class CrystalDragon_AI : MonoBehaviour
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-        {
-            playerTransform = player.transform;
-        }
-        else
-        {
-            Debug.LogError("CrystalDragon_AI: Player não encontrado! Verifique a tag 'Player'.");
-        }
+        // 4. Auto-busca dinâmica do Player no Start()
+        FindPlayerReference();
 
+        // 5. Auto-busca do spikeOrigin se null
         if (spikeOrigin == null)
         {
-            spikeOrigin = transform;
+            Transform foundOrigin = transform.Find("spikeOrigin");
+            if (foundOrigin == null) foundOrigin = transform.Find("Mouth");
+            if (foundOrigin == null) foundOrigin = transform.Find("Head");
+            spikeOrigin = foundOrigin != null ? foundOrigin : transform;
         }
 
         // Init orbit angle/direction
@@ -185,13 +266,31 @@ public class CrystalDragon_AI : MonoBehaviour
             {
                 desiredModelLocalRotation = Quaternion.Euler(modelLocalEulerOffset);
                 modelTransform.localRotation = desiredModelLocalRotation;
-                lastLoggedModelLocalRotation = modelTransform.localRotation;
-                Debug.Log("[CRYSTAL DRAGON] Applied model local Euler offset: " + modelLocalEulerOffset);
+                lastLoggedModelLocalRotation = desiredModelLocalRotation;
+                Debug.Log("[CRYSTAL DRAGON] Applied local euler offset: " + modelLocalEulerOffset);
             }
             else
             {
                 Debug.Log("[CRYSTAL DRAGON] Preserving manual model local rotation: " + modelTransform.localEulerAngles);
             }
+        }
+    }
+
+    private void FindPlayerReference()
+    {
+        if (playerTransform != null) return;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+        {
+            PlayerHealth ph = Object.FindFirstObjectByType<PlayerHealth>();
+            if (ph != null) player = ph.gameObject;
+        }
+
+        if (player != null)
+        {
+            playerTransform = player.transform;
+            Debug.Log("[CrystalDragon_AI] Referência do Player localizada com sucesso!");
         }
     }
 
@@ -237,8 +336,23 @@ public class CrystalDragon_AI : MonoBehaviour
 
     private void Update()
     {
-        if (playerTransform == null) return;
-        if (health != null && health.CurrentHealth <= 0) return;
+        // Garante busca dinâmica do Player no Update caso não estivesse presente na cena ao instanciar
+        if (playerTransform == null)
+        {
+            FindPlayerReference();
+            if (playerTransform == null) return;
+        }
+
+        if (health != null)
+        {
+            if (health.CurrentHealth <= 0) return;
+            // Se sofrer dano de longe, ativa o combate imediatamente
+            if (health.CurrentHealth < health.maxHealth && !isActivated)
+            {
+                isActivated = true;
+                Debug.Log("[CRYSTAL DRAGON] Ativado por dano sofrido!");
+            }
+        }
 
         if (spikeTimer > 0f) spikeTimer -= Time.deltaTime;
         if (tailTimer > 0f) tailTimer -= Time.deltaTime;
@@ -431,8 +545,8 @@ public class CrystalDragon_AI : MonoBehaviour
         // Pequena telegraph
         yield return new WaitForSeconds(0.4f);
 
-        Vector3 spawnPosition = spikeOrigin != null ? spikeOrigin.position : transform.position + transform.forward * 1.2f + Vector3.up * spikeProjectileVerticalOffset;
-        if (spikeOrigin == null) spawnPosition += Vector3.up * spikeProjectileVerticalOffset;
+        Vector3 spawnPosition = (spikeOrigin != null && spikeOrigin != transform) ? spikeOrigin.position : (transform.position + transform.forward * 1.5f + Vector3.up * 1.6f);
+        if (spawnPosition.y < transform.position.y + 0.8f) spawnPosition.y = transform.position.y + 1.6f;
 
         // Spawn a single volley of N projectiles distributed in a cone
         Vector3 baseTarget = playerTransform != null ? playerTransform.position : (spawnPosition + transform.forward * 10f);

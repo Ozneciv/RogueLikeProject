@@ -22,6 +22,8 @@ public class PlayerEssence : MonoBehaviour
         currentEssence += amount;
         totalEssenceCollected += amount;
 
+        RunStatsManager.Instance?.RecordEssenceCollected(amount);
+
         Debug.Log("[PLAYER ESSENCE] +" + amount + " | Total: " + currentEssence);
 
         onEssenceCollected?.Invoke(amount);
@@ -36,6 +38,7 @@ public class PlayerEssence : MonoBehaviour
         if (currentEssence >= amount)
         {
             currentEssence -= amount;
+            RunStatsManager.Instance?.RecordEssenceSpent(amount);
             Debug.Log("[PLAYER ESSENCE] -" + amount + " | Restante: " + currentEssence);
             onEssenceChanged?.Invoke(currentEssence);
             return true;
@@ -43,6 +46,16 @@ public class PlayerEssence : MonoBehaviour
 
         Debug.Log("[PLAYER ESSENCE] Essência insuficiente! Precisa: " + amount + " | Tem: " + currentEssence);
         return false;
+    }
+
+    /// <summary>
+    /// Zera a essência acumulada na run ao morrer.
+    /// </summary>
+    public void ResetEssenceOnDeath()
+    {
+        currentEssence = 0;
+        onEssenceChanged?.Invoke(currentEssence);
+        Debug.Log("[PLAYER ESSENCE] Essência da run zerada por morte.");
     }
 
     /// <summary>

@@ -124,7 +124,7 @@ public class InventoryTooltip : MonoBehaviour
         nameText.color = Color.white;
         nameText.alignment = TextAlignmentOptions.TopLeft;
         nameText.raycastTarget = false;
-        nameText.enableWordWrapping = true;
+        nameText.textWrappingMode = TextWrappingModes.Normal;
 
         // === Separador ===
         GameObject sepObj = new GameObject("Separator");
@@ -161,7 +161,7 @@ public class InventoryTooltip : MonoBehaviour
         descriptionText.color = new Color(0.75f, 0.75f, 0.8f, 0.9f);
         descriptionText.alignment = TextAlignmentOptions.TopLeft;
         descriptionText.raycastTarget = false;
-        descriptionText.enableWordWrapping = true;
+        descriptionText.textWrappingMode = TextWrappingModes.Normal;
         descriptionText.overflowMode = TextOverflowModes.Ellipsis;
 
         // === Tier + Quantidade (linha inferior) ===

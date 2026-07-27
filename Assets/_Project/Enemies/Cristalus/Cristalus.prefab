@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 286173162090625506}
   - component: {fileID: 3878058093404446092}
-  - component: {fileID: 1069383995936366341}
   - component: {fileID: 3361224048668512275}
   - component: {fileID: 16886834917353225}
+  - component: {fileID: 8140813302158855585}
   m_Layer: 6
   m_Name: Cristalus
   m_TagString: Enemy
@@ -50,9 +50,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 100
+  isSlowed: 0
+  maxHealth: 45
   debugLogDamage: 0
-  healthBarSlider: {fileID: 0}
+  healthBarSlider: {fileID: 7587102527011683286}
   normalColor: {r: 0.3764706, g: 1, b: 0, a: 1}
   buffedColor: {r: 0, g: 1, b: 1, a: 1}
   floatingDamageTextPrefab: {fileID: 7217528928149285678, guid: d0cfc8be9256baf4d853d1a092c24d9d, type: 3}
@@ -62,27 +63,6 @@ MonoBehaviour:
   isInvulnerable: 0
   isBuffed: 0
   fixedDamageOverride: 0
---- !u!135 &1069383995936366341
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 626950691794527064}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 2.5
-  m_Center: {x: 0, y: 3, z: 0}
 --- !u!114 &3361224048668512275
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,15 +81,16 @@ MonoBehaviour:
   trailDropInterval: 1.5
   trailOffset: 1.5
   crystalPrefabs:
-  - {fileID: 8242620846978568234, guid: a6e66e1ae4ca0d64ba1d54b7332c2173, type: 3}
-  - {fileID: 3599961167296391606, guid: 011807a98e473ff489d4351e3ffb6f7a, type: 3}
-  - {fileID: 1480619410411027743, guid: d306b5f2deb0e874fb7b50c83b9b3942, type: 3}
-  - {fileID: 6868172829605524901, guid: 9a96add4a6b5acd43af31606411f0fc6, type: 3}
-  - {fileID: 280414134438346695, guid: 7a086ebdbbd0b6b459fe43f885e298b6, type: 3}
+  - {fileID: 2533969110523615093, guid: 491e38b6ec3c2c241974ccc0d09c5a0d, type: 3}
+  - {fileID: 3560458092330961674, guid: 0ed8fe3070ae7144dada282d2efc0357, type: 3}
+  - {fileID: 694298290060655522, guid: 55c549f9c0753d5428f79dfb397ad1d0, type: 3}
+  - {fileID: 2757013489351881423, guid: 48368a7c5d2236b4397bb93c4e703fdf, type: 3}
+  - {fileID: 1685054568492720185, guid: 2165f93bc1ce14d4d96f6df7b559f311, type: 3}
   arcAngle: 120
   crystalsPerArc: 5
   crystalSpawnInterval: 0.5
   arcOverlapThreshold: 10
+  crystalYOffset: 0.5
   playerMovementTolerance: 2
   minRepositionAngle: 90
 --- !u!114 &16886834917353225
@@ -141,6 +122,27 @@ MonoBehaviour:
   spawnHeight: 0.5
   spawnRadius: 0.5
   launchForce: 3
+--- !u!65 &8140813302158855585
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626950691794527064}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3.5, y: 8, z: 3.5}
+  m_Center: {x: 0, y: 4, z: 0}
 --- !u!1 &8448378746313530241
 GameObject:
   m_ObjectHideFlags: 0
@@ -356,6 +358,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8789996716743726861, guid: 01139e293efaea64b85b9723c4371284, type: 3}
   m_PrefabInstance: {fileID: 4458687897701891712}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7587102527011683286 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6100895945147630934, guid: 01139e293efaea64b85b9723c4371284, type: 3}
+  m_PrefabInstance: {fileID: 4458687897701891712}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!1001 &8719372750208268671
 PrefabInstance:
   m_ObjectHideFlags: 0

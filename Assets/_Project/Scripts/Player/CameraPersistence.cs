@@ -10,7 +10,7 @@ public class CameraPersistence : MonoBehaviour
 
         // Garante que só haja uma câmera do jogador
         // (Encontra outras câmeras com este script e destrói as duplicatas)
-        CameraPersistence[] cameras = FindObjectsOfType<CameraPersistence>();
+        CameraPersistence[] cameras = Object.FindObjectsByType<CameraPersistence>(FindObjectsSortMode.None);
         if (cameras.Length > 1)
         {
             Destroy(this.gameObject);

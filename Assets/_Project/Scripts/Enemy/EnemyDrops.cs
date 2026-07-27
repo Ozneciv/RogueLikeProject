@@ -111,8 +111,32 @@ public class EnemyDrops : MonoBehaviour
         // 2. Chance de dropar ALGUM item característico (Roleta com Pesos)
         if (lootPool != null && lootPool.Count > 0 && Random.value <= globalDropChance)
         {
+            List<LootPoolItem> filteredPool = new List<LootPoolItem>();
+            Geobionte_AI geobionteAI = GetComponent<Geobionte_AI>();
+            if (geobionteAI != null)
+            {
+                bool isSentinel = geobionteAI.IsSentinel;
+                foreach (var loot in lootPool)
+                {
+                    if (loot.itemPrefab == null) continue;
+                    string nameLower = loot.itemPrefab.name.ToLower();
+                    if (isSentinel && nameLower.Contains("sentinel"))
+                    {
+                        filteredPool.Add(loot);
+                    }
+                    else if (!isSentinel && !nameLower.Contains("sentinel"))
+                    {
+                        filteredPool.Add(loot);
+                    }
+                }
+            }
+            else
+            {
+                filteredPool = lootPool;
+            }
+
             float totalWeight = 0f;
-            foreach (var loot in lootPool)
+            foreach (var loot in filteredPool)
             {
                 if (loot.itemPrefab != null && loot.weight > 0f)
                 {
@@ -126,7 +150,7 @@ public class EnemyDrops : MonoBehaviour
                 float currentSum = 0f;
                 GameObject selectedPrefab = null;
 
-                foreach (var loot in lootPool)
+                foreach (var loot in filteredPool)
                 {
                     if (loot.itemPrefab == null || loot.weight <= 0f) continue;
                     

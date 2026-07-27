@@ -8,7 +8,7 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Configurações")]
     public int maxHealth = 100;
-    public int maxArmor = 200;
+    public int maxArmor = 300;
     public int currentHealth { get; private set; }
     private int currentArmor;
     public int CurrentArmor => currentArmor;
@@ -37,13 +37,23 @@ public class PlayerHealth : MonoBehaviour
     public TextMeshProUGUI percentageText; // O texto de %
 
     [Header("Pactos")]
+    public bool hasPactCorrupted = false;
+    public Color darkPactHealthColor = new Color(0.38f, 0.04f, 0.08f, 1.0f); // Sangue Escuro Obscuro (#610a14)
+    private Color originalHealthFillColor = Color.white;
+    private bool hasSavedOriginalColor = false;
+
     [HideInInspector] public float damageMultiplier = 1.0f;
     [HideInInspector] public float damageTakenMultiplier = 1.0f;
+    [Header("Efeitos dos Pactos do Mercador")]
     [HideInInspector] public bool canHeal = true;
     [HideInInspector] public bool hasDoubleLoot = false;
     [HideInInspector] public bool hasVampirism = false;
     [HideInInspector] public bool hasNecrosis = false;
     [HideInInspector] public float lastKillTime = 0f;
+    [HideInInspector] public bool hasSelfDamageOnAttack = false;
+    [HideInInspector] public bool isKnockbackImmune = false;
+    [HideInInspector] public float abilityCooldownMultiplier = 1.0f;
+    [HideInInspector] public bool enemiesBuffed = false;
 
     [Header("Stun")]
     public bool isStunned { get; private set; } = false;
@@ -53,6 +63,7 @@ public class PlayerHealth : MonoBehaviour
     private bool isDead = false;
     private int playerLayer;
     private bool diedFallingForward = false;
+    private float sentinelLegCooldownEndTime = 0f;
 
     private float armorRegenAccumulator = 0f;
     private float healthRegenAccumulator = 0f;
@@ -85,74 +96,33 @@ public class PlayerHealth : MonoBehaviour
         isDead = false;
         gameObject.layer = playerLayer;
 
-        // Trava a física para a animação
-        if (rb != null)
-        {
-            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
+        // Reset rotação do pai para posição limpa e em pé
+        transform.rotation = Quaternion.identity;
 
-        StartCoroutine(PlaySpawnAnimation());
-    }
-
-    IEnumerator PlaySpawnAnimation()
-    {
-        // Animação de levantar desabilitada temporariamente a pedido do usuário
-        UnlockPlayer();
-        yield break;
-
-#if false
-        if (playerMovement != null) playerMovement.enabled = false;
-        if (playerAttack != null) playerAttack.enabled = false;
-        
-        // Reforça a trava física
-        if (rb != null) 
-        { 
-            if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
-            rb.isKinematic = true; 
-        }
-
+        // Restaura o Animator para estado Idle em pé, sem root motion e sem animações de acordar
         if (playerAnimator != null)
         {
-            playerAnimator.applyRootMotion = true;
-            yield return new WaitForEndOfFrame();
-
-            // --- LÓGICA FORÇADA PARA REVIVE 2 (Seguro) ---
-            string triggerName = "Revive2";
-
-            /* LÓGICA ORIGINAL (Comentada para uso futuro)
-            string triggerName = "Revive1";
-            if (Time.time < 1f) 
-            {
-                if (Random.value > 0.5f) triggerName = "Revive2";
-            }
-            else
-            {
-                if (!diedFallingForward) triggerName = "Revive2";
-            }
-            */
-
-            playerAnimator.SetTrigger(triggerName);
-
-            // --- ESPERA INTELIGENTE ---
-            yield return new WaitForSeconds(0.1f);
-            float timeout = 0f;
-            
-            // Espera até que o Animator esteja tocando o Revive2
-            while (!playerAnimator.GetCurrentAnimatorStateInfo(0).IsName("Revive2"))
-            {
-                yield return null;
-                timeout += Time.deltaTime;
-                if (timeout > 2f) break;
-            }
-
-            float animationLength = playerAnimator.GetCurrentAnimatorStateInfo(0).length;
-            yield return new WaitForSeconds(animationLength);
+            playerAnimator.applyRootMotion = false;
+            playerAnimator.ResetTrigger("Revive1");
+            playerAnimator.ResetTrigger("Revive2");
+            playerAnimator.ResetTrigger("DeathForward");
+            playerAnimator.ResetTrigger("DeathBackward");
+            playerAnimator.Rebind();
+            playerAnimator.Update(0f);
         }
-        
-        // Destrava o jogador
+
+        // Unequip weapon ao renascer na base (player em pé sem arma na mão)
+        Player_WeaponManager weaponManager = GetComponent<Player_WeaponManager>() ?? GetComponentInChildren<Player_WeaponManager>();
+        if (weaponManager != null)
+        {
+            weaponManager.HolsterWeaponImmediate();
+        }
+        else if (playerAttack != null)
+        {
+            playerAttack.hasWeapon = false;
+        }
+
         UnlockPlayer();
-#endif
     }
 
     public void UnlockPlayer()
@@ -223,6 +193,18 @@ public class PlayerHealth : MonoBehaviour
         if (currentHealth <= 0) Die();
         UpdateHealthBar();
     }
+
+    /// <summary>
+    /// Aplica dano direto de Sacrifício à Vida Atual do jogador (sem alterar a Vida Máxima).
+    /// </summary>
+    public void TakeSacrificeDamage(int amount)
+    {
+        if (isDead) return;
+        currentHealth = Mathf.Max(1, currentHealth - amount);
+        TriggerPlayerRedFlash();
+        UpdateHealthBar();
+        Debug.Log($"🩸 [SACRIFÍCIO] Dano de Pacto aplicado! Vida Atual: {currentHealth}/{maxHealth}");
+    }
     
     void Die()
     {
@@ -233,6 +215,9 @@ public class PlayerHealth : MonoBehaviour
 
         // Limpa o inventário de run (descarta itens comuns, mantém recursos de base)
         SaveManager.instance?.OnPlayerDied(this.gameObject);
+
+        // Reseta todos os atributos acumulados durante a run ao morrer
+        ResetAttributesOnDeath();
         
         // Trava física ao morrer também
         if (rb != null) 
@@ -246,22 +231,85 @@ public class PlayerHealth : MonoBehaviour
             if (Random.value > 0.5f) { diedFallingForward = true; playerAnimator.SetTrigger("DeathForward"); }
             else { diedFallingForward = false; playerAnimator.SetTrigger("DeathBackward"); }
         }
+
         StartCoroutine(RespawnSequence());
+    }
+
+    private void ResetAttributesOnDeath()
+    {
+        PlayerAttributesDefensive defStats = GetComponent<PlayerAttributesDefensive>() ?? GetComponentInChildren<PlayerAttributesDefensive>();
+        if (defStats != null) defStats.ResetToDefaults();
+
+        PlayerAttributesOffensive offStats = GetComponent<PlayerAttributesOffensive>() ?? GetComponentInChildren<PlayerAttributesOffensive>();
+        if (offStats != null) offStats.ResetToDefaults();
+
+        InfusionManager infusion = GetComponent<InfusionManager>() ?? GetComponentInChildren<InfusionManager>();
+        if (infusion != null)
+        {
+            infusion.ResetRunInflation();
+            if (infusion.infusedItems != null) infusion.infusedItems.Clear();
+        }
+
+        if (EquipmentManager.Instance != null)
+        {
+            EquipmentManager.Instance.ReapplyAllEquippedEffects();
+        }
+
+        if (MerchantUIController.HasInstance)
+        {
+            MerchantUIController.Instance.ResetPactState();
+        }
+
+        // Zera a essência coletada durante a run ao morrer (essência de run é perdida na morte)
+        PlayerEssence essenceComp = GetComponent<PlayerEssence>() ?? GetComponentInChildren<PlayerEssence>();
+        if (essenceComp != null)
+        {
+            essenceComp.ResetEssenceOnDeath();
+        }
+
+        FullHeal();
+
+        Debug.Log("[PLAYER HEALTH] Todos os atributos de run, infusões, essência e maldições foram resetados após a morte.");
     }
 
     IEnumerator RespawnSequence()
     {
+        // 1. Aguarda a animação de morte completa do player caindo (2.0 segundos)
         yield return new WaitForSeconds(2.0f);
-        if (screenFader != null) yield return StartCoroutine(screenFader.FadeOut());
-        
-        if (GameManager.instance != null) GameManager.instance.ReturnToBase();
-        else SceneManager.LoadScene("Base");
+
+        // 2. Rastreamento do local da morte & Exibição da Tela de Morte ("VOCÊ MORREU")
+        if (RunStatsManager.Instance != null)
+        {
+            string stageStr = RunManager.instance != null
+                ? $"Nível {RunManager.instance.currentLevel} — Sala {RunManager.instance.currentRoomNumber}"
+                : "Desconhecido";
+            if (RunManager.instance != null && RunManager.instance.isEndlessMode)
+            {
+                stageStr += " (Endless)";
+            }
+            RunStatsManager.Instance.deathStage = stageStr;
+            RunStatsManager.Instance.StopRunTracking();
+        }
+
+        if (DeathScreenUI.Instance != null)
+        {
+            DeathScreenUI.Instance.ShowDeathScreen();
+        }
     }
 
     public void HandleReviveCompletion() { UnlockPlayer(); }
 
+    public void SetPactCorrupted(bool corrupted)
+    {
+        hasPactCorrupted = corrupted;
+        UpdateHealthBar();
+        Debug.Log($"🩸 [BLOOD PACT] Barra de Vida alterada para Sangue Escuro Corrompido: {corrupted}");
+    }
+
     void FullHeal()
     {
+        hasPactCorrupted = false;
+        canRegenArmor = true;
         cursedHealthLost = 0;
         currentHealth = maxHealth;
         currentArmor = maxArmor;
@@ -271,7 +319,7 @@ public class PlayerHealth : MonoBehaviour
     
     public void RestoreArmor(int amount)
     {
-        if (isDead) return;
+        if (isDead || maxArmor <= 0 || !canRegenArmor) return;
         currentArmor += amount;
         if (currentArmor > maxArmor) currentArmor = maxArmor;
         UpdateArmorBar();
@@ -281,7 +329,14 @@ public class PlayerHealth : MonoBehaviour
     {
         if (healthFillImage != null)
         {
+            if (!hasSavedOriginalColor)
+            {
+                originalHealthFillColor = healthFillImage.color;
+                hasSavedOriginalColor = true;
+            }
+
             healthFillImage.fillAmount = (float)currentHealth / maxHealth;
+            healthFillImage.color = hasPactCorrupted ? darkPactHealthColor : originalHealthFillColor;
         }
 
         if (percentageText != null)
@@ -304,10 +359,29 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    private void UpdateArmorBar()
+    public bool canRegenArmor = true;
+
+    public void UpdateArmorBar()
     {
-        if (armorBarImage != null) armorBarImage.fillAmount = (float)currentArmor / maxArmor;
-        if (armorText != null) armorText.text = currentArmor + "/" + maxArmor;
+        if (maxArmor <= 0 || !canRegenArmor)
+        {
+            if (armorBarImage != null) armorBarImage.fillAmount = 0f;
+            if (armorText != null) armorText.text = "0/0";
+        }
+        else
+        {
+            if (armorBarImage != null) armorBarImage.fillAmount = (float)currentArmor / maxArmor;
+            if (armorText != null) armorText.text = currentArmor + "/" + maxArmor;
+        }
+    }
+
+    public void SetArmorToZero()
+    {
+        maxArmor = 0;
+        currentArmor = 0;
+        canRegenArmor = false;
+        UpdateArmorBar();
+        Debug.Log("🛡️ [PACTO DE SANGUE] Armadura reduzida a ZERO! Regeneração de armadura bloqueada!");
     }
     
     public void SetCurrentSpawnPoint(Transform newSpawnPoint) { }
@@ -412,7 +486,7 @@ public class PlayerHealth : MonoBehaviour
         }
         
         // === REGENERAÇÃO DE ARMADURA ===
-        if (!isDead && currentArmor < maxArmor && playerAttributes != null)
+        if (!isDead && maxArmor > 0 && canRegenArmor && currentArmor < maxArmor && playerAttributes != null)
         {
             armorRegenAccumulator += armorRegenRate * playerAttributes.armorRegen * Time.deltaTime;
             if (armorRegenAccumulator >= 1.0f)
@@ -469,12 +543,129 @@ public class PlayerHealth : MonoBehaviour
         UpdateHealthBar();
     }
     
+    [Header("Luz de Dano (DAMAGELIGHT)")]
+    public GameObject damageLightObj;
+    private Coroutine damageLightCoroutine;
+
+    [Header("Damage Flash no Modelo do Player")]
+    private Coroutine playerFlashCoroutine;
+    private Renderer[] playerRenderers;
+    private Color[] playerOriginalColors;
+
+    private void TriggerDamageLight()
+    {
+        if (damageLightObj == null)
+        {
+            Transform found = transform.Find("DAMAGELIGHT");
+            if (found == null)
+            {
+                Light[] lights = GetComponentsInChildren<Light>(true);
+                foreach (var l in lights)
+                {
+                    if (l != null && (l.name == "DAMAGELIGHT" || l.name.ToUpper().Contains("DAMAGE")))
+                    {
+                        damageLightObj = l.gameObject;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                damageLightObj = found.gameObject;
+            }
+        }
+
+        if (damageLightObj != null)
+        {
+            if (damageLightCoroutine != null) StopCoroutine(damageLightCoroutine);
+            damageLightCoroutine = StartCoroutine(AnimateDamageLight());
+        }
+    }
+
+    private IEnumerator AnimateDamageLight()
+    {
+        damageLightObj.SetActive(true);
+        yield return new WaitForSeconds(0.35f);
+        if (damageLightObj != null) damageLightObj.SetActive(false);
+    }
+
+    private void TriggerPlayerRedFlash()
+    {
+        TriggerDamageLight();
+
+        if (playerRenderers == null || playerRenderers.Length == 0)
+        {
+            playerRenderers = GetComponentsInChildren<Renderer>();
+            if (playerRenderers != null && playerRenderers.Length > 0)
+            {
+                playerOriginalColors = new Color[playerRenderers.Length];
+                for (int i = 0; i < playerRenderers.Length; i++)
+                {
+                    if (playerRenderers[i] != null && playerRenderers[i].material != null && playerRenderers[i].material.HasProperty("_Color"))
+                    {
+                        playerOriginalColors[i] = playerRenderers[i].material.color;
+                    }
+                    else
+                    {
+                        playerOriginalColors[i] = Color.white;
+                    }
+                }
+            }
+        }
+
+        if (playerRenderers != null && playerRenderers.Length > 0)
+        {
+            if (playerFlashCoroutine != null) StopCoroutine(playerFlashCoroutine);
+            playerFlashCoroutine = StartCoroutine(AnimatePlayerRedFlash());
+        }
+    }
+
+    private IEnumerator AnimatePlayerRedFlash()
+    {
+        float duration = 0.3f;
+        float elapsed = 0f;
+        Color flashRed = new Color(1f, 0.25f, 0.25f, 1f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            for (int i = 0; i < playerRenderers.Length; i++)
+            {
+                if (playerRenderers[i] != null && playerRenderers[i].material != null && playerRenderers[i].material.HasProperty("_Color"))
+                {
+                    playerRenderers[i].material.color = Color.Lerp(flashRed, playerOriginalColors[i], t);
+                }
+            }
+            yield return null;
+        }
+
+        for (int i = 0; i < playerRenderers.Length; i++)
+        {
+            if (playerRenderers[i] != null && playerRenderers[i].material != null && playerRenderers[i].material.HasProperty("_Color"))
+            {
+                playerRenderers[i].material.color = playerOriginalColors[i];
+            }
+        }
+    }
+
     /// <summary>
     /// Aplica dano ao jogador com todos os atributos defensivos.
     /// </summary>
     public void TakeDamage(int damage, GameObject attacker = null)
     {
         if (isDead || isInvulnerable) return;
+
+        // Dispara modelo ficando levemente vermelho
+        TriggerPlayerRedFlash();
+
+        // Se estivermos no modo Endless e o level for maior que 3, aumenta o dano recebido pelo jogador
+        if (RunManager.instance != null && RunManager.instance.isEndlessMode && RunManager.instance.currentLevel > 3)
+        {
+            float endlessDamageMultiplier = 1f + (RunManager.instance.currentLevel - 3) * 0.15f; // +15% de dano por level acima do 3
+            damage = Mathf.RoundToInt(damage * endlessDamageMultiplier);
+        }
         
         int finalDamage = Mathf.RoundToInt(damage * damageTakenMultiplier);
         
@@ -509,14 +700,48 @@ public class PlayerHealth : MonoBehaviour
         
         if (finalDamage > 0)
         {
-            currentHealth -= finalDamage;
-            UpdateHealthBar();
-            
-            Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");
-            
-            if (currentHealth <= 0)
+            // Checa se o dano seria letal
+            if (currentHealth - finalDamage <= 0)
             {
-                Die();
+                InfusionManager infusionManager = GetComponent<InfusionManager>();
+                if (infusionManager != null && infusionManager.HasInfusion("sentinel_leg_t4") && Time.time >= sentinelLegCooldownEndTime)
+                {
+                    float currentHealthPercent = (float)currentHealth / maxHealth;
+                    int previousHealth = currentHealth;
+                    
+                    if (currentHealthPercent < 0.30f)
+                    {
+                        // Se estiver com menos de 30% da vida, apenas ignora o dano (não altera a vida atual)
+                        finalDamage = 0; 
+                    }
+                    else
+                    {
+                        // Se estiver com mais de 30% da vida, fica com 30% da vida
+                        int targetHealth = Mathf.RoundToInt(maxHealth * 0.30f);
+                        currentHealth = targetHealth;
+                        finalDamage = 0; // O dano foi mitigado, já definimos a vida para 30%
+                    }
+                    
+                    // Tempo de recarga de 10 minutos (600 segundos)
+                    sentinelLegCooldownEndTime = Time.time + 600f;
+                    
+                    UpdateHealthBar();
+                    Debug.Log($"🛡️ MITIGAÇÃO DE PERNA DE SENTINELA ATIVADA! Anterior: {previousHealth} HP -> Atual: {currentHealth} HP. Cooldown ativo por 10 minutos.");
+                }
+            }
+
+            if (finalDamage > 0)
+            {
+                currentHealth -= finalDamage;
+                RunStatsManager.Instance?.RecordDamageTaken(finalDamage);
+                UpdateHealthBar();
+                
+                Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");
+                
+                if (currentHealth <= 0)
+                {
+                    Die();
+                }
             }
         }
         

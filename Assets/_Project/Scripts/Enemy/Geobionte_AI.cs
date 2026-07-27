@@ -45,12 +45,17 @@ public class Geobionte_AI : MonoBehaviour
     [Header("Estado Atual")]
     [SerializeField] private GeobionteState currentState = GeobionteState.Idle;
 
+    public bool IsFleeing => currentState == GeobionteState.Fleeing;
+    public bool IsInterrupted => currentState == GeobionteState.Interrupted;
+    public bool IsDefeatedOrFleeing => currentState == GeobionteState.Fleeing || currentState == GeobionteState.Interrupted;
+
     // ==================== REFERÊNCIAS ====================
 
     [Header("Referências")]
     private Transform playerTransform;
     private Rigidbody rb;
     private DummyHealth health;
+    private BismutadoProceduralAnimation bismutadoAnim;
 
     // ==================== ATIVAÇÃO ====================
 
@@ -126,19 +131,19 @@ public class Geobionte_AI : MonoBehaviour
 
     [Header("Bismutado — Combate (Cubo)")]
     [Tooltip("Velocidade de perseguição ao player")]
-    public float chaseSpeed = 4f;
+    public float chaseSpeed = 7.0f;
     [Tooltip("Velocidade de rotação")]
-    public float rotationSpeed = 8f;
+    public float rotationSpeed = 12f;
     [Tooltip("Distância ideal para atacar")]
-    public float attackRange = 5f;
+    public float attackRange = 6f;
 
     [Header("Bismutado — Golpe Giratório")]
     [Tooltip("Dano do golpe horizontal giratório")]
-    public int sweepDamage = 8;
+    public int sweepDamage = 40;
     [Tooltip("Raio do golpe giratório (alcance ao redor do corpo)")]
-    public float sweepRange = 2f;
+    public float sweepRange = 5.5f;
     [Tooltip("Cooldown entre golpes giratórios (segundos)")]
-    public float sweepCooldown = 6f;
+    public float sweepCooldown = 1.2f;
     [Tooltip("Duração da animação do golpe (segundos)")]
     public float sweepDuration = 0.6f;
     [Tooltip("Cor do indicador visual do golpe")]
@@ -160,6 +165,7 @@ public class Geobionte_AI : MonoBehaviour
     /// NÃO configurar manualmente no Inspector.
     /// </summary>
     private bool isSentinel = false;
+    public bool IsSentinel => isSentinel;
 
     // ==================== SENTINELA (Semi-boss) ====================
 
@@ -195,18 +201,18 @@ public class Geobionte_AI : MonoBehaviour
 
     [Header("Sentinela — Slam")]
     [Tooltip("Dano do slam da esfera ao atingir o chão")]
-    public int sentinelSlamDamage = 15;
+    public int sentinelSlamDamage = 50;
     [Tooltip("Raio do dano do slam (ao redor do ponto de impacto)")]
     public float sentinelSlamRadius = 3f;
     [Tooltip("Velocidade de descida do slam (rápida)")]
     public float sentinelSlamSpeed = 20f;
 
-    [Header("Sentinela — Campo de Cristais")]
-    [Tooltip("Cooldown entre criações de campo de cristais (usado pelo Sentinela)")]
+    [Header("Bismutado — Campo de Cristais de Debuff")]
+    [Tooltip("Cooldown em segundos entre criações da área de debuff")]
     public float fieldCooldown = 6f;
-    [Tooltip("Duração de cada campo de cristais")]
-    public float fieldDuration = 10f;
-    [Tooltip("Raio de cada campo de cristais")]
+    [Tooltip("Duração em segundos de cada área de debuff no chão")]
+    public float fieldDuration = 3.5f;
+    [Tooltip("Raio em metros de cada área de debuff")]
     public float fieldRadius = 4f;
 
     // Estado do Sentinela em runtime
@@ -258,6 +264,8 @@ public class Geobionte_AI : MonoBehaviour
     public Color baseColor = new Color(0.03f, 0.01f, 0.05f, 1f); // Preto/Roxo muito escuro
     [Tooltip("Cor quando se funde ao cristal (modo de ataque)")]
     public Color transformedColor = new Color(0.7f, 0.3f, 0.6f, 1f); // Bismuto roxo/rosa
+    [Tooltip("Cor da esfera do Geobionte Sentinela")]
+    public Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f); // Roxo/rosa brilhante
     
     private int originalLayer;
 
@@ -309,6 +317,14 @@ public class Geobionte_AI : MonoBehaviour
         else
         {
             Debug.LogError("[GEOBIONTE] Player não encontrado! Verifique a tag 'Player'.");
+        }
+
+        // Guarda referências do collider original da esfera
+        geobionteCollider = GetComponent<SphereCollider>();
+        if (geobionteCollider != null)
+        {
+            originalColliderRadius = geobionteCollider.radius;
+            originalColliderCenter = geobionteCollider.center;
         }
 
         // Configurar visual
@@ -419,7 +435,10 @@ public class Geobionte_AI : MonoBehaviour
         // Se já foi impedido, não busca mais minério
         if (isPrevented) return;
 
-        // PROGRESSÃO MULTI-FASE: Se já absorveu um cristal nesta fase, não busca mais
+        // Se já fundiu nesta sala/fase, não busca mais minério (funciona mesmo sem RunManager)
+        if (hasFused) return;
+
+        // PROGRESSÃO MULTI-FASE: Guard adicional via RunManager (persistente entre cenas)
         if (RunManager.instance != null && RunManager.instance.geobionteAbsorbedThisLevel) return;
 
         // Verifica proximidade do player para ativar
@@ -513,15 +532,20 @@ public class Geobionte_AI : MonoBehaviour
         // Cria health bar de prevenção
         CreateHealthBarIfNeeded();
 
-        // Cor da barra: amarela para indicar prevenção (diferente do vermelho de combate)
-        if (health != null && health.healthBarSlider != null)
+        // Força a exibição e cor amarela da barra de vida de prevenção imediatamente
+        if (health != null)
         {
-            Image fillImage = health.healthBarSlider.fillRect?.GetComponent<Image>();
-            if (fillImage != null)
-                fillImage.color = new Color(1f, 0.8f, 0.2f, 1f); // Amarelo/dourado
+            health.UpdateHealthBar();
+            if (health.healthBarSlider != null)
+            {
+                health.healthBarSlider.gameObject.SetActive(true);
+                Image fillImage = health.healthBarSlider.fillRect?.GetComponent<Image>();
+                if (fillImage != null)
+                    fillImage.color = new Color(1f, 0.8f, 0.2f, 1f); // Amarelo/dourado
+            }
         }
 
-        Debug.Log("[GEOBIONTE] Buscando minério — ATACÁVEL! " + preventionMaxHP + " hits para impedir.");
+        Debug.Log("[GEOBIONTE] Buscando minério — ATACÁVEL! Barra de prevenção (Amarela) ativada. " + preventionMaxHP + " hits para impedir.");
     }
 
     void HandleSeekingOre()
@@ -605,6 +629,12 @@ public class Geobionte_AI : MonoBehaviour
     void OnPrevented()
     {
         Debug.Log("[GEOBIONTE] IMPEDIDO! Player conseguiu impedir a fusão!");
+
+        // Notifica RoomControllers que o Geobionte foi impedido/derrotado para liberar tranca das portas
+        foreach (RoomController rc in FindObjectsByType<RoomController>(FindObjectsSortMode.None))
+        {
+            rc.NotifyEnemyDefeated(gameObject);
+        }
 
         isPrevented = true;
         hasFused = true; // Marca como fundido para não tentar de novo
@@ -904,15 +934,28 @@ public class Geobionte_AI : MonoBehaviour
                 fillImage.color = Color.red;
         }
 
-        // Mudar layer para Enemy — agora pode ser atacado pelo WeaponHitbox
-        gameObject.layer = originalLayer;
+        // Para o Bismutado, a escala do objeto raiz DEVE ser (1, 1, 1) 
+        // para respeitar a escala própria do Prefab (3.5) sem multiplicar a escala da fusão (5.25)
+        transform.localScale = Vector3.one;
+
+        // Reativa física para perseguição
+        if (rb != null) rb.isKinematic = false;
+        bismutadoAnim = GetComponentInChildren<BismutadoProceduralAnimation>(true);
+
+        // Ajusta o SphereCollider para o tamanho real do Bismutado na escala (1, 1, 1) da raiz
+        if (geobionteCollider == null) geobionteCollider = GetComponent<SphereCollider>();
+        if (geobionteCollider != null)
+        {
+            geobionteCollider.radius = bismutadoColliderRadius;
+            geobionteCollider.center = new Vector3(0, bismutadoColliderCenterY, 0);
+        }
 
         // Reset de timers
         sweepTimer = 0f;
         isSweeping = false;
 
         ChangeState(GeobionteState.Transformed);
-        Debug.Log("[BISMUTADO] TRANSFORMAÇÃO COMPLETA! Forma de CUBO — golpe giratório ativado!");
+        Debug.Log("[BISMUTADO] TRANSFORMAÇÃO COMPLETA! Modelo 3D com Rig e IA de perseguição ativados!");
     }
 
     // ========================================================================
@@ -958,6 +1001,8 @@ public class Geobionte_AI : MonoBehaviour
         if (health != null && health.CurrentHealth <= 0) return;
         if (isSweeping) return; // Não se move durante o golpe
 
+        if (bismutadoAnim == null) bismutadoAnim = GetComponentInChildren<BismutadoProceduralAnimation>(true);
+
         // Sentinela: perseguição lenta + para durante slam/vulnerabilidade
         if (isSentinel)
         {
@@ -978,10 +1023,12 @@ public class Geobionte_AI : MonoBehaviour
                 float speed = hasSpeedBuff ? chaseSpeed * 0.65f : chaseSpeed * 0.5f;
                 Vector3 targetVelocity = direction * speed;
                 rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+                if (bismutadoAnim != null) bismutadoAnim.isWalking = true;
             }
             else
             {
                 rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+                if (bismutadoAnim != null) bismutadoAnim.isWalking = false;
             }
             UpdateMimicVelocity();
             return;
@@ -990,40 +1037,105 @@ public class Geobionte_AI : MonoBehaviour
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         float effectiveAttackRange = sweepRange;
 
-        // Persegue o player se está fora do range de ataque
-        if (distToPlayer > effectiveAttackRange * 0.8f)
+        // Persegue o player se está fora do range de ataque de perto
+        if (distToPlayer > effectiveAttackRange * 0.85f)
         {
             Vector3 direction = (playerTransform.position - transform.position).normalized;
             direction.y = 0;
 
-            float speed = hasSpeedBuff ? chaseSpeed * 1.3f : chaseSpeed;
+            float speed = hasSpeedBuff ? chaseSpeed * 1.35f : chaseSpeed;
             Vector3 targetVelocity = direction * speed;
-            rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+
+            if (rb != null && !rb.isKinematic)
+            {
+                rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+            }
+            transform.position += direction * speed * Time.fixedDeltaTime;
+
+            if (bismutadoAnim != null)
+            {
+                bismutadoAnim.isWalking = true;
+                bismutadoAnim.walkGaitSpeed = 8.5f; // Animação de corrida mais rápida e ágil
+            }
             UpdateMimicVelocity();
         }
         else
         {
-            // Para perto do player
-            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            // Para perto do player para desferir o ataque de perto
+            if (rb != null && !rb.isKinematic) rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            if (bismutadoAnim != null) bismutadoAnim.isWalking = false;
             UpdateMimicVelocity();
         }
     }
 
     void HandleCombat()
     {
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+            else return;
+        }
+
+        if (bismutadoAnim == null) bismutadoAnim = GetComponentInChildren<BismutadoProceduralAnimation>(true);
+
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        // Cria campo de cristais quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
-        if (distToPlayer <= attackRange && fieldTimer <= 0)
+        // 1. PRIORIDADE MÁXIMA: Ataque de Cruzado se o player estiver perto/colado no Bismutado (<= 5.5m)
+        if (distToPlayer <= sweepRange && sweepTimer <= 0 && !isSweeping)
+        {
+            Debug.Log($"⚔️ [BISMUTADO IA] PLAYER DENTRO DO ALCANCE DE PERTO ({distToPlayer:F1}m <= {sweepRange}m)! DISPARANDO CRUZADO!");
+            TriggerBismutadoAttack();
+            return;
+        }
+
+        // 2. Campo de debuff se o player estiver à distância (até 6.0m)
+        if (distToPlayer <= attackRange && fieldTimer <= 0 && !isSweeping)
         {
             CreateCrystalField();
         }
+    }
 
-        // Golpe giratório quando está perto e cooldown pronto (usado por Bismutado e Sentinela)
-        if (distToPlayer <= sweepRange && sweepTimer <= 0 && !isSweeping)
+    /// <summary>
+    /// Chamado pelo BismuthCrystalField quando o player entra na área do debuff.
+    /// O Bismutado percebe o player no debuff e ataca se estiver no alcance físico de perto (4.0m)!
+    /// </summary>
+    public void OnPlayerTrappedInCrystalField()
+    {
+        if (playerTransform == null) return;
+
+        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+        // Mira instantaneamente na direção do player
+        Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
+        dirToPlayer.y = 0;
+        if (dirToPlayer != Vector3.zero)
         {
-            StartCoroutine(SweepAttack());
+            transform.rotation = Quaternion.LookRotation(dirToPlayer);
         }
+
+        // SÓ acerta o ataque se estiver no alcance físico real do braço (<= 4.0m) para não socar o vento!
+        if (distToPlayer <= sweepRange && !isSweeping)
+        {
+            sweepTimer = 0f;
+            TriggerBismutadoAttack();
+        }
+    }
+
+    /// <summary>
+    /// Dispara o ataque procedural de Cruzado no modelo 3D do Bismutado + Coroutine de Sweep.
+    /// </summary>
+    public void TriggerBismutadoAttack()
+    {
+        if (isSweeping) return;
+
+        if (bismutadoAnim == null) bismutadoAnim = GetComponentInChildren<BismutadoProceduralAnimation>(true);
+        if (bismutadoAnim != null)
+        {
+            bismutadoAnim.TriggerCrystalSlam();
+        }
+
+        StartCoroutine(SweepAttack());
     }
 
     // ========================================================================
@@ -1031,20 +1143,19 @@ public class Geobionte_AI : MonoBehaviour
     // ========================================================================
 
     /// <summary>
-    /// Executa o golpe em meia-lua frontal do Bismutado.
-    /// O corpo gira 360° durante o ataque, mas o dano e o visual
-    /// são baseados na direção inicial (meia-lua fixa na frente).
+    /// Executa o Cruzado de Direita do Bismutado 3D com Rig.
+    /// Zera a movimentação durante o golpe e sincroniza com a animação procedural, Hitbox e Rastro de Energia (Trail VFX).
     /// </summary>
     IEnumerator SweepAttack()
     {
         isSweeping = true;
         sweepTimer = sweepCooldown;
 
-        // Para o movimento durante o golpe
-        rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+        // Para a movimentação durante o golpe
+        if (rb != null && !rb.isKinematic) rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         UpdateMimicVelocity();
 
-        // Rotaciona para olhar para o player antes do golpe para alinhar a meia lua
+        // Alinha o corpo para olhar diretamente para o jogador no início do golpe
         if (playerTransform != null)
         {
             Vector3 lookDir = (playerTransform.position - transform.position).normalized;
@@ -1055,207 +1166,17 @@ public class Geobionte_AI : MonoBehaviour
             }
         }
 
-        // Salva a direção frontal inicial (mundo) — o arco visual e dano usam essa referência fixa
-        Vector3 initialForward = transform.forward;
-        Vector3 initialRight = transform.right;
-        Quaternion initialRotation = transform.rotation;
-
-        Debug.Log("[BISMUTADO] Golpe meia-lua frontal com giro completo!");
-
-        int pointsCount = 30;
-
-        // === FASE 1: Indicador de aviso (0.4s) ===
-        // Mostra o arco de 180° na frente + linhas radiais para preencher a zona de perigo
-        GameObject warningObj = new GameObject("SweepWarning");
-        
-        // Arco externo (borda da meia-lua)
-        LineRenderer warningArcLR = warningObj.AddComponent<LineRenderer>();
-        warningArcLR.startWidth = 0.2f;
-        warningArcLR.endWidth = 0.2f;
-        warningArcLR.useWorldSpace = true;
-        Material warningMat = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.6f));
-        warningArcLR.material = warningMat;
-        warningArcLR.positionCount = pointsCount + 2; // +2 para fechar com linhas até o centro
-
-        // Linhas radiais de preenchimento (mostram a área da meia-lua)
-        int fillLineCount = 5;
-        GameObject[] fillLines = new GameObject[fillLineCount];
-        Material[] fillMats = new Material[fillLineCount];
-        for (int f = 0; f < fillLineCount; f++)
+        // Garante que a animação procedural do Bismutado 3D seja disparada com Hitbox e Trail VFX
+        if (bismutadoAnim == null) bismutadoAnim = GetComponentInChildren<BismutadoProceduralAnimation>(true);
+        if (bismutadoAnim != null)
         {
-            fillLines[f] = new GameObject("FillLine_" + f);
-            fillLines[f].transform.SetParent(warningObj.transform);
-            LineRenderer flr = fillLines[f].AddComponent<LineRenderer>();
-            flr.startWidth = 0.08f;
-            flr.endWidth = 0.08f;
-            flr.useWorldSpace = true;
-            flr.positionCount = 2;
-            fillMats[f] = CreateSweepMaterial(new Color(1f, 0.8f, 0f, 0.3f));
-            flr.material = fillMats[f];
+            bismutadoAnim.TriggerCrystalSlam();
         }
 
-        float warningDuration = 0.4f;
-        float elapsed = 0f;
-        while (elapsed < warningDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / warningDuration;
+        Debug.Log("🥊 [BISMUTADO 3D] Cruzado de Direita executado! (Giro antigo de 360° e linhas de aviso removidos).");
 
-            Vector3 center = transform.position;
-            float pulseAlpha = 0.4f + Mathf.Sin(t * Mathf.PI * 4f) * 0.2f;
-
-            // Arco de 180° + linhas de fechamento até o centro
-            Vector3[] arcPoints = new Vector3[pointsCount + 2];
-            arcPoints[0] = center; // Linha do centro ao início do arco
-            for (int i = 0; i < pointsCount; i++)
-            {
-                float angle = Mathf.Lerp(-90f, 90f, (float)i / (pointsCount - 1));
-                float rad = angle * Mathf.Deg2Rad;
-                // Usa a direção inicial fixa (não gira com o corpo)
-                Vector3 worldPos = center + (initialRight * Mathf.Sin(rad) + initialForward * Mathf.Cos(rad)) * sweepRange;
-                arcPoints[i + 1] = worldPos;
-            }
-            arcPoints[pointsCount + 1] = center; // Linha do fim do arco de volta ao centro
-            warningArcLR.SetPositions(arcPoints);
-
-            // Linhas radiais de preenchimento
-            for (int f = 0; f < fillLineCount; f++)
-            {
-                float fillAngle = Mathf.Lerp(-90f, 90f, (float)(f + 1) / (fillLineCount + 1));
-                float fillRad = fillAngle * Mathf.Deg2Rad;
-                Vector3 endPos = center + (initialRight * Mathf.Sin(fillRad) + initialForward * Mathf.Cos(fillRad)) * sweepRange * t;
-                LineRenderer flr = fillLines[f].GetComponent<LineRenderer>();
-                flr.SetPosition(0, center);
-                flr.SetPosition(1, endPos);
-            }
-
-            yield return null;
-        }
-
-        // Limpa aviso
-        if (warningObj != null) Destroy(warningObj);
-        if (warningMat != null) Destroy(warningMat);
-        foreach (Material fm in fillMats) { if (fm != null) Destroy(fm); }
-
-        // === FASE 2: Golpe com giro de 360° (sweepDuration) ===
-        
-        // Rastro do arco (mostra a meia-lua já varrida)
-        GameObject trailArcObj = new GameObject("SweepTrailArc");
-        LineRenderer trailLR = trailArcObj.AddComponent<LineRenderer>();
-        trailLR.startWidth = 0.35f;
-        trailLR.endWidth = 0.35f;
-        trailLR.useWorldSpace = true;
-        Material trailMat = CreateSweepMaterial(new Color(sweepIndicatorColor.r, sweepIndicatorColor.g, sweepIndicatorColor.b, 0.3f));
-        trailLR.material = trailMat;
-
-        // Lâmina (linha que varre da esquerda para a direita)
-        GameObject bladeObj = new GameObject("SweepBlade");
-        LineRenderer bladeLR = bladeObj.AddComponent<LineRenderer>();
-        bladeLR.startWidth = 0.6f;
-        bladeLR.endWidth = 0.1f;
-        bladeLR.useWorldSpace = true;
-        Material bladeMat = CreateSweepMaterial(sweepIndicatorColor);
-        bladeLR.material = bladeMat;
-        bladeLR.positionCount = 2;
-
-        bool playerHit = false;
-        elapsed = 0f;
-        float totalBodyRotation = 0f;
-
-        while (elapsed < sweepDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / sweepDuration;
-
-            Vector3 center = transform.position;
-
-            // --- Giro de 360° do corpo ---
-            float rotationThisFrame = 360f * (Time.deltaTime / sweepDuration);
-            transform.Rotate(0, rotationThisFrame, 0);
-            totalBodyRotation += rotationThisFrame;
-
-            // --- Visual da lâmina varrendo -90° até +90° (baseado na direção inicial) ---
-            float bladeAngle = Mathf.Lerp(-90f, 90f, t);
-            float bladeRad = bladeAngle * Mathf.Deg2Rad;
-            Vector3 bladeDir = (initialRight * Mathf.Sin(bladeRad) + initialForward * Mathf.Cos(bladeRad)).normalized;
-            Vector3 bladeEnd = center + bladeDir * sweepRange;
-
-            bladeLR.SetPosition(0, center);
-            bladeLR.SetPosition(1, bladeEnd);
-
-            // Cor da lâmina com brilho pulsante
-            float bladePulse = 0.8f + Mathf.Sin(t * Mathf.PI * 6f) * 0.2f;
-            if (bladeMat != null)
-            {
-                bladeMat.color = new Color(
-                    sweepIndicatorColor.r * bladePulse,
-                    sweepIndicatorColor.g * bladePulse,
-                    sweepIndicatorColor.b * bladePulse,
-                    Mathf.Lerp(0.9f, 0.3f, t)
-                );
-            }
-
-            // --- Rastro: arco mostrando a área já varrida ---
-            float sweptAngle = Mathf.Lerp(-90f, 90f, t); // Ângulo atual da lâmina
-            int trailPoints = Mathf.Max(2, Mathf.RoundToInt(pointsCount * t));
-            trailLR.positionCount = trailPoints;
-            Vector3[] trailPositions = new Vector3[trailPoints];
-            for (int i = 0; i < trailPoints; i++)
-            {
-                float a = Mathf.Lerp(-90f, sweptAngle, (float)i / (trailPoints - 1));
-                float aRad = a * Mathf.Deg2Rad;
-                trailPositions[i] = center + (initialRight * Mathf.Sin(aRad) + initialForward * Mathf.Cos(aRad)) * sweepRange;
-            }
-            trailLR.SetPositions(trailPositions);
-
-            // Fade do rastro
-            if (trailMat != null)
-            {
-                trailMat.color = new Color(sweepIndicatorColor.r, sweepIndicatorColor.g, sweepIndicatorColor.b, Mathf.Lerp(0.4f, 0.05f, t));
-            }
-
-            // --- Detecção de dano baseada na direção inicial (meia-lua fixa) ---
-            if (!playerHit && playerTransform != null)
-            {
-                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-                Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
-                // Usa a direção inicial para detectar se o player está na meia-lua frontal
-                float dot = Vector3.Dot(initialForward, dirToPlayer);
-
-                // Meia lua: dentro do alcance E na frente da direção inicial (dot > 0)
-                if (distToPlayer <= sweepRange && dot >= 0f)
-                {
-                    // Verifica se a lâmina já passou pela posição do player
-                    float playerAngle = Mathf.Atan2(
-                        Vector3.Dot(initialRight, dirToPlayer),
-                        Vector3.Dot(initialForward, dirToPlayer)
-                    ) * Mathf.Rad2Deg;
-                    
-                    // A lâmina varre de -90° a +90°, acerta quando passa pelo ângulo do player
-                    if (playerAngle <= bladeAngle + 15f) // +15° de tolerância
-                    {
-                        PlayerHealth playerHealth = playerTransform.GetComponent<PlayerHealth>();
-                        if (playerHealth != null)
-                        {
-                            playerHealth.TakeDamage(sweepDamage, gameObject);
-                            playerHit = true;
-                            Debug.Log("[BISMUTADO] Golpe meia-lua acertou o player! Dano: " + sweepDamage);
-                        }
-                    }
-                }
-            }
-
-            yield return null;
-        }
-
-        // Garante que o corpo completou os 360° exatos
-        transform.rotation = initialRotation;
-
-        // Limpa visuais
-        if (trailArcObj != null) Destroy(trailArcObj);
-        if (bladeObj != null) Destroy(bladeObj);
-        if (trailMat != null) Destroy(trailMat);
-        if (bladeMat != null) Destroy(bladeMat);
+        // Aguarda a duração exata do Cruzado de Direita (1.3s)
+        yield return new WaitForSeconds(1.3f);
 
         isSweeping = false;
     }
@@ -1279,7 +1200,7 @@ public class Geobionte_AI : MonoBehaviour
     // ========================================================================
 
     /// <summary>
-    /// [SENTINELA] Cria campo de cristais debuffer. Reservado para o Geobionte Sentinela.
+    /// [BISMUTADO] Cria campo de cristais debuffer. Usado apenas pelo Bismutado (Sentinela NÃO usa).
     /// </summary>
     void CreateCrystalField()
     {
@@ -1332,6 +1253,12 @@ public class Geobionte_AI : MonoBehaviour
     {
         // Cancela qualquer sweep em andamento
         isSweeping = false;
+
+        // Notifica RoomControllers que o Geobionte foi derrotado para liberar tranca das portas
+        foreach (RoomController rc in FindObjectsByType<RoomController>(FindObjectsSortMode.None))
+        {
+            rc.NotifyEnemyDefeated(gameObject);
+        }
 
         // Incrementa contador de derrotas como Bismutado
         bismutadoDefeatCount++;
@@ -1396,16 +1323,16 @@ public class Geobionte_AI : MonoBehaviour
         }
         else
         {
-            // PROGRESSÃO MULTI-FASE: Reverter ao Geobionte passivo (já usou a absorção desta fase)
-            StartCoroutine(RevertToBaseSequence());
+            // PROGRESSÃO MULTI-FASE: Foge da sala após ser derrotado (só reaparece na próxima sala)
+            StartCoroutine(FleeAfterDefeatSequence());
         }
     }
 
     /// <summary>
-    /// Sequência de reversão: Bismutado (cubo) → Geobionte padrão (esfera).
-    /// Encolhe, troca mesh, muda cor e volta ao estado Idle para buscar mais minérios.
+    /// Sequência pós-derrota do Bismutado: reverte o visual (cubo → esfera),
+    /// depois foge da sala e despawna. O Geobionte só reaparece na próxima sala.
     /// </summary>
-    IEnumerator RevertToBaseSequence()
+    IEnumerator FleeAfterDefeatSequence()
     {
         // Torna invulnerável durante a reversão
         if (health != null)
@@ -1454,30 +1381,26 @@ public class Geobionte_AI : MonoBehaviour
         // Restaura pernas do Mimic
         if (mimicComponent != null)
         {
-            // Recalcula parâmetros para o tamanho original antes de reativar as pernas
             mimicComponent.numberOfLegs = originalNumberOfLegs;
             mimicComponent.partsPerLeg = originalPartsPerLeg;
             mimicComponent.newLegRadius = originalNewLegRadius;
-            mimicComponent.legsDealDamage = false; // Desativa dano das pernas
+            mimicComponent.legsDealDamage = false;
             mimicComponent.RecalculateParameters();
             mimicComponent.SetLegsActive(true);
         }
 
-        // Reset de estado para Geobionte padrão
-        hasFused = false;
-        isPrevented = false;
+        // Marca que já fundiu nesta sala (impede nova transformação)
+        hasFused = true;
         absorbedOreValue = 0;
         hasSpeedBuff = false;
         targetOre = null;
         sweepTimer = 0f;
         isSweeping = false;
 
-        // PROGRESSÃO MULTI-FASE: Não busca novo minério — já absorveu nesta fase
-        // O Geobionte volta ao Idle passivo até a próxima fase
-        ChangeState(GeobionteState.Idle);
-        PickNewWanderDirection();
+        // Entra no estado Fleeing — foge para longe do player e despawna
+        ChangeState(GeobionteState.Fleeing);
 
-        Debug.Log("[GEOBIONTE] Revertido ao padrão! Derrota " + bismutadoDefeatCount + "/" + fusionsToSentinel + ". Aguardando próxima fase para absorver novamente.");
+        Debug.Log("[GEOBIONTE] Derrotado como Bismutado (" + bismutadoDefeatCount + "/" + fusionsToSentinel + ")! Fugindo da sala...");
     }
 
     // ========================================================================
@@ -1517,9 +1440,6 @@ public class Geobionte_AI : MonoBehaviour
         float elapsed = 0f;
         Vector3 startScale = transform.localScale;
         Vector3 endScale = originalScale * sentinelScale;
-
-        // Cor do Sentinela: roxo mais intenso/brilhante
-        Color sentinelColor = new Color(0.9f, 0.2f, 0.8f, 1f);
 
         while (elapsed < growDuration)
         {
@@ -1602,14 +1522,11 @@ public class Geobionte_AI : MonoBehaviour
     /// - Se acertar: dano + knockback, volta a subir sem ficar stunado
     /// - Se errar: fica stunado (vulnerável) por sentinelVulnerableWindow segundos
     /// - Pernas dão dano automaticamente (gerenciado pelo Leg.cs)
-    /// - Campo de cristais é criado periodicamente
+    /// - NÃO cria campo de cristais (mecânica exclusiva do Bismutado)
     /// </summary>
     void HandleSentinelCombat()
     {
         if (health != null && health.CurrentHealth <= 0) return;
-
-        // Timer do campo de cristais
-        if (fieldTimer > 0) fieldTimer -= Time.deltaTime;
 
         // Rotação lenta para olhar o player (não rotaciona durante slam/stun)
         if (!sentinelIsSlaming && !sentinelVulnerable)
@@ -1623,20 +1540,10 @@ public class Geobionte_AI : MonoBehaviour
 
         if (!sentinelVulnerable)
         {
-            // FASE: Esfera ALTA (invulnerável) — anda e cria campos de cristais
+            // FASE: Esfera ALTA (invulnerável) — anda, pernas dão dano
             sentinelTargetHeight = sentinelHighHeight;
 
             if (health != null) health.isInvulnerable = true;
-
-            // Cria campo de cristais periodicamente
-            if (fieldTimer <= 0 && playerTransform != null)
-            {
-                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-                if (distToPlayer <= attackRange * 2f)
-                {
-                    CreateCrystalField();
-                }
-            }
 
             // Após sentinelInvulnerableDuration, inicia o SLAM
             if (sentinelPhaseTimer >= sentinelInvulnerableDuration)
@@ -2080,21 +1987,12 @@ public class Geobionte_AI : MonoBehaviour
 
     void HandleFleeing()
     {
-        // Verifica distância do player — se longe o bastante, some
+        // Verifica distância do player — se longe o bastante, despawna
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distToPlayer > fleeDestroyDistance)
         {
-            Debug.Log("[GEOBIONTE] Fugiu com sucesso! Distância: " + distToPlayer.ToString("F1") + "m");
-
-            // Agenda respawn se configurado
-            if (respawnDelay > 0f)
-            {
-                StartCoroutine(ScheduleRespawn());
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            Debug.Log("[GEOBIONTE] Fugiu com sucesso! Distância: " + distToPlayer.ToString("F1") + "m. Reaparecerá na próxima sala.");
+            Destroy(gameObject);
         }
     }
 
@@ -2262,9 +2160,29 @@ public class Geobionte_AI : MonoBehaviour
     // TROCA DE MESH (Esfera ↔ Cubo)
     // ========================================================================
 
+    [Header("FBX do Bismutado (Modelo 3D com Rig)")]
+    [Tooltip("Arraste o prefab/modelo FBX do Bismutado aqui (ex: bismutado.fbx). Se nulo, buscará automaticamente em Resources.")]
+    public GameObject bismutadoModelPrefab;
+    [Tooltip("Se verdadeiro, respeita a escala exata configurada no Prefab/FBX do Bismutado")]
+    public bool usePrefabOriginalScale = true;
+    [Tooltip("Escala própria do modelo 3D do Bismutado se usePrefabOriginalScale for falso")]
+    public Vector3 bismutado3DModelScale = Vector3.one;
+    [Tooltip("Ajuste de altura Y local do modelo do Bismutado para as pernas tocarem o chão (padrão 0.0)")]
+    public float bismutadoModelOffsetY = 0f;
+
+    [Header("Hitbox/Collider do Bismutado (Transformado)")]
+    [Tooltip("Raio do SphereCollider quando transformado em Bismutado (padrão 1.8m)")]
+    public float bismutadoColliderRadius = 1.8f;
+    [Tooltip("Altura Y do centro do SphereCollider quando transformado em Bismutado (padrão 1.5m)")]
+    public float bismutadoColliderCenterY = 1.5f;
+
+    private SphereCollider geobionteCollider;
+    private float originalColliderRadius = 0.5f;
+    private Vector3 originalColliderCenter = Vector3.zero;
+
     /// <summary>
-    /// Troca o mesh do corpo de esfera para cubo (transformação Bismutado).
-    /// Preserva a hierarquia, escala e material.
+    /// Troca o mesh do corpo de esfera para o modelo 3D do Bismutado.
+    /// Preserva a escala própria do Bismutado 3D e ajusta a altura para tocar o chão.
     /// </summary>
     void SwapBodyMeshToCube()
     {
@@ -2272,36 +2190,59 @@ public class Geobionte_AI : MonoBehaviour
 
         // Guarda referências
         Transform parent = bodyMeshObject.transform.parent;
-        Vector3 localPos = bodyMeshObject.transform.localPosition;
         Quaternion localRot = bodyMeshObject.transform.localRotation;
 
         // Destrói o mesh antigo (esfera)
         Destroy(bodyMeshObject);
 
-        // Cria cubo
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.name = "BismutadoBody";
-        cube.transform.SetParent(parent);
-        cube.transform.localPosition = localPos;
-        cube.transform.localScale = originalMeshLocalScale; // Usa escala original não-reduzida
-        cube.transform.localRotation = localRot;
-
-        // Remove o collider do cubo (o Geobionte já tem seu próprio collider)
-        Collider cubeCol = cube.GetComponent<Collider>();
-        if (cubeCol != null) Destroy(cubeCol);
-
-        // Aplica o material existente
-        Renderer cubeRenderer = cube.GetComponent<Renderer>();
-        if (cubeRenderer != null && geoMaterial != null)
+        GameObject bismutadoModel = null;
+        if (bismutadoModelPrefab != null)
         {
-            cubeRenderer.material = geoMaterial;
+            bismutadoModel = Instantiate(bismutadoModelPrefab, parent);
+        }
+        else
+        {
+            GameObject loadedModel = Resources.Load<GameObject>("Bismutado") ?? Resources.Load<GameObject>("bismutado");
+            if (loadedModel != null)
+            {
+                bismutadoModel = Instantiate(loadedModel, parent);
+            }
+            else
+            {
+                bismutadoModel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            }
         }
 
-        // Atualiza referências
-        bodyMeshObject = cube;
-        geobionteRenderer = cubeRenderer;
+        // Determina a escala correta sem herdar o encolhimento da esfera do Geobionte
+        Vector3 targetScale = bismutado3DModelScale;
+        if (usePrefabOriginalScale && bismutadoModelPrefab != null)
+        {
+            targetScale = bismutadoModelPrefab.transform.localScale;
+        }
 
-        Debug.Log("[BISMUTADO] Mesh do corpo trocado para CUBO (tamanho original).");
+        bismutadoModel.name = "BismutadoBody";
+        bismutadoModel.transform.localPosition = new Vector3(0, bismutadoModelOffsetY, 0); // Fincado no chão!
+        bismutadoModel.transform.localScale = targetScale;
+        bismutadoModel.transform.localRotation = Quaternion.identity;
+
+        // Remove qualquer script de teste manual para não interceptar os cliques do mouse ou teclas do player
+        BismutadoAnimationTester tester = bismutadoModel.GetComponentInChildren<BismutadoAnimationTester>(true);
+        if (tester != null)
+        {
+            Destroy(tester);
+            Debug.Log("[BISMUTADO] Script de teste manual BismutadoAnimationTester removido para liberar controle 100% à IA!");
+        }
+
+        // Adiciona e configura a Animação Procedural do Bismutado
+        BismutadoProceduralAnimation animScript = bismutadoModel.GetComponent<BismutadoProceduralAnimation>();
+        if (animScript == null)
+        {
+            animScript = bismutadoModel.AddComponent<BismutadoProceduralAnimation>();
+        }
+
+        bodyMeshObject = bismutadoModel;
+        geobionteRenderer = bismutadoModel.GetComponentInChildren<Renderer>();
+        Debug.Log("[BISMUTADO] Modelo 3D com Rig, Escala do Prefab (" + targetScale + ") e alinhamento de chão ativados!");
     }
 
     /// <summary>
@@ -2343,9 +2284,13 @@ public class Geobionte_AI : MonoBehaviour
             sphereRenderer.material = geoMaterial;
         }
 
-        // Atualiza referências
-        bodyMeshObject = sphere;
-        geobionteRenderer = sphereRenderer;
+        // Restaura o collider original da esfera
+        if (geobionteCollider == null) geobionteCollider = GetComponent<SphereCollider>();
+        if (geobionteCollider != null)
+        {
+            geobionteCollider.radius = originalColliderRadius;
+            geobionteCollider.center = originalColliderCenter;
+        }
 
         Debug.Log("[GEOBIONTE] Mesh do corpo restaurado para ESFERA (tamanho reduzido).");
     }
@@ -2504,11 +2449,14 @@ public class Geobionte_AI : MonoBehaviour
         // Criar Canvas World Space
         GameObject canvasObj = new GameObject("HealthBarCanvas");
         canvasObj.transform.SetParent(transform);
-        canvasObj.transform.localPosition = new Vector3(0, 2.5f, 0);
-        canvasObj.transform.localScale = Vector3.one * 0.01f;
+        
+        float parentScale = transform.lossyScale.y > 0.001f ? transform.lossyScale.y : 1f;
+        canvasObj.transform.localScale = (Vector3.one * 0.015f) / parentScale;
+        canvasObj.transform.localPosition = new Vector3(0, 3.2f / parentScale, 0);
 
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
+        canvas.sortingOrder = 100; // Garante que a barra apareça à frente de todos os modelos 3D
         canvasObj.AddComponent<CanvasScaler>();
         canvasObj.AddComponent<GraphicRaycaster>();
 

@@ -54,6 +54,14 @@ public class MagicStone_AI : MonoBehaviour
             if (p != null) playerTransform = p.transform;
         }
 
+        // Snap de segurança no chão para evitar clipagem no piso da sala
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit navHit, 5f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            Vector3 pos = transform.position;
+            pos.y = navHit.position.y + 0.5f;
+            transform.position = pos;
+        }
+
         startY = transform.position.y;
 
         if (Random.value > 0.5f) orbitDirection = -1;

@@ -3762,17 +3762,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 983879d39e41bd146bef16730e5a4a58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbCounterUI
-  fontSize: 28
-  textColor: {r: 0.6, g: 0.4, b: 1, a: 1}
-  labelColor: {r: 0.5, g: 0.3, b: 0.8, a: 1}
-  panelColor: {r: 0, g: 0, b: 0, a: 0.5}
-  borderColor: {r: 0.3, g: 0.15, b: 0.35, a: 1}
-  offsetX: -30
-  offsetY: -30
-  panelWidth: 200
+  fontSize: 30
+  textColor: {r: 0.95, g: 0.88, b: 0.55, a: 1}
+  labelColor: {r: 0.72, g: 0.76, b: 0.78, a: 0.9}
+  panelColor: {r: 0.23, g: 0.28, b: 0.70, a: 0.45}
+  borderColor: {r: 0.52, g: 0.45, b: 0.15, a: 0.60}
+  orbCoreColor: {r: 1, g: 0.88, b: 0.10, a: 1}
+  orbGlowColor: {r: 1, g: 1, b: 0.65, a: 0.70}
+  orbSize: 32
+  rippleCount: 3
+  rippleDuration: 1.6
+  rippleMaxScale: 2.2
+  rippleStartAlpha: 0.55
+  rippleColor: {r: 1, g: 0.92, b: 0.20, a: 1}
+  particleCount: 4
+  particleInterval: 1.8
+  particleRadius: 20
+  particleLifetime: 0.65
+  particleMaxSize: 4.5
+  particleColor: {r: 1, g: 0.95, b: 0.4, a: 1}
+  offsetX: -60
+  offsetY: 40
+  panelWidth: 140
   panelHeight: 50
-  pulseDuration: 0.25
-  pulseScale: 1.3
+  pulseDuration: 0.22
+  pulseScale: 1.14
+
 --- !u!1 &8893373429661257393
 GameObject:
   m_ObjectHideFlags: 0
