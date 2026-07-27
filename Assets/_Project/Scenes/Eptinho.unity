@@ -361,6 +361,86 @@ MonoBehaviour:
   pickupDelay: 0.5
   lifetime: 60
   forceCategory: 
+--- !u!1001 &341390967
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2703508351237985606, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: projectilePrefab
+      value: 
+      objectReference: {fileID: 3126166915568558911, guid: a83460615ade1204699ce1607ff72879, type: 3}
+    - target: {fileID: 5902058234240059472, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5902058234240059472, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.481323
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.51
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -7.2782297
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6511754541303866777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6905926503053819252, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_Name
+      value: cristaldrag (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8040380601271854777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8040380601271854777, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6905926503053819252, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1562525745}
+  m_SourcePrefab: {fileID: 100100000, guid: d54e315a1f763424b99a1d4255734563, type: 3}
 --- !u!1 &369965629
 GameObject:
   m_ObjectHideFlags: 0
@@ -971,6 +1051,25 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 74fef28396fe839478bee29058630684, type: 3}
+--- !u!1 &1562525734 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6905926503053819252, guid: d54e315a1f763424b99a1d4255734563, type: 3}
+  m_PrefabInstance: {fileID: 341390967}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1562525745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562525734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0de0d82a9093c84097d052a75c35fed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrystalSpikeProjectile
+  owner: {fileID: 0}
+  damage: 8
 --- !u!1 &1631458203
 GameObject:
   m_ObjectHideFlags: 0
@@ -1997,3 +2096,4 @@ SceneRoots:
   - {fileID: 3004000003}
   - {fileID: 3005000003}
   - {fileID: 2027586454}
+  - {fileID: 341390967}
