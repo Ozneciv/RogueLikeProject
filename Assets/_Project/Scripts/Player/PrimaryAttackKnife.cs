@@ -103,12 +103,12 @@ public class PrimaryAttackKnife : MonoBehaviour
     private bool eventFiredEnableHitbox = false;
     private bool eventFiredDisableHitbox = false;
     private bool eventFiredOpenWindow = false;
-    private List<Collider> enemiesHitInThisAttack;
+    private HashSet<GameObject> enemiesHitInThisAttack;
 
     private void Start()
     {
         defaultAttackSpeed = attackAnimationSpeed; // Salva a velocidade customizada do Inspector (como a da Adaga) antes de qualquer troca
-        enemiesHitInThisAttack = new List<Collider>();
+        enemiesHitInThisAttack = new HashSet<GameObject>();
         EquipDefaultWeapon();
         hasWeapon = true;
         isAttacking = false;
@@ -382,6 +382,8 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void RegisterHit(Collider enemyCollider)
     {
+        if (!isHitboxActive) return;
+
         // Busca DummyHealth ou ShardSwarmHealth: primeiro no próprio collider, depois no pai
         DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>()
                          ?? enemyCollider.GetComponentInParent<DummyHealth>();
@@ -391,15 +393,11 @@ public class PrimaryAttackKnife : MonoBehaviour
 
         if (enemy == null && swarmEnemy == null) return;
 
-        // Anti-hit-duplo: usa o Collider do objeto raiz de vida
-        Collider rootCollider;
-        if (enemy != null)
-            rootCollider = enemy.GetComponent<Collider>() ?? enemyCollider;
-        else
-            rootCollider = swarmEnemy.GetComponent<Collider>() ?? enemyCollider;
+        // Anti-hit-duplo: usa o GameObject de vida do inimigo para garantir 1 hit único por golpe
+        GameObject targetGO = enemy != null ? enemy.gameObject : swarmEnemy.gameObject;
 
-        if (enemiesHitInThisAttack.Contains(rootCollider)) return;
-        enemiesHitInThisAttack.Add(rootCollider);
+        if (enemiesHitInThisAttack.Contains(targetGO)) return;
+        enemiesHitInThisAttack.Add(targetGO);
 
         if (comboStep > 0 && comboStep <= currentDamages.Length)
         {
@@ -425,6 +423,8 @@ public class PrimaryAttackKnife : MonoBehaviour
                     isCritical = true;
                 }
             }
+
+            Debug.Log($"🗡️ [KNIFE DIAGNOSTIC] base={baseDamage} | attrMult={(playerAttributes != null ? playerAttributes.baseDamageMultiplier : 1)} | healthMult={(playerHealth != null ? playerHealth.damageMultiplier : 1)} | critMult={(isCritical ? playerAttributes.critMultiplier : 1)} => finalDamage={finalDamage}");
 
             // Aplica dano no componente correto
             if (enemy != null)

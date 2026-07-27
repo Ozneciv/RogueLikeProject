@@ -160,6 +160,12 @@ public class BossController : MonoBehaviour
     {
         UpdateAnimationState();
 
+        // Se o boss estiver em Idle e receber dano (sem passar pelo gatilho), inicia o combate automaticamente
+        if (CurrentState == BossState.Idle && health != null && health.CurrentHealth < health.maxHealth)
+        {
+            StartFight();
+        }
+
         if (CurrentState == BossState.Idle || CurrentState == BossState.Dead) return;
 
         // Monitora HP para transições de fase e eventos

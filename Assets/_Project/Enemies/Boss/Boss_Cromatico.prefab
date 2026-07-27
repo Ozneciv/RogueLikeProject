@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 6831200880444395433}
   - component: {fileID: 1185927364958233710}
   - component: {fileID: 2397048516129404881}
+  - component: {fileID: 7466956431892369033}
   m_Layer: 0
   m_Name: Boss_Cromatico
   m_TagString: Boss
@@ -79,7 +80,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
-  maxHealth: 500
+  isSlowed: 0
+  maxHealth: 1500
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
@@ -206,6 +208,68 @@ MeshRenderer:
   m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3623146103869598672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 202263891992115952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d724f2fbcc9123a49bc51a1fa35f3f9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase1_MestreDoSolo
+  pilarPrefab: {fileID: 4472762181640442788, guid: ab9ff4047c87ac74ba656648e4ec1fa8, type: 3}
+  espinhoPrefab: {fileID: 2988646942043275965, guid: b7140d41c98fbac4086c980884f274ed, type: 3}
+  offsetAlturaFinal: -3
+  tempoEntreAtaques: 1
+  raioDaPrisao: 2
+  profundidadeSpawn: 4
+  tempoEmergindo: 0.5
+  distanciaRecuo: 20
+  tempoVidaPrisao: 6
+--- !u!114 &3724460904401237682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 202263891992115952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74faec359655c445aeae7fb755382b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3Modifiers
+  speedMultiplier: 1.4
+  attackCooldownMultiplier: 0.5
+  showDebugLog: 1
+--- !u!114 &6831200880444395433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 202263891992115952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 292c5e3549394fc48ac38cd94cc35c83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3AcidPuddles
+  acidPuddlePrefab: {fileID: 0}
+  bossController: {fileID: 4966253884742131004}
+  spawnIntervalMin: 3
+  spawnIntervalMax: 6
+  slamCooldownBase: 8
+  slamTelegraphDuration: 1.2
+  maxSimultaneousPuddles: 6
+  showDebugLog: 1
 --- !u!136 &1185927364958233710
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -239,24 +303,19 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 1.2
-  m_Height: 3
-  m_Slope: 45
-  m_StepOffset: 0.7
-  m_SkinWidth: 0.1
   m_Speed: 3.5
-  m_AngularSpeed: 120
   m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
   m_StoppingDistance: 2
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_HeightMesh: 0
-  m_Priority: 50
+  m_Height: 3
   m_BaseOffset: 0
-  m_AvoidancePriority: 50
+  m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
-  m_Quality: 0
---- !u!114 &3623146103869598672
+--- !u!114 &7466956431892369033
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -265,52 +324,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 202263891992115952}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d724f2fbcc9123a49bc51a1fa35f3f9a, type: 3}
+  m_Script: {fileID: 11500000, guid: 99e8ac2f808c5044f98aea6aa5da6818, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossPhase1_MestreDoSolo
-  pilarPrefab: {fileID: 4472762181640442788, guid: ab9ff4047c87ac74ba656648e4ec1fa8, type: 3}
-  espinhoPrefab: {fileID: 2988646942043275965, guid: b7140d41c98fbac4086c980884f274ed, type: 3}
-  cristalusPrefab: {fileID: 5390169502761059047, guid: ac128f3903b4ea142b3ab43e791ce0f2, type: 3}
-  offsetAlturaFinal: -3
-  tempoEntreAtaques: 1
-  raioDaPrisao: 2
-  profundidadeSpawn: 4
-  tempoEmergindo: 0.5
-  tempoVidaPrisao: 6
-  distanciaRecuo: 20
---- !u!114 &3724460904401237682
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c74faec359655c445aeae7fb755382b9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3Modifiers
-  speedMultiplier: 1.4
-  attackCooldownMultiplier: 0.5
---- !u!114 &6831200880444395433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 292c5e3549394fc48ac38cd94cc35c83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3AcidPuddles
-  acidPuddlePrefab: {fileID: 0}
-  bossController: {fileID: 4966253884742131004}
-  spawnIntervalMin: 3
-  spawnIntervalMax: 6
-  slamCooldownBase: 8
-  slamTelegraphDuration: 1.2
-  maxSimultaneousPuddles: 6
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhase2_Refraction
+  maxRefractionUses: 3
+  refractionDuration: 4
+  fadeOutTime: 0.6
+  fadeInTime: 0.9
+  minOpacity: 0.05
+  repositionDistance: 8
+  repositionSpeed: 10
+  refractionGlowColor: {r: 0.5, g: 0.8, b: 1, a: 0.3}
+  shimmerIntensity: 0.15
+  shimmerSpeed: 8
+  refractionThresholds:
+  - 0.7
+  - 0.52
+  - 0.35
   showDebugLog: 1
 --- !u!1001 &5023829095492737172
 PrefabInstance:
