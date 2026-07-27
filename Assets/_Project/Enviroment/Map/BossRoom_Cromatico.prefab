@@ -417,6 +417,10 @@ PrefabInstance:
       propertyPath: arenaSeal
       value: 
       objectReference: {fileID: 9024326483547692222}
+    - target: {fileID: 6161191072006833528, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
+      propertyPath: spawnIndicatorPrefab
+      value: 
+      objectReference: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
     - target: {fileID: 7782896255564550542, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
