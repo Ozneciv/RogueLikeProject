@@ -71,6 +71,30 @@ public class EssencePickup : MonoBehaviour
             playerTransform = player.transform;
         }
 
+        // Força a cor amarelada/dourada no material, luz e trail do pickup (substitui rosa)
+        Color yellowColor = new Color(1.00f, 0.85f, 0.10f, 1.00f);
+        Renderer rend = GetComponentInChildren<Renderer>();
+        if (rend != null && rend.material != null)
+        {
+            rend.material.color = yellowColor;
+            if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", yellowColor);
+            if (rend.material.HasProperty("_Color")) rend.material.SetColor("_Color", yellowColor);
+            if (rend.material.HasProperty("_EmissionColor")) rend.material.SetColor("_EmissionColor", yellowColor * 2.5f);
+        }
+
+        Light l = GetComponentInChildren<Light>();
+        if (l != null)
+        {
+            l.color = yellowColor;
+        }
+
+        TrailRenderer tr = GetComponentInChildren<TrailRenderer>();
+        if (tr != null)
+        {
+            tr.startColor = new Color(1.00f, 0.90f, 0.20f, 1.00f);
+            tr.endColor = new Color(1.00f, 0.70f, 0.00f, 0.00f);
+        }
+
         if (lifetime > 0)
         {
             Destroy(gameObject, lifetime);
