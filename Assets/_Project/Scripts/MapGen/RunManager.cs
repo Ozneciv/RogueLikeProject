@@ -105,6 +105,8 @@ public class RunManager : MonoBehaviour
 
         Debug.Log($"[RunManager] 🆕 Nova run iniciada. Sala 1 | Round {currentLevel}.");
         UpdateEndlessUI();
+
+        RunStatsManager.Instance?.StartRunTracking(isEndlessMode);
     }
 
     [Header("Modo Endless")]

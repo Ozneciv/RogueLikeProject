@@ -22,6 +22,8 @@ public class PlayerEssence : MonoBehaviour
         currentEssence += amount;
         totalEssenceCollected += amount;
 
+        RunStatsManager.Instance?.RecordEssenceCollected(amount);
+
         Debug.Log("[PLAYER ESSENCE] +" + amount + " | Total: " + currentEssence);
 
         onEssenceCollected?.Invoke(amount);
@@ -36,6 +38,7 @@ public class PlayerEssence : MonoBehaviour
         if (currentEssence >= amount)
         {
             currentEssence -= amount;
+            RunStatsManager.Instance?.RecordEssenceSpent(amount);
             Debug.Log("[PLAYER ESSENCE] -" + amount + " | Restante: " + currentEssence);
             onEssenceChanged?.Invoke(currentEssence);
             return true;

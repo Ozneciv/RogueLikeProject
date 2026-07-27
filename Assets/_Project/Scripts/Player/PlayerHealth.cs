@@ -231,6 +231,22 @@ public class PlayerHealth : MonoBehaviour
             if (Random.value > 0.5f) { diedFallingForward = true; playerAnimator.SetTrigger("DeathForward"); }
             else { diedFallingForward = false; playerAnimator.SetTrigger("DeathBackward"); }
         }
+
+        // Rastreamento da morte & Exibição da Tela de Game Over ("VOCÊ MORREU")
+        if (RunStatsManager.Instance != null)
+        {
+            string stageStr = RunManager.instance != null
+                ? $"Nível {RunManager.instance.currentLevel} — Sala {RunManager.instance.currentRoomNumber}"
+                : "Desconhecido";
+            if (RunManager.instance != null && RunManager.instance.isEndlessMode)
+            {
+                stageStr += " (Endless)";
+            }
+            RunStatsManager.Instance.deathStage = stageStr;
+            RunStatsManager.Instance.StopRunTracking();
+        }
+        
+        DeathScreenUI.Instance?.ShowDeathScreen();
         StartCoroutine(RespawnSequence());
     }
 
@@ -709,6 +725,7 @@ public class PlayerHealth : MonoBehaviour
             if (finalDamage > 0)
             {
                 currentHealth -= finalDamage;
+                RunStatsManager.Instance?.RecordDamageTaken(finalDamage);
                 UpdateHealthBar();
                 
                 Debug.Log($"❤️ Dano recebido: {finalDamage} | Health: {currentHealth}/{maxHealth} | Armor: {currentArmor}/{maxArmor}");

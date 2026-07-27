@@ -178,6 +178,7 @@ public class DummyHealth : MonoBehaviour
         if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
 
         CurrentHealth -= damage;
+        RunStatsManager.Instance?.RecordDamageDealt(damage);
 
         UpdateHealthBar();
         ShowHealthBar();
@@ -238,6 +239,8 @@ public class DummyHealth : MonoBehaviour
 
     private void Die()
     {
+        RunStatsManager.Instance?.RecordEnemyKilled();
+
         // Se um override foi definido (ex: Geobionte usa fuga ao invés de morte),
         // chama o callback e retorna sem executar a lógica padrão.
         if (onDeathOverride != null)
