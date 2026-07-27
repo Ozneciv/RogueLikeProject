@@ -71,7 +71,7 @@ public class EndlessTimerHUD : MonoBehaviour
         if (shouldShow && timerText != null && RunStatsManager.Instance != null)
         {
             string timeStr = RunStatsManager.Instance.FormatTime(RunStatsManager.Instance.survivalTimer);
-            timerText.text = $"<color=#ffd700>⏱️</color> <color=#ffffff><b>{timeStr}</b></color>";
+            timerText.text = $"<color=#ffaa00><b>ENDLESS</b></color>  <color=#ffffff><b>{timeStr}</b></color>";
         }
     }
 

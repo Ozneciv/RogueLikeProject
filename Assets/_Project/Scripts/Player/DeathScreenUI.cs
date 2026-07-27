@@ -14,7 +14,6 @@ public class DeathScreenUI : MonoBehaviour
     public GameObject deathPanel;
     public TextMeshProUGUI txtTitle;
     public TextMeshProUGUI txtStatsSummary;
-    public Button btnRestart;
     public Button btnReturnBase;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -47,12 +46,6 @@ public class DeathScreenUI : MonoBehaviour
             deathPanel.SetActive(false);
         }
 
-        if (btnRestart != null)
-        {
-            btnRestart.onClick.RemoveAllListeners();
-            btnRestart.onClick.AddListener(OnRestartClicked);
-        }
-
         if (btnReturnBase != null)
         {
             btnReturnBase.onClick.RemoveAllListeners();
@@ -74,7 +67,7 @@ public class DeathScreenUI : MonoBehaviour
 
         if (txtTitle != null)
         {
-            txtTitle.text = "<color=#ff2233><b>VOCÊ MORREU</b></color>";
+            txtTitle.text = "<size=46><color=#ff2233><b>VOCÊ MORREU</b></color></size>\n<size=16><color=#ffaa44><i>RESUMO DA RUN</i></color></size>";
         }
 
         if (txtStatsSummary != null && RunStatsManager.Instance != null)
@@ -85,35 +78,16 @@ public class DeathScreenUI : MonoBehaviour
             string dmgTakenStr = s.FormatNumber(s.totalDamageTaken);
 
             txtStatsSummary.text =
-                $"<size=22><color=#ffd700><b>✦ ESTATÍSTICAS DA SUA RUN ✦</b></color></size>\n\n" +
-                $"<color=#88ccff>⏱️ <b>Tempo Sobrevivido:</b></color> <color=#ffffff>{timeStr}</color>\n" +
-                $"<color=#ffaa44>⚔️ <b>Dano Total Causado:</b></color> <color=#ffffff>{dmgDealtStr}</color>\n" +
-                $"<color=#ff4455>💀 <b>Inimigos Derrotados:</b></color> <color=#ffffff>{s.totalMobsKilled}</color>\n" +
-                $"<color=#00ff99>💎 <b>Essências Coletadas:</b></color> <color=#ffffff>{s.totalEssenceCollected}</color>\n" +
-                $"<color=#ffcc00>🪙 <b>Essências Gastas:</b></color> <color=#ffffff>{s.totalEssenceSpent}</color>\n" +
-                $"<color=#ff6666>🩸 <b>Dano Recebido:</b></color> <color=#ffffff>{dmgTakenStr}</color>\n" +
-                $"<color=#cc88ff>💀 <b>Local da Morte:</b></color> <color=#ffffff>{s.deathStage}</color>";
+                $"<color=#ffcc00><b>TEMPO SOBREVIDO:</b></color>  <color=#ffffff>{timeStr}</color>\n\n" +
+                $"<color=#ffaa44><b>DANO TOTAL CAUSADO:</b></color>  <color=#ffffff>{dmgDealtStr}</color>\n\n" +
+                $"<color=#ff4455><b>INIMIGOS DERROTADOS:</b></color>  <color=#ffffff>{s.totalMobsKilled}</color>\n\n" +
+                $"<color=#00ff99><b>ESSÊNCIAS COLETADAS:</b></color>  <color=#ffffff>{s.totalEssenceCollected}</color>\n\n" +
+                $"<color=#ffcc00><b>ESSÊNCIAS GASTAS:</b></color>  <color=#ffffff>{s.totalEssenceSpent}</color>\n\n" +
+                $"<color=#ff6666><b>DANO RECEBIDO:</b></color>  <color=#ffffff>{dmgTakenStr}</color>\n\n" +
+                $"<color=#cc88ff><b>LOCAL DA MORTE:</b></color>  <color=#ffffff>{s.deathStage}</color>";
         }
 
-        Time.timeScale = 0f; // Pausa o tempo do jogo enquanto a tela de morte está ativa
-    }
-
-    private void OnRestartClicked()
-    {
-        Time.timeScale = 1f;
-        if (RunStatsManager.Instance != null)
-        {
-            RunStatsManager.Instance.ResetStats();
-        }
-        if (RunManager.instance != null)
-        {
-            RunManager.instance.StartNewRun();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
-        else
-        {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
+        Time.timeScale = 0f; // Pausa a partida durante o resumo da morte
     }
 
     private void OnReturnBaseClicked()
@@ -142,6 +116,12 @@ public class DeathScreenUI : MonoBehaviour
 
             if (parentCanvas != null)
             {
+                // Garante GraphicRaycaster no Canvas para receber os cliques
+                if (parentCanvas.GetComponent<GraphicRaycaster>() == null)
+                {
+                    parentCanvas.gameObject.AddComponent<GraphicRaycaster>();
+                }
+
                 GameObject panelGo = new GameObject("DeathScreenPanel");
                 panelGo.transform.SetParent(parentCanvas.transform, false);
 
@@ -152,37 +132,54 @@ public class DeathScreenUI : MonoBehaviour
                 panelRt.offsetMax = Vector2.zero;
 
                 Image bg = panelGo.AddComponent<Image>();
-                bg.color = new Color(0.02f, 0.02f, 0.04f, 0.92f); // Fundo escuro fosco
+                bg.color = new Color(0.03f, 0.03f, 0.06f, 0.95f); // Fundo escuro fosco
+
+                // Card Container Central
+                GameObject cardGo = new GameObject("DeathCard");
+                cardGo.transform.SetParent(panelGo.transform, false);
+
+                RectTransform cardRt = cardGo.AddComponent<RectTransform>();
+                cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+                cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+                cardRt.pivot = new Vector2(0.5f, 0.5f);
+                cardRt.anchoredPosition = Vector2.zero;
+                cardRt.sizeDelta = new Vector2(560f, 620f);
+
+                Image cardBg = cardGo.AddComponent<Image>();
+                cardBg.color = new Color(0.06f, 0.06f, 0.10f, 0.92f);
+
+                Shadow cardShadow = cardGo.AddComponent<Shadow>();
+                cardShadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+                cardShadow.effectDistance = new Vector2(5f, -5f);
 
                 // Título
                 GameObject titleGo = new GameObject("txtTitle");
-                titleGo.transform.SetParent(panelGo.transform, false);
+                titleGo.transform.SetParent(cardGo.transform, false);
                 RectTransform titleRt = titleGo.AddComponent<RectTransform>();
-                titleRt.anchorMin = new Vector2(0.1f, 0.80f);
-                titleRt.anchorMax = new Vector2(0.9f, 0.95f);
+                titleRt.anchorMin = new Vector2(0.05f, 0.82f);
+                titleRt.anchorMax = new Vector2(0.95f, 0.96f);
+                titleRt.offsetMin = Vector2.zero;
+                titleRt.offsetMax = Vector2.zero;
                 txtTitle = titleGo.AddComponent<TextMeshProUGUI>();
-                txtTitle.fontSize = 42f;
-                txtTitle.fontStyle = FontStyles.Bold;
                 txtTitle.alignment = TextAlignmentOptions.Center;
 
                 // Resumo de Stats
                 GameObject statsGo = new GameObject("txtStatsSummary");
-                statsGo.transform.SetParent(panelGo.transform, false);
+                statsGo.transform.SetParent(cardGo.transform, false);
                 RectTransform statsRt = statsGo.AddComponent<RectTransform>();
-                statsRt.anchorMin = new Vector2(0.15f, 0.25f);
-                statsRt.anchorMax = new Vector2(0.85f, 0.78f);
+                statsRt.anchorMin = new Vector2(0.08f, 0.18f);
+                statsRt.anchorMax = new Vector2(0.92f, 0.80f);
+                statsRt.offsetMin = Vector2.zero;
+                statsRt.offsetMax = Vector2.zero;
                 txtStatsSummary = statsGo.AddComponent<TextMeshProUGUI>();
-                txtStatsSummary.fontSize = 20f;
-                txtStatsSummary.lineSpacing = 12f;
+                txtStatsSummary.fontSize = 17f;
                 txtStatsSummary.alignment = TextAlignmentOptions.Center;
 
-                // Botão Reiniciar
-                GameObject btnRestGo = CreateButton(panelGo.transform, "btnRestart", "🔄 REINICIAR RUN", new Vector2(-120f, -220f));
-                btnRestart = btnRestGo.GetComponent<Button>();
-
-                // Botão Voltar Base
-                GameObject btnBaseGo = CreateButton(panelGo.transform, "btnReturnBase", "🏰 VOLTAR À BASE", new Vector2(120f, -220f));
+                // ÚNICO BOTÃO: Voltar à Base
+                GameObject btnBaseGo = CreateButton(cardGo.transform, "btnReturnBase", "VOLTAR À BASE", new Vector2(0f, -240f));
                 btnReturnBase = btnBaseGo.GetComponent<Button>();
+                btnReturnBase.onClick.RemoveAllListeners();
+                btnReturnBase.onClick.AddListener(OnReturnBaseClicked);
 
                 deathPanel = panelGo;
             }
@@ -199,23 +196,24 @@ public class DeathScreenUI : MonoBehaviour
         rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = pos;
-        rt.sizeDelta = new Vector2(210f, 50f);
+        rt.sizeDelta = new Vector2(240f, 50f);
 
         Image bg = btnGo.AddComponent<Image>();
-        bg.color = new Color(0.15f, 0.15f, 0.22f, 1f);
+        bg.color = new Color(0.20f, 0.20f, 0.28f, 1f);
 
         Button b = btnGo.AddComponent<Button>();
+        b.interactable = true;
 
         GameObject txtGo = new GameObject("Text");
         txtGo.transform.SetParent(btnGo.transform, false);
         RectTransform txtRt = txtGo.AddComponent<RectTransform>();
         txtRt.anchorMin = Vector2.zero;
         txtRt.anchorMax = Vector2.one;
+        txtRt.offsetMin = Vector2.zero;
+        txtRt.offsetMax = Vector2.zero;
 
         TextMeshProUGUI txt = txtGo.AddComponent<TextMeshProUGUI>();
-        txt.text = $"<b>{label}</b>";
-        txt.fontSize = 18f;
-        txt.color = Color.white;
+        txt.text = $"<size=18><color=#ffffff><b>{label}</b></color></size>";
         txt.alignment = TextAlignmentOptions.Center;
 
         return btnGo;

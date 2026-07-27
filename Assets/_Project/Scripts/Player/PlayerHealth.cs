@@ -232,21 +232,6 @@ public class PlayerHealth : MonoBehaviour
             else { diedFallingForward = false; playerAnimator.SetTrigger("DeathBackward"); }
         }
 
-        // Rastreamento da morte & Exibição da Tela de Game Over ("VOCÊ MORREU")
-        if (RunStatsManager.Instance != null)
-        {
-            string stageStr = RunManager.instance != null
-                ? $"Nível {RunManager.instance.currentLevel} — Sala {RunManager.instance.currentRoomNumber}"
-                : "Desconhecido";
-            if (RunManager.instance != null && RunManager.instance.isEndlessMode)
-            {
-                stageStr += " (Endless)";
-            }
-            RunStatsManager.Instance.deathStage = stageStr;
-            RunStatsManager.Instance.StopRunTracking();
-        }
-        
-        DeathScreenUI.Instance?.ShowDeathScreen();
         StartCoroutine(RespawnSequence());
     }
 
@@ -282,11 +267,27 @@ public class PlayerHealth : MonoBehaviour
 
     IEnumerator RespawnSequence()
     {
+        // 1. Aguarda a animação de morte completa do player caindo (2.0 segundos)
         yield return new WaitForSeconds(2.0f);
-        if (screenFader != null) yield return StartCoroutine(screenFader.FadeOut());
-        
-        if (GameManager.instance != null) GameManager.instance.ReturnToBase();
-        else SceneManager.LoadScene("Base");
+
+        // 2. Rastreamento do local da morte & Exibição da Tela de Morte ("VOCÊ MORREU")
+        if (RunStatsManager.Instance != null)
+        {
+            string stageStr = RunManager.instance != null
+                ? $"Nível {RunManager.instance.currentLevel} — Sala {RunManager.instance.currentRoomNumber}"
+                : "Desconhecido";
+            if (RunManager.instance != null && RunManager.instance.isEndlessMode)
+            {
+                stageStr += " (Endless)";
+            }
+            RunStatsManager.Instance.deathStage = stageStr;
+            RunStatsManager.Instance.StopRunTracking();
+        }
+
+        if (DeathScreenUI.Instance != null)
+        {
+            DeathScreenUI.Instance.ShowDeathScreen();
+        }
     }
 
     public void HandleReviveCompletion() { UnlockPlayer(); }
