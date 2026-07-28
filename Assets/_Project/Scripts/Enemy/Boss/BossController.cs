@@ -154,6 +154,8 @@ public class BossController : MonoBehaviour
 
         // Começa em Idle — espera o BossCombatTrigger chamar StartFight()
         CurrentState = BossState.Idle;
+
+        //StartFight();
     }
 
     void Update()

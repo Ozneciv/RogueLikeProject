@@ -436,7 +436,7 @@ public class MerchantUIController : MonoBehaviour
         if (descTxt != null) descTxt.gameObject.SetActive(false);
         if (costTxt != null) costTxt.gameObject.SetActive(false);
     }
-    }
+    
 
     void SetupRightSideText()
     {

@@ -1208,11 +1208,12 @@ MonoBehaviour:
   dropInflationAlpha: 0.05
   spawnPointsBase: 10
   spawnPointsGrowth: 0.9
-  totalLevels: 4
+  totalLevels: 1
   roomsPerLevel: 050000000700000009000000
   currentLevel: 1
   geobionteDefeatCount: 0
   geobionteAbsorbedThisLevel: 0
+  forceBossNextRun: 0
   isEndlessMode: 0
 --- !u!1 &1077161793
 GameObject:
@@ -1859,6 +1860,9 @@ MonoBehaviour:
   panelColor: {r: 0.23, g: 0.28, b: 0.7, a: 0.5}
   borderColor: {r: 0.52, g: 0.45, b: 0.15, a: 0.5}
   borderThickness: 20
+  eptinhoNormalSprite: {fileID: 0}
+  eptinhoTensoSprite: {fileID: 0}
+  eptinhoMedoSprite: {fileID: 0}
   portraitSize: 192
   portraitMarginLeft: 0
   portraitMarginRight: 70
