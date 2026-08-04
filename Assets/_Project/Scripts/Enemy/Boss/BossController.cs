@@ -253,10 +253,8 @@ public class BossController : MonoBehaviour
         if (CurrentState == BossState.Dead || CurrentState == BossState.Idle) return;
         if (CurrentState == BossState.Stunned) return; // Não empilha stun
 
-        float stunTime = 3.0f; // Duração padrão do stun (pode ser ajustada)
-
         if (stunCoroutine != null) StopCoroutine(stunCoroutine);
-        stunCoroutine = StartCoroutine(StunRoutine(stunTime));
+        stunCoroutine = StartCoroutine(StunRoutine(duration));
     }
 
     /// <summary>
@@ -279,12 +277,13 @@ public class BossController : MonoBehaviour
     {
         if (health.CurrentHealth == lastCheckedHP) return;
 
+        int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;
         float hpPercent = HealthPercent;
 
-        if (health.CurrentHealth < lastCheckedHP)
+        if (health.CurrentHealth < previousHP)
         {
-            OnTookDamage?.Invoke(); 
+            OnTookDamage?.Invoke();
         }
 
         // Notifica mudança de HP

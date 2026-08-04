@@ -1,24 +1,28 @@
 using UnityEngine;
+using UnityEngine.AI;
 using System.Collections;
 
 /// <summary>
-/// Fase 3 do Boss Cromático — Sistema de Poças Ácidas.
+/// Fase 3 do Boss Cromático — Moveset da Floresta Tóxica.
 ///
 /// RESPONSABILIDADES:
 ///   • Spawn aleatório de poças ácidas sob o jogador em intervalos randomizados
-///   • Acid Slam: ataque terrestre que telegrafeia e spawna poça no ponto de impacto
+///   • Acid Spit: o boss cospe um projétil ácido pela boca em direção ao jogador
 ///   • Controla o limite máximo de poças simultâneas na arena
 ///   • Usa AttackCooldownMultiplier do BossPhase3Modifiers automaticamente (se presente)
 ///
 /// SETUP NO UNITY:
 ///   1. Adicione este componente no mesmo GameObject do BossController
-///   2. Crie um Prefab: GameObject vazio → CapsuleCollider (isTrigger=true) + AcidPuddle.cs
+///   2. Crie um Prefab de poça: GameObject vazio → CapsuleCollider (isTrigger=true) + AcidPuddle.cs
 ///   3. Arraste o prefab no campo "acidPuddlePrefab"
-///   4. BossController é encontrado automaticamente (ou arraste manualmente)
+///   4. (Cuspida) Reutilize o projétil já existente: crie um Prefab com Rigidbody + Collider (isTrigger)
+///      + CrystalSpikeProjectile.cs (dê a ele um visual/material ácido) e arraste em "acidSpitProjectilePrefab"
+///   5. BossController é encontrado automaticamente (ou arraste manualmente)
 ///
 /// DEPENDÊNCIAS:
-///   • BossPhase3Modifiers (opcional, no mesmo GameObject) — aplica -50% ao cooldown do slam
+///   • BossPhase3Modifiers (opcional, no mesmo GameObject) — aplica -50% ao cooldown dos ataques
 ///   • AcidPuddle.cs — script do prefab da poça
+///   • CrystalSpikeProjectile.cs — projétil já existente, reutilizado pela cuspida de ácido
 /// </summary>
 public class BossPhase3AcidPuddles : MonoBehaviour
 {
@@ -40,14 +44,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
     [Tooltip("Intervalo máximo (segundos) entre spawns aleatórios de poças ácidas.")]
     public float spawnIntervalMax = 6f;
 
-    [Header("Acid Slam — Ataque Terrestre")]
-    [Tooltip("Cooldown base em segundos entre Acid Slams.\n" +
-             "Se BossPhase3Modifiers estiver presente, é multiplicado por attackCooldownMultiplier (0.5).")]
-    public float slamCooldownBase = 8f;
-
-    [Tooltip("Duração da telegrafagem do slam (boss para e sinaliza o ataque antes de impactar).")]
-    public float slamTelegraphDuration = 1.2f;
-
     [Header("Limite de Poças na Arena")]
     [Tooltip("Máximo de poças ácidas simultâneas. Novos spawns são bloqueados ao atingir o limite.")]
     [Range(1, 20)]
@@ -63,7 +59,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
     private Transform playerTransform;
     private BossPhase3Modifiers phase3Modifiers;
     private Coroutine randomSpawnCoroutine;
-    private Coroutine slamCoroutine;
     private bool phase3Active = false;
 
     // =====================================================
@@ -123,7 +118,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
             Debug.LogWarning("[Phase3AcidPuddles] ⚠️ Player não encontrado pela tag 'Player'!");
 
         randomSpawnCoroutine = StartCoroutine(RandomPuddleSpawnRoutine());
-        slamCoroutine        = StartCoroutine(AcidSlamRoutine());
 
         if (showDebugLog)
             Debug.Log("[Phase3AcidPuddles] 🧪 Sistema de poças ácidas ativado!");
@@ -137,12 +131,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
         {
             StopCoroutine(randomSpawnCoroutine);
             randomSpawnCoroutine = null;
-        }
-
-        if (slamCoroutine != null)
-        {
-            StopCoroutine(slamCoroutine);
-            slamCoroutine = null;
         }
     }
 
@@ -164,44 +152,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
             if (IsBossPaused()) continue;
 
             SpawnPuddleAt(GetPlayerPosition());
-        }
-    }
-
-    // =====================================================
-    // ACID SLAM — ATAQUE TERRESTRE
-    // =====================================================
-
-    private IEnumerator AcidSlamRoutine()
-    {
-        // Beat inicial diferente do spawn aleatório para não sobrepor
-        float initialDelay = GetEffectiveSlamCooldown() * 0.6f;
-        yield return new WaitForSeconds(initialDelay);
-
-        while (phase3Active)
-        {
-            yield return new WaitForSeconds(GetEffectiveSlamCooldown());
-
-            if (!phase3Active) yield break;
-            if (IsBossPaused()) continue;
-
-            // ── Fase de Telegrafagem ──────────────────────────────────────────
-            // Captura a posição do player no início do telegraph
-            Vector3 targetPosition = GetPlayerPosition();
-
-            if (showDebugLog)
-                Debug.Log("[Phase3AcidPuddles] 💢 Acid Slam — Telegrafando...");
-
-            // Opcional: conectar animação aqui via bossController.animator.SetTrigger(...)
-            yield return new WaitForSeconds(slamTelegraphDuration);
-
-            // ── Impacto ───────────────────────────────────────────────────────
-            if (!phase3Active) yield break;
-            if (bossController != null && bossController.IsDead) yield break;
-
-            SpawnPuddleAt(targetPosition);
-
-            if (showDebugLog)
-                Debug.Log($"[Phase3AcidPuddles] 💥 Acid Slam impactou em {targetPosition}");
         }
     }
 
@@ -238,12 +188,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
     {
         if (bossController == null) return false;
         return bossController.IsStunned || bossController.IsDead;
-    }
-
-    private float GetEffectiveSlamCooldown()
-    {
-        float multiplier = (phase3Modifiers != null) ? phase3Modifiers.AttackCooldownMultiplier : 1f;
-        return slamCooldownBase * multiplier;
     }
 
     private Vector3 GetPlayerPosition()
