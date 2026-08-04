@@ -260,16 +260,9 @@ public class PlayerHealth : MonoBehaviour
             MerchantUIController.Instance.ResetPactState();
         }
 
-        // Zera a essência coletada durante a run ao morrer (essência de run é perdida na morte)
-        PlayerEssence essenceComp = GetComponent<PlayerEssence>() ?? GetComponentInChildren<PlayerEssence>();
-        if (essenceComp != null)
-        {
-            essenceComp.ResetEssenceOnDeath();
-        }
-
         FullHeal();
 
-        Debug.Log("[PLAYER HEALTH] Todos os atributos de run, infusões, essência e maldições foram resetados após a morte.");
+        Debug.Log("[PLAYER HEALTH] Todos os atributos de run, infusões e maldições foram resetados após a morte.");
     }
 
     IEnumerator RespawnSequence()
