@@ -147,19 +147,6 @@ public class BossPhase2_Refraction : MonoBehaviour
 
     void Update()
     {
-        // ── SAFETY: Detecta refração presa (coroutine morreu silenciosamente) ──
-        if (isRefracting || (bossController != null && bossController.IsInvisible))
-        {
-            float maxRefractionTime = refractionDuration + fadeOutTime + fadeInTime + 5f;
-            if (refractionStartTime > 0f && Time.time - refractionStartTime > maxRefractionTime)
-            {
-                if (showDebugLog)
-                    Debug.LogWarning($"[BossPhase2] ⚠️ SAFETY: Refração presa por {Time.time - refractionStartTime:F1}s! Forçando CancelRefraction().");
-                CancelRefraction();
-                return;
-            }
-        }
-
         if (!isPhase2Active || isRefracting) return;
         if (bossController.IsDead || bossController.IsStunned) return;
 
@@ -278,6 +265,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (health != null) health.isInvulnerable = false;
         RestoreOriginalMaterials();
         SetMaterialsTransparent(false);
+        SetRenderersVisibility(true);
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
@@ -289,6 +277,9 @@ public class BossPhase2_Refraction : MonoBehaviour
         // Restaura a barra de vida que é escondida durante a refração
         if (health != null && health.healthBarSlider != null)
             health.healthBarSlider.gameObject.SetActive(true);
+
+        if (showDebugLog)
+            Debug.Log($"[BossPhase2] 👁️ Invisibilidade REVELADA por dano do player! Usos restantes: {refractionUsesRemaining}");
     }
 
     IEnumerator RefractionRoutine()
@@ -299,102 +290,43 @@ public class BossPhase2_Refraction : MonoBehaviour
         // Notifica o BossController e sistema de eventos
         bossController.SetRefraction(true);
 
-        // Libera o NavMeshAgent para andar por aí imediatamente
-        originalAgentSpeed = agent != null ? agent.speed : 5f;
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
-            agent.isStopped = false;
-            if (repositionSpeed > 0f) agent.speed = repositionSpeed;
-            if (playerTransform != null) agent.SetDestination(playerTransform.position);
-        }
+        // Desativa a visibilidade dos renderers IMEDIATAMENTE no frame 0 para garantir 100% de invisibilidade
+        SetRenderersVisibility(false);
 
-        // ── 1. Fade Out → Invisível ──────────────────────────────
-        yield return StartCoroutine(FadeRenderers(1f, minOpacity, fadeOutTime));
-
-        // ── 2. Permite tomar dano (não fica invulnerável) e esconde barra de vida ───
+        // Esconde a barra de vida (para forçar rastreamento)
         if (health != null) health.isInvulnerable = false;
 
         if (health != null && health.healthBarSlider != null)
             health.healthBarSlider.gameObject.SetActive(false);
 
-        // Calcula um ponto inicial de reposicionamento ao redor do player
-        yield return StartCoroutine(RepositionRoutine());
+        if (showDebugLog)
+            Debug.Log("[BossPhase2] 👻 Boss ficou TOTALMENTE INVISÍVEL! Rastreie o Boss e ataque para revelá-lo.");
 
-        // ── 4. Espera a duração da refração enquanto flanqueia/anda ao redor do player com shimmer ─────────
-        float currentAngle = UnityEngine.Random.Range(45f, 315f);
-        Vector3 flankTarget = GetFlankPointAroundPlayer(currentAngle);
-        float angleChangeTimer = 0f;
-
-        float waitTimer = 0f;
-        while (waitTimer < refractionDuration)
+        // ── Permanece invisível por tempo indeterminado ─────────
+        while (isRefracting)
         {
-            waitTimer += Time.deltaTime;
-            angleChangeTimer += Time.deltaTime;
-
-            ApplyShimmerEffect();
-
-            // A cada 1.0s ou ao se aproximar do ponto, avança o ângulo para orbitar ao redor do player
-            if (angleChangeTimer >= 1.0f || (playerTransform != null && Vector3.Distance(transform.position, flankTarget) < 2.5f))
-            {
-                angleChangeTimer = 0f;
-                currentAngle += UnityEngine.Random.Range(45f, 90f);
-                flankTarget = GetFlankPointAroundPlayer(currentAngle);
-            }
-
-            // Move em direção ao ponto de flanqueamento (orbitando ao redor do player à distância)
-            if (playerTransform != null)
-            {
-                if (agent != null && agent.enabled && agent.isOnNavMesh)
-                {
-                    agent.isStopped = false;
-                    agent.SetDestination(flankTarget);
-                }
-                else
-                {
-                    float speed = repositionSpeed > 0f ? repositionSpeed : 5f;
-                    Vector3 target = flankTarget;
-                    target.y = transform.position.y;
-                    if (Vector3.Distance(transform.position, target) > 0.5f)
-                    {
-                        transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
-                        Vector3 lookDir = target - transform.position;
-                        if (lookDir.sqrMagnitude > 0.01f)
-                            transform.rotation = Quaternion.LookRotation(lookDir);
-                    }
-                }
-            }
-
             yield return null;
         }
+    }
 
-        // Restaura velocidade original
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+    private void SetRenderersVisibility(bool visible)
+    {
+        if (renderers == null || renderers.Length == 0)
+            renderers = GetComponentsInChildren<Renderer>(true);
+
+        foreach (Renderer rend in renderers)
         {
-            agent.speed = originalAgentSpeed;
+            if (rend != null)
+            {
+                // Se for o MeshRenderer (esfera primitiva de placeholder) no GameObject raiz do Boss, mantém desativado
+                if (rend.gameObject == gameObject && rend is MeshRenderer)
+                {
+                    rend.enabled = false;
+                    continue;
+                }
+                rend.enabled = visible;
+            }
         }
-
-        // ── 5. Fade In → Visível ────────────────────────────────
-        yield return StartCoroutine(FadeRenderers(minOpacity, 1f, fadeInTime));
-
-        // ── 6. Remove invulnerabilidade ─────────────────────────
-        if (health != null) health.isInvulnerable = false;
-
-        RestoreOriginalMaterials();
-        bossController.SetRefraction(false);
-
-        // Restaura a barra de vida
-        if (health != null && health.healthBarSlider != null)
-            health.healthBarSlider.gameObject.SetActive(true);
-
-        // Reativa o NavMeshAgent para o modo normal
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-            agent.isStopped = false;
-
-        isRefracting = false;
-        refractionCoroutine = null;
-
-        if (showDebugLog)
-            Debug.Log($"[BossPhase2] 👁️ Refração ENCERRADA. Usos restantes: {refractionUsesRemaining}");
     }
 
     IEnumerator RepositionRoutine()

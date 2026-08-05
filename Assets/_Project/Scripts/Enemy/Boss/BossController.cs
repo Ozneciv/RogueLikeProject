@@ -265,18 +265,35 @@ public class BossController : MonoBehaviour
 
     private void HandleToxicBloodDrip()
     {
-        if (!IsInvisible || toxicBloodPrefab == null) return;
+        if (!IsInvisible) return;
 
-        // Ponto de spawn: usa footSpawnPoint se atribuído; caso contrário, usa a posição do pé/base do boss
-        Vector3 spawnPos = footSpawnPoint != null ? footSpawnPoint.position : transform.position;
+        if (toxicBloodPrefab == null)
+        {
+            if (showDebugLog && Time.frameCount % 180 == 0)
+                Debug.LogWarning("[BossController] ⚠️ ToxicBloodPrefab não está atribuído no Inspector!");
+            return;
+        }
 
-        // Dripa sangue a cada intervalo, independente de estar se movendo ou não
+        // Ponto de origem: usa footSpawnPoint se atribuído; projeta raycast para o chão
+        Vector3 origin = footSpawnPoint != null ? footSpawnPoint.position : transform.position + Vector3.up * 1f;
+        Vector3 spawnPos = origin;
+
+        // Projeta um Raycast para baixo para colar a poça de sangue perfeitamente na superfície do piso
+        if (Physics.Raycast(origin + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 5.0f))
+        {
+            spawnPos = hit.point + Vector3.up * 0.02f;
+        }
+        else
+        {
+            spawnPos.y = transform.position.y + 0.02f;
+        }
+
+        // Dripa sangue a cada intervalo
         toxicBloodTimer -= Time.deltaTime;
         if (toxicBloodTimer <= 0f)
         {
             toxicBloodTimer = (toxicBloodInterval > 0f) ? toxicBloodInterval : 0.35f;
 
-            // Instancia no pé do boss com rotação aleatória e escala dinâmica
             Quaternion randomRot = Quaternion.Euler(90f, UnityEngine.Random.Range(0f, 360f), 0f);
             GameObject bloodDrop = Instantiate(toxicBloodPrefab, spawnPos, randomRot);
             
@@ -435,8 +452,8 @@ public class BossController : MonoBehaviour
 
     private void HandleCombatUpdate()
     {
-        // Durante invisibilidade, o BossPhase2_Refraction controla o movimento (flanqueamento)
-        if (isAttacking || OverrideMovement || IsInvisible) return;
+        // Durante o ataque ou override de movimento, ignora atualização normal
+        if (isAttacking || OverrideMovement) return;
 
         if (playerTransform == null)
             playerTransform = FindPlayerTransform();
@@ -510,7 +527,9 @@ public class BossController : MonoBehaviour
     private IEnumerator PerformMeleeAttack()
     {
         isAttacking = true;
-        float cooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
+        float baseCooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
+        // Enquanto invisível, reduz o cooldown em 40% para atacar com maior frequência
+        float cooldown = IsInvisible ? (baseCooldown * 0.6f) : baseCooldown;
         meleeTimer = cooldown;
 
         // Wind-up (telegrafagem)
@@ -531,7 +550,8 @@ public class BossController : MonoBehaviour
             Debug.LogWarning("[BossController] ⚠️ Componente Animator não encontrado no Boss!");
         }
 
-        yield return new WaitForSeconds(0.4f);
+        float windUp = IsInvisible ? 0.2f : 0.4f;
+        yield return new WaitForSeconds(windUp);
 
         // Verifica hit
         float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
