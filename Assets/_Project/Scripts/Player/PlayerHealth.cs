@@ -60,7 +60,7 @@ public class PlayerHealth : MonoBehaviour
     private float stunImmunityTimer = 0f;
     private float stunImmunityDuration = 2f; // Imunidade após stun
 
-    private bool isDead = false;
+    public bool isDead { get; private set; } = false;
     private int playerLayer;
     private bool diedFallingForward = false;
     private float sentinelLegCooldownEndTime = 0f;

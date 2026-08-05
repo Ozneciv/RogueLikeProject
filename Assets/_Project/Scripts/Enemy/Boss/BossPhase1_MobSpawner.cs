@@ -1,0 +1,505 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
+
+/// <summary>
+/// Controlador de spawn de mobs durante a Fase 1 do Boss Cromático.
+///
+/// TRIGGERS DE SPAWN:
+///   1. Pós-Prisão: Chamado pelo BossPhase1_MestreDoSolo após cada ataque de prisão
+///   2. Threshold de HP: Waves fixas em 95% e 85% HP
+///   3. Contra-Ataque: Quando o player acerta X hits seguidos no boss
+///
+/// REGRAS:
+///   • Máximo de mobs simultâneos (configurável via BossPhaseConfig)
+///   • Cooldown global entre waves
+///   • Mobs spawnam nas bordas da arena via NavMesh
+///   • Todos os mobs morrem automaticamente ao sair da Fase 1
+///
+/// SETUP NO UNITY:
+///   1. Adicione este componente no mesmo GameObject do Boss (junto do BossController)
+///   2. Arraste os prefabs de mobs nos campos do Inspector
+///   3. Os parâmetros numéricos vêm do BossPhaseConfig (ScriptableObject)
+/// </summary>
+[RequireComponent(typeof(BossController))]
+public class BossPhase1_MobSpawner : MonoBehaviour
+{
+    // =====================================================
+    // TIPOS DE WAVE
+    // =====================================================
+
+    public enum WaveType
+    {
+        PostPrison_Pillar,  // Após prisão de pilares → Goblins rápidos
+        PostPrison_Spike,   // Após prisão de espinhos → Spiders + SharpBlur
+        Threshold_First,    // HP ≤ 95% → Totem
+        Threshold_Second,   // HP ≤ 85% → Spiders + Cristalus
+        CounterAttack       // Punição por agressividade → ShardSwarm
+    }
+
+    // =====================================================
+    // INSPECTOR — PREFABS
+    // =====================================================
+
+    [Header("Prefabs de Mobs")]
+    [Tooltip("Prefab do Goblin (mob leve e rápido).")]
+    public GameObject goblinPrefab;
+
+    [Tooltip("Prefab da Spider (mob leve com animação procedural).")]
+    public GameObject spiderPrefab;
+
+    [Tooltip("Prefab do SharpBlur (mob rápido).")]
+    public GameObject sharpBlurPrefab;
+
+    [Tooltip("Prefab do Totem (spawna caveiras HomingHazard).")]
+    public GameObject totemPrefab;
+
+    [Tooltip("Prefab do Cristalus (mob cristalino).")]
+    public GameObject cristalusPrefab;
+
+    [Tooltip("Prefab do ShardSwarm (enxame de fragmentos).")]
+    public GameObject shardSwarmPrefab;
+
+    [Header("Configurações de Spawn Visual")]
+    [Tooltip("Prefab do indicador visual (opcional). Usado para telegrafar o nascimento, igual nas salas normais.")]
+    public GameObject spawnIndicatorPrefab;
+
+    [Tooltip("Tempo de espera do indicador antes do mob começar a emergir (segundos).")]
+    public float spawnIndicatorDelay = 1f;
+
+    [Tooltip("Quão fundo no chão os mobs começam antes de emergir.")]
+    public float spawnDepth = 3f;
+
+    [Tooltip("Tempo que os mobs levam para emergir do chão (segundos).")]
+    public float emergeTime = 0.6f;
+
+    [Header("Toggles de Triggers")]
+    [Tooltip("Habilita spawn de mobs após ataques de prisão.")]
+    public bool enablePostPrisonSpawn = true;
+
+    [Tooltip("Habilita spawn de mobs em thresholds de HP.")]
+    public bool enableThresholdSpawn = true;
+
+    [Tooltip("Habilita spawn de mobs como contra-ataque.")]
+    public bool enableCounterAttackSpawn = true;
+
+    // =====================================================
+    // ESTADO INTERNO
+    // =====================================================
+
+    private BossController bossController;
+    private BossPhaseConfig config;
+    private Transform playerTransform;
+
+    // Mobs vivos spawnados por este script
+    private List<GameObject> activeMobs = new List<GameObject>();
+
+    // Cooldown global
+    private float lastSpawnTime = -999f;
+
+    // Contagem de hits para contra-ataque
+    private int hitCounter = 0;
+
+    // Controle de thresholds (para não disparar 2x)
+    private bool firstThresholdTriggered = false;
+    private bool secondThresholdTriggered = false;
+
+    // Estado da fase
+    private bool phase1Active = false;
+
+    // =====================================================
+    // UNITY LIFECYCLE
+    // =====================================================
+
+    private void Awake()
+    {
+        bossController = GetComponent<BossController>();
+        config = bossController.phaseConfig;
+    }
+
+    private void OnEnable()
+    {
+        BossEvents.OnPhaseChanged += OnPhaseChanged;
+        BossEvents.OnBossFightStarted += OnFightStarted;
+        BossEvents.OnBossHealthChanged += OnHealthChanged;
+        bossController.OnTookDamage += OnBossTookDamage;
+    }
+
+    private void OnDisable()
+    {
+        BossEvents.OnPhaseChanged -= OnPhaseChanged;
+        BossEvents.OnBossFightStarted -= OnFightStarted;
+        BossEvents.OnBossHealthChanged -= OnHealthChanged;
+        bossController.OnTookDamage -= OnBossTookDamage;
+    }
+
+    private void Update()
+    {
+        // Limpa referências nulas (mobs que morreram pelo jogador)
+        if (phase1Active)
+        {
+            activeMobs.RemoveAll(mob => mob == null);
+        }
+    }
+
+    // =====================================================
+    // EVENTOS
+    // =====================================================
+
+    private void OnFightStarted()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null) playerTransform = player.transform;
+    }
+
+    private void OnPhaseChanged(int newPhase)
+    {
+        if (newPhase == 1)
+        {
+            phase1Active = true;
+            hitCounter = 0;
+            firstThresholdTriggered = false;
+            secondThresholdTriggered = false;
+            Debug.Log("[MobSpawner] Fase 1 ativada — pronto para spawnar mobs.");
+        }
+        else
+        {
+            // Saiu da Fase 1 — limpar todos os mobs
+            if (phase1Active)
+            {
+                phase1Active = false;
+                KillAllMobs();
+                Debug.Log("[MobSpawner] Fase 1 encerrada — todos os mobs eliminados.");
+            }
+        }
+    }
+
+    private void OnHealthChanged(float healthPercent)
+    {
+        if (!phase1Active || !enableThresholdSpawn) return;
+
+        float firstThreshold = config != null ? config.phase1FirstWaveThreshold : 0.95f;
+        float secondThreshold = config != null ? config.phase1SecondWaveThreshold : 0.85f;
+
+        // Threshold 1: Totem
+        if (!firstThresholdTriggered && healthPercent <= firstThreshold)
+        {
+            firstThresholdTriggered = true;
+            Debug.Log($"[MobSpawner] HP ≤ {firstThreshold:P0} — Spawning Totem!");
+            SpawnWave(WaveType.Threshold_First);
+        }
+
+        // Threshold 2: Spiders + Cristalus
+        if (!secondThresholdTriggered && healthPercent <= secondThreshold)
+        {
+            secondThresholdTriggered = true;
+            Debug.Log($"[MobSpawner] HP ≤ {secondThreshold:P0} — Spawning pressão extra!");
+            SpawnWave(WaveType.Threshold_Second);
+        }
+    }
+
+    private void OnBossTookDamage()
+    {
+        if (!phase1Active || !enableCounterAttackSpawn) return;
+
+        hitCounter++;
+        int threshold = config != null ? config.phase1HitCounterThreshold : 4;
+
+        if (hitCounter >= threshold)
+        {
+            hitCounter = 0;
+            Debug.Log("[MobSpawner] Contra-Ataque! Player acertou muitos hits seguidos.");
+            SpawnWave(WaveType.CounterAttack);
+        }
+    }
+
+    // =====================================================
+    // API PÚBLICA — Chamada pelo BossPhase1_MestreDoSolo
+    // =====================================================
+
+    /// <summary>
+    /// Spawna uma wave de mobs baseada no tipo.
+    /// Chamado pelo BossPhase1_MestreDoSolo após cada ataque de prisão,
+    /// ou internamente pelos triggers de HP/contra-ataque.
+    /// Respeita cooldown global e limite máximo de mobs.
+    /// </summary>
+    public void SpawnWave(WaveType waveType)
+    {
+        // Verifica se a fase está ativa
+        if (!phase1Active) return;
+
+        // Verifica cooldown global
+        float cooldown = config != null ? config.phase1SpawnCooldown : 8f;
+        if (Time.time - lastSpawnTime < cooldown)
+        {
+            Debug.Log($"[MobSpawner] Wave {waveType} bloqueada pelo cooldown ({cooldown}s).");
+            return;
+        }
+
+        // Limpa nulos antes de verificar limite
+        activeMobs.RemoveAll(mob => mob == null);
+
+        // Verifica limite de mobs
+        int maxMobs = config != null ? config.phase1MaxMobs : 5;
+        if (activeMobs.Count >= maxMobs)
+        {
+            Debug.Log($"[MobSpawner] Wave {waveType} bloqueada — limite de {maxMobs} mobs atingido ({activeMobs.Count} vivos).");
+            return;
+        }
+
+        // Calcula quantos mobs ainda cabem
+        int slotsAvailable = maxMobs - activeMobs.Count;
+
+        // Monta a lista de prefabs para spawnar baseado no tipo de wave
+        List<GameObject> prefabsToSpawn = GetWaveComposition(waveType, slotsAvailable);
+
+        if (prefabsToSpawn.Count == 0)
+        {
+            Debug.LogWarning($"[MobSpawner] Wave {waveType} — nenhum prefab configurado ou slots insuficientes.");
+            return;
+        }
+
+        // Marca o tempo de spawn
+        lastSpawnTime = Time.time;
+
+        // Spawna os mobs
+        StartCoroutine(SpawnMobsCoroutine(prefabsToSpawn));
+
+        Debug.Log($"[MobSpawner] Wave {waveType} — spawnando {prefabsToSpawn.Count} mobs!");
+    }
+
+    // =====================================================
+    // COMPOSIÇÃO DAS WAVES
+    // =====================================================
+
+    private List<GameObject> GetWaveComposition(WaveType waveType, int maxSlots)
+    {
+        List<GameObject> result = new List<GameObject>();
+
+        switch (waveType)
+        {
+            case WaveType.PostPrison_Pillar:
+                // 2-3 Goblins (mobs rápidos para pressionar durante a prisão)
+                AddPrefabs(result, goblinPrefab, Mathf.Min(Random.Range(2, 4), maxSlots));
+                break;
+
+            case WaveType.PostPrison_Spike:
+                // 1-2 Spiders + 1 SharpBlur
+                int spiderCount = Mathf.Min(Random.Range(1, 3), maxSlots);
+                AddPrefabs(result, spiderPrefab, spiderCount);
+                if (result.Count < maxSlots)
+                    AddPrefabs(result, sharpBlurPrefab, 1);
+                break;
+
+            case WaveType.Threshold_First:
+                // 1 Totem (objetivo secundário que spawna caveiras)
+                AddPrefabs(result, totemPrefab, Mathf.Min(1, maxSlots));
+                break;
+
+            case WaveType.Threshold_Second:
+                // 2 Spiders + 1 Cristalus (wave mais forte perto da transição)
+                AddPrefabs(result, spiderPrefab, Mathf.Min(2, maxSlots));
+                if (result.Count < maxSlots)
+                    AddPrefabs(result, cristalusPrefab, 1);
+                break;
+
+            case WaveType.CounterAttack:
+                // 3-4 ShardSwarm fragments (punição rápida e caótica)
+                AddPrefabs(result, shardSwarmPrefab, Mathf.Min(Random.Range(3, 5), maxSlots));
+                break;
+        }
+
+        return result;
+    }
+
+    private void AddPrefabs(List<GameObject> list, GameObject prefab, int count)
+    {
+        if (prefab == null) return;
+        for (int i = 0; i < count; i++)
+        {
+            list.Add(prefab);
+        }
+    }
+
+    // =====================================================
+    // SPAWN COM EFEITO VISUAL (EMERGE DO CHÃO)
+    // =====================================================
+
+    private IEnumerator SpawnMobsCoroutine(List<GameObject> prefabs)
+    {
+        float radius = config != null ? config.phase1SpawnRadius : 15f;
+        Vector3 arenaCenter = transform.position; // Centro da arena = posição do boss (pode ser ajustado)
+
+        List<SpawnedMobData> spawnedMobs = new List<SpawnedMobData>();
+
+        for (int i = 0; i < prefabs.Count; i++)
+        {
+            // Calcula posição na borda da arena (distribuída igualmente)
+            float angle = (i * Mathf.PI * 2f / prefabs.Count) + Random.Range(-0.3f, 0.3f);
+            Vector3 targetPos = arenaCenter + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
+
+            // Garante que a posição esteja no NavMesh
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(targetPos, out hit, 10f, NavMesh.AllAreas))
+            {
+                targetPos = hit.position;
+            }
+
+            spawnedMobs.Add(new SpawnedMobData
+            {
+                mobObject = null, // Será preenchido após o delay
+                startPos = targetPos + Vector3.down * spawnDepth,
+                targetPos = targetPos,
+                agent = null
+            });
+        }
+
+        // 1. Cria os indicadores visuais se configurado
+        List<GameObject> indicators = new List<GameObject>();
+        if (spawnIndicatorPrefab != null)
+        {
+            foreach (var data in spawnedMobs)
+            {
+                Vector3 indicatorPos = new Vector3(data.targetPos.x, data.targetPos.y + 0.05f, data.targetPos.z);
+                GameObject indicator = Instantiate(spawnIndicatorPrefab, indicatorPos, Quaternion.identity);
+                indicators.Add(indicator);
+            }
+
+            // 2. Espera o tempo de telegrafagem
+            yield return new WaitForSeconds(spawnIndicatorDelay);
+
+            // Limpa os indicadores
+            foreach (var ind in indicators)
+            {
+                if (ind != null) Destroy(ind);
+            }
+        }
+
+        // 3. Instancia os mobs no subsolo e prepara para emergir
+        for (int i = 0; i < prefabs.Count; i++)
+        {
+            var data = spawnedMobs[i];
+            
+            // Instancia o mob no subsolo
+            GameObject mob = Instantiate(prefabs[i], data.startPos, Quaternion.identity);
+
+            // Desativa o NavMeshAgent temporariamente para não interferir na animação
+            NavMeshAgent mobAgent = mob.GetComponent<NavMeshAgent>();
+            if (mobAgent != null) mobAgent.enabled = false;
+
+            activeMobs.Add(mob);
+            
+            // Atualiza os dados estruturados
+            data.mobObject = mob;
+            data.agent = mobAgent;
+            spawnedMobs[i] = data; // Struct requer reatribuição na lista
+        }
+
+        // 4. Animação de emergir do chão
+        float elapsed = 0f;
+        while (elapsed < emergeTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / emergeTime);
+            // Ease-out para efeito dramático (sobe rápido, freia no final)
+            float curve = Mathf.Sin(t * Mathf.PI * 0.5f);
+
+            foreach (var data in spawnedMobs)
+            {
+                if (data.mobObject != null)
+                {
+                    data.mobObject.transform.position = Vector3.Lerp(data.startPos, data.targetPos, curve);
+                }
+            }
+
+            yield return null;
+        }
+
+        // Reativa o NavMeshAgent de cada mob após emergir
+        foreach (var data in spawnedMobs)
+        {
+            if (data.mobObject != null && data.agent != null)
+            {
+                // Garante posição final exata antes de religar o agent
+                data.mobObject.transform.position = data.targetPos;
+                data.agent.enabled = true;
+
+                // Faz o mob olhar pro player se possível
+                if (playerTransform != null)
+                {
+                    Vector3 lookDir = (playerTransform.position - data.mobObject.transform.position).normalized;
+                    lookDir.y = 0;
+                    if (lookDir != Vector3.zero)
+                        data.mobObject.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+            }
+        }
+    }
+
+    // Struct auxiliar para guardar dados de cada mob durante o spawn
+    private struct SpawnedMobData
+    {
+        public GameObject mobObject;
+        public Vector3 startPos;
+        public Vector3 targetPos;
+        public NavMeshAgent agent;
+    }
+
+    // =====================================================
+    // LIMPEZA (TRANSIÇÃO DE FASE)
+    // =====================================================
+
+    /// <summary>
+    /// Mata todos os mobs spawnados por este script.
+    /// Chamado automaticamente quando sai da Fase 1.
+    /// </summary>
+    private void KillAllMobs()
+    {
+        foreach (GameObject mob in activeMobs)
+        {
+            if (mob != null)
+            {
+                // Tenta matar via DummyHealth para respeitar drops e efeitos de morte
+                DummyHealth mobHealth = mob.GetComponent<DummyHealth>();
+                if (mobHealth != null)
+                {
+                    mobHealth.isInvulnerable = false;
+                    mobHealth.TakeDamage(999999);
+                }
+                else
+                {
+                    // Tenta ShardSwarmHealth como fallback
+                    ShardSwarmHealth swarmHealth = mob.GetComponent<ShardSwarmHealth>();
+                    if (swarmHealth != null)
+                    {
+                        swarmHealth.isInvulnerable = false;
+                        swarmHealth.SetHealth(0);
+                    }
+                    else
+                    {
+                        // Último recurso: destrói diretamente
+                        Destroy(mob);
+                    }
+                }
+            }
+        }
+
+        activeMobs.Clear();
+        hitCounter = 0;
+    }
+
+    // =====================================================
+    // UTILIDADES
+    // =====================================================
+
+    /// <summary>
+    /// Retorna quantos mobs spawnados por este script estão vivos.
+    /// Útil para debug ou UI.
+    /// </summary>
+    public int GetAliveMobCount()
+    {
+        activeMobs.RemoveAll(mob => mob == null);
+        return activeMobs.Count;
+    }
+}
