@@ -85,6 +85,7 @@ public class BossPhase2_Refraction : MonoBehaviour
     private bool isRefracting = false;
     private bool isPhase2Active = false;
     private Coroutine refractionCoroutine;
+    private float originalAgentSpeed = -1f;
 
     // ── Cache para restaurar materiais ──────────────────────────
     private struct MaterialData
@@ -115,6 +116,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         BossEvents.OnPhaseChanged += OnPhaseChanged;
         BossEvents.OnBossFightStarted += OnFightStarted;
         BossEvents.OnBossDefeated += OnBossDefeated;
+        if (bossController != null) bossController.OnTookDamage += OnTookDamage;
     }
 
     void OnDisable()
@@ -122,6 +124,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         BossEvents.OnPhaseChanged -= OnPhaseChanged;
         BossEvents.OnBossFightStarted -= OnFightStarted;
         BossEvents.OnBossDefeated -= OnBossDefeated;
+        if (bossController != null) bossController.OnTookDamage -= OnTookDamage;
     }
 
     void Start()
@@ -223,6 +226,17 @@ public class BossPhase2_Refraction : MonoBehaviour
             Debug.Log($"[BossPhase2] 👁️ Refração ATIVADA! (uso {useNumber}/{maxRefractionUses}, HP: {bossController.HealthPercent * 100:F0}%)");
     }
 
+    private void OnTookDamage()
+    {
+        if (isRefracting)
+        {
+            if (showDebugLog)
+                Debug.Log("[BossPhase2] 💥 Boss foi atingido durante a invisibilidade! Invisibilidade CANCELADA/REVELADA!");
+
+            CancelRefraction();
+        }
+    }
+
     void CancelRefraction()
     {
         if (refractionCoroutine != null)
@@ -238,7 +252,11 @@ public class BossPhase2_Refraction : MonoBehaviour
         SetMaterialsTransparent(false);
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
             agent.isStopped = false;
+            if (originalAgentSpeed > 0f)
+                agent.speed = originalAgentSpeed;
+        }
 
         // Restaura a barra de vida que é escondida durante a refração
         if (health != null && health.healthBarSlider != null)
@@ -252,30 +270,78 @@ public class BossPhase2_Refraction : MonoBehaviour
         // Notifica o BossController e sistema de eventos
         bossController.SetRefraction(true);
 
-        // Para o NavMeshAgent durante o fade out
+        // Libera o NavMeshAgent para andar por aí imediatamente
+        originalAgentSpeed = agent != null ? agent.speed : 5f;
         if (agent != null && agent.enabled && agent.isOnNavMesh)
-            agent.isStopped = true;
+        {
+            agent.isStopped = false;
+            if (repositionSpeed > 0f) agent.speed = repositionSpeed;
+            if (playerTransform != null) agent.SetDestination(playerTransform.position);
+        }
 
         // ── 1. Fade Out → Invisível ──────────────────────────────
         yield return StartCoroutine(FadeRenderers(1f, minOpacity, fadeOutTime));
 
-        // ── 2. Ativa invulnerabilidade ──────────────────────────
-        if (health != null) health.isInvulnerable = true;
+        // ── 2. Permite tomar dano (não fica invulnerável) e esconde barra de vida ───
+        if (health != null) health.isInvulnerable = false;
 
-        // Esconde a barra de vida durante refração
         if (health != null && health.healthBarSlider != null)
             health.healthBarSlider.gameObject.SetActive(false);
 
-        // ── 3. Reposiciona (flanqueia o player) ─────────────────
+        // Calcula um ponto inicial de reposicionamento ao redor do player
         yield return StartCoroutine(RepositionRoutine());
 
-        // ── 4. Espera a duração da refração com shimmer ─────────
+        // ── 4. Espera a duração da refração enquanto flanqueia/anda ao redor do player com shimmer ─────────
+        float currentAngle = UnityEngine.Random.Range(45f, 315f);
+        Vector3 flankTarget = GetFlankPointAroundPlayer(currentAngle);
+        float angleChangeTimer = 0f;
+
         float waitTimer = 0f;
         while (waitTimer < refractionDuration)
         {
             waitTimer += Time.deltaTime;
+            angleChangeTimer += Time.deltaTime;
+
             ApplyShimmerEffect();
+
+            // A cada 1.0s ou ao se aproximar do ponto, avança o ângulo para orbitar ao redor do player
+            if (angleChangeTimer >= 1.0f || (playerTransform != null && Vector3.Distance(transform.position, flankTarget) < 2.5f))
+            {
+                angleChangeTimer = 0f;
+                currentAngle += UnityEngine.Random.Range(45f, 90f);
+                flankTarget = GetFlankPointAroundPlayer(currentAngle);
+            }
+
+            // Move em direção ao ponto de flanqueamento (orbitando ao redor do player à distância)
+            if (playerTransform != null)
+            {
+                if (agent != null && agent.enabled && agent.isOnNavMesh)
+                {
+                    agent.isStopped = false;
+                    agent.SetDestination(flankTarget);
+                }
+                else
+                {
+                    float speed = repositionSpeed > 0f ? repositionSpeed : 5f;
+                    Vector3 target = flankTarget;
+                    target.y = transform.position.y;
+                    if (Vector3.Distance(transform.position, target) > 0.5f)
+                    {
+                        transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
+                        Vector3 lookDir = target - transform.position;
+                        if (lookDir.sqrMagnitude > 0.01f)
+                            transform.rotation = Quaternion.LookRotation(lookDir);
+                    }
+                }
+            }
+
             yield return null;
+        }
+
+        // Restaura velocidade original
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.speed = originalAgentSpeed;
         }
 
         // ── 5. Fade In → Visível ────────────────────────────────
@@ -291,7 +357,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (health != null && health.healthBarSlider != null)
             health.healthBarSlider.gameObject.SetActive(true);
 
-        // Reativa o NavMeshAgent
+        // Reativa o NavMeshAgent para o modo normal
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = false;
 
@@ -310,24 +376,20 @@ public class BossPhase2_Refraction : MonoBehaviour
         Vector3 dirFromPlayer = Quaternion.Euler(0, randomAngle, 0) * playerTransform.forward;
         Vector3 targetPos = playerTransform.position + dirFromPlayer * repositionDistance;
 
-        // Valida a posição no NavMesh
-        if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, repositionDistance, NavMesh.AllAreas))
+        // Valida a posição no NavMesh com raio de busca seguro
+        if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 3.0f, NavMesh.AllAreas))
         {
             targetPos = navHit.position;
         }
 
-        // Teleporta o Boss via Warp — mantém o NavMeshAgent ativo e ancorado ao NavMesh
+        // Em vez de Warp brusco (que pode fazer clipar no chão), navega até o ponto
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            agent.isStopped = true;
-            agent.Warp(targetPos);
-        }
-        else
-        {
-            transform.position = targetPos;
+            agent.isStopped = false;
+            agent.SetDestination(targetPos);
         }
 
-        // Pequeno delay para o shimmer visual durante o reposicionamento
+        // Pequeno delay para o shimmer visual no início do reposicionamento
         float shimmerDelay = 0.3f;
         float elapsed = 0f;
         while (elapsed < shimmerDelay)
@@ -336,15 +398,21 @@ public class BossPhase2_Refraction : MonoBehaviour
             ApplyShimmerEffect();
             yield return null;
         }
+    }
 
-        // Olha para o player
-        if (playerTransform != null)
+    private Vector3 GetFlankPointAroundPlayer(float angleDegrees)
+    {
+        if (playerTransform == null) return transform.position;
+
+        float dist = repositionDistance > 0f ? repositionDistance : 7f;
+        Vector3 offset = Quaternion.Euler(0, angleDegrees, 0) * Vector3.forward * dist;
+        Vector3 targetPos = playerTransform.position + offset;
+
+        if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 4.0f, NavMesh.AllAreas))
         {
-            Vector3 lookDir = (playerTransform.position - transform.position);
-            lookDir.y = 0;
-            if (lookDir.sqrMagnitude > 0.1f)
-                transform.rotation = Quaternion.LookRotation(lookDir);
+            return navHit.position;
         }
+        return targetPos;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -459,7 +527,7 @@ public class BossPhase2_Refraction : MonoBehaviour
                 data.material.renderQueue = 3000;
                 data.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 data.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                data.material.SetInt("_ZWrite", 0);
+                data.material.SetInt("_ZWrite", 1);
                 data.material.EnableKeyword("_ALPHABLEND_ON");
                 data.material.DisableKeyword("_ALPHATEST_ON");
                 data.material.DisableKeyword("_ALPHAPREMULTIPLY_ON");

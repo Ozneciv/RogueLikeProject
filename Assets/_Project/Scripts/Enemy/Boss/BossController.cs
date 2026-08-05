@@ -160,23 +160,51 @@ public class BossController : MonoBehaviour
         // Configura o override de morte do DummyHealth para redirecionar para nossa lógica
         health.onDeathOverride = OnBossDeath;
 
-        // Encontra o player
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-            playerTransform = player.transform;
+        // Encontra o player com múltiplos fallbacks
+        playerTransform = FindPlayerTransform();
 
-        // Começa em Idle — espera o BossCombatTrigger chamar StartFight()
+        // Começa em Idle — espera o BossCombatTrigger ou auto-start em cenas de teste
         CurrentState = BossState.Idle;
+    }
+
+    private Transform FindPlayerTransform()
+    {
+        if (playerTransform != null && playerTransform.gameObject.activeInHierarchy)
+            return playerTransform;
+
+        // 1. Tenta por Tag "Player"
+        GameObject p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null) return p.transform;
+
+        // 2. Tenta por Componente PlayerHealth
+        PlayerHealth ph = FindObjectOfType<PlayerHealth>();
+        if (ph != null) return ph.transform;
+
+        // 3. Tenta qualquer GameObject cujo nome contenha "player"
+        GameObject[] all = FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in all)
+        {
+            if (obj.name.ToLower().Contains("player"))
+                return obj.transform;
+        }
+
+        return null;
     }
 
     void Update()
     {
         UpdateAnimationState();
 
-        // Se o boss estiver em Idle e receber dano (sem passar pelo gatilho), inicia o combate automaticamente
-        if (CurrentState == BossState.Idle && health != null && health.CurrentHealth < health.maxHealth)
+        if (playerTransform == null)
+            playerTransform = FindPlayerTransform();
+
+        // Se o boss estiver em Idle, auto-inicia o combate se o player existir na cena
+        if (CurrentState == BossState.Idle)
         {
-            StartFight();
+            if (playerTransform != null || (health != null && health.CurrentHealth < health.maxHealth))
+            {
+                StartFight();
+            }
         }
 
         if (CurrentState == BossState.Idle || CurrentState == BossState.Dead) return;
@@ -229,21 +257,43 @@ public class BossController : MonoBehaviour
         animator.SetBool("IsWalking", isMoving);
     }
 
+    private Vector3 lastDripPosition;
+
     private void HandleToxicBloodDrip()
     {
-        if (!IsInvisible || toxicBloodPrefab == null || footSpawnPoint == null) return;
+        if (!IsInvisible || toxicBloodPrefab == null) return;
 
-        // Só pinga se o boss estiver se movendo
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
-        if (agent.velocity.magnitude <= 0.15f) return;
+        // Ponto de spawn: usa footSpawnPoint se atribuído; caso contrário, usa a posição do pé/base do boss
+        Vector3 spawnPos = footSpawnPoint != null ? footSpawnPoint.position : transform.position;
+
+        // Detecta se o boss está se movendo (via velocity do agent ou por delta de posição)
+        bool isMoving = false;
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            isMoving = agent.velocity.magnitude > 0.15f;
+        }
+        else
+        {
+            isMoving = Vector3.Distance(transform.position, lastDripPosition) > 0.03f;
+        }
+        lastDripPosition = transform.position;
+
+        if (!isMoving) return;
 
         toxicBloodTimer -= Time.deltaTime;
         if (toxicBloodTimer <= 0f)
         {
-            toxicBloodTimer = toxicBloodInterval;
+            toxicBloodTimer = (toxicBloodInterval > 0f) ? toxicBloodInterval : 0.35f;
 
-            // Instancia no pé do boss, respeitando a rotação original do prefab
-            Instantiate(toxicBloodPrefab, footSpawnPoint.position, toxicBloodPrefab.transform.rotation);
+            // Instancia no pé do boss com rotação aleatória e escala dinâmica
+            Quaternion randomRot = Quaternion.Euler(90f, UnityEngine.Random.Range(0f, 360f), 0f);
+            GameObject bloodDrop = Instantiate(toxicBloodPrefab, spawnPos, randomRot);
+            
+            float scaleMult = UnityEngine.Random.Range(0.9f, 1.3f);
+            bloodDrop.transform.localScale = Vector3.Scale(bloodDrop.transform.localScale, new Vector3(scaleMult, scaleMult, 1f));
+
+            if (showDebugLog)
+                Debug.Log($"[BossController] 🩸 Sangue ácido pingou em {spawnPos}");
         }
     }
 
@@ -269,9 +319,15 @@ public class BossController : MonoBehaviour
 
         // Regarante referência ao player
         if (playerTransform == null)
+            playerTransform = FindPlayerTransform();
+
+        // Tenta ancorar no NavMesh se estiver solto
+        if (agent != null && agent.enabled && !agent.isOnNavMesh)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) playerTransform = player.transform;
+            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit hit, 10.0f, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                agent.Warp(hit.position);
+            }
         }
 
         // Libera o NavMeshAgent para se mover
@@ -319,10 +375,12 @@ public class BossController : MonoBehaviour
     {
         if (health.CurrentHealth == lastCheckedHP) return;
 
+        int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;
         float hpPercent = HealthPercent;
 
-        if (health.CurrentHealth < lastCheckedHP)
+        // Dispara evento de dano se o HP diminuiu
+        if (health.CurrentHealth < previousHP)
         {
             OnTookDamage?.Invoke(); 
         }
@@ -370,6 +428,12 @@ public class BossController : MonoBehaviour
                 break;
         }
 
+        // Garante que o agent está despausado ao mudar de fase
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+        }
+
         // Notifica todos os sistemas
         BossEvents.RaisePhaseChanged(newPhase);
     }
@@ -380,18 +444,51 @@ public class BossController : MonoBehaviour
 
     private void HandleCombatUpdate()
     {
-        if (playerTransform == null || isAttacking || OverrideMovement) return;
+        // Durante invisibilidade, o BossPhase2_Refraction controla o movimento (flanqueamento)
+        if (isAttacking || OverrideMovement || IsInvisible) return;
 
+        if (playerTransform == null)
+            playerTransform = FindPlayerTransform();
 
-        if (CurrentPhase != 1) 
+        if (playerTransform == null) return;
+
+        float speed = phaseConfig != null ? phaseConfig.baseSpeed : 3.5f;
+
+        if (agent != null && agent.enabled)
         {
-            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            if (!agent.isOnNavMesh)
             {
+                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit hit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    agent.Warp(hit.position);
+                }
+            }
+
+            if (agent.isOnNavMesh)
+            {
+                agent.isStopped = false;
                 agent.SetDestination(playerTransform.position);
                 
                 float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
                 agent.stoppingDistance = meleeRange * 0.8f;
+                return;
             }
+        }
+
+        // FALLBACK PARA CENAS SEM NAVMESH BAKED (ex: Boss_Test sem NavMesh Surface):
+        // Move o Transform diretamente em direção ao player para nunca ficar parado!
+        Vector3 target = playerTransform.position;
+        target.y = transform.position.y;
+        float distance = Vector3.Distance(transform.position, target);
+
+        float meleeStopRange = phaseConfig != null ? phaseConfig.baseMeleeRange * 0.8f : 3f;
+        if (distance > meleeStopRange)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
+
+            Vector3 lookDir = target - transform.position;
+            if (lookDir.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(lookDir);
         }
     }
     // --------------------
