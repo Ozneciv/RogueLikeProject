@@ -235,9 +235,14 @@ public class BossPhase2_Refraction : MonoBehaviour
         bossController.SetRefraction(false);
         if (health != null) health.isInvulnerable = false;
         RestoreOriginalMaterials();
+        SetMaterialsTransparent(false);
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = false;
+
+        // Restaura a barra de vida que é escondida durante a refração
+        if (health != null && health.healthBarSlider != null)
+            health.healthBarSlider.gameObject.SetActive(true);
     }
 
     IEnumerator RefractionRoutine()
@@ -282,6 +287,10 @@ public class BossPhase2_Refraction : MonoBehaviour
         RestoreOriginalMaterials();
         bossController.SetRefraction(false);
 
+        // Restaura a barra de vida
+        if (health != null && health.healthBarSlider != null)
+            health.healthBarSlider.gameObject.SetActive(true);
+
         // Reativa o NavMeshAgent
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = false;
@@ -307,35 +316,25 @@ public class BossPhase2_Refraction : MonoBehaviour
             targetPos = navHit.position;
         }
 
-        // Desativa o NavMeshAgent temporariamente para mover manualmente
-        bool agentWasEnabled = agent != null && agent.enabled;
-        if (agent != null && agent.enabled)
+        // Teleporta o Boss via Warp — mantém o NavMeshAgent ativo e ancorado ao NavMesh
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            agent.enabled = false;
+            agent.isStopped = true;
+            agent.Warp(targetPos);
+        }
+        else
+        {
+            transform.position = targetPos;
         }
 
-        float maxTime = 2f;
+        // Pequeno delay para o shimmer visual durante o reposicionamento
+        float shimmerDelay = 0.3f;
         float elapsed = 0f;
-        Vector3 startPos = transform.position;
-
-        while (elapsed < maxTime && Vector3.Distance(transform.position, targetPos) > 0.5f)
+        while (elapsed < shimmerDelay)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / maxTime;
-            Vector3 newPos = Vector3.Lerp(startPos, targetPos, Mathf.SmoothStep(0f, 1f, t));
-            transform.position = newPos;
             ApplyShimmerEffect();
             yield return null;
-        }
-
-        transform.position = targetPos;
-
-        // Reativa o NavMeshAgent
-        if (agentWasEnabled && agent != null)
-        {
-            agent.enabled = true;
-            if (agent.isOnNavMesh)
-                agent.isStopped = true;
         }
 
         // Olha para o player

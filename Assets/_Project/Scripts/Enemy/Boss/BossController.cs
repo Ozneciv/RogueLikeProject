@@ -63,6 +63,16 @@ public class BossController : MonoBehaviour
     [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
     public Animator animator;
 
+    [Header("Sangue Ácido (Invisibilidade)")]
+    [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
+    [SerializeField] private GameObject toxicBloodPrefab;
+
+    [Tooltip("Intervalo em segundos entre cada gota de sangue ácido.")]
+    [SerializeField] private float toxicBloodInterval = 1.0f;
+
+    [Tooltip("Transform posicionado no pé do Boss para spawnar o sangue no chão.")]
+    [SerializeField] private Transform footSpawnPoint;
+
     [Header("Debug")]
     public bool showDebugLog = true;
 
@@ -110,6 +120,9 @@ public class BossController : MonoBehaviour
     // Cache do HP anterior para detectar mudanças
     private int lastCheckedHP;
 
+    // Sangue ácido
+    private float toxicBloodTimer = 0f;
+
     // =====================================================
     // UNITY LIFECYCLE
     // =====================================================
@@ -134,7 +147,7 @@ public class BossController : MonoBehaviour
             {
                 agent.speed = phaseConfig.baseSpeed;
                 agent.angularSpeed = phaseConfig.rotationSpeed;
-                agent.enabled = false; // Desativado até a luta começar
+                agent.isStopped = true; // Parado até a luta começar (mantém aderência ao NavMesh)
             }
         }
         else
@@ -187,6 +200,9 @@ public class BossController : MonoBehaviour
                 // Não faz nada — o stun coroutine controla a saída
                 break;
         }
+
+        // Sangue ácido durante invisibilidade
+        HandleToxicBloodDrip();
     }
 
     private void UpdateAnimationState()
@@ -211,6 +227,24 @@ public class BossController : MonoBehaviour
             isMoving = agent.velocity.magnitude > 0.15f;
         }
         animator.SetBool("IsWalking", isMoving);
+    }
+
+    private void HandleToxicBloodDrip()
+    {
+        if (!IsInvisible || toxicBloodPrefab == null || footSpawnPoint == null) return;
+
+        // Só pinga se o boss estiver se movendo
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+        if (agent.velocity.magnitude <= 0.15f) return;
+
+        toxicBloodTimer -= Time.deltaTime;
+        if (toxicBloodTimer <= 0f)
+        {
+            toxicBloodTimer = toxicBloodInterval;
+
+            // Instancia no pé do boss, respeitando a rotação original do prefab
+            Instantiate(toxicBloodPrefab, footSpawnPoint.position, toxicBloodPrefab.transform.rotation);
+        }
     }
 
     void OnDestroy()
@@ -240,8 +274,8 @@ public class BossController : MonoBehaviour
             if (player != null) playerTransform = player.transform;
         }
 
-        // Ativa o NavMeshAgent
-        if (agent != null) agent.enabled = true;
+        // Libera o NavMeshAgent para se mover
+        if (agent != null && agent.isOnNavMesh) agent.isStopped = false;
 
         // Entra na Fase 1
         TransitionToPhase(1);
