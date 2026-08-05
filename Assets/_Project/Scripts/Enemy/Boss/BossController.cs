@@ -266,20 +266,7 @@ public class BossController : MonoBehaviour
         // Ponto de spawn: usa footSpawnPoint se atribuído; caso contrário, usa a posição do pé/base do boss
         Vector3 spawnPos = footSpawnPoint != null ? footSpawnPoint.position : transform.position;
 
-        // Detecta se o boss está se movendo (via velocity do agent ou por delta de posição)
-        bool isMoving = false;
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
-            isMoving = agent.velocity.magnitude > 0.15f;
-        }
-        else
-        {
-            isMoving = Vector3.Distance(transform.position, lastDripPosition) > 0.03f;
-        }
-        lastDripPosition = transform.position;
-
-        if (!isMoving) return;
-
+        // Dripa sangue a cada intervalo, independente de estar se movendo ou não
         toxicBloodTimer -= Time.deltaTime;
         if (toxicBloodTimer <= 0f)
         {

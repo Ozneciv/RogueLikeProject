@@ -86,6 +86,8 @@ public class BossPhase2_Refraction : MonoBehaviour
     private bool isPhase2Active = false;
     private Coroutine refractionCoroutine;
     private float originalAgentSpeed = -1f;
+    private float refractionStartTime = -1f;
+    private float refractionCooldownUntil = -1f; // Após revelação por dano, impede nova refração imediata
 
     // ── Cache para restaurar materiais ──────────────────────────
     private struct MaterialData
@@ -134,10 +136,30 @@ public class BossPhase2_Refraction : MonoBehaviour
         // Cacheia renderers e materiais originais
         renderers = GetComponentsInChildren<Renderer>();
         CacheOriginalMaterials();
+
+        // Backup: garante subscrição do evento de dano (caso OnEnable tenha rodado antes do Awake do BossController)
+        if (bossController != null)
+        {
+            bossController.OnTookDamage -= OnTookDamage; // Remove duplicata
+            bossController.OnTookDamage += OnTookDamage;
+        }
     }
 
     void Update()
     {
+        // ── SAFETY: Detecta refração presa (coroutine morreu silenciosamente) ──
+        if (isRefracting || (bossController != null && bossController.IsInvisible))
+        {
+            float maxRefractionTime = refractionDuration + fadeOutTime + fadeInTime + 5f;
+            if (refractionStartTime > 0f && Time.time - refractionStartTime > maxRefractionTime)
+            {
+                if (showDebugLog)
+                    Debug.LogWarning($"[BossPhase2] ⚠️ SAFETY: Refração presa por {Time.time - refractionStartTime:F1}s! Forçando CancelRefraction().");
+                CancelRefraction();
+                return;
+            }
+        }
+
         if (!isPhase2Active || isRefracting) return;
         if (bossController.IsDead || bossController.IsStunned) return;
 
@@ -205,6 +227,9 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (refractionUsesRemaining <= 0 || nextThresholdIndex >= refractionThresholds.Length) return;
         if (health == null) return;
 
+        // Cooldown após revelação por dano — impede nova refração imediata
+        if (Time.time < refractionCooldownUntil) return;
+
         float healthPercent = bossController.HealthPercent;
         float currentThreshold = refractionThresholds[nextThresholdIndex];
 
@@ -233,6 +258,8 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (showDebugLog)
                 Debug.Log("[BossPhase2] 💥 Boss foi atingido durante a invisibilidade! Invisibilidade CANCELADA/REVELADA!");
 
+            // Cooldown de 3 segundos antes de poder refratar de novo
+            refractionCooldownUntil = Time.time + 3f;
             CancelRefraction();
         }
     }
@@ -246,6 +273,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         }
 
         isRefracting = false;
+        refractionStartTime = -1f;
         bossController.SetRefraction(false);
         if (health != null) health.isInvulnerable = false;
         RestoreOriginalMaterials();
@@ -266,6 +294,7 @@ public class BossPhase2_Refraction : MonoBehaviour
     IEnumerator RefractionRoutine()
     {
         isRefracting = true;
+        refractionStartTime = Time.time;
 
         // Notifica o BossController e sistema de eventos
         bossController.SetRefraction(true);
