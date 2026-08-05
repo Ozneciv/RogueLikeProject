@@ -63,6 +63,10 @@ public class BossController : MonoBehaviour
     [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
     public Animator animator;
 
+    [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo.")]
+    public string[] meleeAttackTriggers = new string[] { "Attack1", "Attack2", "Spell" };
+
+
     [Header("Sangue Ácido (Invisibilidade)")]
     [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
     [SerializeField] private GameObject toxicBloodPrefab;
@@ -439,6 +443,17 @@ public class BossController : MonoBehaviour
 
         if (playerTransform == null) return;
 
+        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
+
+        // Se estiver no alcance do ataque melee (com tolerância de 20%) e fora de cooldown, inicia o ataque
+        if (distToPlayer <= (meleeRange * 1.2f) && meleeTimer <= 0f)
+        {
+            HandleRotation();
+            StartCoroutine(PerformMeleeAttack());
+            return;
+        }
+
         float speed = phaseConfig != null ? phaseConfig.baseSpeed : 3.5f;
 
         if (agent != null && agent.enabled)
@@ -455,8 +470,6 @@ public class BossController : MonoBehaviour
             {
                 agent.isStopped = false;
                 agent.SetDestination(playerTransform.position);
-                
-                float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
                 agent.stoppingDistance = meleeRange * 0.8f;
                 return;
             }
@@ -466,10 +479,9 @@ public class BossController : MonoBehaviour
         // Move o Transform diretamente em direção ao player para nunca ficar parado!
         Vector3 target = playerTransform.position;
         target.y = transform.position.y;
-        float distance = Vector3.Distance(transform.position, target);
 
-        float meleeStopRange = phaseConfig != null ? phaseConfig.baseMeleeRange * 0.8f : 3f;
-        if (distance > meleeStopRange)
+        float meleeStopRange = meleeRange * 0.8f;
+        if (distToPlayer > meleeStopRange)
         {
             transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
 
@@ -508,9 +520,15 @@ public class BossController : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
 
-        if (animator != null)
+        if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
-            animator.SetTrigger("Spell");
+            string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
+            if (showDebugLog) Debug.Log($"[BossController] 🎬 Disparando Trigger de Animação: {selectedTrigger}");
+            animator.SetTrigger(selectedTrigger);
+        }
+        else if (animator == null && showDebugLog)
+        {
+            Debug.LogWarning("[BossController] ⚠️ Componente Animator não encontrado no Boss!");
         }
 
         yield return new WaitForSeconds(0.4f);
