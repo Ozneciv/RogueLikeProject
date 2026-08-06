@@ -44,7 +44,7 @@ public class WeaponHitbox : MonoBehaviour
                                    ?? Object.FindFirstObjectByType<PrimaryAttackKnife>();
             }
 
-            if (primaryAttackScript != null)
+            if (primaryAttackScript != null && primaryAttackScript.isHitboxActive)
             {
                 primaryAttackScript.RegisterHit(other);
             }

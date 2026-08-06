@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14407b66bb5115143b7628a725db5631, type: 3}
   m_Name: BossPhaseConfig
   m_EditorClassIdentifier: Assembly-CSharp::BossPhaseConfig
-  maxHealth: 500
+  maxHealth: 1500
   phase2Threshold: 0.7
   phase3Threshold: 0.35
   baseSpeed: 3.5

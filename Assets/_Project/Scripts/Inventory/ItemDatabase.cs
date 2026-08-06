@@ -59,19 +59,24 @@ public class ItemDatabase : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // Garante que TODOS os itens presentes na pasta Resources sejam mesclados à base,
-        // mesmo que o prefab instanciado esteja desatualizado (com apenas 4 itens por exemplo).
-        ItemData[] loaded = Resources.LoadAll<ItemData>("");
-        if (loaded.Length > 0)
+        try
         {
-            foreach (var item in loaded)
+            ItemData[] loaded = Resources.LoadAll<ItemData>("");
+            if (loaded != null && loaded.Length > 0)
             {
-                if (item != null && !allItems.Contains(item))
+                foreach (var item in loaded)
                 {
-                    allItems.Add(item);
+                    if (item != null && !allItems.Contains(item))
+                    {
+                        allItems.Add(item);
+                    }
                 }
+                Debug.Log($"[ITEM DATABASE] Mesclou {loaded.Length} itens do Resources. Total agora: {allItems.Count}");
             }
-            Debug.Log($"[ITEM DATABASE] Mesclou {loaded.Length} itens do Resources. Total agora: {allItems.Count}");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[ITEM DATABASE] Aviso ao carregar itens do Resources: {ex.Message}");
         }
 
         // Constrói dicionário para busca rápida por itemId

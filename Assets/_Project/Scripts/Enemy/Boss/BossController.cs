@@ -63,6 +63,20 @@ public class BossController : MonoBehaviour
     [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
     public Animator animator;
 
+    [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo.")]
+    public string[] meleeAttackTriggers = new string[] { "Attack1", "Attack2", "Spell" };
+
+
+    [Header("Sangue Ácido (Invisibilidade)")]
+    [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
+    [SerializeField] private GameObject toxicBloodPrefab;
+
+    [Tooltip("Intervalo em segundos entre cada gota de sangue ácido.")]
+    [SerializeField] private float toxicBloodInterval = 1.0f;
+
+    [Tooltip("Transform posicionado no pé do Boss para spawnar o sangue no chão.")]
+    [SerializeField] private Transform footSpawnPoint;
+
     [Header("Debug")]
     public bool showDebugLog = true;
 
@@ -110,6 +124,9 @@ public class BossController : MonoBehaviour
     // Cache do HP anterior para detectar mudanças
     private int lastCheckedHP;
 
+    // Sangue ácido
+    private float toxicBloodTimer = 0f;
+
     // =====================================================
     // UNITY LIFECYCLE
     // =====================================================
@@ -134,7 +151,7 @@ public class BossController : MonoBehaviour
             {
                 agent.speed = phaseConfig.baseSpeed;
                 agent.angularSpeed = phaseConfig.rotationSpeed;
-                agent.enabled = false; // Desativado até a luta começar
+                agent.isStopped = true; // Parado até a luta começar (mantém aderência ao NavMesh)
             }
         }
         else
@@ -147,18 +164,52 @@ public class BossController : MonoBehaviour
         // Configura o override de morte do DummyHealth para redirecionar para nossa lógica
         health.onDeathOverride = OnBossDeath;
 
-        // Encontra o player
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-            playerTransform = player.transform;
+        // Encontra o player com múltiplos fallbacks
+        playerTransform = FindPlayerTransform();
 
-        // Começa em Idle — espera o BossCombatTrigger chamar StartFight()
+        // Começa em Idle — espera o BossCombatTrigger ou auto-start em cenas de teste
         CurrentState = BossState.Idle;
+    }
+
+    private Transform FindPlayerTransform()
+    {
+        if (playerTransform != null && playerTransform.gameObject.activeInHierarchy)
+            return playerTransform;
+
+        // 1. Tenta por Tag "Player"
+        GameObject p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null) return p.transform;
+
+        // 2. Tenta por Componente PlayerHealth
+        PlayerHealth ph = FindObjectOfType<PlayerHealth>();
+        if (ph != null) return ph.transform;
+
+        // 3. Tenta qualquer GameObject cujo nome contenha "player"
+        GameObject[] all = FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in all)
+        {
+            if (obj.name.ToLower().Contains("player"))
+                return obj.transform;
+        }
+
+        return null;
     }
 
     void Update()
     {
         UpdateAnimationState();
+
+        if (playerTransform == null)
+            playerTransform = FindPlayerTransform();
+
+        // Se o boss estiver em Idle, auto-inicia o combate se o player existir na cena
+        if (CurrentState == BossState.Idle)
+        {
+            if (playerTransform != null || (health != null && health.CurrentHealth < health.maxHealth))
+            {
+                StartFight();
+            }
+        }
 
         if (CurrentState == BossState.Idle || CurrentState == BossState.Dead) return;
 
@@ -181,6 +232,9 @@ public class BossController : MonoBehaviour
                 // Não faz nada — o stun coroutine controla a saída
                 break;
         }
+
+        // Sangue ácido durante invisibilidade
+        HandleToxicBloodDrip();
     }
 
     private void UpdateAnimationState()
@@ -207,6 +261,50 @@ public class BossController : MonoBehaviour
         animator.SetBool("IsWalking", isMoving);
     }
 
+    private Vector3 lastDripPosition;
+
+    private void HandleToxicBloodDrip()
+    {
+        if (!IsInvisible) return;
+
+        if (toxicBloodPrefab == null)
+        {
+            if (showDebugLog && Time.frameCount % 180 == 0)
+                Debug.LogWarning("[BossController] ⚠️ ToxicBloodPrefab não está atribuído no Inspector!");
+            return;
+        }
+
+        // Ponto de origem: usa footSpawnPoint se atribuído; projeta raycast para o chão
+        Vector3 origin = footSpawnPoint != null ? footSpawnPoint.position : transform.position + Vector3.up * 1f;
+        Vector3 spawnPos = origin;
+
+        // Projeta um Raycast para baixo para colar a poça de sangue perfeitamente na superfície do piso
+        if (Physics.Raycast(origin + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 5.0f))
+        {
+            spawnPos = hit.point + Vector3.up * 0.02f;
+        }
+        else
+        {
+            spawnPos.y = transform.position.y + 0.02f;
+        }
+
+        // Dripa sangue a cada intervalo
+        toxicBloodTimer -= Time.deltaTime;
+        if (toxicBloodTimer <= 0f)
+        {
+            toxicBloodTimer = (toxicBloodInterval > 0f) ? toxicBloodInterval : 0.35f;
+
+            Quaternion randomRot = Quaternion.Euler(90f, UnityEngine.Random.Range(0f, 360f), 0f);
+            GameObject bloodDrop = Instantiate(toxicBloodPrefab, spawnPos, randomRot);
+            
+            float scaleMult = UnityEngine.Random.Range(0.9f, 1.3f);
+            bloodDrop.transform.localScale = Vector3.Scale(bloodDrop.transform.localScale, new Vector3(scaleMult, scaleMult, 1f));
+
+            if (showDebugLog)
+                Debug.Log($"[BossController] 🩸 Sangue ácido pingou em {spawnPos}");
+        }
+    }
+
     void OnDestroy()
     {
         // Limpa todos os eventos para evitar referências fantasmas
@@ -229,13 +327,19 @@ public class BossController : MonoBehaviour
 
         // Regarante referência ao player
         if (playerTransform == null)
+            playerTransform = FindPlayerTransform();
+
+        // Tenta ancorar no NavMesh se estiver solto
+        if (agent != null && agent.enabled && !agent.isOnNavMesh)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) playerTransform = player.transform;
+            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit hit, 10.0f, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                agent.Warp(hit.position);
+            }
         }
 
-        // Ativa o NavMeshAgent
-        if (agent != null) agent.enabled = true;
+        // Libera o NavMeshAgent para se mover
+        if (agent != null && agent.isOnNavMesh) agent.isStopped = false;
 
         // Entra na Fase 1
         TransitionToPhase(1);
@@ -279,10 +383,12 @@ public class BossController : MonoBehaviour
     {
         if (health.CurrentHealth == lastCheckedHP) return;
 
+        int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;
         float hpPercent = HealthPercent;
 
-        if (health.CurrentHealth < lastCheckedHP)
+        // Dispara evento de dano se o HP diminuiu
+        if (health.CurrentHealth < previousHP)
         {
             OnTookDamage?.Invoke(); 
         }
@@ -330,6 +436,12 @@ public class BossController : MonoBehaviour
                 break;
         }
 
+        // Garante que o agent está despausado ao mudar de fase
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+        }
+
         // Notifica todos os sistemas
         BossEvents.RaisePhaseChanged(newPhase);
     }
@@ -340,18 +452,59 @@ public class BossController : MonoBehaviour
 
     private void HandleCombatUpdate()
     {
-        if (playerTransform == null || isAttacking || OverrideMovement) return;
+        // Durante o ataque ou override de movimento, ignora atualização normal
+        if (isAttacking || OverrideMovement) return;
 
+        if (playerTransform == null)
+            playerTransform = FindPlayerTransform();
 
-        if (CurrentPhase != 1) 
+        if (playerTransform == null) return;
+
+        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
+
+        // Se estiver no alcance do ataque melee (com tolerância de 20%) e fora de cooldown, inicia o ataque
+        if (distToPlayer <= (meleeRange * 1.2f) && meleeTimer <= 0f)
         {
-            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            HandleRotation();
+            StartCoroutine(PerformMeleeAttack());
+            return;
+        }
+
+        float speed = phaseConfig != null ? phaseConfig.baseSpeed : 3.5f;
+
+        if (agent != null && agent.enabled)
+        {
+            if (!agent.isOnNavMesh)
             {
-                agent.SetDestination(playerTransform.position);
-                
-                float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
-                agent.stoppingDistance = meleeRange * 0.8f;
+                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit hit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    agent.Warp(hit.position);
+                }
             }
+
+            if (agent.isOnNavMesh)
+            {
+                agent.isStopped = false;
+                agent.SetDestination(playerTransform.position);
+                agent.stoppingDistance = meleeRange * 0.8f;
+                return;
+            }
+        }
+
+        // FALLBACK PARA CENAS SEM NAVMESH BAKED (ex: Boss_Test sem NavMesh Surface):
+        // Move o Transform diretamente em direção ao player para nunca ficar parado!
+        Vector3 target = playerTransform.position;
+        target.y = transform.position.y;
+
+        float meleeStopRange = meleeRange * 0.8f;
+        if (distToPlayer > meleeStopRange)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
+
+            Vector3 lookDir = target - transform.position;
+            if (lookDir.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(lookDir);
         }
     }
     // --------------------
@@ -374,7 +527,9 @@ public class BossController : MonoBehaviour
     private IEnumerator PerformMeleeAttack()
     {
         isAttacking = true;
-        float cooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
+        float baseCooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
+        // Enquanto invisível, reduz o cooldown em 40% para atacar com maior frequência
+        float cooldown = IsInvisible ? (baseCooldown * 0.6f) : baseCooldown;
         meleeTimer = cooldown;
 
         // Wind-up (telegrafagem)
@@ -384,12 +539,19 @@ public class BossController : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
 
-        if (animator != null)
+        if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
-            animator.SetTrigger("Spell");
+            string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
+            if (showDebugLog) Debug.Log($"[BossController] 🎬 Disparando Trigger de Animação: {selectedTrigger}");
+            animator.SetTrigger(selectedTrigger);
+        }
+        else if (animator == null && showDebugLog)
+        {
+            Debug.LogWarning("[BossController] ⚠️ Componente Animator não encontrado no Boss!");
         }
 
-        yield return new WaitForSeconds(0.4f);
+        float windUp = IsInvisible ? 0.2f : 0.4f;
+        yield return new WaitForSeconds(windUp);
 
         // Verifica hit
         float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;

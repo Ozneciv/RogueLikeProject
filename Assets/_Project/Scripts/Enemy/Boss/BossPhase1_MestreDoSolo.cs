@@ -81,7 +81,11 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             phase1Ativa = false; 
             StopAllCoroutines();
             atacando = false;
-            if (agent != null && agent.isOnNavMesh) agent.enabled = true;
+            if (agent != null && agent.isOnNavMesh)
+            {
+                agent.enabled = true;
+                agent.isStopped = false;
+            }
         }
     }
 
@@ -182,6 +186,9 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         // Animação deles saindo do chão
         yield return StartCoroutine(ErguerObjetosDoChao(objetosCriados, posicoesFinais));
 
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+            agent.isStopped = false;
+
         atacando = false;
     }
 
@@ -277,8 +284,9 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 Debug.LogWarning("[Fase 1] O Boss tentou fugir, mas não encontrou NavMesh válido perto do ponto de fuga!");
             }
 
-            // Chegou no destino (ou desistiu). Para o boss.
-            agent.isStopped = true;
+            // Chegou no destino (ou desistiu). Mantém o boss andando.
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+                agent.isStopped = false;
             if (animator != null) animator.SetFloat("Speed", 0f);
             
             // Vira de volta pro player
