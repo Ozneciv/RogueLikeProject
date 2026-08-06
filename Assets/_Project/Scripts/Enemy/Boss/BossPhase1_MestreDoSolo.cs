@@ -5,7 +5,7 @@ using UnityEngine.AI;
 
 /// <summary>
 /// Controlador da Fase 1 - Mestre do Solo
-/// O Boss fica escondido em um Casulo (que repassa o dano para ele).
+/// O Boss fica escondido em um Casulo.
 /// Ele prende o jogador em Círculos (Pilares) ou Quadrados (Espinhos) e invoca mobs.
 /// </summary>
 [RequireComponent(typeof(BossController))]
@@ -26,13 +26,9 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     public GameObject espinhoPrefab;
 
     [Header("Visuais do Cristal (Fase 1)")]
-    [Tooltip("Arraste o prefab do cristal COM O DUMMYHEALTH aqui.")]
+    [Tooltip("Arraste o prefab do cristal")]
     public GameObject cristalPrefab;
     private GameObject cristalInstanciado;
-    
-    // --- LIGAÇÃO DE VIDA CASULO <-> BOSS ---
-    private DummyHealth casuloHealth;
-    private int ultimaVidaCasulo;
 
     [Header("Configurações de Combate")]
     public float offsetAlturaFinal = -1.5f;
@@ -57,7 +53,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         Renderer[] todosRenderers = GetComponentsInChildren<Renderer>(true);
         foreach(Renderer r in todosRenderers)
         {
-
             if (r.enabled == true) 
             {
                 renderersDoBoss.Add(r);
@@ -89,7 +84,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         {
             phase1Ativa = true;
             
-            // 1. TÉCNICA DO FANTASMA: Desliga a malha 3D, física e colisões do Boss
+            // 1. TÉCNICA DO FANTASMA
             if (agent != null) agent.enabled = false; 
             if (rb != null) rb.isKinematic = true;
             if (bossCollider != null) bossCollider.enabled = false;
@@ -100,21 +95,24 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             {
                 cristalInstanciado = Instantiate(cristalPrefab, transform.position, transform.rotation);
                 
-                // 3. SINCRONIZA A VIDA DO CASULO COM A DO BOSS
-                casuloHealth = cristalInstanciado.GetComponent<DummyHealth>();
+                // 3. PREPARA O CASULO E O GATILHO DE MORTE
+                DummyHealth casuloHealth = cristalInstanciado.GetComponent<DummyHealth>();
                 if (casuloHealth != null)
                 {
                     DummyHealth vidaDoBoss = bossController.GetComponent<DummyHealth>();
                     float limiteFase2 = bossController.phaseConfig != null ? bossController.phaseConfig.phase2Threshold : 0.7f;
                     
-                    // O Casulo terá EXATAMENTE a quantidade de vida necessária para forçar a Fase 2
+                    // O Casulo recebe a quantidade exata de vida necessária para passar de fase
                     int danoNecessario = Mathf.RoundToInt(vidaDoBoss.maxHealth * (1f - limiteFase2));
                     casuloHealth.maxHealth = danoNecessario;
                     casuloHealth.ResetHealth();
-                    ultimaVidaCasulo = casuloHealth.CurrentHealth;
 
-                    // Desativa a destruição automática do DummyHealth do casulo
-                    casuloHealth.onDeathOverride = () => { Debug.Log("[Fase 1] O Casulo esvaziou a vida!"); };
+                    // O GATILHO MESTRE: Quando o Casulo morrer, ele dá o dano no Boss forçando a Fase 2!
+                    casuloHealth.onDeathOverride = () => 
+                    { 
+                        Debug.Log("[Fase 1] O Casulo quebrou! Avisando o Boss..."); 
+                        vidaDoBoss.TakeDamage(danoNecessario); 
+                    };
                 }
             }
 
@@ -141,24 +139,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        // =========================================================
-        // A MÁGICA: Repassa todo o dano do Casulo para o Boss real
-        // =========================================================
-        if (phase1Ativa && casuloHealth != null)
-        {
-            if (casuloHealth.CurrentHealth < ultimaVidaCasulo)
-            {
-                int danoTomado = ultimaVidaCasulo - casuloHealth.CurrentHealth;
-                ultimaVidaCasulo = casuloHealth.CurrentHealth;
-
-                // Repassa esse dano para o Boss
-                bossController.GetComponent<DummyHealth>().TakeDamage(danoTomado);
-            }
-        }
-    }
-
     // =====================================================
     // MÁQUINA DE ATAQUES
     // =====================================================
@@ -170,19 +150,16 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         {
             if (!atacando && !bossController.IsStunned && !bossController.IsDead)
             {
-                // Sorteia aleatoriamente: 0 = Círculo de Pilares, 1 = Quadrado de Espinhos
                 int ataqueSorteado = Random.Range(0, 2);
                 
                 if (ataqueSorteado == 0)
                 {
                     yield return StartCoroutine(Ataque_Prisao(pilarPrefab, false));
-                    // Spawna mobs após prisão de pilares
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Pillar);
                 }
                 else
                 {
                     yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
-                    // Spawna mobs após prisão de espinhos
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
                 }
             }
@@ -199,7 +176,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
         if (animator != null) animator.SetTrigger("Spell");
         
-        // Vira o boss (casulo invisível) para o player, por via das dúvidas
         if (playerTransform != null)
         {
             Vector3 direcaoOlhar = (playerTransform.position - transform.position).normalized;
@@ -215,7 +191,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
         if (!formatoQuadrado)
         {
-            // GERAR CÍRCULO (8 pontos)
             int qtdPilares = 8;
             for (int i = 0; i < qtdPilares; i++)
             {
@@ -226,11 +201,10 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         }
         else
         {
-            // GERAR QUADRADO (8 pontos em volta)
             Vector3[] direcoesQuadrado = new Vector3[] {
-                new Vector3(-1, 0,  1), new Vector3(0, 0,  1), new Vector3(1, 0,  1), // Topo
-                new Vector3(-1, 0,  0),                        new Vector3(1, 0,  0), // Lados
-                new Vector3(-1, 0, -1), new Vector3(0, 0, -1), new Vector3(1, 0, -1)  // Base
+                new Vector3(-1, 0,  1), new Vector3(0, 0,  1), new Vector3(1, 0,  1), 
+                new Vector3(-1, 0,  0),                        new Vector3(1, 0,  0), 
+                new Vector3(-1, 0, -1), new Vector3(0, 0, -1), new Vector3(1, 0, -1)  
             };
 
             foreach (Vector3 dir in direcoesQuadrado)
@@ -239,7 +213,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             }
         }
 
-        // Instancia os objetos no subsolo
         List<Transform> objetosCriados = new List<Transform>();
         for (int i = 0; i < posicoesFinais.Count; i++)
         {
@@ -262,9 +235,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         atacando = false;
     }
 
-    // =====================================================
-    // EFEITO VISUAL: SAINDO DO CHÃO
-    // =====================================================
     private IEnumerator ErguerObjetosDoChao(List<Transform> objetos, List<Vector3> posicoesFinais)
     {
         float tempoDecorrido = 0f;

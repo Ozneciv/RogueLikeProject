@@ -26,11 +26,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.5
+      value: 0.81
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -9.157618
+      value: -8.82
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -92,7 +92,7 @@ PrefabInstance:
       addedObject: {fileID: 5089757465101268226}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -6211056115248069370}
+      addedObject: {fileID: -8560411652331552863}
   m_SourcePrefab: {fileID: 100100000, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
 --- !u!1 &4472762181640442788 stripped
 GameObject:
@@ -132,7 +132,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53bb21b59251762458856aac2d1fac2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
---- !u!114 &-6211056115248069370
+  malhasVisuais:
+  - {fileID: -2432090755550338912, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
+  - {fileID: -2432090755550338912, guid: a5ea2380467a7af418d3c0a97df2aa88, type: 3}
+  - {fileID: -2432090755550338912, guid: 8fe556e47296c3a4ca241ee971cafe5c, type: 3}
+  - {fileID: -2432090755550338912, guid: a5ea2380467a7af418d3c0a97df2aa88, type: 3}
+  forcaDoKnockback: 60
+  vfxKnockbackPrefab: {fileID: 7318078104736055304, guid: 903a5110c1fe43f409c259ad7e9dd16b, type: 3}
+  vfxMortePrefab: {fileID: 7318078104736055304, guid: 903a5110c1fe43f409c259ad7e9dd16b, type: 3}
+  velocidadeSubida: 1
+  velocidadeGiro: 360
+  tempoAteDestruir: 1.5
+--- !u!114 &-8560411652331552863
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -145,7 +156,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   isSlowed: 0
-  maxHealth: 100
+  maxHealth: 0
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
