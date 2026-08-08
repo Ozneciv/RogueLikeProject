@@ -162,6 +162,7 @@ public class SyntheticBagUI : MonoBehaviour
     void Update()
     {
         if (!uiBuilt) return;
+        if (CheatConsole.IsOpen) return; // Ignora teclas de atalho se o CheatConsole estiver aberto
 
         if (Input.GetKeyDown(toggleKey))
         {

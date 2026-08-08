@@ -84,8 +84,8 @@ public class PlayerUltimate : MonoBehaviour
             }
         }
 
-        // Ativar Ultimate com a tecla U (suporta ultimateKey configurável ou KeyCode.U direto)
-        if (Input.GetKeyDown(ultimateKey) || Input.GetKeyDown(KeyCode.U))
+        // Ativar Ultimate com a tecla U (ignora se o CheatConsole estiver aberto)
+        if (!CheatConsole.IsOpen && (Input.GetKeyDown(ultimateKey) || Input.GetKeyDown(KeyCode.U)))
         {
             Debug.Log($"[PlayerUltimate] Tecla U pressionada! Status: Ready = {isUltimateReady}, Active = {isUltimateActive}, Cooldown = {currentCooldown:F1}s");
 
