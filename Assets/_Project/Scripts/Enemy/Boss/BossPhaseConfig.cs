@@ -60,4 +60,29 @@ public class BossPhaseConfig : ScriptableObject
 
     [Tooltip("Cooldown do ataque melee (segundos).")]
     public float baseMeleeCooldown = 2.5f;
+
+    // =====================================================
+    // FASE 1 — SPAWN DE MOBS
+    // =====================================================
+
+    [Header("Fase 1 — Spawn de Mobs")]
+    [Tooltip("Máximo de mobs do boss vivos simultaneamente na arena.")]
+    public int phase1MaxMobs = 5;
+
+    [Tooltip("Cooldown mínimo entre waves de mobs (segundos).")]
+    public float phase1SpawnCooldown = 8f;
+
+    [Tooltip("Quantos hits seguidos o player precisa dar para o boss contra-atacar com mobs.")]
+    public int phase1HitCounterThreshold = 4;
+
+    [Tooltip("Raio ao redor do centro da arena onde os mobs podem spawnar.")]
+    public float phase1SpawnRadius = 15f;
+
+    [Tooltip("% de HP para spawnar a primeira wave fixa (Totem). Ex: 0.95 = 95%.")]
+    [Range(0.5f, 1.0f)]
+    public float phase1FirstWaveThreshold = 0.95f;
+
+    [Tooltip("% de HP para spawnar a segunda wave fixa (Spiders + Cristalus). Ex: 0.85 = 85%.")]
+    [Range(0.5f, 1.0f)]
+    public float phase1SecondWaveThreshold = 0.85f;
 }

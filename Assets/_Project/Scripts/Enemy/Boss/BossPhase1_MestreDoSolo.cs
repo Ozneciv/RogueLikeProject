@@ -13,6 +13,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 {
     [Header("Referências")]
     private BossController bossController;
+    private BossPhase1_MobSpawner mobSpawner;
     private NavMeshAgent agent;
     private Animator animator;
     private Transform playerTransform;
@@ -44,6 +45,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     private void Awake()
     {
         bossController = GetComponent<BossController>();
+        mobSpawner = GetComponent<BossPhase1_MobSpawner>();
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
     }
@@ -100,9 +102,17 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 int ataqueSorteado = Random.Range(0, 2);
                 
                 if (ataqueSorteado == 0)
+                {
                     yield return StartCoroutine(Ataque_Prisao(pilarPrefab, false));
+                    // Spawna mobs após prisão de pilares
+                    if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Pillar);
+                }
                 else
+                {
                     yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
+                    // Spawna mobs após prisão de espinhos
+                    if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
+                }
 
                 // Após o ataque, o boss se afasta do player
                 yield return StartCoroutine(RecuarDoPlayer());

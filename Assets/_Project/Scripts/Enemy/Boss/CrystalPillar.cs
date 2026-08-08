@@ -22,7 +22,7 @@ public class CrystalPillar : MonoBehaviour
     // O Pilar detecta o impacto físico sozinho
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag(tagDoAtaque))
+        if (EhAtaqueValido(collision.gameObject))
         {
             ReceberDano(1);
         }
@@ -31,10 +31,28 @@ public class CrystalPillar : MonoBehaviour
     // Caso o ataque do jogador seja um Trigger (transponível)
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag(tagDoAtaque))
+        if (EhAtaqueValido(other.gameObject))
         {
             ReceberDano(1);
         }
+    }
+
+    // Verifica se quem bateu foi o player ou a arma do player
+    private bool EhAtaqueValido(GameObject obj)
+    {
+        // Se bater explicitamente com a tag configurada (ex: "Player" ou "Weapon")
+        if (!string.IsNullOrEmpty(tagDoAtaque) && tagDoAtaque != "Untagged" && obj.CompareTag(tagDoAtaque))
+            return true;
+            
+        // Se for o próprio player (corpo ou dash)
+        if (obj.CompareTag("Player"))
+            return true;
+
+        // Se for a arma do player (tem o script WeaponHitbox)
+        if (obj.GetComponent<WeaponHitbox>() != null)
+            return true;
+
+        return false;
     }
 
     private void ReceberDano(int dano)
