@@ -71,15 +71,26 @@ public class EssencePickup : MonoBehaviour
             playerTransform = player.transform;
         }
 
-        // Força a cor amarelada/dourada no material, luz e trail do pickup (substitui rosa)
+        // Força a cor amarelada/dourada no material, luz e trail do pickup (substitui qualquer material rosa)
         Color yellowColor = new Color(1.00f, 0.85f, 0.10f, 1.00f);
-        Renderer rend = GetComponentInChildren<Renderer>();
-        if (rend != null && rend.material != null)
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        Shader uShader = Shader.Find("Universal Render Pipeline/Unlit")
+                      ?? Shader.Find("Universal Render Pipeline/Lit")
+                      ?? Shader.Find("Standard")
+                      ?? Shader.Find("Unlit/Color");
+
+        foreach (Renderer r in renderers)
         {
-            rend.material.color = yellowColor;
-            if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", yellowColor);
-            if (rend.material.HasProperty("_Color")) rend.material.SetColor("_Color", yellowColor);
-            if (rend.material.HasProperty("_EmissionColor")) rend.material.SetColor("_EmissionColor", yellowColor * 2.5f);
+            if (r != null)
+            {
+                Material m = new Material(uShader);
+                m.color = yellowColor;
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", yellowColor);
+                if (m.HasProperty("_Color")) m.SetColor("_Color", yellowColor);
+                m.EnableKeyword("_EMISSION");
+                if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", yellowColor * 2.5f);
+                r.material = m;
+            }
         }
 
         Light l = GetComponentInChildren<Light>();

@@ -1908,6 +1908,8 @@ MonoBehaviour:
   armorBarImage: {fileID: 0}
   armorText: {fileID: 0}
   percentageText: {fileID: 0}
+  hasPactCorrupted: 0
+  darkPactHealthColor: {r: 0.38, g: 0.04, b: 0.08, a: 1}
   damageMultiplier: 1
   damageTakenMultiplier: 1
   canHeal: 1
@@ -1915,6 +1917,11 @@ MonoBehaviour:
   hasVampirism: 0
   hasNecrosis: 0
   lastKillTime: 0
+  hasSelfDamageOnAttack: 0
+  isKnockbackImmune: 0
+  abilityCooldownMultiplier: 1
+  enemiesBuffed: 0
+  canRegenArmor: 1
   damageLightObj: {fileID: 0}
 --- !u!114 &2877796600527432851
 MonoBehaviour:
@@ -1990,19 +1997,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5a80fc9d899c5f43a5e68f7089cfe31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerUltimate
+  ultimateKey: 117
   ultimateCooldown: 30
-  ultimateDuration: 5
-  damageMultiplier: 2
-  speedMultiplier: 1.5
+  forwardLeapImpulse: 6
   grantInvulnerability: 1
-  vfxPrimaryColor: {r: 0.2, g: 0.8, b: 1, a: 1}
-  vfxSecondaryColor: {r: 1, g: 0.4, b: 0, a: 1}
-  vfxAccentColor: {r: 1, g: 1, b: 0.3, a: 1}
-  vfxGlowIntensity: 5
-  vfxParticleScale: 1
-  vfxEnableScreenShake: 1
-  vfxShakeIntensity: 0.3
-  ultimateVFX: {fileID: 0}
   isUltimateReady: 1
   isUltimateActive: 0
   currentCooldown: 0
@@ -4028,7 +4026,7 @@ Transform:
   m_GameObject: {fileID: 6284554266325809849}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 0.9, z: 0}
   m_LocalScale: {x: 0.01, y: 0.008698678, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4084,6 +4082,7 @@ MonoBehaviour:
   hitImpactVariations:
   - {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
   hitImpactPrefab: {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
+  weaponTrail: {fileID: 0}
   attackAnimationSpeed: 1
   defaultAttackSpeed: 1
   axeAttackSpeed: 1
