@@ -120,11 +120,6 @@ public class BossController : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
-
-        if (GetComponent<BossPhase1Cocoon>() == null)
-        {
-            gameObject.AddComponent<BossPhase1Cocoon>();
-        }
     }
 
     void Start()
