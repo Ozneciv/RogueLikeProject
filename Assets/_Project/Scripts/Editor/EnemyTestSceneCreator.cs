@@ -36,14 +36,19 @@ public class EnemyTestSceneCreator : EditorWindow
         }
 
         // === CONFIGURA CÂMERA PARA SEGUIR O PLAYER ===
-        Camera mainCamera = Object.FindFirstObjectByType<Camera>();
+        Camera mainCamera = Object.FindObjectOfType<Camera>();
         if (mainCamera != null)
         {
+            // Adiciona o script MoveCam para seguir o player
+            MoveCam camScript = mainCamera.gameObject.AddComponent<MoveCam>();
+            camScript.followSpeed = 5f;
+            camScript.offset = new Vector3(0, 10, -8);
+            
             // Posição inicial da câmera
             mainCamera.transform.position = new Vector3(0, 10, -8);
             mainCamera.transform.rotation = Quaternion.Euler(50, 0, 0);
             
-            Debug.Log("Câmera configurada para o Player!");
+            Debug.Log("Câmera configurada com MoveCam - vai seguir o Player automaticamente!");
         }
 
         // === SPAWN POINT DO PLAYER ===

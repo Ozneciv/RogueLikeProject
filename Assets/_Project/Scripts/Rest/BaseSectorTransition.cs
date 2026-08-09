@@ -90,10 +90,11 @@ public class BaseSectorTransition : MonoBehaviour
         }
 
         // 4. Snap Camera to avoid smooth slide through space
-        Camera mainCam = Camera.main ?? Object.FindFirstObjectByType<Camera>();
-        if (mainCam != null)
+        MoveCam cameraController = Object.FindFirstObjectByType<MoveCam>();
+        if (cameraController != null)
         {
-            mainCam.transform.position = player.transform.position + new Vector3(0f, 10f, -8f);
+            cameraController.playerTransform = player.transform; // Re-bind just in case
+            cameraController.transform.position = player.transform.position + cameraController.offset;
         }
 
         // 5. Toggle Sector GameObjects (show/hide rooms)

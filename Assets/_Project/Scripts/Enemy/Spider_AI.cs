@@ -376,8 +376,7 @@ public class Spider_AI : MonoBehaviour
         aSource.maxDistance = 20f;
         aSource.rolloffMode = AudioRolloffMode.Linear;
         aSource.Play();
-        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
-        Destroy(audioObj, clip.length / safePitch);
+        Destroy(audioObj, clip.length / Mathf.Abs(pitch));
     }
     // Visualização do range no Editor
     void OnDrawGizmosSelected()
