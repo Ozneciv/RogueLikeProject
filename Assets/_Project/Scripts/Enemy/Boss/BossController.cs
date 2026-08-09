@@ -191,9 +191,9 @@ public class BossController : MonoBehaviour
         if (animator != null && animator.transform != transform)
         {
             Vector3 localPos = animator.transform.localPosition;
-            if (Mathf.Abs(localPos.y - (-0.5f)) > 0.01f || Mathf.Abs(localPos.x) > 0.01f || Mathf.Abs(localPos.z) > 0.01f)
+            if (Mathf.Abs(localPos.y) > 0.01f || Mathf.Abs(localPos.x) > 0.01f || Mathf.Abs(localPos.z) > 0.01f)
             {
-                animator.transform.localPosition = new Vector3(0f, -0.5f, 0f);
+                animator.transform.localPosition = Vector3.zero;
             }
         }
     }
