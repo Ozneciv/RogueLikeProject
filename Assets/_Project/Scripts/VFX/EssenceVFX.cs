@@ -189,6 +189,7 @@ public class EssenceVFX : MonoBehaviour
         pObj.transform.localPosition = Vector3.zero;
 
         particleComp = pObj.AddComponent<ParticleSystem>();
+        particleComp.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ParticleSystemRenderer pRend = pObj.GetComponent<ParticleSystemRenderer>();
         pRend.material = CreateYellowMaterial(true);
 
@@ -214,10 +215,12 @@ public class EssenceVFX : MonoBehaviour
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = 0.35f;
 
-        // Módulo Velocity Over Lifetime (Subida flutuante)
+        // Módulo Velocity Over Lifetime (Subida flutuante - eixos uniformizados)
         var vel = particleComp.velocityOverLifetime;
         vel.enabled = true;
+        vel.x = new ParticleSystem.MinMaxCurve(0f, 0f);
         vel.y = new ParticleSystem.MinMaxCurve(0.4f, 1.0f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         // Módulo Noise (Efeito orgânico de dança/órbita)
         var noise = particleComp.noise;
@@ -270,6 +273,7 @@ public class EssenceVFX : MonoBehaviour
         burstObj.transform.position = transform.position;
 
         ParticleSystem burst = burstObj.AddComponent<ParticleSystem>();
+        burst.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ParticleSystemRenderer bRend = burstObj.GetComponent<ParticleSystemRenderer>();
         bRend.material = CreateYellowMaterial(true);
 

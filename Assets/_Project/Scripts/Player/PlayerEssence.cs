@@ -49,16 +49,6 @@ public class PlayerEssence : MonoBehaviour
     }
 
     /// <summary>
-    /// Zera a essência acumulada na run ao morrer.
-    /// </summary>
-    public void ResetEssenceOnDeath()
-    {
-        currentEssence = 0;
-        onEssenceChanged?.Invoke(currentEssence);
-        Debug.Log("[PLAYER ESSENCE] Essência da run zerada por morte.");
-    }
-
-    /// <summary>
     /// Retorna a quantidade atual de essência
     /// </summary>
     public int GetEssence()

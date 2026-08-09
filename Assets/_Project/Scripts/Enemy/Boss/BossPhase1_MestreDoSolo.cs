@@ -135,6 +135,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             phase1Ativa = false; 
             StopAllCoroutines();
             atacando = false;
+<<<<<<< HEAD
 
             // Devolve o visual sólido para o Boss e ativa sua inteligência
             foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = true; }
@@ -150,6 +151,13 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             }
             
             Debug.Log("[Fase 1] Fim! Boss revelado para a Fase 2.");
+=======
+            if (agent != null && agent.isOnNavMesh)
+            {
+                agent.enabled = true;
+                agent.isStopped = false;
+            }
+>>>>>>> origin/matheus
         }
     }
 
@@ -219,22 +227,22 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 new Vector3(-1, 0,  1), new Vector3(0, 0,  1), new Vector3(1, 0,  1), 
                 new Vector3(-1, 0,  0),                        new Vector3(1, 0,  0), 
                 new Vector3(-1, 0, -1), new Vector3(0, 0, -1), new Vector3(1, 0, -1)  
-            };
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+            agent.isStopped = true;
 
-            foreach (Vector3 dir in direcoesQuadrado)
-            {
-                posicoesFinais.Add(centro + (dir * (raioDaPrisao * 0.8f))); 
-            }
-        }
-
+        Vector3 centro = playerTransform.position;
         List<Transform> objetosCriados = new List<Transform>();
-        for (int i = 0; i < posicoesFinais.Count; i++)
-        {
-            Vector3 posFinal = posicoesFinais[i];
-            posFinal.y = transform.position.y + offsetAlturaFinal; 
+        List<Vector3> posicoesFinais = new List<Vector3>();
 
-            Vector3 posSubsolo = posFinal + (Vector3.down * profundidadeSpawn);
-            
+        for (int i = 0; i < quantidadeObstaculos; i++)
+        {
+            float angulo = i * (360f / quantidadeObstaculos);
+            Vector3 dir = Quaternion.Euler(0, angulo, 0) * Vector3.forward;
+            Vector3 posFinal = centro + dir * raioPrisao;
+            Vector3 posSubsolo = posFinal + Vector3.down * offsetAlturaSubsolo;
+
+            posicoesFinais.Add(posFinal);
+
             if (prefabObstaculo != null)
             {
                 Quaternion rotacao = Quaternion.LookRotation(centro - posFinal);
@@ -246,6 +254,10 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         }
 
         yield return StartCoroutine(ErguerObjetosDoChao(objetosCriados, posicoesFinais));
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+            agent.isStopped = false;
+
         atacando = false;
     }
 
@@ -253,15 +265,17 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     {
         float tempoDecorrido = 0f;
         List<Vector3> posicoesIniciais = new List<Vector3>();
-        
-        foreach (var obj in objetos) posicoesIniciais.Add(obj.position);
+        foreach (var obj in objetos)
+        {
+            if (obj != null) posicoesIniciais.Add(obj.position);
+            else posicoesIniciais.Add(Vector3.zero);
+        }
 
-        while (tempoDecorrido < tempoEmergindo)
+        while (tempoDecorrido < tempoErupcao)
         {
             tempoDecorrido += Time.deltaTime;
-            
-            float t = Mathf.Clamp01(tempoDecorrido / tempoEmergindo);
-            float curvaSobeSutil = Mathf.Sin(t * Mathf.PI * 0.5f);
+            float t = tempoDecorrido / tempoErupcao;
+            float curvaSobeSutil = Mathf.SmoothStep(0f, 1f, t);
 
             for (int i = 0; i < objetos.Count; i++)
             {
@@ -275,4 +289,79 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             yield return null;
         }
     }
-}
+
+    // =====================================================
+    // IA DE FUGA (KITING)
+    // =====================================================
+    private IEnumerator RecuarDoPlayer()
+    {
+        if (bossController != null && (bossController.IsStunned || bossController.IsDead)) yield break;
+
+        if (bossController != null) bossController.OverrideMovement = true;
+
+        try
+        {
+            atacando = true;
+
+            Vector3 direcaoOposta = (transform.position - playerTransform.position).normalized;
+            direcaoOposta.y = 0;
+
+            if (direcaoOposta.sqrMagnitude < 0.1f) direcaoOposta = transform.forward;
+
+            Vector3 pontoDeFuga = transform.position + (direcaoOposta * distanciaRecuo);
+
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(pontoDeFuga, out hit, 10f, NavMesh.AllAreas))
+            {
+                if (agent != null && agent.enabled && agent.isOnNavMesh)
+                {
+                    agent.isStopped = false;
+                    agent.SetDestination(hit.position);
+                }
+
+                yield return null;
+
+                float tempoCorrendo = 0f;
+                
+                while (agent != null && agent.enabled && agent.isOnNavMesh && (agent.pathPending || agent.remainingDistance > 1.5f))
+                {
+                    tempoCorrendo += Time.deltaTime;
+
+                    if (animator != null) animator.SetFloat("Speed", agent.velocity.magnitude);
+
+                    if (tempoCorrendo > 2.5f || (tempoCorrendo > 0.5f && agent.velocity.sqrMagnitude < 0.1f)) 
+                    {
+                        Debug.Log("[Fase 1] Boss desistiu de fugir (travou ou demorou).");
+                        break; 
+                    }
+                    
+                    yield return null;
+                }
+            }
+
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+                agent.isStopped = false;
+            if (animator != null) animator.SetFloat("Speed", 0f);
+            
+            Vector3 olharPlayer = (playerTransform.position - transform.position).normalized;
+            olharPlayer.y = 0;
+            if (olharPlayer.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(olharPlayer);
+        }
+        finally 
+        {
+            if (bossController != null) bossController.OverrideMovement = false;
+            atacando = false; 
+        }
+    }
+
+    public void RevidarAtaque()
+    {
+        if (phase1Ativa && !atacando && bossController != null && !bossController.IsStunned && !bossController.IsDead)
+        {
+            if (Random.Range(0, 2) == 0)
+                StartCoroutine(Ataque_Prisao(pilarPrefab, false));
+            else
+                StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
+        }
+    }

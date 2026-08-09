@@ -21,7 +21,7 @@ public class BossPhaseConfig : ScriptableObject
 
     [Header("Vida do Boss")]
     [Tooltip("HP máximo do boss. Provisório — Matheus define o valor final.")]
-    public int maxHealth = 500;
+    public int maxHealth = 1500;
 
     // =====================================================
     // THRESHOLDS DE FASE
