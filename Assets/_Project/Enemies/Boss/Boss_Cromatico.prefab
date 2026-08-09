@@ -337,6 +337,7 @@ MonoBehaviour:
   cristalusPrefab: {fileID: 5390169502761059047, guid: ac128f3903b4ea142b3ab43e791ce0f2, type: 3}
   shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
   geobiontePrefab: {fileID: 227223189099962665, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
+  geobionteSpawnChance: 2
   spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
   spawnIndicatorDelay: 1
   spawnDepth: 3

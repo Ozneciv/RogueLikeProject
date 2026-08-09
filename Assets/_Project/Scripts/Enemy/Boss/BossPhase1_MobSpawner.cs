@@ -73,6 +73,11 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     [Tooltip("Prefab do Geobionte / Bismutado (Mob raro de elite).")]
     public GameObject geobiontePrefab;
 
+    [Header("🎯 Probabilidade de Invasão de Mob Raro (Inspector)")]
+    [Tooltip("Porcentagem de chance (0.0% a 100.0%) do Geobionte/Bismutado aparecer no spawn. Padrão: 2.0%")]
+    [Range(0f, 100f)]
+    public float geobionteSpawnChance = 2.0f;
+
     [Header("Configurações de Spawn Visual")]
     [Tooltip("Prefab do indicador visual (opcional). Usado para telegrafar o nascimento, igual nas salas normais.")]
     public GameObject spawnIndicatorPrefab;
@@ -318,8 +323,9 @@ public class BossPhase1_MobSpawner : MonoBehaviour
                 break;
 
             case WaveType.Threshold_Second:
-                // Wave pesada perto da transição (contém chance muito rara de 2% para o Geobionte/Bismutado)
-                if (Random.value <= 0.02f && geobiontePrefab != null)
+                // Wave pesada perto da transição (contém chance rara configurável no Inspector para o Geobionte/Bismutado)
+                float rareProb = Mathf.Clamp01(geobionteSpawnChance / 100f);
+                if (UnityEngine.Random.value <= rareProb && geobiontePrefab != null)
                 {
                     AddPrefabs(result, geobiontePrefab, 1);
                 }
@@ -332,14 +338,15 @@ public class BossPhase1_MobSpawner : MonoBehaviour
                 break;
 
             case WaveType.CounterAttack:
-                // Punição: Mobs variados rápidos ou ShardSwarm + Bismutado Ultra Raro (2% de chance)
-                if (Random.value <= 0.02f && geobiontePrefab != null)
+                // Punição: Mobs variados rápidos ou ShardSwarm + Bismutado Raro (configurável no Inspector)
+                float counterRareProb = Mathf.Clamp01(geobionteSpawnChance / 100f);
+                if (UnityEngine.Random.value <= counterRareProb && geobiontePrefab != null)
                 {
                     AddPrefabs(result, geobiontePrefab, 1);
                 }
                 else
                 {
-                    AddPrefabs(result, shardSwarmPrefab ?? goblinPrefab, Mathf.Min(Random.Range(2, 4), maxSlots));
+                    AddPrefabs(result, shardSwarmPrefab ?? goblinPrefab, Mathf.Min(UnityEngine.Random.Range(2, 4), maxSlots));
                 }
                 break;
         }
