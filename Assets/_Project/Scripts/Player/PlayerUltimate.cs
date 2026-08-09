@@ -132,6 +132,12 @@ public class PlayerUltimate : MonoBehaviour
         Debug.Log("🚀 [PlayerUltimate] ActivateUltimate() iniciado!");
         RebindReferences();
 
+        PrimaryAttackKnife primaryAttack = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>() ?? GetComponentInParent<PrimaryAttackKnife>();
+        if (primaryAttack != null && primaryAttack.isAttacking)
+        {
+            primaryAttack.CancelAttackForDash();
+        }
+
         // 1. VERIFICAÇÃO E ATIVAÇÃO DE ARMA AUTOMÁTICA
         if (weaponManager != null)
         {

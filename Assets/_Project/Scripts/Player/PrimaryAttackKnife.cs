@@ -28,6 +28,11 @@ public class PrimaryAttackKnife : MonoBehaviour
     private Vector3 currentOriginalSize;
     private float lastAppliedWeaponRange = 1f;
 
+    [Header("Hades-Style Input Buffer Settings")]
+    [Tooltip("Janela temporal (em segundos) que o buffer de entrada guarda os cliques")]
+    public float inputBufferWindow = 0.20f;
+    private float lastAttackInputTime = -999f;
+
     [Header("Attack Stats")]
     public float currentRange;
     public float defaultRange = 2f;
@@ -198,6 +203,8 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
             {
+                lastAttackInputTime = Time.time;
+
                 // Impede ataque se qualquer janela de menu/inventário/console estiver aberta
                 if (IsAnyUIOpen())
                 {
@@ -211,22 +218,53 @@ public class PrimaryAttackKnife : MonoBehaviour
                         if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
                         PerformNextAttack();
                     }
-                    else if (Time.time - lastAttackTime > 0.1f)
+                    else
                     {
                         int maxComboSteps = GetMaxComboSteps();
                         if (comboStep < maxComboSteps)
                         {
                             hasBufferedAttack = true;
-                            Debug.Log($"[PrimaryAttackKnife] Input buffered for next combo step ({comboStep + 1}/{maxComboSteps}).");
+                            Debug.Log($"[PrimaryAttackKnife] Input buffered para o próximo passo do combo ({comboStep + 1}/{maxComboSteps}).");
                         }
                     }
                 }
+            }
+            else if (hasBufferedAttack && canAttack && (Time.time - lastAttackInputTime <= inputBufferWindow))
+            {
+                hasBufferedAttack = false;
+                if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+                PerformNextAttack();
             }
         }
         catch (System.Exception)
         {
             // Evita crashar o loop de update se referências estiverem se restabelecendo
         }
+    }
+
+    /// <summary>
+    /// Cancela a animação e o estado de ataque atual imediatamente para permitir que o Dash execute (Dash-Canceling estilo Hades).
+    /// </summary>
+    public void CancelAttackForDash()
+    {
+        isAttacking = false;
+        canAttack = true;
+        hasBufferedAttack = false;
+        lastAttackInputTime = -999f;
+
+        if (animator != null)
+        {
+            animator.speed = 1.0f;
+        }
+
+        DisableHitbox();
+
+        if (comboResetCoroutine != null)
+        {
+            StopCoroutine(comboResetCoroutine);
+        }
+
+        Debug.Log("[PrimaryAttackKnife] Ataque cancelado via Dash-Canceling (Estilo Hades).");
     }
 
     public int GetMaxComboSteps()
