@@ -15,7 +15,7 @@ public class BossAoEShockwave : MonoBehaviour
 
     [Header("✨ Estética Visual")]
     public Color shockwaveColor = new Color(1.00f, 0.55f, 0.10f, 0.90f);
-    public float duration = 0.8s;
+    public float duration = 0.8f;
 
     public static void TriggerBossExplosion(Vector3 centerPosition, float radius = 7.5f, int damage = 35, float pushForce = 16.0f)
     {
