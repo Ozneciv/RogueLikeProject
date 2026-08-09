@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Controlador de spawn de mobs durante a Fase 1 do Boss Cromático.
+/// Controlador de spawn de mobs durante a Fase 1 do Boss Cromático
 ///
 /// TRIGGERS DE SPAWN:
 ///   1. Pós-Prisão: Chamado pelo BossPhase1_MestreDoSolo após cada ataque de prisão

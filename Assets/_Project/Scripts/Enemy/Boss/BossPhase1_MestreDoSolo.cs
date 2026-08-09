@@ -5,8 +5,8 @@ using UnityEngine.AI;
 
 /// <summary>
 /// Controlador da Fase 1 - Mestre do Solo
-/// O Boss agora prende o jogador em Círculos (Pilares) ou Quadrados (Espinhos)
-/// que brotam do chão
+/// O Boss fica escondido em um Casulo.
+/// Ele prende o jogador em Círculos (Pilares) ou Quadrados (Espinhos) e invoca mobs.
 /// </summary>
 [RequireComponent(typeof(BossController))]
 public class BossPhase1_MestreDoSolo : MonoBehaviour
@@ -17,26 +17,25 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
     private Transform playerTransform;
+    private Rigidbody rb;
+    private Collider bossCollider; 
+    private List<Renderer> renderersDoBoss = new List<Renderer>();
 
     [Header("Prefabs dos Ataques")]
     public GameObject pilarPrefab;
     public GameObject espinhoPrefab;
 
-    [Header("Configurações de Combate")]
+    [Header("Visuais do Cristal (Fase 1)")]
+    [Tooltip("Arraste o prefab do cristal")]
+    public GameObject cristalPrefab;
+    private GameObject cristalInstanciado;
 
-    [Tooltip("Ajuste fino da altura final.")]
+    [Header("Configurações de Combate")]
     public float offsetAlturaFinal = -1.5f;
-    [Tooltip("Tempo que o boss espera parado antes de lançar a próxima prisão.")]
     public float tempoEntreAtaques = 1f;
-    [Tooltip("Distância do player que os obstáculos vão nascer.")]
     public float raioDaPrisao = 10f;
-    [Tooltip("Quão fundo no chão os obstáculos começam antes de subir.")]
     public float profundidadeSpawn = 4f;
-    [Tooltip("Velocidade que os obstáculos emergem do chão (segundos).")]
     public float tempoEmergindo = 0.5f;
-    [Tooltip("Distância que o boss tenta se afastar após prender o jogador.")]
-    public float distanciaRecuo = 8f;
-    [Tooltip("Tempo até a prisão desmoronar sozinha (evita lotar a arena).")]
     public float tempoVidaPrisao = 6f;
 
     private bool phase1Ativa = false;
@@ -48,20 +47,29 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         mobSpawner = GetComponent<BossPhase1_MobSpawner>();
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
+        rb = GetComponent<Rigidbody>();
+        bossCollider = GetComponent<Collider>();
+        
+        Renderer[] todosRenderers = GetComponentsInChildren<Renderer>(true);
+        foreach(Renderer r in todosRenderers)
+        {
+            if (r.enabled == true) 
+            {
+                renderersDoBoss.Add(r);
+            }
+        }
     }
 
     private void OnEnable()
     {
         BossEvents.OnPhaseChanged += ControlarFase;
         BossEvents.OnBossFightStarted += BuscarPlayer;
-        bossController.OnTookDamage += RevidarAtaque;
     }
 
     private void OnDisable()
     {
         BossEvents.OnPhaseChanged -= ControlarFase;
         BossEvents.OnBossFightStarted -= BuscarPlayer;
-        bossController.OnTookDamage -= RevidarAtaque;
     }
 
     private void BuscarPlayer()
@@ -75,15 +83,59 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         if (novaFase == 1)
         {
             phase1Ativa = true;
+            
+            // 1. TÉCNICA DO FANTASMA
+            if (agent != null) agent.enabled = false; 
+            if (rb != null) rb.isKinematic = true;
+            if (bossCollider != null) bossCollider.enabled = false;
+            foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = false; }
+
+            // 2. Instancia o Casulo
+            if (cristalPrefab != null)
+            {
+                cristalInstanciado = Instantiate(cristalPrefab, transform.position, transform.rotation);
+                
+                // 3. PREPARA O CASULO E O GATILHO DE MORTE
+                DummyHealth casuloHealth = cristalInstanciado.GetComponent<DummyHealth>();
+                if (casuloHealth != null)
+                {
+                    DummyHealth vidaDoBoss = bossController.GetComponent<DummyHealth>();
+                    float limiteFase2 = bossController.phaseConfig != null ? bossController.phaseConfig.phase2Threshold : 0.7f;
+                    
+                    // O Casulo recebe a quantidade exata de vida necessária para passar de fase
+                    int danoNecessario = Mathf.RoundToInt(vidaDoBoss.maxHealth * (1f - limiteFase2));
+                    casuloHealth.maxHealth = danoNecessario;
+                    casuloHealth.ResetHealth();
+
+                    // O GATILHO MESTRE: Quando o Casulo morrer, ele dá o dano no Boss forçando a Fase 2!
+                    casuloHealth.onDeathOverride = () => 
+                    { 
+                        Debug.Log("[Fase 1] O Casulo quebrou! Avisando o Boss..."); 
+                        vidaDoBoss.TakeDamage(danoNecessario); 
+                    };
+                }
+            }
+
             StartCoroutine(RotinaDeAtaquesFase1());
-            Debug.Log("[Fase 1] Mestre do Solo: Ativada!");
+            Debug.Log("[Fase 1] Mestre do Solo: Casulo Ativado!");
         }
         else
         {
+            // FIM DA FASE 1
             phase1Ativa = false; 
             StopAllCoroutines();
             atacando = false;
-            if (agent != null && agent.isOnNavMesh) agent.enabled = true;
+
+            // Destrói o cristal da cena
+            if (cristalInstanciado != null) Destroy(cristalInstanciado);
+
+            // Devolve o visual sólido para o Boss
+            foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = true; }
+            if (bossCollider != null) bossCollider.enabled = true;
+            if (rb != null) rb.isKinematic = false;
+            if (agent != null) agent.enabled = true;
+            
+            Debug.Log("[Fase 1] Fim! Boss revelado para a Fase 2.");
         }
     }
 
@@ -98,24 +150,18 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         {
             if (!atacando && !bossController.IsStunned && !bossController.IsDead)
             {
-                // Sorteia aleatoriamente: 0 = Círculo de Pilares, 1 = Quadrado de Espinhos
                 int ataqueSorteado = Random.Range(0, 2);
                 
                 if (ataqueSorteado == 0)
                 {
                     yield return StartCoroutine(Ataque_Prisao(pilarPrefab, false));
-                    // Spawna mobs após prisão de pilares
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Pillar);
                 }
                 else
                 {
                     yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
-                    // Spawna mobs após prisão de espinhos
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
                 }
-
-                // Após o ataque, o boss se afasta do player
-                yield return StartCoroutine(RecuarDoPlayer());
             }
             yield return new WaitForSeconds(tempoEntreAtaques);
         }
@@ -127,24 +173,24 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     private IEnumerator Ataque_Prisao(GameObject prefabObstaculo, bool formatoQuadrado)
     {
         atacando = true;
-        agent.isStopped = true; // Boss para de andar para conjurar
 
-        // Animação de conjurar (se tiver)
         if (animator != null) animator.SetTrigger("Spell");
         
-        // Vira o boss para o player durante a conjuração
-        Vector3 direcaoOlhar = (playerTransform.position - transform.position).normalized;
-        direcaoOlhar.y = 0;
-        transform.rotation = Quaternion.LookRotation(direcaoOlhar);
+        if (playerTransform != null)
+        {
+            Vector3 direcaoOlhar = (playerTransform.position - transform.position).normalized;
+            direcaoOlhar.y = 0;
+            if (direcaoOlhar.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.LookRotation(direcaoOlhar);
+        }
 
-        yield return new WaitForSeconds(1f); // Tempo que ele fica conjurando
+        yield return new WaitForSeconds(1f);
 
         List<Vector3> posicoesFinais = new List<Vector3>();
-        Vector3 centro = playerTransform.position;
+        Vector3 centro = playerTransform != null ? playerTransform.position : transform.position;
 
         if (!formatoQuadrado)
         {
-            // GERAR CÍRCULO (8 pontos)
             int qtdPilares = 8;
             for (int i = 0; i < qtdPilares; i++)
             {
@@ -155,11 +201,10 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         }
         else
         {
-            // GERAR QUADRADO (8 pontos em volta)
             Vector3[] direcoesQuadrado = new Vector3[] {
-                new Vector3(-1, 0,  1), new Vector3(0, 0,  1), new Vector3(1, 0,  1), // Topo
-                new Vector3(-1, 0,  0),                        new Vector3(1, 0,  0), // Lados
-                new Vector3(-1, 0, -1), new Vector3(0, 0, -1), new Vector3(1, 0, -1)  // Base
+                new Vector3(-1, 0,  1), new Vector3(0, 0,  1), new Vector3(1, 0,  1), 
+                new Vector3(-1, 0,  0),                        new Vector3(1, 0,  0), 
+                new Vector3(-1, 0, -1), new Vector3(0, 0, -1), new Vector3(1, 0, -1)  
             };
 
             foreach (Vector3 dir in direcoesQuadrado)
@@ -168,7 +213,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             }
         }
 
-        // Instancia os objetos no subsolo
         List<Transform> objetosCriados = new List<Transform>();
         for (int i = 0; i < posicoesFinais.Count; i++)
         {
@@ -179,44 +223,34 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             
             if (prefabObstaculo != null)
             {
-                // Faz os objetos olharem para o centro (player)
                 Quaternion rotacao = Quaternion.LookRotation(centro - posFinal);
                 GameObject obj = Instantiate(prefabObstaculo, posSubsolo, rotacao);
                 objetosCriados.Add(obj.transform);
                 
-                // Limpa o objeto da cena após 'tempoVidaPrisao' segundos
                 Destroy(obj, tempoVidaPrisao);
             }
         }
 
-        // Animação deles saindo do chão
         yield return StartCoroutine(ErguerObjetosDoChao(objetosCriados, posicoesFinais));
-
         atacando = false;
     }
 
-    // =====================================================
-    // EFEITO VISUAL: SAINDO DO CHÃO
-    // =====================================================
     private IEnumerator ErguerObjetosDoChao(List<Transform> objetos, List<Vector3> posicoesFinais)
     {
         float tempoDecorrido = 0f;
         List<Vector3> posicoesIniciais = new List<Vector3>();
         
-        // Salva onde eles nasceram (subsolo)
         foreach (var obj in objetos) posicoesIniciais.Add(obj.position);
 
         while (tempoDecorrido < tempoEmergindo)
         {
             tempoDecorrido += Time.deltaTime;
             
-            // Cria um efeito "Ease Out" (sobe rápido e freia no final)
             float t = Mathf.Clamp01(tempoDecorrido / tempoEmergindo);
             float curvaSobeSutil = Mathf.Sin(t * Mathf.PI * 0.5f);
 
             for (int i = 0; i < objetos.Count; i++)
             {
-                // Verifica se o player já não destruiu o objeto enquanto ele subia
                 if (objetos[i] != null) 
                 {
                     Vector3 alvoFinal = posicoesFinais[i];
@@ -227,96 +261,4 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             yield return null;
         }
     }
-
-    // =====================================================
-    // IA DE FUGA (KITING)
-    // =====================================================
-    private IEnumerator RecuarDoPlayer()
-    {
-        // Verifica estados impeditivos antes de começar
-        if (bossController.IsStunned || bossController.IsDead) yield break;
-
-        // TOMA CONTROLE: Desliga qualquer interferência do BossController
-        bossController.OverrideMovement = true;
-
-        try
-        {
-            atacando = true;
-
-            // Descobre a direção oposta ao jogador
-            Vector3 direcaoOposta = (transform.position - playerTransform.position).normalized;
-            direcaoOposta.y = 0;
-
-            // Prevenção caso estejam na exata mesma coordenada
-            if (direcaoOposta.sqrMagnitude < 0.1f) direcaoOposta = transform.forward;
-
-            Vector3 pontoDeFuga = transform.position + (direcaoOposta * distanciaRecuo);
-
-            // Tenta achar chão válido no NavMesh
-            NavMeshHit hit;
-            if (NavMesh.SamplePosition(pontoDeFuga, out hit, 10f, NavMesh.AllAreas))
-            {
-                agent.isStopped = false;
-                agent.SetDestination(hit.position);
-
-                // Espera 1 frame para o NavMesh calcular a rota
-                yield return null;
-
-                float tempoCorrendo = 0f;
-                
-                // Loop de movimento
-                while (agent.pathPending || agent.remainingDistance > 1.5f)
-                {
-                    tempoCorrendo += Time.deltaTime;
-
-                    // Atualiza Animator
-                    if (animator != null) animator.SetFloat("Speed", agent.velocity.magnitude);
-
-                    // Timeout ou detecção de travamento (colisão com parede)
-                    if (tempoCorrendo > 2.5f || (tempoCorrendo > 0.5f && agent.velocity.sqrMagnitude < 0.1f)) 
-                    {
-                        Debug.Log("[Fase 1] Boss desistiu de fugir (travou ou demorou).");
-                        break; 
-                    }
-                    
-                    yield return null;
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[Fase 1] O Boss tentou fugir, mas não encontrou NavMesh válido perto do ponto de fuga!");
-            }
-
-            // Chegou no destino (ou desistiu). Para o boss.
-            agent.isStopped = true;
-            if (animator != null) animator.SetFloat("Speed", 0f);
-            
-            // Vira de volta pro player
-            Vector3 olharPlayer = (playerTransform.position - transform.position).normalized;
-            olharPlayer.y = 0;
-            transform.rotation = Quaternion.LookRotation(olharPlayer);
-        }
-        finally 
-        {
-            // GARANTIA: Devolve o controle, não importa o que aconteça
-            bossController.OverrideMovement = false;
-            atacando = false; 
-        }
-    }
-    public void RevidarAtaque()
-        {
-            // Só revida se estiver na Fase 1, não estiver já atacando, não estiver atordoado e não estiver morto
-            if (phase1Ativa && !atacando && !bossController.IsStunned && !bossController.IsDead)
-            {
-                // Decide aleatoriamente qual prisão usar no contra-ataque
-                if (Random.Range(0, 2) == 0)
-                    StartCoroutine(Ataque_Prisao(pilarPrefab, false));
-                else
-                    StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
-            }
-        }
-
-
-
-
 }

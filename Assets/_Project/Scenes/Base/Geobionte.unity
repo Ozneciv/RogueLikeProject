@@ -3079,6 +3079,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8252332029297462842, guid: d8bf9856a9590de499ed775858ed6a48, type: 3}
+      propertyPath: fusionsToSentinel
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8252332029297462842, guid: d8bf9856a9590de499ed775858ed6a48, type: 3}
+      propertyPath: bismutadoDefeatCount
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

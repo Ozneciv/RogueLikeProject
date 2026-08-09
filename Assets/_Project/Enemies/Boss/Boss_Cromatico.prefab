@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 6831200880444395433}
   - component: {fileID: 1185927364958233710}
   - component: {fileID: 2397048516129404881}
-  - component: {fileID: 6161191072006833528}
+  - component: {fileID: -1991061182138122264}
   m_Layer: 0
   m_Name: Boss_Cromatico
   m_TagString: Boss
@@ -81,7 +81,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   isSlowed: 0
-  maxHealth: 500
+  maxHealth: 1000
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
@@ -228,12 +228,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossPhase1_MestreDoSolo
   pilarPrefab: {fileID: 4472762181640442788, guid: ab9ff4047c87ac74ba656648e4ec1fa8, type: 3}
   espinhoPrefab: {fileID: 2988646942043275965, guid: b7140d41c98fbac4086c980884f274ed, type: 3}
-  offsetAlturaFinal: -3
-  tempoEntreAtaques: 1
+  cristalPrefab: {fileID: 4472762181640442788, guid: 52c154812eedc6740a32e37b42fcaa72, type: 3}
+  offsetAlturaFinal: -0.1
+  tempoEntreAtaques: 6
   raioDaPrisao: 2
   profundidadeSpawn: 4
   tempoEmergindo: 0.5
-  distanciaRecuo: 20
   tempoVidaPrisao: 6
 --- !u!114 &3724460904401237682
 MonoBehaviour:
@@ -315,7 +315,7 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &6161191072006833528
+--- !u!114 &-1991061182138122264
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -324,15 +324,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 202263891992115952}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e94b825720ac00e4a9d1662bf3894b6f, type: 3}
+  m_Script: {fileID: 11500000, guid: a016a06159236dd40a9dbd0db36e5b59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossPhase1_MobSpawner
   goblinPrefab: {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
   spiderPrefab: {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
   sharpBlurPrefab: {fileID: 4268998290841704769, guid: 54907d67b9c4ae344968f4a78411c6ac, type: 3}
   totemPrefab: {fileID: 326464074420430212, guid: 75587e19386eb024c8b895034e0d087d, type: 3}
-  cristalusPrefab: {fileID: 626950691794527064, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
+  cristalusPrefab: {fileID: 5390169502761059047, guid: ac128f3903b4ea142b3ab43e791ce0f2, type: 3}
   shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
+  spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
+  spawnIndicatorDelay: 1
   spawnDepth: 3
   emergeTime: 0.6
   enablePostPrisonSpawn: 1

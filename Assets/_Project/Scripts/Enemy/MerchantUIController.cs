@@ -304,40 +304,6 @@ public class MerchantUIController : MonoBehaviour
         if (tarotCardsPanel != null) tarotCardsPanel.SetActive(true);
 
         GenerateRandom3Pacts();
-        SetupTarotPanelHeader();
-    }
-
-    private void SetupTarotPanelHeader()
-    {
-        if (tarotCardsPanel == null) return;
-
-        // Procura ou cria o título de cabeçalho "BLOOD PACT" ACIMA do painel de cartas
-        Transform headerTr = tarotCardsPanel.transform.Find("txtPactHeader");
-        TextMeshProUGUI headerTxt = null;
-        if (headerTr != null)
-        {
-            headerTxt = headerTr.GetComponent<TextMeshProUGUI>();
-        }
-        else
-        {
-            GameObject headerGo = new GameObject("txtPactHeader");
-            headerGo.transform.SetParent(tarotCardsPanel.transform, false);
-            headerTxt = headerGo.AddComponent<TextMeshProUGUI>();
-        }
-
-        if (headerTxt != null)
-        {
-            headerTxt.gameObject.SetActive(true);
-            headerTxt.text = "<size=28><color=#ffd700><b>✦ BLOOD PACT ✦</b></color></size>\n<size=15><color=#ffaa44><i>Escolha uma carta de tarô para selar seu destino...</i></color></size>";
-            headerTxt.alignment = TextAlignmentOptions.Center;
-
-            RectTransform rt = headerTxt.rectTransform;
-            rt.anchorMin = new Vector2(0.05f, 0.83f); // Posicionado no topo ACIMA das cartas
-            rt.anchorMax = new Vector2(0.95f, 0.97f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-        }
     }
 
     private void GenerateRandom3Pacts()
@@ -442,9 +408,8 @@ public class MerchantUIController : MonoBehaviour
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() => OnTarotCardClicked(cardSlot));
 
-            if (hover == null) hover = btn.gameObject.AddComponent<MerchantCardHover>();
-            hover.isPactCard = true;
-            hover.enableGlitchFont = true;
+            if (btn.GetComponent<MerchantCardHover>() == null)
+                btn.gameObject.AddComponent<MerchantCardHover>();
         }
     }
 
@@ -453,87 +418,31 @@ public class MerchantUIController : MonoBehaviour
         if (nameTxt != null)
         {
             RectTransform rt = nameTxt.rectTransform;
-            // Âncoras fixas no Topo-Centro da carta (X=0.5, Y=1.0)
-            rt.anchorMin = new Vector2(0.5f, 1.0f);
-            rt.anchorMax = new Vector2(0.5f, 1.0f);
-            rt.pivot = new Vector2(0.5f, 0.0f); // Pivot no centro inferior da caixa do texto
-            rt.anchoredPosition = new Vector2(0f, 15f); // 15px diretamente acima do topo da carta
-            rt.sizeDelta = new Vector2(260f, 45f); // Caixa de texto com largura suficiente para o título
-
+            // Posiciona o título ACIMA da borda superior da carta (anchor Y > 1.0)
+            rt.anchorMin = new Vector2(-0.2f, 1.05f);
+            rt.anchorMax = new Vector2(1.2f, 1.30f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
             nameTxt.alignment = TextAlignmentOptions.Center;
             nameTxt.enableWordWrapping = false;
             nameTxt.overflowMode = TextOverflowModes.Overflow;
             nameTxt.enableAutoSizing = true;
-            nameTxt.fontSizeMin = 14;
-            nameTxt.fontSizeMax = 22;
+            nameTxt.fontSizeMin = 18;
+            nameTxt.fontSizeMax = 28;
         }
 
-        // Garante que descTxt e costTxt permaneçam ocultos dentro da carta antes da escolha
+        // Garante que descTxt e costTxt permaneçam ocultos dentro da carta
         if (descTxt != null) descTxt.gameObject.SetActive(false);
         if (costTxt != null) costTxt.gameObject.SetActive(false);
     }
+    
 
     void SetupRightSideText()
     {
-        // 1. Estilização dos Botões do Menu Principal para combinar com a tipografia das Cartas
-        if (btnPactoDeSangue != null)
-        {
-            TextMeshProUGUI txt = btnPactoDeSangue.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (txt != null)
-            {
-                txt.text = "<size=20><color=#ffd700><b>✦ PACTO DE SANGUE ✦</b></color></size>\n<size=12><color=#ffaa44><i>Selar Sacrifício do Tarô Proibido</i></color></size>";
-                txt.alignment = TextAlignmentOptions.Center;
-            }
-        }
-
-        if (btnCambioSangue != null)
-        {
-            TextMeshProUGUI txt = btnCambioSangue.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (txt != null)
-            {
-                txt.text = "<size=20><color=#ff4455><b>✦ CÂMBIO DE SANGUE ✦</b></color></size>\n<size=12><color=#00ff99><i>-15% Vida Máxima  ➔  +300 Essências</i></color></size>";
-                txt.alignment = TextAlignmentOptions.Center;
-            }
-        }
-
-        if (btnRemocao != null)
-        {
-            TextMeshProUGUI txt = btnRemocao.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (txt != null)
-            {
-                txt.text = "<size=20><color=#88ccff><b>✦ CIRURGIA DE REMOÇÃO ✦</b></color></size>\n<size=12><color=#88ccff><i>Remove 1 Infusão Ativa (-150 Essências)</i></color></size>";
-                txt.alignment = TextAlignmentOptions.Center;
-            }
-        }
-
-        if (btnComprarArtefato != null)
-        {
-            TextMeshProUGUI txt = btnComprarArtefato.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (txt != null)
-            {
-                txt.text = "<size=20><color=#ffaa00><b>✦ ARTEFATO REFINADO ✦</b></color></size>\n<size=12><color=#ffcc00><i>Adquirir Relíquia de Tier Alto (-600 Essências)</i></color></size>";
-                txt.alignment = TextAlignmentOptions.Center;
-            }
-        }
-
-        // 2. Textos descritivos das opções
-        if (txtCambioCost != null)
-        {
-            txtCambioCost.text = "<size=17><color=#ffcc00><b>✦ CÂMBIO DE SANGUE ✦</b></color></size>\n<color=#ff3344>-15% Vida Máxima</color>  ➔  <color=#00ff99><b>+300 Essências</b></color>";
-            txtCambioCost.alignment = TextAlignmentOptions.Center;
-        }
-
-        if (txtRemocaoCost != null)
-        {
-            txtRemocaoCost.text = "<size=17><color=#88ccff><b>✦ CIRURGIA DE REMOÇÃO ✦</b></color></size>\n<color=#88ccff>Remove 1 Infusão</color>  ➔  <color=#ffcc00><b>-150 Essências</b></color>";
-            txtRemocaoCost.alignment = TextAlignmentOptions.Center;
-        }
-
-        if (txtArtefatoCost != null)
-        {
-            txtArtefatoCost.text = "<size=17><color=#ffaa00><b>✦ ARTEFATO REFINADO ✦</b></color></size>\n<color=#ffaa00>Artefato Tier Alto</color>  ➔  <color=#ffcc00><b>-600 Essências</b></color>";
-            txtArtefatoCost.alignment = TextAlignmentOptions.Center;
-        }
+        if (txtCambioCost != null) txtCambioCost.text = "<color=#ff3344>-15% Vida Máxima</color>\n<color=#ffcc00>+300 Essências</color>";
+        if (txtRemocaoCost != null) txtRemocaoCost.text = "<color=#88ccff>Remove 1 Infusão</color>\n<color=#ffcc00>-150 Essências</color>";
+        if (txtArtefatoCost != null) txtArtefatoCost.text = "<color=#ffaa00>Artefato Tier Alto</color>\n<color=#ffcc00>-600 Essências</color>";
     }
 
     private void AddHoverEffectToButtons()
@@ -541,15 +450,9 @@ public class MerchantUIController : MonoBehaviour
         Button[] allButtons = GetComponentsInChildren<Button>(true);
         foreach (Button b in allButtons)
         {
-            if (b != null)
+            if (b != null && b.GetComponent<MerchantCardHover>() == null)
             {
-                MerchantCardHover hover = b.GetComponent<MerchantCardHover>();
-                if (hover == null) hover = b.gameObject.AddComponent<MerchantCardHover>();
-
-                // Apenas botões de cartas do Tarô/Pacto recebem isPactCard = true
-                bool isTarotBtn = System.Array.IndexOf(tarotButtons, b) >= 0;
-                hover.isPactCard = isTarotBtn;
-                hover.enableGlitchFont = isTarotBtn;
+                b.gameObject.AddComponent<MerchantCardHover>();
             }
         }
     }
@@ -818,7 +721,7 @@ public class MerchantUIController : MonoBehaviour
         }
 
         // FASE 2: PONTO MÉDIO DA VIRADA (90° = Carta de Perfil / Invisível)
-        // Revela o verso da carta com TODAS AS INFORMAÇÕES COMPLETAS!
+        // Revela o verso da carta com o texto da maldição!
         TextMeshProUGUI nameTxt = null;
         TextMeshProUGUI descTxt = null;
         TextMeshProUGUI costTxt = null;
@@ -835,47 +738,9 @@ public class MerchantUIController : MonoBehaviour
         if (childTexts.Length > 1 && descTxt == null) descTxt = (childTexts[1] != nameTxt) ? childTexts[1] : (childTexts.Length > 2 ? childTexts[2] : null);
         if (childTexts.Length > 2 && costTxt == null) costTxt = (childTexts[2] != nameTxt && childTexts[2] != descTxt) ? childTexts[2] : null;
 
-        if (nameTxt != null) nameTxt.text = $"<color=#ffcc00><b>✦ {pact.name.ToUpper()} ✦</b></color>";
-        
-        // Deixa APENAS a carta escolhida 80% mais escura (quase preta #333338) ao virar no 90°, para facilitar a leitura das informações!
-        Image chosenCardImage = chosenBtn.GetComponent<Image>();
-        if (chosenCardImage != null)
-        {
-            chosenCardImage.color = new Color(0.20f, 0.20f, 0.22f, 1.0f);
-        }
-        if (hoverScript != null)
-        {
-            hoverScript.enableColorChange = false; // Preserva o tom escuro no verso revelado
-        }
-
-        // Ativa e revela a descrição e o custo de vida ao virar a carta!
-        if (descTxt != null)
-        {
-            descTxt.gameObject.SetActive(true);
-            descTxt.text = $"<color=#ffffff>{pact.description}</color>";
-            RectTransform rt = descTxt.rectTransform;
-            rt.anchorMin = new Vector2(0.08f, 0.25f);
-            rt.anchorMax = new Vector2(0.92f, 0.68f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            descTxt.alignment = TextAlignmentOptions.Center;
-            descTxt.fontSizeMin = 10;
-            descTxt.fontSizeMax = 15;
-        }
-
-        if (costTxt != null)
-        {
-            costTxt.gameObject.SetActive(true);
-            costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
-            RectTransform rt = costTxt.rectTransform;
-            rt.anchorMin = new Vector2(0.08f, 0.06f);
-            rt.anchorMax = new Vector2(0.92f, 0.22f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            costTxt.alignment = TextAlignmentOptions.Center;
-            costTxt.fontSizeMin = 12;
-            costTxt.fontSizeMax = 18;
-        }
+        if (nameTxt != null) nameTxt.text = $"<color=#ffcc00><b>✦ {pact.name} ✦</b></color>";
+        if (descTxt != null) descTxt.text = pact.description; // REVELA O VERSO COM O SEGREDO COMPLETO!
+        if (costTxt != null) costTxt.text = $"<color=#ff2233><b>-{pact.healthCostPercent * 100}% VIDA MÁXIMA</b></color>";
 
         // FASE 3: Gira de 90° até 0°, desdobrando a face traseira no centro!
         elapsed = 0f;
