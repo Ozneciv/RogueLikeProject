@@ -78,6 +78,13 @@ public class SaveManager : MonoBehaviour
 
                 if (_cachedData == null)
                     _cachedData = new PersistentSaveData();
+
+                // Garantia contra listas nulas pós-desserialização de versões antigas do JSON
+                if (_cachedData.baseResources == null) _cachedData.baseResources = new List<ItemSaveEntry>();
+                if (_cachedData.purchasedUpgradeIndices == null) _cachedData.purchasedUpgradeIndices = new List<int>();
+                if (_cachedData.craftedEquipmentIds == null) _cachedData.craftedEquipmentIds = new List<string>();
+                if (_cachedData.equippedEquipmentIds == null) _cachedData.equippedEquipmentIds = new List<string>();
+                if (_cachedData.inimigosDescobertos == null) _cachedData.inimigosDescobertos = new List<string>();
             }
             return _cachedData;
         }
