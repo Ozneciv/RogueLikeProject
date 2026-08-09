@@ -470,9 +470,20 @@ public class BossController : MonoBehaviour
                 break;
             case 2:
                 CurrentState = BossState.Phase2;
+                // Efeito dramático de Camera Shake e Flash de Luz na quebra do casulo da Fase 2!
+                TriggerCameraShake(0.45f, 0.18f);
+
+                GameObject flashLight = new GameObject("Phase2_Transition_Flash");
+                flashLight.transform.position = transform.position + Vector3.up * 1.5f;
+                Light l = flashLight.AddComponent<Light>();
+                l.color = new Color(0.9f, 0.25f, 0.9f);
+                l.intensity = 20f;
+                l.range = 25f;
+                Destroy(flashLight, 0.5f);
                 break;
             case 3:
                 CurrentState = BossState.Phase3;
+                TriggerCameraShake(0.5f, 0.22f);
                 break;
         }
 
@@ -583,6 +594,11 @@ public class BossController : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
 
+        Vector3 blastPos = transform.position + transform.forward * 1.5f;
+
+        // 🔴 Telegrafagem vermelha do golpe no chão (0.25s) antes do impacto
+        StartCoroutine(SpawnMeleeTelegraphIndicator(blastPos, 7.5f, 0.25f));
+
         if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
             string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
@@ -593,8 +609,8 @@ public class BossController : MonoBehaviour
         yield return new WaitForSeconds(windUp);
 
         // Dispara a Onda de Choque Exclusiva do Boss (AoE Knockback de 7.5 metros)
-        Vector3 blastPos = transform.position + transform.forward * 1.5f;
         BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
+        TriggerCameraShake(0.2f, 0.10f);
 
         // Recovery
         yield return new WaitForSeconds(0.4f);
@@ -609,6 +625,71 @@ public class BossController : MonoBehaviour
             agent.isStopped = false;
 
         isAttacking = false;
+    }
+
+    private IEnumerator SpawnMeleeTelegraphIndicator(Vector3 center, float radius, float duration)
+    {
+        GameObject redIndicator = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        redIndicator.name = "Boss_Melee_Telegraph";
+        Destroy(redIndicator.GetComponent<Collider>());
+
+        redIndicator.transform.position = center + Vector3.up * 0.04f;
+        redIndicator.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        redIndicator.transform.localScale = Vector3.zero;
+
+        Renderer r = redIndicator.GetComponent<Renderer>();
+        if (r != null)
+        {
+            Shader uShader = Shader.Find("Universal Render Pipeline/Unlit")
+                          ?? Shader.Find("Unlit/Color");
+            Material m = new Material(uShader);
+            Color redCol = new Color(1.0f, 0.15f, 0.15f, 0.45f);
+            m.color = redCol;
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", redCol);
+            r.material = m;
+        }
+
+        float elapsed = 0f;
+        Vector3 targetScale = new Vector3(radius * 2f, radius * 2f, 1f);
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            if (redIndicator != null)
+            {
+                redIndicator.transform.localScale = Vector3.Lerp(Vector3.zero, targetScale, t);
+            }
+            yield return null;
+        }
+
+        Destroy(redIndicator);
+    }
+
+    public static void TriggerCameraShake(float duration = 0.35f, float magnitude = 0.12f)
+    {
+        Camera mainCam = Camera.main;
+        if (mainCam != null)
+        {
+            mainCam.GetComponent<MonoBehaviour>()?.StartCoroutine(CameraShakeRoutine(mainCam.transform, duration, magnitude));
+        }
+    }
+
+    private static IEnumerator CameraShakeRoutine(Transform camTransform, float duration, float magnitude)
+    {
+        Vector3 originalPos = camTransform.localPosition;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float x = Random.Range(-1f, 1f) * magnitude;
+            float y = Random.Range(-1f, 1f) * magnitude;
+
+            camTransform.localPosition = originalPos + new Vector3(x, y, 0);
+            yield return null;
+        }
+
+        camTransform.localPosition = originalPos;
     }
 
     // =====================================================
