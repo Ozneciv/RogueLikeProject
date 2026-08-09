@@ -922,9 +922,37 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 6284554266325809849, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
-      propertyPath: m_TagString
-      value: Player
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: axeBladeTip
+      value: 
+      objectReference: {fileID: 1773390499}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: triggerVFXTestNow
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: customShockwaveSprite
+      value: 
+      objectReference: {fileID: -535416314, guid: c5c05f2ab9320c2448e675faed50e290, type: 3}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: shockwaveRingMaxOpacity
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: shockwaveRingOpacityCurve.m_Curve.Array.data[1].time
+      value: 0.4091797
+      objectReference: {fileID: 0}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: shockwaveRingOpacityCurve.m_Curve.Array.data[1].value
+      value: 0.338089
+      objectReference: {fileID: 0}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: shockwaveRingOpacityCurve.m_Curve.Array.data[0].outSlope
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: shockwaveRingOpacityCurve.m_Curve.Array.data[2].outSlope
+      value: -0.4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1818,6 +1846,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 744d65fa64009c34da6871835ddff748, type: 3}
+--- !u!4 &1773390499 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3833448605011665567, guid: 92e5e0e28afbff8419af913a7592af46, type: 3}
+  m_PrefabInstance: {fileID: 720140867}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1810723701
 GameObject:
   m_ObjectHideFlags: 0
