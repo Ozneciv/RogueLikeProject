@@ -299,6 +299,21 @@ public class DummyHealth : MonoBehaviour
         }
     }
 
+    private void LateUpdate()
+    {
+        // Orientação Billboard: Garante que o Canvas/Slider de vida fique sempre virado de frente para a Câmera do Jogador
+        if (healthBarSlider != null && healthBarSlider.gameObject.activeInHierarchy)
+        {
+            Camera mainCam = Camera.main;
+            if (mainCam != null)
+            {
+                Canvas canvas = healthBarSlider.GetComponentInParent<Canvas>();
+                Transform targetTransform = (canvas != null) ? canvas.transform : healthBarSlider.transform;
+                targetTransform.rotation = mainCam.transform.rotation;
+            }
+        }
+    }
+
     public void ApplySlow(float percent, float duration)
     {
         if (percent <= 0f) return;

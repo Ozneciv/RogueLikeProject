@@ -115,7 +115,20 @@ public class CrystalTuner : MonoBehaviour
 
     void Update()
     {
-        if (targets != null) targets.RemoveAll(t => t.obj == null);
+        if (targets != null)
+        {
+            for (int i = targets.Count - 1; i >= 0; i--)
+            {
+                if (targets[i].obj == null)
+                {
+                    if (targets[i].beam != null && targets[i].beam.gameObject != null)
+                    {
+                        Destroy(targets[i].beam.gameObject);
+                    }
+                    targets.RemoveAt(i);
+                }
+            }
+        }
 
         HandleBuffs();
         UpdateAllBeams();
