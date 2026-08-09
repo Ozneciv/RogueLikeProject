@@ -71,7 +71,6 @@ public class EssencePickup : MonoBehaviour
             playerTransform = player.transform;
         }
 
-<<<<<<< HEAD
         // Força a cor amarelada/dourada no material, luz e trail do pickup (substitui qualquer material rosa)
         Color yellowColor = new Color(1.00f, 0.85f, 0.10f, 1.00f);
         Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
@@ -106,9 +105,6 @@ public class EssencePickup : MonoBehaviour
             tr.startColor = new Color(1.00f, 0.90f, 0.20f, 1.00f);
             tr.endColor = new Color(1.00f, 0.70f, 0.00f, 0.00f);
         }
-
-=======
->>>>>>> origin/matheus
         if (lifetime > 0)
         {
             Destroy(gameObject, lifetime);

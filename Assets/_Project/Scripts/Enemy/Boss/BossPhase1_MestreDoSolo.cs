@@ -37,6 +37,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     public float profundidadeSpawn = 4f;
     public float tempoEmergindo = 0.5f;
     public float tempoVidaPrisao = 6f;
+    public float distanciaRecuo = 5f;
 
     private bool phase1Ativa = false;
     private bool atacando = false;
@@ -135,7 +136,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             phase1Ativa = false; 
             StopAllCoroutines();
             atacando = false;
-<<<<<<< HEAD
 
             // Devolve o visual sólido para o Boss e ativa sua inteligência
             foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = true; }
@@ -148,16 +148,10 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             if (agent != null) 
             {
                 agent.enabled = true;
+                if (agent.isOnNavMesh) agent.isStopped = false;
             }
             
             Debug.Log("[Fase 1] Fim! Boss revelado para a Fase 2.");
-=======
-            if (agent != null && agent.isOnNavMesh)
-            {
-                agent.enabled = true;
-                agent.isStopped = false;
-            }
->>>>>>> origin/matheus
         }
     }
 
@@ -170,19 +164,23 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
         while (phase1Ativa)
         {
-            if (!atacando && !bossController.IsStunned && !bossController.IsDead)
+            if (bossController != null && !bossController.IsStunned && !bossController.IsDead && !atacando)
             {
-                int ataqueSorteado = Random.Range(0, 2);
+                int ataqueSorteado = Random.Range(0, 3);
                 
                 if (ataqueSorteado == 0)
                 {
                     yield return StartCoroutine(Ataque_Prisao(pilarPrefab, false));
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Pillar);
                 }
-                else
+                else if (ataqueSorteado == 1)
                 {
                     yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
+                }
+                else
+                {
+                    yield return StartCoroutine(RecuarDoPlayer());
                 }
             }
             yield return new WaitForSeconds(tempoEntreAtaques);
@@ -227,22 +225,22 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 new Vector3(-1, 0,  1), new Vector3(0, 0,  1), new Vector3(1, 0,  1), 
                 new Vector3(-1, 0,  0),                        new Vector3(1, 0,  0), 
                 new Vector3(-1, 0, -1), new Vector3(0, 0, -1), new Vector3(1, 0, -1)  
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-            agent.isStopped = true;
+            };
 
-        Vector3 centro = playerTransform.position;
+            foreach (Vector3 dir in direcoesQuadrado)
+            {
+                posicoesFinais.Add(centro + (dir * (raioDaPrisao * 0.8f))); 
+            }
+        }
+
         List<Transform> objetosCriados = new List<Transform>();
-        List<Vector3> posicoesFinais = new List<Vector3>();
-
-        for (int i = 0; i < quantidadeObstaculos; i++)
+        for (int i = 0; i < posicoesFinais.Count; i++)
         {
-            float angulo = i * (360f / quantidadeObstaculos);
-            Vector3 dir = Quaternion.Euler(0, angulo, 0) * Vector3.forward;
-            Vector3 posFinal = centro + dir * raioPrisao;
-            Vector3 posSubsolo = posFinal + Vector3.down * offsetAlturaSubsolo;
+            Vector3 posFinal = posicoesFinais[i];
+            posFinal.y = transform.position.y + offsetAlturaFinal; 
 
-            posicoesFinais.Add(posFinal);
-
+            Vector3 posSubsolo = posFinal + (Vector3.down * profundidadeSpawn);
+            
             if (prefabObstaculo != null)
             {
                 Quaternion rotacao = Quaternion.LookRotation(centro - posFinal);
@@ -265,17 +263,19 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     {
         float tempoDecorrido = 0f;
         List<Vector3> posicoesIniciais = new List<Vector3>();
+        
         foreach (var obj in objetos)
         {
             if (obj != null) posicoesIniciais.Add(obj.position);
             else posicoesIniciais.Add(Vector3.zero);
         }
 
-        while (tempoDecorrido < tempoErupcao)
+        while (tempoDecorrido < tempoEmergindo)
         {
             tempoDecorrido += Time.deltaTime;
-            float t = tempoDecorrido / tempoErupcao;
-            float curvaSobeSutil = Mathf.SmoothStep(0f, 1f, t);
+            
+            float t = Mathf.Clamp01(tempoDecorrido / tempoEmergindo);
+            float curvaSobeSutil = Mathf.Sin(t * Mathf.PI * 0.5f);
 
             for (int i = 0; i < objetos.Count; i++)
             {
@@ -303,7 +303,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         {
             atacando = true;
 
-            Vector3 direcaoOposta = (transform.position - playerTransform.position).normalized;
+            Vector3 direcaoOposta = (transform.position - (playerTransform != null ? playerTransform.position : transform.position)).normalized;
             direcaoOposta.y = 0;
 
             if (direcaoOposta.sqrMagnitude < 0.1f) direcaoOposta = transform.forward;
@@ -343,10 +343,13 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 agent.isStopped = false;
             if (animator != null) animator.SetFloat("Speed", 0f);
             
-            Vector3 olharPlayer = (playerTransform.position - transform.position).normalized;
-            olharPlayer.y = 0;
-            if (olharPlayer.sqrMagnitude > 0.01f)
-                transform.rotation = Quaternion.LookRotation(olharPlayer);
+            if (playerTransform != null)
+            {
+                Vector3 olharPlayer = (playerTransform.position - transform.position).normalized;
+                olharPlayer.y = 0;
+                if (olharPlayer.sqrMagnitude > 0.01f)
+                    transform.rotation = Quaternion.LookRotation(olharPlayer);
+            }
         }
         finally 
         {
@@ -365,3 +368,4 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
         }
     }
+}
