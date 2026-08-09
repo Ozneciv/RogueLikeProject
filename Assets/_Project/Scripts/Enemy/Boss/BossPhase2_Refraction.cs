@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -31,42 +31,40 @@ public class BossPhase2_Refraction : MonoBehaviour
     private List<MaterialData> originalMaterialData = new List<MaterialData>();
 
     // -- Configuracao (Inspector)
-    [Header(""Invisibilidade -- Configuracao"")]
-    [Tooltip(""Numero maximo de vezes que o boss pode ficar invisivel durante a Fase 2"")]
+    [Header("Invisibilidade -- Configuracao")]
+    [Tooltip("Numero maximo de vezes que o boss pode ficar invisivel durante a Fase 2")]
     public int maxRefractionUses = 2;
 
-    [Tooltip(""Duracao da invisibilidade em segundos"")]
-    public float refractionDuration = 6f;
-
-    [Tooltip(""Tempo para o boss sumir (fade out)"")]
+    [Tooltip("Tempo para o boss sumir (fade out)")]
     public float fadeOutTime = 0.4f;
 
-    [Tooltip(""Tempo para o boss reaparecer (fade in)"")]
+    [Tooltip("Tempo para o boss reaparecer (fade in)")]
     public float fadeInTime = 0.7f;
 
-    [Header(""Limiares de HP para Ativar Invisibilidade"")]
-    [Tooltip(""Porcentagens de HP (0.0 a 1.0) nas quais a invisibilidade e ativada. Ex: 0.50 = 50 por cento. Devem estar em ordem decrescente."")]
+    // Nota: invisibilidade e INDEFINIDA — dura ate o player acertar o boss.
+
+    [Header("Limiares de HP para Ativar Invisibilidade")]
+    [Tooltip("Porcentagens de HP (0.0 a 1.0) nas quais a invisibilidade e ativada. Ex: 0.50 = 50 por cento. Devem estar em ordem decrescente.")]
     public float[] refractionThresholds = { 0.50f, 0.20f };
 
-    [Header(""Reposicionamento (Fuga)"")]
-    [Tooltip(""Distancia que o boss tenta fugir do player durante a invisibilidade"")]
+    [Tooltip("Distancia que o boss tenta fugir do player durante a invisibilidade")]
     public float fleeDistance = 12f;
 
-    [Tooltip(""Com qual frequencia (segundos) o boss tenta se reposicionar enquanto invisivel"")]
+    [Tooltip("Com qual frequencia (segundos) o boss tenta se reposicionar enquanto invisivel")]
     public float repositionInterval = 2.5f;
 
-    [Header(""Ataques durante Invisibilidade"")]
-    [Tooltip(""Com qual frequencia (segundos) o boss spawna mobs enquanto invisivel"")]
+    [Header("Ataques durante Invisibilidade")]
+    [Tooltip("Com qual frequencia (segundos) o boss spawna mobs enquanto invisivel")]
     public float mobSpawnInterval = 4f;
 
-    [Tooltip(""Com qual frequencia (segundos) o boss invoca pilares enquanto invisivel"")]
+    [Tooltip("Com qual frequencia (segundos) o boss invoca pilares enquanto invisivel")]
     public float pilarSpawnInterval = 5f;
 
-    [Header(""Efeito Visual"")]
-    [Tooltip(""Cor do brilho na borda durante invisibilidade"")]
+    [Header("Efeito Visual")]
+    [Tooltip("Cor do brilho na borda durante invisibilidade")]
     public Color refractionGlowColor = new Color(0.5f, 0.8f, 1f, 0.3f);
 
-    [Header(""Debug"")]
+    [Header("Debug")]
     public bool showDebugLog = true;
 
     // -- Estado Interno
@@ -240,14 +238,14 @@ public class BossPhase2_Refraction : MonoBehaviour
             agent.speed = originalAgentSpeed * 1.4f;
         }
 
-        float elapsed = 0f;
         float nextMobSpawn = mobSpawnInterval;
         float nextPilarSpawn = pilarSpawnInterval;
         float nextReposition = repositionInterval;
 
-        while (isRefracting && elapsed < refractionDuration)
+        // Invisibilidade INDEFINIDA — o boss fica invisível ate o player acertar nele.
+        // CancelRefraction() e chamado pelo OnTookDamage() quando o player acerta.
+        while (isRefracting)
         {
-            elapsed += Time.deltaTime;
             nextMobSpawn -= Time.deltaTime;
             nextPilarSpawn -= Time.deltaTime;
             nextReposition -= Time.deltaTime;
@@ -274,8 +272,6 @@ public class BossPhase2_Refraction : MonoBehaviour
 
             yield return null;
         }
-
-        if (isRefracting) CancelRefraction();
     }
 
     IEnumerator FleeRoutine()
