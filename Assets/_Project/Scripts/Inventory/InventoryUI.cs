@@ -213,7 +213,8 @@ public class InventoryUI : MonoBehaviour
         if (statsPanelObject != null) statsPanelObject.SetActive(false);
         if (PlayerPreviewManager.Instance != null) PlayerPreviewManager.Instance.Deactivate();
         if (tooltip != null) tooltip.Hide();
-
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         Debug.Log("[INVENTORY UI] Reconectado e UI resetada após carregar cena: " + scene.name);
     }
 

@@ -421,9 +421,11 @@ public class RoomController : MonoBehaviour
 
     void CheckWaveStatus()
     {
-        // Remove referências de inimigos destruídos ou desativados/fugindo (como Geobionte)
+        // Remove referências de inimigos destruídos, inativos, fora do mapa ou desativados/fugindo (como Geobionte)
         activeEnemies.RemoveAll(e => {
-            if (e == null) return true;
+            if (e == null || !e.activeInHierarchy || e.transform.position.y < -15f) return true;
+            DummyHealth dh = e.GetComponent<DummyHealth>() ?? e.GetComponentInChildren<DummyHealth>();
+            if (dh != null && dh.CurrentHealth <= 0) return true;
             Geobionte_AI geo = e.GetComponent<Geobionte_AI>() ?? e.GetComponentInChildren<Geobionte_AI>() ?? e.GetComponentInParent<Geobionte_AI>();
             if (geo != null && geo.IsDefeatedOrFleeing) return true;
             return false;
