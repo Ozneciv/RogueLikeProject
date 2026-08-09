@@ -106,7 +106,12 @@ public class Spider_AI : MonoBehaviour
 
     void Update()
     {
-        if (playerTransform == null) return;
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+            else return;
+        }
         if (health != null && health.CurrentHealth <= 0) return;
 
         // Timer de cooldowns

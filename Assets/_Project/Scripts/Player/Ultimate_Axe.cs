@@ -248,6 +248,10 @@ public class Ultimate_Axe : MonoBehaviour
         Vector3 startPos = playerRb.position;
         Vector3 leapDir = isRunning ? runDir : transform.forward;
         Vector3 targetXZPos = startPos + (leapDir * parabolaForwardDistance);
+        if (Physics.Raycast(startPos + Vector3.up * 0.5f, leapDir, out RaycastHit wallHit, parabolaForwardDistance))
+        {
+            targetXZPos = startPos + (leapDir * Mathf.Max(0.5f, wallHit.distance - 0.5f));
+        }
 
         while (elapsed < parabolaAirTime && !slamImpactExecuted)
         {

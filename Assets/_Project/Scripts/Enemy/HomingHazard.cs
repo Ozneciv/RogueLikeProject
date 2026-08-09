@@ -48,6 +48,7 @@ public class HomingHazard : MonoBehaviour
     private Vector3 originalScale;
     private DummyHealth health;
     private PulseVisualizer pulseVisualizer;
+    private Material[] cachedMaterials;
 
     void Start()
     {
@@ -66,20 +67,26 @@ public class HomingHazard : MonoBehaviour
             if (c != null) c.isTrigger = true;
         }
 
-        // Cache de renderizadores para piscar durante a fusão
+        // Cache de renderizadores e materiais para piscar durante a fusão sem alocação de GC
         renderers = GetComponentsInChildren<Renderer>();
         if (renderers != null && renderers.Length > 0)
         {
             originalColors = new Color[renderers.Length];
+            cachedMaterials = new Material[renderers.Length];
+
             for (int i = 0; i < renderers.Length; i++)
             {
-                if (renderers[i] != null && renderers[i].material != null && renderers[i].material.HasProperty("_Color"))
+                if (renderers[i] != null)
                 {
-                    originalColors[i] = renderers[i].material.color;
-                }
-                else
-                {
-                    originalColors[i] = Color.white;
+                    cachedMaterials[i] = renderers[i].material;
+                    if (cachedMaterials[i] != null && cachedMaterials[i].HasProperty("_Color"))
+                    {
+                        originalColors[i] = cachedMaterials[i].color;
+                    }
+                    else
+                    {
+                        originalColors[i] = Color.white;
+                    }
                 }
             }
         }
@@ -127,13 +134,13 @@ public class HomingHazard : MonoBehaviour
             float flashSpeed = Mathf.Lerp(30f, 10f, stateTimer / fuseDuration);
             bool isFlash = (Mathf.Sin(Time.time * flashSpeed) > 0);
 
-            if (renderers != null)
+            if (cachedMaterials != null)
             {
-                for (int i = 0; i < renderers.Length; i++)
+                for (int i = 0; i < cachedMaterials.Length; i++)
                 {
-                    if (renderers[i] != null && renderers[i].material != null && renderers[i].material.HasProperty("_Color"))
+                    if (cachedMaterials[i] != null && cachedMaterials[i].HasProperty("_Color"))
                     {
-                        renderers[i].material.color = isFlash ? Color.red * 1.5f : originalColors[i];
+                        cachedMaterials[i].color = isFlash ? Color.red * 1.5f : originalColors[i];
                     }
                 }
             }

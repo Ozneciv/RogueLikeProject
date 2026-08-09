@@ -115,10 +115,18 @@ public class CrystalTuner : MonoBehaviour
 
     void Update()
     {
+        if (targets != null) targets.RemoveAll(t => t == null || t.obj == null);
+
         HandleBuffs();
         UpdateAllBeams();
         UpdateConnectionLight();
         UpdateVisualRotation();
+
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+        }
 
         // Registro no bestiário por proximidade
         if (!registradoNoBestiario && playerTransform != null)

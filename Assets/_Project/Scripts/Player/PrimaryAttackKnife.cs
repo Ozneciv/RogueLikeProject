@@ -110,6 +110,11 @@ public class PrimaryAttackKnife : MonoBehaviour
     private bool eventFiredOpenWindow = false;
     private List<Collider> enemiesHitInThisAttack;
 
+    private void OnDisable()
+    {
+        ResetCombo();
+    }
+
     private void Start()
     {
         defaultAttackSpeed = attackAnimationSpeed; // Salva a velocidade customizada do Inspector (como a da Adaga) antes de qualquer troca
@@ -331,8 +336,13 @@ public class PrimaryAttackKnife : MonoBehaviour
                     }
                 }
 
-                // Aplica impulso na direção frontal do jogador
+                // Aplica impulso na direção frontal do jogador com verificação de parede próxima (Raycast)
                 Vector3 lungeDir = transform.forward;
+                if (Physics.Raycast(transform.position + Vector3.up * 0.5f, lungeDir, out RaycastHit wallHit, 1.2f))
+                {
+                    lungeForce *= 0.15f; // Evita atravessar a geometria de paredes
+                }
+
                 playerRb.linearVelocity = new Vector3(lungeDir.x * lungeForce, playerRb.linearVelocity.y, lungeDir.z * lungeForce);
                 Debug.Log($"[PrimaryAttackKnife] Lunge aplicado com força {lungeForce} na direção {lungeDir}");
             }

@@ -369,7 +369,11 @@ public class Geobionte_AI : MonoBehaviour
 
     void Update()
     {
-        if (playerTransform == null) return;
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+        }
 
         switch (currentState)
         {
