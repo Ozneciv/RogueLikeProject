@@ -330,9 +330,13 @@ MonoBehaviour:
   goblinPrefab: {fileID: 3359006950562635497, guid: 5e5b6987e167aa04eb10ca7764b6880b, type: 3}
   spiderPrefab: {fileID: 8934992465927708091, guid: 56182097e246d7b4b895b2c1feb0d2ba, type: 3}
   sharpBlurPrefab: {fileID: 4268998290841704769, guid: 54907d67b9c4ae344968f4a78411c6ac, type: 3}
+  golemPrefab: {fileID: 748345383327806496, guid: 1a7976a1e55d949409c9a7bb2c781cac, type: 3}
+  magicStonePrefab: {fileID: 4138484601771036003, guid: 3756182d398618847b5cad2c2be8caff, type: 3}
+  crystalWatcherPrefab: {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
   totemPrefab: {fileID: 326464074420430212, guid: 75587e19386eb024c8b895034e0d087d, type: 3}
   cristalusPrefab: {fileID: 5390169502761059047, guid: ac128f3903b4ea142b3ab43e791ce0f2, type: 3}
   shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
+  geobiontePrefab: {fileID: 227223189099962665, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
   spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
   spawnIndicatorDelay: 1
   spawnDepth: 3
