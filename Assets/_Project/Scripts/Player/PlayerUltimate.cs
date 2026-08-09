@@ -33,41 +33,63 @@ public class PlayerUltimate : MonoBehaviour
     private Rigidbody playerRb;
     private Animator animator;
 
-    void Start()
+    void OnEnable()
     {
-        playerHealth = GetComponent<PlayerHealth>();
-        playerRb = GetComponent<Rigidbody>();
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        RebindReferences();
+    }
+
+    public void RebindReferences()
+    {
+        isUltimateActive = false; // Reset emergencial na troca de cena
+        playerHealth = GetComponent<PlayerHealth>() ?? GetComponentInParent<PlayerHealth>();
+        playerRb = GetComponent<Rigidbody>() ?? GetComponentInParent<Rigidbody>();
         weaponManager = GetComponent<Player_WeaponManager>() ?? GetComponentInChildren<Player_WeaponManager>();
         attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>();
 
-        animator = GetComponentInChildren<Animator>();
-        if (animator == null && weaponManager != null)
+        if (weaponManager != null && weaponManager.playerAnimator != null && weaponManager.playerAnimator.isActiveAndEnabled)
         {
             animator = weaponManager.playerAnimator;
         }
+        else
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
 
-        // Garante que o receptor de eventos de animação esteja no mesmo objeto do Animator!
         if (animator != null)
         {
             PlayerAnimationEvents animEvents = animator.GetComponent<PlayerAnimationEvents>();
             if (animEvents == null)
             {
-                animEvents = animator.gameObject.AddComponent<PlayerAnimationEvents>();
-                Debug.Log($"[PlayerUltimate] Componente PlayerAnimationEvents anexado ao objeto do Animator '{animator.gameObject.name}'");
+                animator.gameObject.AddComponent<PlayerAnimationEvents>();
             }
         }
 
-        // Garante que a habilidade do Machado esteja presente por padrão
-        if (GetComponent<Ultimate_Axe>() == null)
+        Ultimate_Axe axeUlt = GetComponent<Ultimate_Axe>() ?? GetComponentInChildren<Ultimate_Axe>();
+        if (axeUlt == null)
         {
             gameObject.AddComponent<Ultimate_Axe>();
         }
 
-        // Garante que a UI de Countdown no Canvas esteja ativa
-        if (GetComponent<UltimateUI>() == null)
+        UltimateUI ui = GetComponent<UltimateUI>() ?? GetComponentInChildren<UltimateUI>();
+        if (ui == null)
         {
             gameObject.AddComponent<UltimateUI>();
         }
+    }
+
+    void Start()
+    {
+        RebindReferences();
     }
 
     void Update()
@@ -108,14 +130,20 @@ public class PlayerUltimate : MonoBehaviour
     public void ActivateUltimate()
     {
         Debug.Log("🚀 [PlayerUltimate] ActivateUltimate() iniciado!");
+        RebindReferences();
 
-        // 1. VERIFICAÇÃO DE ARMA: Impedir uso do Ultimate sem arma na mão
+        // 1. VERIFICAÇÃO E ATIVAÇÃO DE ARMA AUTOMÁTICA
         if (weaponManager != null)
         {
-            if (!weaponManager.isWeaponDrawn || weaponManager.currentWeapon == null || !weaponManager.currentWeapon.activeInHierarchy)
+            if (weaponManager.currentWeapon != null && !weaponManager.currentWeapon.activeInHierarchy)
             {
-                Debug.LogWarning($"⚠️ [PlayerUltimate] Não é possível usar o Ultimate sem a arma empunhada! isDrawn={weaponManager.isWeaponDrawn}, hasCurrentWeapon={(weaponManager.currentWeapon != null)}");
-                return;
+                weaponManager.currentWeapon.SetActive(true);
+                weaponManager.isWeaponDrawn = true;
+            }
+
+            if (!weaponManager.isWeaponDrawn && weaponManager.currentWeapon != null)
+            {
+                weaponManager.isWeaponDrawn = true;
             }
         }
 

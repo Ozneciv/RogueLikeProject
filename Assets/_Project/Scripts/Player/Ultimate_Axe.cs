@@ -166,6 +166,7 @@ public class Ultimate_Axe : MonoBehaviour
     {
         slamImpactExecuted = false;
         FindBladeTipIfMissing();
+        playerRb = GetComponentInParent<Rigidbody>() ?? GetComponent<Rigidbody>();
 
         Debug.Log("[Ultimate_Axe] ExecuteUltimate() iniciado!");
 
