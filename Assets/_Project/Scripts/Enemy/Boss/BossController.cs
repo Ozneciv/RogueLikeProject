@@ -124,8 +124,8 @@ public class BossController : MonoBehaviour
     // Cache do HP anterior para detectar mudanças
     private int lastCheckedHP;
 
-    // Sangue ácido
-    private float toxicBloodTimer = 0f;
+    // Sangue ácido — timer iniciado positivo para nunca spawnar no primeiro frame
+    private float toxicBloodTimer = 2f;
 
     // =====================================================
     // UNITY LIFECYCLE
@@ -453,6 +453,15 @@ public class BossController : MonoBehaviour
     {
         if (IsInvisible == invisible) return;
         IsInvisible = invisible;
+
+        // Ao sair da invisibilidade, reseta o timer e posicao do drip
+        // para que o sangue nao apareca imediatamente na proxima ativacao
+        if (!invisible)
+        {
+            toxicBloodTimer = 1.2f;
+            lastDripPosition = Vector3.zero;
+        }
+
         BossEvents.RaiseRefractionToggle(invisible);
     }
 
