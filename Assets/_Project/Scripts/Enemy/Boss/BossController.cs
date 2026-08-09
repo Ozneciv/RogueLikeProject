@@ -317,6 +317,14 @@ public class BossController : MonoBehaviour
             return;
         }
 
+        // Se estiver executando qualquer ataque melee ou de magia (Spell), desativa IsWalking para não cancelar os triggers!
+        BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+        if (isAttacking || (mestre != null && mestre.Atacando))
+        {
+            animator.SetBool("IsWalking", false);
+            return;
+        }
+
         bool isMoving = false;
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
@@ -671,6 +679,7 @@ public class BossController : MonoBehaviour
         {
             string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
             animator.SetTrigger(selectedTrigger);
+            animator.Play(selectedTrigger, 0, 0f);
         }
 
         float windUp = IsInvisible ? 0.2f : 0.4f;

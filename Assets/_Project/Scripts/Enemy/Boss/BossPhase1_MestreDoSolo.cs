@@ -41,6 +41,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
     private bool phase1Ativa = false;
     private bool atacando = false;
+    public bool Atacando => atacando;
 
     private void Awake()
     {
@@ -194,7 +195,11 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     {
         atacando = true;
 
-        if (animator != null) animator.SetTrigger("Spell");
+        if (animator != null)
+        {
+            animator.SetTrigger("Spell");
+            animator.Play("Spell", 0, 0f);
+        }
         
         if (playerTransform != null)
         {
@@ -288,6 +293,8 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             }
             yield return null;
         }
+
+        atacando = false;
     }
 
     // =====================================================
