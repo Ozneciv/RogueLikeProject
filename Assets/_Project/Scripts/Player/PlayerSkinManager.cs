@@ -494,6 +494,22 @@ public class PlayerSkinManager : MonoBehaviour
             cheatConsole.playerAnimator = newAnimator;
             Debug.Log("[PlayerSkinManager] Bound Animator to CheatConsole");
         }
+
+        // PlayerUltimate
+        PlayerUltimate playerUlt = GetComponentInChildren<PlayerUltimate>() ?? GetComponentInParent<PlayerUltimate>();
+        if (playerUlt != null)
+        {
+            playerUlt.RebindReferences();
+            Debug.Log("[PlayerSkinManager] Rebound references to PlayerUltimate");
+        }
+
+        // PlayerM
+        PlayerM playerM = GetComponentInChildren<PlayerM>() ?? GetComponentInParent<PlayerM>();
+        if (playerM != null && newAnimator != null)
+        {
+            playerM.animator = newAnimator;
+            Debug.Log("[PlayerSkinManager] Bound Animator to PlayerM");
+        }
     }
 
     private Transform FindDeepChild(Transform parent, string name)
