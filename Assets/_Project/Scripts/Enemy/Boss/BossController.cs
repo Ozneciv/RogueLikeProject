@@ -136,6 +136,7 @@ public class BossController : MonoBehaviour
         health = GetComponent<DummyHealth>();
         agent = GetComponent<NavMeshAgent>();
 
+        // Auto-conecta o componente Animator presente no modelo filho (Orc Idle)
         if (animator == null)
             animator = GetComponentInChildren<Animator>(true);
 
@@ -155,6 +156,21 @@ public class BossController : MonoBehaviour
         {
             toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood") 
                             ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
+        }
+
+        // Auto-detecta o osso/transform do pé (footSpawnPoint) criado pelo Matheus
+        if (footSpawnPoint == null)
+        {
+            Transform[] allTransforms = GetComponentsInChildren<Transform>(true);
+            foreach (Transform t in allTransforms)
+            {
+                string nameLower = t.name.ToLower();
+                if (nameLower.Contains("foot") || nameLower.Contains("pé") || nameLower.Contains("ankle"))
+                {
+                    footSpawnPoint = t;
+                    break;
+                }
+            }
         }
 
         // 1. Garante que a Fase 2 (Refração / Invisibilidade) esteja sempre presente
