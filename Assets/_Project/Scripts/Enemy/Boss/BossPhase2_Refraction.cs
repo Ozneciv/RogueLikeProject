@@ -147,8 +147,17 @@ public class BossPhase2_Refraction : MonoBehaviour
 
     void Update()
     {
+        if (bossController == null) bossController = GetComponent<BossController>();
+        if (bossController == null || bossController.IsDead || bossController.IsStunned) return;
+
+        // Auto-ativa a Fase 2 se o BossController já transicionou para a Fase 2
+        if (bossController.CurrentPhase == 2 && !isPhase2Active)
+        {
+            isPhase2Active = true;
+            OnPhaseChanged(2);
+        }
+
         if (!isPhase2Active || isRefracting) return;
-        if (bossController.IsDead || bossController.IsStunned) return;
 
         // Monitora HP para ativar refração
         CheckRefractionThreshold();

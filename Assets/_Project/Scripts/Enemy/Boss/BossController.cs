@@ -64,7 +64,7 @@ public class BossController : MonoBehaviour
     public Animator animator;
 
     [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo.")]
-    public string[] meleeAttackTriggers = new string[] { "Attack1", "Attack2", "Spell" };
+    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch", "Attack1", "Attack2", "Spell" };
 
 
     [Header("Sangue Ácido (Invisibilidade)")]
@@ -72,7 +72,7 @@ public class BossController : MonoBehaviour
     [SerializeField] private GameObject toxicBloodPrefab;
 
     [Tooltip("Intervalo em segundos entre cada gota de sangue ácido.")]
-    [SerializeField] private float toxicBloodInterval = 1.0f;
+    [SerializeField] private float toxicBloodInterval = 0.4f;
 
     [Tooltip("Transform posicionado no pé do Boss para spawnar o sangue no chão.")]
     [SerializeField] private Transform footSpawnPoint;
@@ -137,6 +137,19 @@ public class BossController : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
+
+        // 1. Garante que a Fase 2 (Refração / Invisibilidade) esteja sempre presente
+        if (GetComponent<BossPhase2_Refraction>() == null)
+        {
+            gameObject.AddComponent<BossPhase2_Refraction>();
+        }
+
+        // 2. Tenta carregar o prefab de Sangue Ácido se estiver nulo
+        if (toxicBloodPrefab == null)
+        {
+            toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood") 
+                            ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
+        }
     }
 
     void Start()
@@ -271,9 +284,13 @@ public class BossController : MonoBehaviour
 
         if (toxicBloodPrefab == null)
         {
-            if (showDebugLog && Time.frameCount % 180 == 0)
-                Debug.LogWarning("[BossController] ⚠️ ToxicBloodPrefab não está atribuído no Inspector!");
-            return;
+            toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood")
+                            ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
+        }
+
+        if (toxicBloodPrefab == null)
+        {
+            toxicBloodPrefab = CreateFallbackToxicBloodPrefab();
         }
 
         // Ponto de origem: usa footSpawnPoint se atribuído; projeta raycast para o chão
@@ -305,6 +322,27 @@ public class BossController : MonoBehaviour
             if (showDebugLog)
                 Debug.Log($"[BossController] 🩸 Sangue ácido pingou em {spawnPos}");
         }
+    }
+
+    private GameObject CreateFallbackToxicBloodPrefab()
+    {
+        GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        quad.name = "ToxicBlood_Fallback";
+        quad.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+        Destroy(quad.GetComponent<Collider>());
+        
+        Renderer r = quad.GetComponent<Renderer>();
+        if (r != null)
+        {
+            Material m = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Standard"));
+            m.color = new Color(0.8f, 0.05f, 0.1f, 0.85f);
+            r.material = m;
+        }
+
+        ToxicBlood tb = quad.AddComponent<ToxicBlood>();
+        tb.lifetime = 3.5f;
+        quad.SetActive(false);
+        return quad;
     }
 
     void OnDestroy()
