@@ -77,7 +77,7 @@ public class Ultimate_Axe : MonoBehaviour
 
     [Tooltip("Tamanho máximo / Escala do Sprite no chão.")]
     [Range(0.5f, 30.0f)]
-    public float spriteMaxScale = 2.5f; // Padrão exato: 2.5
+    public float spriteMaxScale = 2.0f; // Padrão atualizado: 2.0
 
     [Tooltip("Tempo em segundos que a imagem leva para se formar abrindo do centro para fora.")]
     public float spriteFormDuration = 0.15f; // Padrão exato: 0.15s
@@ -106,7 +106,7 @@ public class Ultimate_Axe : MonoBehaviour
     public float shockwaveRingDuration = 1.0f; // Padrão exato: 1.0s
 
     [Tooltip("Escala extra de expansão da onda 3D em relação ao Sprite.")]
-    public float shockwaveRingScaleMultiplier = 25.0f; // Padrão exato: 25.0
+    public float shockwaveRingScaleMultiplier = 50.0f; // Padrão atualizado: 50.0
 
     [Tooltip("Opacidade máxima da onda de choque 3D sobreposta.")]
     [Range(0.05f, 1.0f)]
@@ -601,8 +601,13 @@ public class Ultimate_Axe : MonoBehaviour
             Color currentC = Color.Lerp(Color.white, shockwaveColor, t);
             currentC.a = alpha;
 
-            if (mr.material.HasProperty("_Color")) mr.material.SetColor("_Color", currentC);
-            else if (mr.material.HasProperty("_BaseColor")) mr.material.SetColor("_BaseColor", currentC);
+            if (mr != null && mr.material != null)
+            {
+                if (mr.material.HasProperty("_BaseColor")) mr.material.SetColor("_BaseColor", currentC);
+                if (mr.material.HasProperty("_Color")) mr.material.SetColor("_Color", currentC);
+                if (mr.material.HasProperty("_TintColor")) mr.material.SetColor("_TintColor", currentC);
+                mr.material.color = currentC;
+            }
 
             yield return null;
         }

@@ -5453,9 +5453,9 @@ MonoBehaviour:
   upwardKnockbackForce: 0.4
   useAnimationEventForImpact: 1
   unlockPlayerOnImpact: 0
-  customShockwaveSprite: {fileID: 21300000, guid: e2f3928190c1f5a4a90fa763c8a14b52, type: 3}
+  customShockwaveSprite: {fileID: -535416314, guid: e2f3928190c1f5a4a90fa763c8a14b52, type: 3}
   spriteHeightOffset: -0.95
-  spriteMaxScale: 2.5
+  spriteMaxScale: 2
   spriteFormDuration: 0.15
   crackStayDuration: 1
   crackFadeDuration: 0.8
@@ -5465,7 +5465,7 @@ MonoBehaviour:
   shockwaveColor: {r: 1, g: 0.5, b: 0.1, a: 1}
   enable3DShockwaveRingOverlay: 1
   shockwaveRingDuration: 1
-  shockwaveRingScaleMultiplier: 25
+  shockwaveRingScaleMultiplier: 50
   shockwaveRingMaxOpacity: 0.15
   triggerVFXTestNow: 0
 --- !u!114 &8291047582019485713
