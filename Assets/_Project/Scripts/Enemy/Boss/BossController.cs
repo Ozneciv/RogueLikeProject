@@ -678,8 +678,19 @@ public class BossController : MonoBehaviour
         if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
             string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
+            
+            // Mapeia o nome do gatilho (ex: bossSwipe) para o nome exato do Estado no Animator (ex: BossSwipe)
+            string stateName = selectedTrigger;
+            if (selectedTrigger == "bossSwipe") stateName = "BossSwipe";
+            if (selectedTrigger == "bossPunch") stateName = "BossPunch";
+            if (selectedTrigger == "Spell") stateName = "Spell";
+
+            animator.ResetTrigger("bossSwipe");
+            animator.ResetTrigger("bossPunch");
+            animator.ResetTrigger("Spell");
+
             animator.SetTrigger(selectedTrigger);
-            animator.Play(selectedTrigger, 0, 0f);
+            animator.Play(stateName, 0, 0f);
         }
 
         float windUp = IsInvisible ? 0.2f : 0.4f;

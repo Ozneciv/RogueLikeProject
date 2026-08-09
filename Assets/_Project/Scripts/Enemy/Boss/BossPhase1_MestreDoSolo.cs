@@ -197,6 +197,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
         if (animator != null)
         {
+            animator.ResetTrigger("Spell");
             animator.SetTrigger("Spell");
             animator.Play("Spell", 0, 0f);
         }
