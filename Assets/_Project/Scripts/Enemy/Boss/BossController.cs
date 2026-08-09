@@ -693,15 +693,23 @@ public class BossController : MonoBehaviour
             animator.Play(stateName, 0, 0f);
         }
 
-        float windUp = IsInvisible ? 0.2f : 0.4f;
-        yield return new WaitForSeconds(windUp);
+        float windUp = IsInvisible ? 0.10f : 0.15f;
+        
+        float elapsedWindUp = 0f;
+        while (elapsedWindUp < windUp)
+        {
+            elapsedWindUp += Time.deltaTime;
+            HandleRotation();
+            yield return null;
+        }
 
         // Dispara a Onda de Choque Exclusiva do Boss (AoE Knockback de 7.5 metros)
+        blastPos = transform.position + transform.forward * 1.5f;
         BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
         TriggerCameraShake(0.2f, 0.10f);
 
-        // Recovery
-        yield return new WaitForSeconds(0.4f);
+        // Recovery rápido e fluido
+        yield return new WaitForSeconds(0.20f);
 
         // Se estava refratando, volta para o estado invisível para continuar fugindo
         if (refractionComp != null && IsInvisible)

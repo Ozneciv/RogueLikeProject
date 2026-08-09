@@ -210,7 +210,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 transform.rotation = Quaternion.LookRotation(direcaoOlhar);
         }
 
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.25f);
 
         List<Vector3> posicoesFinais = new List<Vector3>();
         Vector3 centro = playerTransform != null ? playerTransform.position : transform.position;

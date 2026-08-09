@@ -39,8 +39,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2.5, y: 2.5, z: 2.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 4770016296666447743}
   m_Father: {fileID: 0}
@@ -245,8 +245,8 @@ MonoBehaviour:
   shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
   geobiontePrefab: {fileID: 227223189099962665, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
   geobionteSpawnChance: 2
-  spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
-  spawnIndicatorDelay: 1
+  spawnIndicatorPrefab: {fileID: 0}
+  spawnIndicatorDelay: 0
   spawnDepth: 3
   emergeTime: 0.6
   enablePostPrisonSpawn: 1
@@ -271,7 +271,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.7
+  m_Radius: 0.45
   m_Height: 2.8
   m_Direction: 1
   m_Center: {x: 0, y: 1.4, z: 0}
