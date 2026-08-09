@@ -107,11 +107,21 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                     casuloHealth.maxHealth = danoNecessario;
                     casuloHealth.ResetHealth();
 
+                    // Conecta com o script CristalCasulo se houver
+                    CristalCasulo casuloScript = cristalInstanciado.GetComponent<CristalCasulo>();
+                    if (casuloScript != null)
+                    {
+                        casuloScript.Setup(vidaDoBoss);
+                    }
+
                     // O GATILHO MESTRE: Quando o Casulo morrer, ele dá o dano no Boss forçando a Fase 2!
-                    casuloHealth.onDeathOverride = () => 
+                    casuloHealth.onDeathOverride += () => 
                     { 
                         Debug.Log("[Fase 1] O Casulo quebrou! Avisando o Boss..."); 
-                        vidaDoBoss.TakeDamage(danoNecessario); 
+                        if (vidaDoBoss != null)
+                        {
+                            vidaDoBoss.TakeDamage(danoNecessario); 
+                        }
                     };
                 }
             }
@@ -126,14 +136,18 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             StopAllCoroutines();
             atacando = false;
 
-            // Destrói o cristal da cena
-            if (cristalInstanciado != null) Destroy(cristalInstanciado);
-
-            // Devolve o visual sólido para o Boss
+            // Devolve o visual sólido para o Boss e ativa sua inteligência
             foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = true; }
             if (bossCollider != null) bossCollider.enabled = true;
-            if (rb != null) rb.isKinematic = false;
-            if (agent != null) agent.enabled = true;
+            if (rb != null) 
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = Vector3.zero;
+            }
+            if (agent != null) 
+            {
+                agent.enabled = true;
+            }
             
             Debug.Log("[Fase 1] Fim! Boss revelado para a Fase 2.");
         }
