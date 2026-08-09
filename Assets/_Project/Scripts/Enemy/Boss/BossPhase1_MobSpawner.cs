@@ -52,6 +52,15 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     [Tooltip("Prefab do SharpBlur (mob rápido).")]
     public GameObject sharpBlurPrefab;
 
+    [Tooltip("Prefab do Golem (mob tanque pesado).")]
+    public GameObject golemPrefab;
+
+    [Tooltip("Prefab da Pedra Mágica (MagicStone).")]
+    public GameObject magicStonePrefab;
+
+    [Tooltip("Prefab do CrystalWatcher (Sentinela).")]
+    public GameObject crystalWatcherPrefab;
+
     [Tooltip("Prefab do Totem (spawna caveiras HomingHazard).")]
     public GameObject totemPrefab;
 
@@ -60,6 +69,9 @@ public class BossPhase1_MobSpawner : MonoBehaviour
 
     [Tooltip("Prefab do ShardSwarm (enxame de fragmentos).")]
     public GameObject shardSwarmPrefab;
+
+    [Tooltip("Prefab do Geobionte / Bismutado (Mob raro de elite).")]
+    public GameObject geobiontePrefab;
 
     [Header("Configurações de Spawn Visual")]
     [Tooltip("Prefab do indicador visual (opcional). Usado para telegrafar o nascimento, igual nas salas normais.")]
@@ -277,40 +289,88 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     {
         List<GameObject> result = new List<GameObject>();
 
+        // Auto-busca os prefabs caso estejam nulos no Inspector
+        AutoLoadMissingPrefabs();
+
         switch (waveType)
         {
             case WaveType.PostPrison_Pillar:
-                // 2-3 Goblins (mobs rápidos para pressionar durante a prisão)
-                AddPrefabs(result, goblinPrefab, Mathf.Min(Random.Range(2, 4), maxSlots));
+                // Mobs terrestres rápidos (Goblin, Spider, Golem)
+                AddPrefabs(result, GetRandomCommonMob(), Mathf.Min(Random.Range(2, 4), maxSlots));
+                if (result.Count < maxSlots && golemPrefab != null)
+                    AddPrefabs(result, golemPrefab, 1);
                 break;
 
             case WaveType.PostPrison_Spike:
-                // 1-2 Spiders + 1 SharpBlur
-                int spiderCount = Mathf.Min(Random.Range(1, 3), maxSlots);
-                AddPrefabs(result, spiderPrefab, spiderCount);
-                if (result.Count < maxSlots)
-                    AddPrefabs(result, sharpBlurPrefab, 1);
+                // Spiders + SharpBlur + CrystalWatcher / Pedra Mágica
+                int count = Mathf.Min(Random.Range(1, 3), maxSlots);
+                AddPrefabs(result, spiderPrefab ?? sharpBlurPrefab, count);
+                if (result.Count < maxSlots && crystalWatcherPrefab != null)
+                    AddPrefabs(result, crystalWatcherPrefab, 1);
+                if (result.Count < maxSlots && magicStonePrefab != null)
+                    AddPrefabs(result, magicStonePrefab, 1);
                 break;
 
             case WaveType.Threshold_First:
-                // 1 Totem (objetivo secundário que spawna caveiras)
-                AddPrefabs(result, totemPrefab, Mathf.Min(1, maxSlots));
+                // Totem ou Golem
+                GameObject heavyUnit = (Random.value < 0.5f) ? totemPrefab : golemPrefab;
+                AddPrefabs(result, heavyUnit ?? totemPrefab, Mathf.Min(1, maxSlots));
                 break;
 
             case WaveType.Threshold_Second:
-                // 2 Spiders + 1 Cristalus (wave mais forte perto da transição)
-                AddPrefabs(result, spiderPrefab, Mathf.Min(2, maxSlots));
-                if (result.Count < maxSlots)
-                    AddPrefabs(result, cristalusPrefab, 1);
+                // Wave pesada perto da transição (contém chance rara de Geobionte/Bismutado)
+                if (Random.value <= 0.15f && geobiontePrefab != null)
+                {
+                    AddPrefabs(result, geobiontePrefab, 1);
+                }
+                else
+                {
+                    AddPrefabs(result, cristalusPrefab ?? golemPrefab, Mathf.Min(1, maxSlots));
+                    if (result.Count < maxSlots)
+                        AddPrefabs(result, spiderPrefab, Mathf.Min(2, maxSlots - result.Count));
+                }
                 break;
 
             case WaveType.CounterAttack:
-                // 3-4 ShardSwarm fragments (punição rápida e caótica)
-                AddPrefabs(result, shardSwarmPrefab, Mathf.Min(Random.Range(3, 5), maxSlots));
+                // Punição: Mobs variados rápidos ou ShardSwarm + Bismutado Raro (5% de chance)
+                if (Random.value <= 0.08f && geobiontePrefab != null)
+                {
+                    AddPrefabs(result, geobiontePrefab, 1);
+                }
+                else
+                {
+                    AddPrefabs(result, shardSwarmPrefab ?? goblinPrefab, Mathf.Min(Random.Range(2, 4), maxSlots));
+                }
                 break;
         }
 
         return result;
+    }
+
+    private GameObject GetRandomCommonMob()
+    {
+        List<GameObject> pool = new List<GameObject>();
+        if (goblinPrefab != null) pool.Add(goblinPrefab);
+        if (spiderPrefab != null) pool.Add(spiderPrefab);
+        if (sharpBlurPrefab != null) pool.Add(sharpBlurPrefab);
+        if (cristalusPrefab != null) pool.Add(cristalusPrefab);
+        
+        if (pool.Count == 0) return goblinPrefab;
+        return pool[Random.Range(0, pool.Count)];
+    }
+
+    private void AutoLoadMissingPrefabs()
+    {
+        if (goblinPrefab == null) goblinPrefab = Resources.Load<GameObject>("Goblin") ?? Resources.Load<GameObject>("Enemies/Goblin");
+        if (spiderPrefab == null) spiderPrefab = Resources.Load<GameObject>("Spider") ?? Resources.Load<GameObject>("Enemies/Spider");
+        if (sharpBlurPrefab == null) sharpBlurPrefab = Resources.Load<GameObject>("SharpBlur") ?? Resources.Load<GameObject>("Enemies/SharpBlur");
+        if (golemPrefab == null) golemPrefab = Resources.Load<GameObject>("Golem") ?? Resources.Load<GameObject>("Enemies/Golem");
+        if (magicStonePrefab == null) magicStonePrefab = Resources.Load<GameObject>("MagicStone") ?? Resources.Load<GameObject>("Enemies/MagicStone");
+        if (crystalWatcherPrefab == null) crystalWatcherPrefab = Resources.Load<GameObject>("CrystalWatcher") ?? Resources.Load<GameObject>("Enemies/CrystalWatcher");
+        if (totemPrefab == null) totemPrefab = Resources.Load<GameObject>("Totem") ?? Resources.Load<GameObject>("Enemies/Totem");
+        if (cristalusPrefab == null) cristalusPrefab = Resources.Load<GameObject>("Cristalus") ?? Resources.Load<GameObject>("Enemies/Cristalus");
+        if (shardSwarmPrefab == null) shardSwarmPrefab = Resources.Load<GameObject>("ShardSwarm") ?? Resources.Load<GameObject>("Enemies/ShardSwarm");
+        if (geobiontePrefab == null) geobiontePrefab = Resources.Load<GameObject>("Geobionte") ?? Resources.Load<GameObject>("Enemies/Geobionte");
     }
 
     private void AddPrefabs(List<GameObject> list, GameObject prefab, int count)
