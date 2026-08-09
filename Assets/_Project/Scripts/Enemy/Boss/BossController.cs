@@ -342,16 +342,20 @@ public class BossController : MonoBehaviour
         }
 
         toxicBloodTimer -= Time.deltaTime;
-        if (toxicBloodTimer <= 0f)
+        float distFromLast = Vector3.Distance(spawnPos, lastDripPosition);
+
+        // Só dropa se o timer expirar E o Boss tiver se movido pelo menos 2.2 metros longe da poça anterior!
+        if (toxicBloodTimer <= 0f && (lastDripPosition == Vector3.zero || distFromLast >= 2.2f))
         {
-            toxicBloodTimer = (toxicBloodInterval > 0f) ? toxicBloodInterval : 0.35f;
+            toxicBloodTimer = 1.2f;
+            lastDripPosition = spawnPos;
 
             Quaternion rot = toxicBloodPrefab.transform.rotation;
             GameObject bloodDrop = Instantiate(toxicBloodPrefab, spawnPos, rot);
             bloodDrop.transform.localScale = toxicBloodPrefab.transform.localScale;
 
             if (showDebugLog)
-                Debug.Log($"[BossController] 🩸 Sangue ácido (Matheus) pingou em {spawnPos}");
+                Debug.Log($"[BossController] 🩸 Sangue ácido (Matheus) pingou com espaçamento de {distFromLast:F1}m em {spawnPos}");
         }
     }
 
@@ -501,16 +505,9 @@ public class BossController : MonoBehaviour
                 break;
             case 2:
                 CurrentState = BossState.Phase2;
-                // Efeito dramático de Camera Shake e Flash de Luz na quebra do casulo da Fase 2!
-                TriggerCameraShake(0.45f, 0.18f);
-
-                GameObject flashLight = new GameObject("Phase2_Transition_Flash");
-                flashLight.transform.position = transform.position + Vector3.up * 1.5f;
-                Light l = flashLight.AddComponent<Light>();
-                l.color = new Color(0.9f, 0.25f, 0.9f);
-                l.intensity = 20f;
-                l.range = 25f;
-                Destroy(flashLight, 0.5f);
+                // Efeito dramático cinematográfico de Camera Shake e Flash de Luz na quebra do casulo da Fase 2!
+                TriggerCameraShake(0.5f, 0.20f);
+                StartCoroutine(CocoonShatterLightPulseRoutine());
                 break;
             case 3:
                 CurrentState = BossState.Phase3;
@@ -528,50 +525,75 @@ public class BossController : MonoBehaviour
         BossEvents.RaisePhaseChanged(newPhase);
     }
 
+    private IEnumerator CocoonShatterLightPulseRoutine()
+    {
+        GameObject flashLightObj = new GameObject("Phase2_Cocoon_Shatter_Flash");
+        flashLightObj.transform.position = transform.position + Vector3.up * 2.0f;
+
+        Light flashLight = flashLightObj.AddComponent<Light>();
+        flashLight.color = new Color(0.95f, 0.30f, 1.00f);
+        flashLight.intensity = 35f;
+        flashLight.range = 30f;
+
+        float elapsed = 0f;
+        float duration = 0.85f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            if (flashLight != null)
+            {
+                flashLight.intensity = Mathf.Lerp(35f, 0f, t * t);
+                flashLight.range = Mathf.Lerp(15f, 40f, t);
+            }
+
+            yield return null;
+        }
+
+        Destroy(flashLightObj);
+    }
+
     // =====================================================
     // COMBATE
     // =====================================================
 
     private void HandleCombatUpdate()
     {
-        // Durante o ataque ou override de movimento, ignora atualização normal
-        if (isAttacking || OverrideMovement) return;
+        if (isAttacking) return;
 
-        if (playerTransform == null)
-            playerTransform = FindPlayerTransform();
-
+        // Se o player não existir, cancela a perseguição de combate
         if (playerTransform == null) return;
 
-        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
+        // Orientação em direção ao player
+        HandleRotation();
 
-        // Se estiver no alcance do ataque melee (com tolerância de 20%) e fora de cooldown, inicia o ataque
-        if (distToPlayer <= (meleeRange * 1.2f) && meleeTimer <= 0f)
+        // Checa distância para ataque melee
+        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
+        float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+        if (distToPlayer <= meleeRange && meleeTimer <= 0f)
         {
-            HandleRotation();
             StartCoroutine(PerformMeleeAttack());
             return;
         }
 
-        float speed = phaseConfig != null ? phaseConfig.baseSpeed : 3.5f;
+        // Movimentação em direção ao player via NavMeshAgent
+        float speed = phaseConfig != null ? phaseConfig.baseSpeed : 4f;
 
-        if (agent != null && agent.enabled)
+        // Enquanto invisível na Fase 2, o boss ganha +35% de velocidade para se mover com maior fluidez
+        if (IsInvisible) speed *= 1.35f;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            if (!agent.isOnNavMesh)
-            {
-                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit hit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
-                {
-                    agent.Warp(hit.position);
-                }
-            }
+            agent.speed = speed;
+            agent.isStopped = false;
+            agent.SetDestination(playerTransform.position);
 
-            if (agent.isOnNavMesh)
-            {
-                agent.isStopped = false;
-                agent.SetDestination(playerTransform.position);
-                agent.stoppingDistance = meleeRange * 0.8f;
-                return;
-            }
+            // Ajusta a distância de parada para colar no player no ataque
+            agent.stoppingDistance = meleeRange * 0.8f;
+            return;
         }
 
         // FALLBACK PARA CENAS SEM NAVMESH BAKED (ex: Boss_Test sem NavMesh Surface):
@@ -627,9 +649,6 @@ public class BossController : MonoBehaviour
 
         Vector3 blastPos = transform.position + transform.forward * 1.5f;
 
-        // 🔴 Telegrafagem vermelha do golpe no chão (0.25s) antes do impacto
-        StartCoroutine(SpawnMeleeTelegraphIndicator(blastPos, 7.5f, 0.25f));
-
         if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
             string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
@@ -656,44 +675,6 @@ public class BossController : MonoBehaviour
             agent.isStopped = false;
 
         isAttacking = false;
-    }
-
-    private IEnumerator SpawnMeleeTelegraphIndicator(Vector3 center, float radius, float duration)
-    {
-        GameObject redIndicator = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        redIndicator.name = "Boss_Melee_Telegraph";
-        Destroy(redIndicator.GetComponent<Collider>());
-
-        redIndicator.transform.position = center + Vector3.up * 0.04f;
-        redIndicator.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        redIndicator.transform.localScale = Vector3.zero;
-
-        Renderer r = redIndicator.GetComponent<Renderer>();
-        if (r != null)
-        {
-            Shader uShader = Shader.Find("Universal Render Pipeline/Unlit")
-                          ?? Shader.Find("Unlit/Color");
-            Material m = new Material(uShader);
-            Color redCol = new Color(1.0f, 0.15f, 0.15f, 0.45f);
-            m.color = redCol;
-            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", redCol);
-            r.material = m;
-        }
-
-        float elapsed = 0f;
-        Vector3 targetScale = new Vector3(radius * 2f, radius * 2f, 1f);
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            if (redIndicator != null)
-            {
-                redIndicator.transform.localScale = Vector3.Lerp(Vector3.zero, targetScale, t);
-            }
-            yield return null;
-        }
-
-        Destroy(redIndicator);
     }
 
     public static void TriggerCameraShake(float duration = 0.35f, float magnitude = 0.12f)
