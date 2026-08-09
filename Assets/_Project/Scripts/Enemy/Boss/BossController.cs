@@ -64,7 +64,7 @@ public class BossController : MonoBehaviour
     public Animator animator;
 
     [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo.")]
-    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch", "Attack1", "Attack2", "Spell" };
+    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch", "Spell" };
 
 
     [Header("Sangue Ácido (Invisibilidade)")]
@@ -135,20 +135,32 @@ public class BossController : MonoBehaviour
     {
         health = GetComponent<DummyHealth>();
         agent = GetComponent<NavMeshAgent>();
+
         if (animator == null)
-            animator = GetComponentInChildren<Animator>();
+            animator = GetComponentInChildren<Animator>(true);
+
+#if UNITY_EDITOR
+        if (animator != null && animator.runtimeAnimatorController == null)
+        {
+            animator.runtimeAnimatorController = UnityEditor.AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/_Project/Enemies/Boss/BossAnimation.controller");
+        }
+
+        if (toxicBloodPrefab == null)
+        {
+            toxicBloodPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Boss/ToxicBlood.prefab");
+        }
+#endif
+
+        if (toxicBloodPrefab == null)
+        {
+            toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood") 
+                            ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
+        }
 
         // 1. Garante que a Fase 2 (Refração / Invisibilidade) esteja sempre presente
         if (GetComponent<BossPhase2_Refraction>() == null)
         {
             gameObject.AddComponent<BossPhase2_Refraction>();
-        }
-
-        // 2. Tenta carregar o prefab de Sangue Ácido se estiver nulo
-        if (toxicBloodPrefab == null)
-        {
-            toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood") 
-                            ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
         }
     }
 
@@ -254,6 +266,9 @@ public class BossController : MonoBehaviour
 
     private void UpdateAnimationState()
     {
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>(true);
+
         if (animator == null) return;
 
         if (CurrentState == BossState.Dead)
@@ -282,22 +297,25 @@ public class BossController : MonoBehaviour
     {
         if (!IsInvisible) return;
 
+#if UNITY_EDITOR
+        if (toxicBloodPrefab == null)
+        {
+            toxicBloodPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Boss/ToxicBlood.prefab");
+        }
+#endif
+
         if (toxicBloodPrefab == null)
         {
             toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood")
                             ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
         }
 
-        if (toxicBloodPrefab == null)
-        {
-            toxicBloodPrefab = CreateFallbackToxicBloodPrefab();
-        }
+        if (toxicBloodPrefab == null) return;
 
-        // Ponto de origem: usa footSpawnPoint se atribuído; projeta raycast para o chão
-        Vector3 origin = footSpawnPoint != null ? footSpawnPoint.position : transform.position + Vector3.up * 1f;
+        // Ponto de origem do sangue
+        Vector3 origin = footSpawnPoint != null ? footSpawnPoint.position : transform.position + Vector3.up * 0.5f;
         Vector3 spawnPos = origin;
 
-        // Projeta um Raycast para baixo para colar a poça de sangue perfeitamente na superfície do piso
         if (Physics.Raycast(origin + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 5.0f))
         {
             spawnPos = hit.point + Vector3.up * 0.02f;
@@ -307,20 +325,17 @@ public class BossController : MonoBehaviour
             spawnPos.y = transform.position.y + 0.02f;
         }
 
-        // Dripa sangue a cada intervalo
         toxicBloodTimer -= Time.deltaTime;
         if (toxicBloodTimer <= 0f)
         {
             toxicBloodTimer = (toxicBloodInterval > 0f) ? toxicBloodInterval : 0.35f;
 
-            Quaternion randomRot = Quaternion.Euler(90f, UnityEngine.Random.Range(0f, 360f), 0f);
-            GameObject bloodDrop = Instantiate(toxicBloodPrefab, spawnPos, randomRot);
-            
-            float scaleMult = UnityEngine.Random.Range(0.9f, 1.3f);
-            bloodDrop.transform.localScale = Vector3.Scale(bloodDrop.transform.localScale, new Vector3(scaleMult, scaleMult, 1f));
+            Quaternion rot = toxicBloodPrefab.transform.rotation;
+            GameObject bloodDrop = Instantiate(toxicBloodPrefab, spawnPos, rot);
+            bloodDrop.transform.localScale = toxicBloodPrefab.transform.localScale;
 
             if (showDebugLog)
-                Debug.Log($"[BossController] 🩸 Sangue ácido pingou em {spawnPos}");
+                Debug.Log($"[BossController] 🩸 Sangue ácido (Matheus) pingou em {spawnPos}");
         }
     }
 

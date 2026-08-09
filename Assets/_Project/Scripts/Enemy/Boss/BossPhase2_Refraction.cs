@@ -350,15 +350,18 @@ public class BossPhase2_Refraction : MonoBehaviour
         {
             if (rend != null)
             {
-                // Se for o MeshRenderer no GameObject raiz do Boss, mantém desativado
                 if (rend.gameObject == gameObject && rend is MeshRenderer)
                 {
                     rend.enabled = false;
                     continue;
                 }
 
-                // Não desativa renderizadores de partículas ou poças de sangue no chão!
                 if (rend is ParticleSystemRenderer) continue;
+
+                if (rend is SkinnedMeshRenderer skinned)
+                {
+                    skinned.updateWhenOffscreen = true; // Garante que a esqueleto da animação continua ativo e animado!
+                }
 
                 rend.enabled = visible;
             }

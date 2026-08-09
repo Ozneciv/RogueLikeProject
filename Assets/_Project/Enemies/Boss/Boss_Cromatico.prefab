@@ -338,6 +338,7 @@ MonoBehaviour:
   shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
   geobiontePrefab: {fileID: 227223189099962665, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
   geobionteSpawnChance: 2
+  toxicBloodPrefab: {fileID: 4684590844720067136, guid: 35f4515f9e0ed9c40b9f52cb121327bb, type: 3}
   spawnIndicatorPrefab: {fileID: 1535335175129926780, guid: e096f35eb08cf4846bbc7c5a4f31afb3, type: 3}
   spawnIndicatorDelay: 1
   spawnDepth: 3
@@ -417,6 +418,10 @@ PrefabInstance:
       propertyPath: m_ApplyRootMotion
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 48683e5482882b34f8cfeee63cf973f3, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: cf06baed1272fe842974b03d405e2b5f, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
