@@ -318,8 +318,8 @@ public class BossPhase1_MobSpawner : MonoBehaviour
                 break;
 
             case WaveType.Threshold_Second:
-                // Wave pesada perto da transição (contém chance rara de Geobionte/Bismutado)
-                if (Random.value <= 0.15f && geobiontePrefab != null)
+                // Wave pesada perto da transição (contém chance muito rara de 2% para o Geobionte/Bismutado)
+                if (Random.value <= 0.02f && geobiontePrefab != null)
                 {
                     AddPrefabs(result, geobiontePrefab, 1);
                 }
@@ -332,8 +332,8 @@ public class BossPhase1_MobSpawner : MonoBehaviour
                 break;
 
             case WaveType.CounterAttack:
-                // Punição: Mobs variados rápidos ou ShardSwarm + Bismutado Raro (5% de chance)
-                if (Random.value <= 0.08f && geobiontePrefab != null)
+                // Punição: Mobs variados rápidos ou ShardSwarm + Bismutado Ultra Raro (2% de chance)
+                if (Random.value <= 0.02f && geobiontePrefab != null)
                 {
                     AddPrefabs(result, geobiontePrefab, 1);
                 }
