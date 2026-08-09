@@ -117,6 +117,13 @@ public class InfusionManager : MonoBehaviour
         ItemData data = ItemDatabase.Instance.GetItemData(itemId);
         if (data == null) return false;
 
+        // Regra de Balanceamento (Brotato x Hades): Itens Lendários (T4) têm limite de 1 infusão por run (Max Stacks = 1)
+        if (data.tier == 4 && infusedItems.Contains(data))
+        {
+            Debug.LogWarning($"[INFUSÃO] {data.itemName} é um item Lendário (T4) e já foi infundido nesta run! (Limite = 1)");
+            return false;
+        }
+
         if (inventory.HasItem(itemId, 1))
         {
             // Calcula custo com inflação acumulada

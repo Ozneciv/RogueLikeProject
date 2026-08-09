@@ -109,7 +109,26 @@ public class EnemyDrops : MonoBehaviour
         }
 
         // 2. Chance de dropar ALGUM item característico (Roleta com Pesos)
-        if (lootPool != null && lootPool.Count > 0 && Random.value <= globalDropChance)
+        float effectiveDropChance = globalDropChance;
+
+        // Auto-balanceia a chance de drop para evitar que todas as salas fiquem entulhadas de itens (Estilo Brotato)
+        bool isBossOrElites = GetComponent<Geobionte_AI>() != null || GetComponent<CrystalTuner>() != null || gameObject.name.ToLower().Contains("boss");
+        bool isMediumUnit = GetComponent<Golem_AI>() != null || GetComponent<CrystalWatcher_AI>() != null;
+
+        if (!isBossOrElites)
+        {
+            if (isMediumUnit)
+            {
+                effectiveDropChance = Mathf.Min(effectiveDropChance, 0.50f);
+            }
+            else
+            {
+                // Mobs comuns (Spider, Goblin, SharpBlur)
+                effectiveDropChance = Mathf.Min(effectiveDropChance, 0.22f);
+            }
+        }
+
+        if (lootPool != null && lootPool.Count > 0 && Random.value <= effectiveDropChance)
         {
             List<LootPoolItem> filteredPool = new List<LootPoolItem>();
             Geobionte_AI geobionteAI = GetComponent<Geobionte_AI>();
