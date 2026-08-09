@@ -311,11 +311,34 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (showDebugLog)
             Debug.Log("[BossPhase2] 👻 Boss ficou TOTALMENTE INVISÍVEL! Rastreie o Boss e ataque para revelá-lo.");
 
-        // ── Permanece invisível por tempo indeterminado ─────────
+        // ── Permanece invisível enquanto foge e flanqueia o jogador ─────────
+        BossPhase1_MobSpawner mobSpawner = GetComponent<BossPhase1_MobSpawner>();
+
+        float fleeTimer = 0f;
         while (isRefracting)
         {
+            fleeTimer += Time.deltaTime;
+
+            // A cada 2.5s enquanto invisível, o Boss tenta se reposicionar/fugir do player
+            if (fleeTimer >= 2.5f)
+            {
+                fleeTimer = 0f;
+                StartCoroutine(RepositionRoutine());
+
+                // Spawna mobs de suporte enquanto foge invisível
+                if (mobSpawner != null && UnityEngine.Random.value <= 0.5f)
+                {
+                    mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.CounterAttack);
+                }
+            }
+
             yield return null;
         }
+    }
+
+    public void SetTemporaryVisibility(bool tempVisible)
+    {
+        SetRenderersVisibility(tempVisible);
     }
 
     private void SetRenderersVisibility(bool visible)
@@ -327,12 +350,16 @@ public class BossPhase2_Refraction : MonoBehaviour
         {
             if (rend != null)
             {
-                // Se for o MeshRenderer (esfera primitiva de placeholder) no GameObject raiz do Boss, mantém desativado
+                // Se for o MeshRenderer no GameObject raiz do Boss, mantém desativado
                 if (rend.gameObject == gameObject && rend is MeshRenderer)
                 {
                     rend.enabled = false;
                     continue;
                 }
+
+                // Não desativa renderizadores de partículas ou poças de sangue no chão!
+                if (rend is ParticleSystemRenderer) continue;
+
                 rend.enabled = visible;
             }
         }

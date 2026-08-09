@@ -175,8 +175,44 @@ public class EssencePickup : MonoBehaviour
             }
         }
 
-        // 2. Fase de Atração Magnética Fluida e Acelerada
-        if (isBeingAttracted && playerTransform != null)
+    [HideInInspector] public Transform customBossTarget;
+    [HideInInspector] public bool isBossAbsorb = false;
+
+    public void FlyToBoss(Transform bossTransform)
+    {
+        if (bossTransform == null) return;
+        customBossTarget = bossTransform;
+        isBossAbsorb = true;
+        isBeingAttracted = true;
+        canBePickedUp = true;
+        isPopping = false;
+        currentAttractSpeed = 18f;
+
+        EssenceVFX vfx = GetComponent<EssenceVFX>();
+        if (vfx != null) vfx.StartFlyingTrail();
+    }
+
+    // 2. Fase de Atração Magnética Fluida e Acelerada
+    if (isBossAbsorb && customBossTarget != null)
+    {
+        currentAttractSpeed = Mathf.Min(currentAttractSpeed + 35f * Time.deltaTime, 30f);
+        Vector3 targetPos = customBossTarget.position + Vector3.up * 1.5f;
+
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, currentAttractSpeed * Time.deltaTime);
+        float distToBoss = Vector3.Distance(transform.position, targetPos);
+
+        if (distToBoss < 1.2f)
+        {
+            float tScale = Mathf.Clamp01(distToBoss / 1.2f);
+            transform.localScale = Vector3.Lerp(Vector3.zero, initialScale, tScale);
+        }
+
+        if (distToBoss < 0.4f)
+        {
+            Destroy(gameObject);
+        }
+    }
+    else if (isBeingAttracted && playerTransform != null)
         {
             currentAttractSpeed = Mathf.Min(currentAttractSpeed + 28f * Time.deltaTime, 26f);
             Vector3 targetPos = playerTransform.position + Vector3.up * attractYOffset;

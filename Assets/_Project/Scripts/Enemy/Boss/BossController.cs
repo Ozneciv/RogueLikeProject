@@ -568,54 +568,43 @@ public class BossController : MonoBehaviour
     {
         isAttacking = true;
         float baseCooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
-        // Enquanto invisível, reduz o cooldown em 40% para atacar com maior frequência
         float cooldown = IsInvisible ? (baseCooldown * 0.6f) : baseCooldown;
         meleeTimer = cooldown;
 
-        // Wind-up (telegrafagem)
-        if (showDebugLog) Debug.Log("[BossController] 👊 ATAQUE MELEE — Preparando...");
+        // Se estiver invisível, revela temporariamente o Boss para a animação do ataque ser visível!
+        BossPhase2_Refraction refractionComp = GetComponent<BossPhase2_Refraction>();
+        if (refractionComp != null && IsInvisible)
+        {
+            refractionComp.SetTemporaryVisibility(true);
+        }
 
-        // Para de se mover durante o ataque
+        if (showDebugLog) Debug.Log("[BossController] 👊 ATAQUE DO BOSS — Executando golpe exclusivo!");
+
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
 
         if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
             string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
-            if (showDebugLog) Debug.Log($"[BossController] 🎬 Disparando Trigger de Animação: {selectedTrigger}");
             animator.SetTrigger(selectedTrigger);
-        }
-        else if (animator == null && showDebugLog)
-        {
-            Debug.LogWarning("[BossController] ⚠️ Componente Animator não encontrado no Boss!");
         }
 
         float windUp = IsInvisible ? 0.2f : 0.4f;
         yield return new WaitForSeconds(windUp);
 
-        // Verifica hit
-        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
-        int meleeDamage = phaseConfig != null ? phaseConfig.baseMeleeDamage : 25;
-        float hitRadius = meleeRange * 0.6f;
-
-        Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward * 2f, hitRadius);
-        foreach (Collider hit in hits)
-        {
-            if (hit.CompareTag("Player"))
-            {
-                PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
-                if (playerHealth != null)
-                {
-                    playerHealth.TakeDamage(meleeDamage, gameObject);
-                    if (showDebugLog) Debug.Log($"[BossController] 💥 MELEE HIT! Dano: {meleeDamage}");
-                }
-            }
-        }
+        // Dispara a Onda de Choque Exclusiva do Boss (AoE Knockback de 7.5 metros)
+        Vector3 blastPos = transform.position + transform.forward * 1.5f;
+        BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
 
         // Recovery
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
 
-        // Retoma movimento
+        // Se estava refratando, volta para o estado invisível para continuar fugindo
+        if (refractionComp != null && IsInvisible)
+        {
+            refractionComp.SetTemporaryVisibility(false);
+        }
+
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = false;
 

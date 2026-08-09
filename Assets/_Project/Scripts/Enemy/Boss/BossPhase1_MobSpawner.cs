@@ -460,6 +460,8 @@ public class BossPhase1_MobSpawner : MonoBehaviour
         {
             if (mob != null)
             {
+                Vector3 mobPos = mob.transform.position;
+
                 // Tenta matar via DummyHealth para respeitar drops e efeitos de morte
                 DummyHealth mobHealth = mob.GetComponent<DummyHealth>();
                 if (mobHealth != null)
@@ -469,7 +471,6 @@ public class BossPhase1_MobSpawner : MonoBehaviour
                 }
                 else
                 {
-                    // Tenta ShardSwarmHealth como fallback
                     ShardSwarmHealth swarmHealth = mob.GetComponent<ShardSwarmHealth>();
                     if (swarmHealth != null)
                     {
@@ -478,10 +479,30 @@ public class BossPhase1_MobSpawner : MonoBehaviour
                     }
                     else
                     {
-                        // Último recurso: destrói diretamente
                         Destroy(mob);
                     }
                 }
+
+                // Atrair todas as essências dos mobs mortos diretamente para o peito do Boss!
+                Collider[] hits = Physics.OverlapSphere(mobPos, 6.0f);
+                foreach (Collider col in hits)
+                {
+                    EssencePickup pickup = col.GetComponent<EssencePickup>();
+                    if (pickup != null)
+                    {
+                        pickup.FlyToBoss(transform);
+                    }
+                }
+            }
+        }
+
+        // Busca global na arena por essências soltas e atrai para o Boss
+        EssencePickup[] allPickups = FindObjectsOfType<EssencePickup>();
+        foreach (var p in allPickups)
+        {
+            if (p != null && !p.isBossAbsorb)
+            {
+                p.FlyToBoss(transform);
             }
         }
 
