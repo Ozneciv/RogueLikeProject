@@ -44,6 +44,14 @@ public class CrystalTuner : MonoBehaviour
     private float beamPulseTimer = 0f;
     private const int BEAM_SEGMENTS = 8;
 
+    // Roaming (quando sem alvos)
+    private Vector3 roamAnchor;          // ponto base do roaming
+    private float roamAngle = 0f;        // angulo atual na orbita
+    private float roamRadius = 6f;       // raio da orbita atual
+    private float roamRadiusTarget = 6f; // raio-alvo para transicao suave
+    private float roamChangeTimer = 0f;  // tempo para trocar comportamento
+    private bool roamInitialized = false;
+
     // Lista de alvos ativos
     private List<TargetData> targets = new List<TargetData>();
 
@@ -206,11 +214,76 @@ public class CrystalTuner : MonoBehaviour
         }
 
         // Força de medo: foge do player
+        bool playerTooClose = false;
         if (playerTransform != null)
         {
             Vector3 playerPosFlat = new Vector3(playerTransform.position.x, 0, playerTransform.position.z);
-            if (Vector3.Distance(myPosFlat, playerPosFlat) < fleeDistFromPlayer)
+            float distToPlayer = Vector3.Distance(myPosFlat, playerPosFlat);
+            if (distToPlayer < fleeDistFromPlayer)
+            {
                 finalDirection += (myPosFlat - playerPosFlat).normalized * 3.0f;
+                playerTooClose = true;
+            }
+        }
+
+        // ── Roaming orgânico quando sem alvos ──────────────────────────
+        // Quando não há inimigos para se conectar, o tuner patrulha em curvas
+        // suaves, mudando de raio e velocidade angular, para parecer vivo.
+        if (targets.Count == 0 && !playerTooClose)
+        {
+            // Inicializa a âncora na primeira vez sem alvos
+            if (!roamInitialized)
+            {
+                roamAnchor = transform.position;
+                roamAnchor.y = 0f;
+                roamAngle = UnityEngine.Random.Range(0f, 360f);
+                roamRadius = UnityEngine.Random.Range(4f, 8f);
+                roamRadiusTarget = roamRadius;
+                roamChangeTimer = UnityEngine.Random.Range(3f, 6f);
+                roamInitialized = true;
+            }
+
+            // Se o player existir, usa a posição dele como âncora (mas a distância
+            // de fuga já bloqueou a aproximação acima — aqui ele orbitará ao redor)
+            if (playerTransform != null)
+            {
+                Vector3 anchor = new Vector3(playerTransform.position.x, 0, playerTransform.position.z);
+                // Atualiza âncora suavemente para não teletransportar
+                roamAnchor = Vector3.Lerp(roamAnchor, anchor + new Vector3(
+                    Mathf.Sin(Time.time * 0.3f) * 5f,
+                    0,
+                    Mathf.Cos(Time.time * 0.2f) * 5f
+                ), 0.02f);
+            }
+
+            // Muda raio e velocidade angular periodicamente
+            roamChangeTimer -= Time.fixedDeltaTime;
+            if (roamChangeTimer <= 0f)
+            {
+                roamChangeTimer = UnityEngine.Random.Range(3f, 7f);
+                roamRadiusTarget = UnityEngine.Random.Range(4f, 10f);
+            }
+
+            // Suaviza o raio
+            roamRadius = Mathf.Lerp(roamRadius, roamRadiusTarget, 0.02f);
+
+            // Avança o ângulo com uma velocidade angular variável (Perlin noise)
+            float angularSpeed = 45f + Mathf.PerlinNoise(Time.time * 0.4f, 0f) * 60f;
+            roamAngle += angularSpeed * Time.fixedDeltaTime;
+
+            // Calcula o ponto-alvo na órbita
+            float rad = roamAngle * Mathf.Deg2Rad;
+            Vector3 orbitPoint = roamAnchor + new Vector3(Mathf.Cos(rad) * roamRadius, 0, Mathf.Sin(rad) * roamRadius);
+
+            // Direção para o ponto-alvo da órbita
+            Vector3 orbitDir = (orbitPoint - myPosFlat);
+            if (orbitDir.sqrMagnitude > 0.01f)
+                finalDirection += orbitDir.normalized * 1.2f;
+        }
+        else if (targets.Count > 0)
+        {
+            // Quando encontrar alvos novamente, reinicia o roaming
+            roamInitialized = false;
         }
 
         Vector3 targetPos = transform.position;
