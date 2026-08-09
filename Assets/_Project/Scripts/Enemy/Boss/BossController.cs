@@ -682,8 +682,8 @@ public class BossController : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float x = Random.Range(-1f, 1f) * magnitude;
-            float y = Random.Range(-1f, 1f) * magnitude;
+            float x = UnityEngine.Random.Range(-1f, 1f) * magnitude;
+            float y = UnityEngine.Random.Range(-1f, 1f) * magnitude;
 
             camTransform.localPosition = originalPos + new Vector3(x, y, 0);
             yield return null;
