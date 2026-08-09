@@ -63,8 +63,8 @@ public class BossController : MonoBehaviour
     [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
     public Animator animator;
 
-    [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo.")]
-    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch", "Spell" };
+    [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo (somente golpes físicos).")]
+    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch" };
 
 
     [Header("Sangue Ácido (Invisibilidade)")]

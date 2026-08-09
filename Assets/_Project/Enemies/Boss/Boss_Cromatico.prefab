@@ -88,7 +88,6 @@ MonoBehaviour:
   meleeAttackTriggers:
   - bossSwipe
   - bossPunch
-  - Spell
   toxicBloodPrefab: {fileID: 0}
   toxicBloodInterval: 0.4
   footSpawnPoint: {fileID: 0}
