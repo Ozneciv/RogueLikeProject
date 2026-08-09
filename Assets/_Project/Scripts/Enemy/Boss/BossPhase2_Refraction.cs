@@ -1,35 +1,28 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Controlador da Fase 2 — Refração de Luz / Invisibilidade
-/// 
-/// O Boss ativa a refração (invisibilidade) cada vez que perde 30% de vida,
-/// podendo usar a habilidade até 3 vezes durante a luta.
-/// 
+/// Controlador da Invisibilidade do Boss Cromatico - Fase 2
+///
 /// COMPORTAMENTO:
-///   1. Ao cruzar um limiar de HP, o boss desaparece (fade out com shimmer)
-///   2. Fica invulnerável e se reposiciona ao redor do player (flanqueia)
-///   3. Após a duração, reaparece (fade in) e volta a lutar
-///   
-/// LIMIARES DE ATIVAÇÃO (configuráveis):
-///   - Uso 1: 70% HP (início da Fase 2)
-///   - Uso 2: 52% HP  
-///   - Uso 3: 35% HP (final da Fase 2)
-///   
-/// SETUP NO UNITY:
-///   1. Adicione este script no mesmo GameObject do BossController
-///   2. Não precisa de configuração extra — se inscreve nos BossEvents automaticamente
-///   3. Ajuste os parâmetros no Inspector se necessário
+///   1. Ativa APENAS durante a Fase 2, nos limiares de HP configurados no Inspector
+///   2. Quando invisivel: o boss foge do player, spawna mobs e invoca pilares/prisoes
+///   3. Cancelada automaticamente apos o tempo configurado OU se o player acertar o boss
+///   4. O boss fica VULNERAVEL durante a invisibilidade (pode tomar dano)
+///
+/// INSPECTOR:
+///   - refractionThresholds: porcentagens de HP que ativam a invisibilidade
+///   - maxRefractionUses: quantas vezes o boss pode ficar invisivel
+///   - refractionDuration: duracao da invisibilidade em segundos
 /// </summary>
 [RequireComponent(typeof(BossController))]
-[AddComponentMenu("Boss/BossPhase2_Refraction")]
+[AddComponentMenu(""Boss/BossPhase2_Refraction"")]
 public class BossPhase2_Refraction : MonoBehaviour
 {
-    // ── Referências ──────────────────────────────────────────────
+    // -- Referencias
     private BossController bossController;
     private DummyHealth health;
     private NavMeshAgent agent;
@@ -37,59 +30,54 @@ public class BossPhase2_Refraction : MonoBehaviour
     private Renderer[] renderers;
     private List<MaterialData> originalMaterialData = new List<MaterialData>();
 
-    // ── Configuração da Refração ────────────────────────────────
-    [Header("Refração de Luz (Invisibilidade)")]
-    [Tooltip("Número máximo de usos da refração durante a luta")]
-    public int maxRefractionUses = 3;
+    // -- Configuracao (Inspector)
+    [Header(""Invisibilidade -- Configuracao"")]
+    [Tooltip(""Numero maximo de vezes que o boss pode ficar invisivel durante a Fase 2"")]
+    public int maxRefractionUses = 2;
 
-    [Tooltip("Duração do efeito de refração (segundos)")]
-    public float refractionDuration = 4f;
+    [Tooltip(""Duracao da invisibilidade em segundos"")]
+    public float refractionDuration = 6f;
 
-    [Tooltip("Tempo para transicionar para invisível (fade out)")]
-    public float fadeOutTime = 0.6f;
+    [Tooltip(""Tempo para o boss sumir (fade out)"")]
+    public float fadeOutTime = 0.4f;
 
-    [Tooltip("Tempo para transicionar para visível (fade in)")]
-    public float fadeInTime = 0.9f;
+    [Tooltip(""Tempo para o boss reaparecer (fade in)"")]
+    public float fadeInTime = 0.7f;
 
-    [Tooltip("Opacidade mínima durante refração (0 = totalmente invisível)")]
-    [Range(0f, 0.2f)]
-    public float minOpacity = 0f;
+    [Header(""Limiares de HP para Ativar Invisibilidade"")]
+    [Tooltip(""Porcentagens de HP (0.0 a 1.0) nas quais a invisibilidade e ativada. Ex: 0.50 = 50 por cento. Devem estar em ordem decrescente."")]
+    public float[] refractionThresholds = { 0.50f, 0.20f };
 
-    [Header("Reposicionamento")]
-    [Tooltip("Distância de reposicionamento ao redor do player")]
-    public float repositionDistance = 8f;
+    [Header(""Reposicionamento (Fuga)"")]
+    [Tooltip(""Distancia que o boss tenta fugir do player durante a invisibilidade"")]
+    public float fleeDistance = 12f;
 
-    [Tooltip("Velocidade de reposicionamento durante refração")]
-    public float repositionSpeed = 10f;
+    [Tooltip(""Com qual frequencia (segundos) o boss tenta se reposicionar enquanto invisivel"")]
+    public float repositionInterval = 2.5f;
 
-    [Header("Efeito Visual")]
-    [Tooltip("Cor do brilho Fresnel durante refração")]
+    [Header(""Ataques durante Invisibilidade"")]
+    [Tooltip(""Com qual frequencia (segundos) o boss spawna mobs enquanto invisivel"")]
+    public float mobSpawnInterval = 4f;
+
+    [Tooltip(""Com qual frequencia (segundos) o boss invoca pilares enquanto invisivel"")]
+    public float pilarSpawnInterval = 5f;
+
+    [Header(""Efeito Visual"")]
+    [Tooltip(""Cor do brilho na borda durante invisibilidade"")]
     public Color refractionGlowColor = new Color(0.5f, 0.8f, 1f, 0.3f);
 
-    [Tooltip("Intensidade do shimmer (tremulação)")]
-    public float shimmerIntensity = 0.15f;
-
-    [Tooltip("Velocidade do shimmer")]
-    public float shimmerSpeed = 8f;
-
-    [Header("Limiares de HP para Refração")]
-    [Tooltip("Porcentagens de HP que ativam a refração (0.0 a 1.0). Devem estar em ordem decrescente.")]
-    public float[] refractionThresholds = { 0.70f, 0.52f, 0.35f };
-
-    [Header("Debug")]
+    [Header(""Debug"")]
     public bool showDebugLog = true;
 
-    // ── Estado Interno ──────────────────────────────────────────
+    // -- Estado Interno
     private int refractionUsesRemaining;
     private int nextThresholdIndex = 0;
     private bool isRefracting = false;
     private bool isPhase2Active = false;
     private Coroutine refractionCoroutine;
     private float originalAgentSpeed = -1f;
-    private float refractionStartTime = -1f;
-    private float refractionCooldownUntil = -1f; // Após revelação por dano, impede nova refração imediata
 
-    // ── Cache para restaurar materiais ──────────────────────────
+    // -- Cache para restaurar materiais
     private struct MaterialData
     {
         public Material material;
@@ -101,10 +89,6 @@ public class BossPhase2_Refraction : MonoBehaviour
         public int originalRenderQueue;
         public Shader originalShader;
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // LIFECYCLE
-    // ═══════════════════════════════════════════════════════════════
 
     void Awake()
     {
@@ -132,15 +116,12 @@ public class BossPhase2_Refraction : MonoBehaviour
     void Start()
     {
         refractionUsesRemaining = maxRefractionUses;
-
-        // Cacheia renderers e materiais originais
         renderers = GetComponentsInChildren<Renderer>();
         CacheOriginalMaterials();
 
-        // Backup: garante subscrição do evento de dano (caso OnEnable tenha rodado antes do Awake do BossController)
         if (bossController != null)
         {
-            bossController.OnTookDamage -= OnTookDamage; // Remove duplicata
+            bossController.OnTookDamage -= OnTookDamage;
             bossController.OnTookDamage += OnTookDamage;
         }
     }
@@ -150,27 +131,13 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (bossController == null) bossController = GetComponent<BossController>();
         if (bossController == null || bossController.IsDead || bossController.IsStunned) return;
 
-        // Auto-ativa a Fase 2 se o BossController já transicionou para a Fase 2
-        if (bossController.CurrentPhase == 2 && !isPhase2Active)
-        {
-            isPhase2Active = true;
-            OnPhaseChanged(2);
-        }
-
-        if (!isPhase2Active || isRefracting) return;
-
-        // Monitora HP para ativar refração
-        CheckRefractionThreshold();
+        if (isPhase2Active && !isRefracting)
+            CheckRefractionThreshold();
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // EVENTOS DO BOSS
-    // ═══════════════════════════════════════════════════════════════
 
     void OnFightStarted()
     {
-        // Busca o player
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        GameObject player = GameObject.FindGameObjectWithTag(""Player"");
         if (player != null) playerTransform = player.transform;
     }
 
@@ -179,52 +146,27 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (newPhase == 2)
         {
             isPhase2Active = true;
-            if (showDebugLog) Debug.Log("[BossPhase2] 👁️ Fase 2 ATIVADA — Refração de Luz!");
-
-            // A primeira refração ativa imediatamente ao entrar na fase 2
-            if (refractionUsesRemaining > 0 && nextThresholdIndex == 0)
-            {
-                nextThresholdIndex++;
-                refractionUsesRemaining--;
-                ActivateRefraction();
-            }
+            if (showDebugLog) Debug.Log(""[BossPhase2] Fase 2 ATIVA -- Invisibilidade disponivel!"");
         }
-        else if (newPhase == 3)
+        else
         {
-            // Desativa a fase 2 quando entra na fase 3
             isPhase2Active = false;
-
-            // Se estava refratando, cancela
-            if (isRefracting)
-            {
-                CancelRefraction();
-            }
-
-            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 DESATIVADA — entrando na Fase 3.");
+            if (isRefracting) CancelRefraction();
+            if (showDebugLog) Debug.Log(""[BossPhase2] Fase 2 DESATIVADA."");
         }
     }
 
     void OnBossDefeated()
     {
-        // Se morreu durante refração, restaura visual
-        if (isRefracting)
-        {
-            CancelRefraction();
-        }
+        if (isRefracting) CancelRefraction();
         isPhase2Active = false;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // SISTEMA DE REFRAÇÃO
-    // ═══════════════════════════════════════════════════════════════
-
     void CheckRefractionThreshold()
     {
-        if (refractionUsesRemaining <= 0 || nextThresholdIndex >= refractionThresholds.Length) return;
+        if (refractionUsesRemaining <= 0) return;
+        if (nextThresholdIndex >= refractionThresholds.Length) return;
         if (health == null) return;
-
-        // Cooldown após revelação por dano — impede nova refração imediata
-        if (Time.time < refractionCooldownUntil) return;
 
         float healthPercent = bossController.HealthPercent;
         float currentThreshold = refractionThresholds[nextThresholdIndex];
@@ -244,20 +186,14 @@ public class BossPhase2_Refraction : MonoBehaviour
 
         int useNumber = maxRefractionUses - refractionUsesRemaining;
         if (showDebugLog)
-            Debug.Log($"[BossPhase2] 👁️ Refração ATIVADA! (uso {useNumber}/{maxRefractionUses}, HP: {bossController.HealthPercent * 100:F0}%)");
+            Debug.Log(string.Format(""[BossPhase2] Invisibilidade ATIVADA! (uso {0}/{1}, HP: {2}%)"", useNumber, maxRefractionUses, (int)(bossController.HealthPercent * 100)));
     }
 
     private void OnTookDamage()
     {
-        if (isRefracting)
-        {
-            if (showDebugLog)
-                Debug.Log("[BossPhase2] 💥 Boss foi atingido durante a invisibilidade! Invisibilidade CANCELADA/REVELADA!");
-
-            // Cooldown de 3 segundos antes de poder refratar de novo
-            refractionCooldownUntil = Time.time + 3f;
-            CancelRefraction();
-        }
+        if (!isRefracting) return;
+        if (showDebugLog) Debug.Log(""[BossPhase2] Boss atingido durante invisibilidade! REVELADO!"");
+        CancelRefraction();
     }
 
     void CancelRefraction()
@@ -269,9 +205,8 @@ public class BossPhase2_Refraction : MonoBehaviour
         }
 
         isRefracting = false;
-        refractionStartTime = -1f;
         bossController.SetRefraction(false);
-        if (health != null) health.isInvulnerable = false;
+
         RestoreOriginalMaterials();
         SetMaterialsTransparent(false);
         SetRenderersVisibility(true);
@@ -279,61 +214,87 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
-            if (originalAgentSpeed > 0f)
-                agent.speed = originalAgentSpeed;
+            if (originalAgentSpeed > 0f) agent.speed = originalAgentSpeed;
         }
 
-        // Restaura a barra de vida que é escondida durante a refração
         if (health != null && health.healthBarSlider != null)
             health.healthBarSlider.gameObject.SetActive(true);
-
-        if (showDebugLog)
-            Debug.Log($"[BossPhase2] 👁️ Invisibilidade REVELADA por dano do player! Usos restantes: {refractionUsesRemaining}");
     }
 
     IEnumerator RefractionRoutine()
     {
         isRefracting = true;
-        refractionStartTime = Time.time;
-
-        // Notifica o BossController e sistema de eventos
         bossController.SetRefraction(true);
 
-        // Desativa a visibilidade dos renderers IMEDIATAMENTE no frame 0 para garantir 100% de invisibilidade
         SetRenderersVisibility(false);
-
-        // Esconde a barra de vida (para forçar rastreamento)
-        if (health != null) health.isInvulnerable = false;
 
         if (health != null && health.healthBarSlider != null)
             health.healthBarSlider.gameObject.SetActive(false);
 
-        if (showDebugLog)
-            Debug.Log("[BossPhase2] 👻 Boss ficou TOTALMENTE INVISÍVEL! Rastreie o Boss e ataque para revelá-lo.");
-
-        // ── Permanece invisível enquanto foge e flanqueia o jogador ─────────
         BossPhase1_MobSpawner mobSpawner = GetComponent<BossPhase1_MobSpawner>();
+        BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
 
-        float fleeTimer = 0f;
-        while (isRefracting)
+        if (agent != null && agent.enabled)
         {
-            fleeTimer += Time.deltaTime;
+            originalAgentSpeed = agent.speed;
+            agent.speed = originalAgentSpeed * 1.4f;
+        }
 
-            // A cada 2.5s enquanto invisível, o Boss tenta se reposicionar/fugir do player
-            if (fleeTimer >= 2.5f)
+        float elapsed = 0f;
+        float nextMobSpawn = mobSpawnInterval;
+        float nextPilarSpawn = pilarSpawnInterval;
+        float nextReposition = repositionInterval;
+
+        while (isRefracting && elapsed < refractionDuration)
+        {
+            elapsed += Time.deltaTime;
+            nextMobSpawn -= Time.deltaTime;
+            nextPilarSpawn -= Time.deltaTime;
+            nextReposition -= Time.deltaTime;
+
+            if (nextReposition <= 0f)
             {
-                fleeTimer = 0f;
-                StartCoroutine(RepositionRoutine());
+                nextReposition = repositionInterval;
+                StartCoroutine(FleeRoutine());
+            }
 
-                // Spawna mobs de suporte enquanto foge invisível
-                if (mobSpawner != null && UnityEngine.Random.value <= 0.5f)
-                {
+            if (nextMobSpawn <= 0f)
+            {
+                nextMobSpawn = mobSpawnInterval;
+                if (mobSpawner != null)
                     mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.CounterAttack);
-                }
+            }
+
+            if (nextPilarSpawn <= 0f)
+            {
+                nextPilarSpawn = pilarSpawnInterval;
+                if (mestre != null && !mestre.Atacando)
+                    mestre.InvocarPrisaoForado();
             }
 
             yield return null;
         }
+
+        if (isRefracting) CancelRefraction();
+    }
+
+    IEnumerator FleeRoutine()
+    {
+        if (playerTransform == null) yield break;
+
+        Vector3 dirAway = (transform.position - playerTransform.position).normalized;
+        Vector3 targetPos = transform.position + dirAway * fleeDistance;
+
+        if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 4.0f, NavMesh.AllAreas))
+            targetPos = navHit.position;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.SetDestination(targetPos);
+        }
+
+        yield return null;
     }
 
     public void SetTemporaryVisibility(bool tempVisible)
@@ -348,94 +309,18 @@ public class BossPhase2_Refraction : MonoBehaviour
 
         foreach (Renderer rend in renderers)
         {
-            if (rend != null)
-            {
-                if (rend.gameObject == gameObject && rend is MeshRenderer)
-                {
-                    rend.enabled = false;
-                    continue;
-                }
-
-                if (rend is ParticleSystemRenderer) continue;
-
-                if (rend is SkinnedMeshRenderer skinned)
-                {
-                    skinned.updateWhenOffscreen = true; // Garante que a esqueleto da animação continua ativo e animado!
-                }
-
-                rend.enabled = visible;
-            }
+            if (rend == null) continue;
+            if (rend is ParticleSystemRenderer) continue;
+            if (rend is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
+            rend.enabled = visible;
         }
     }
-
-    IEnumerator RepositionRoutine()
-    {
-        if (playerTransform == null) yield break;
-
-        float randomAngle = UnityEngine.Random.Range(90f, 270f);
-        Vector3 dirFromPlayer = Quaternion.Euler(0, randomAngle, 0) * playerTransform.forward;
-        Vector3 targetPos = playerTransform.position + dirFromPlayer * repositionDistance;
-
-        // Valida a posição no NavMesh com raio de busca seguro
-        if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 3.0f, NavMesh.AllAreas))
-        {
-            targetPos = navHit.position;
-        }
-
-        // Em vez de Warp brusco (que pode fazer clipar no chão), navega até o ponto
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
-            agent.isStopped = false;
-            agent.SetDestination(targetPos);
-        }
-
-        // Pequeno delay para o shimmer visual no início do reposicionamento
-        float shimmerDelay = 0.3f;
-        float elapsed = 0f;
-        while (elapsed < shimmerDelay)
-        {
-            elapsed += Time.deltaTime;
-            ApplyShimmerEffect();
-            yield return null;
-        }
-    }
-
-    private Vector3 GetFlankPointAroundPlayer(float angleDegrees)
-    {
-        if (playerTransform == null) return transform.position;
-
-        float dist = repositionDistance > 0f ? repositionDistance : 7f;
-        Vector3 offset = Quaternion.Euler(0, angleDegrees, 0) * Vector3.forward * dist;
-        Vector3 targetPos = playerTransform.position + offset;
-
-        if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 4.0f, NavMesh.AllAreas))
-        {
-            return navHit.position;
-        }
-        return targetPos;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // EFEITOS VISUAIS
-    // ═══════════════════════════════════════════════════════════════
 
     void SetMaterialAlpha(MaterialData data, float alpha)
     {
         if (data.material == null) return;
-
-        if (data.hasColor)
-        {
-            Color c = data.material.color;
-            c.a = alpha;
-            data.material.color = c;
-        }
-
-        if (data.hasBaseColor)
-        {
-            Color bc = data.material.GetColor("_BaseColor");
-            bc.a = alpha;
-            data.material.SetColor("_BaseColor", bc);
-        }
+        if (data.hasColor) { Color c = data.material.color; c.a = alpha; data.material.color = c; }
+        if (data.hasBaseColor) { Color bc = data.material.GetColor(""_BaseColor""); bc.a = alpha; data.material.SetColor(""_BaseColor"", bc); }
     }
 
     void CacheOriginalMaterials()
@@ -453,64 +338,16 @@ public class BossPhase2_Refraction : MonoBehaviour
                 MaterialData data = new MaterialData
                 {
                     material = mat,
-                    hasColor = mat.HasProperty("_Color"),
-                    hasBaseColor = mat.HasProperty("_BaseColor"),
+                    hasColor = mat.HasProperty(""_Color""),
+                    hasBaseColor = mat.HasProperty(""_BaseColor""),
                     originalRenderQueue = mat.renderQueue,
                     originalShader = mat.shader,
                 };
-
-                if (data.hasColor)
-                {
-                    data.originalColor = mat.color;
-                    data.originalAlpha = mat.color.a;
-                }
-                if (data.hasBaseColor)
-                {
-                    data.originalBaseColor = mat.GetColor("_BaseColor");
-                    if (!data.hasColor) data.originalAlpha = data.originalBaseColor.a;
-                }
-
+                if (data.hasColor) { data.originalColor = mat.color; data.originalAlpha = mat.color.a; }
+                if (data.hasBaseColor) { data.originalBaseColor = mat.GetColor(""_BaseColor""); if (!data.hasColor) data.originalAlpha = data.originalBaseColor.a; }
                 originalMaterialData.Add(data);
             }
         }
-    }
-
-    IEnumerator FadeRenderers(float fromAlpha, float toAlpha, float duration)
-    {
-        if (toAlpha < 1f)
-            SetMaterialsTransparent(true);
-
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / duration);
-            float currentAlpha = Mathf.Lerp(fromAlpha, toAlpha, Mathf.SmoothStep(0f, 1f, t));
-
-            foreach (MaterialData data in originalMaterialData)
-            {
-                if (data.material == null) continue;
-
-                SetMaterialAlpha(data, currentAlpha);
-
-                if (currentAlpha < 0.5f && data.material.HasProperty("_EmissionColor"))
-                {
-                    float glowIntensity = (1f - currentAlpha) * 0.3f;
-                    data.material.SetColor("_EmissionColor", refractionGlowColor * glowIntensity);
-                    data.material.EnableKeyword("_EMISSION");
-                }
-            }
-            yield return null;
-        }
-
-        foreach (MaterialData data in originalMaterialData)
-        {
-            if (data.material == null) continue;
-            SetMaterialAlpha(data, toAlpha);
-        }
-
-        if (toAlpha >= 1f)
-            SetMaterialsTransparent(false);
     }
 
     void SetMaterialsTransparent(bool transparent)
@@ -518,52 +355,26 @@ public class BossPhase2_Refraction : MonoBehaviour
         foreach (MaterialData data in originalMaterialData)
         {
             if (data.material == null) continue;
-
             if (transparent)
             {
-                data.material.SetFloat("_Surface", 1);
-                data.material.SetFloat("_Blend", 0);
-                data.material.SetOverrideTag("RenderType", "Transparent");
-                data.material.renderQueue = 3000;
-                data.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                data.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                data.material.SetInt("_ZWrite", 1);
-                data.material.EnableKeyword("_ALPHABLEND_ON");
-                data.material.DisableKeyword("_ALPHATEST_ON");
-                data.material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                data.material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                data.material.SetFloat(""_Surface"", 1); data.material.SetFloat(""_Blend"", 0);
+                data.material.SetOverrideTag(""RenderType"", ""Transparent""); data.material.renderQueue = 3000;
+                data.material.SetInt(""_SrcBlend"", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                data.material.SetInt(""_DstBlend"", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                data.material.SetInt(""_ZWrite"", 1); data.material.EnableKeyword(""_ALPHABLEND_ON"");
+                data.material.DisableKeyword(""_ALPHATEST_ON""); data.material.DisableKeyword(""_ALPHAPREMULTIPLY_ON"");
+                data.material.EnableKeyword(""_SURFACE_TYPE_TRANSPARENT"");
             }
             else
             {
-                data.material.shader = data.originalShader;
-                data.material.renderQueue = data.originalRenderQueue;
-                data.material.SetOverrideTag("RenderType", "Opaque");
-                data.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                data.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                data.material.SetInt("_ZWrite", 1);
-                data.material.DisableKeyword("_ALPHABLEND_ON");
-                data.material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                data.material.SetFloat("_Surface", 0);
-
-                if (data.material.HasProperty("_EmissionColor"))
-                {
-                    data.material.SetColor("_EmissionColor", Color.black);
-                    data.material.DisableKeyword("_EMISSION");
-                }
+                data.material.shader = data.originalShader; data.material.renderQueue = data.originalRenderQueue;
+                data.material.SetOverrideTag(""RenderType"", ""Opaque"");
+                data.material.SetInt(""_SrcBlend"", (int)UnityEngine.Rendering.BlendMode.One);
+                data.material.SetInt(""_DstBlend"", (int)UnityEngine.Rendering.BlendMode.Zero);
+                data.material.SetInt(""_ZWrite"", 1); data.material.DisableKeyword(""_ALPHABLEND_ON"");
+                data.material.DisableKeyword(""_SURFACE_TYPE_TRANSPARENT""); data.material.SetFloat(""_Surface"", 0);
+                if (data.material.HasProperty(""_EmissionColor"")) { data.material.SetColor(""_EmissionColor"", Color.black); data.material.DisableKeyword(""_EMISSION""); }
             }
-        }
-    }
-
-    void ApplyShimmerEffect()
-    {
-        if (!isRefracting) return;
-
-        float shimmer = minOpacity + Mathf.Abs(Mathf.Sin(Time.time * shimmerSpeed)) * shimmerIntensity;
-
-        foreach (MaterialData data in originalMaterialData)
-        {
-            if (data.material == null) continue;
-            SetMaterialAlpha(data, shimmer);
         }
     }
 
@@ -575,27 +386,16 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (data.hasColor) data.material.color = data.originalColor;
             data.material.renderQueue = data.originalRenderQueue;
             data.material.shader = data.originalShader;
-
-            if (data.hasBaseColor)
-                data.material.SetColor("_BaseColor", data.originalBaseColor);
-
-            if (data.material.HasProperty("_EmissionColor"))
-            {
-                data.material.SetColor("_EmissionColor", Color.black);
-                data.material.DisableKeyword("_EMISSION");
-            }
+            if (data.hasBaseColor) data.material.SetColor(""_BaseColor"", data.originalBaseColor);
+            if (data.material.HasProperty(""_EmissionColor"")) { data.material.SetColor(""_EmissionColor"", Color.black); data.material.DisableKeyword(""_EMISSION""); }
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // DEBUG
-    // ═══════════════════════════════════════════════════════════════
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(0f, 1f, 1f, 0.2f);
-        Gizmos.DrawWireSphere(transform.position, repositionDistance);
+        Gizmos.DrawWireSphere(transform.position, fleeDistance);
     }
 #endif
 }

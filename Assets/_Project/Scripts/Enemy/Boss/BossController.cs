@@ -385,26 +385,7 @@ public class BossController : MonoBehaviour
         }
     }
 
-    private GameObject CreateFallbackToxicBloodPrefab()
-    {
-        GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        quad.name = "ToxicBlood_Fallback";
-        quad.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
-        Destroy(quad.GetComponent<Collider>());
-        
-        Renderer r = quad.GetComponent<Renderer>();
-        if (r != null)
-        {
-            Material m = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Standard"));
-            m.color = new Color(0.8f, 0.05f, 0.1f, 0.85f);
-            r.material = m;
-        }
-
-        ToxicBlood tb = quad.AddComponent<ToxicBlood>();
-        tb.lifetime = 3.5f;
-        quad.SetActive(false);
-        return quad;
-    }
+    // Fallback removido — sem o prefab ToxicBlood conectado, simplesmente não spawna nada.
 
     void OnDestroy()
     {
@@ -483,6 +464,26 @@ public class BossController : MonoBehaviour
     private void CheckHealthTransitions()
     {
         if (health.CurrentHealth == lastCheckedHP) return;
+
+        // ── HP Clamp por Fase: impede one-shot entre fases ──────────────────────────
+        // Na Fase 1, o HP não pode cair abaixo do limiar da Fase 2 + 1 HP
+        // Na Fase 2, o HP não pode cair abaixo do limiar da Fase 3 + 1 HP
+        // Só na Fase 3 o boss pode morrer normalmente
+        if (phaseConfig != null)
+        {
+            if (CurrentPhase == 1)
+            {
+                int minHP = Mathf.RoundToInt(phaseConfig.phase2Threshold * health.maxHealth) + 1;
+                if (health.CurrentHealth < minHP)
+                    health.SetHealth(minHP);
+            }
+            else if (CurrentPhase == 2)
+            {
+                int minHP = Mathf.RoundToInt(phaseConfig.phase3Threshold * health.maxHealth) + 1;
+                if (health.CurrentHealth < minHP)
+                    health.SetHealth(minHP);
+            }
+        }
 
         int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;

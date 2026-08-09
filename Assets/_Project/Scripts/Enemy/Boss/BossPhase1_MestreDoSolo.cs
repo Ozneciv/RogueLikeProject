@@ -376,4 +376,24 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
         }
     }
-}
+
+    /// <summary>
+    /// Invoca uma prisão de pilares forçadamente, independente da fase ativa.
+    /// Chamado pela BossPhase2_Refraction durante a invisibilidade.
+    /// </summary>
+    public void InvocarPrisaoForado()
+    {
+        if (atacando || bossController == null || bossController.IsDead || bossController.IsStunned) return;
+
+        // Sorteia entre pilares ou espinhos
+        if (pilarPrefab != null || espinhoPrefab != null)
+        {
+            GameObject prefab = (pilarPrefab != null && espinhoPrefab != null)
+                ? (Random.Range(0, 2) == 0 ? pilarPrefab : espinhoPrefab)
+                : (pilarPrefab != null ? pilarPrefab : espinhoPrefab);
+
+            bool quadrado = (prefab == espinhoPrefab);
+            StartCoroutine(Ataque_Prisao(prefab, quadrado));
+        }
+    }
+}
