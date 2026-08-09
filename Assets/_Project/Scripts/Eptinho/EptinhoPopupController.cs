@@ -122,6 +122,26 @@ public class EptinhoPopupController : MonoBehaviour
         previewPermanente   = false;
     }
 
+    void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (esconderCoroutine != null)
+        {
+            StopCoroutine(esconderCoroutine);
+            esconderCoroutine = null;
+        }
+        if (popupUI != null) popupUI.SetActive(false);
+    }
+
     void Awake()
     {
         if (_instancia == null)
