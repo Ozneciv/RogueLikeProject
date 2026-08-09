@@ -212,11 +212,13 @@ public class PlayerUltimate : MonoBehaviour
             attackScript.SetTrailsEmitting(true);
         }
 
+        // Parar corrotinas anteriores da UI/Unlock antes de disparar a habilidade
+        StopAllCoroutines();
+
         // Delegar execução da habilidade para o script específico da arma equipada
         ExecuteWeaponSpecificUltimate();
 
         // Destravar os controles automaticamente assim que o clipe de animação terminar
-        StopAllCoroutines();
         StartCoroutine(AutomaticUnlockCoroutine());
     }
 

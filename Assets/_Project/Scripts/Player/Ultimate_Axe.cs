@@ -189,9 +189,6 @@ public class Ultimate_Axe : MonoBehaviour
             StartCoroutine(ApplySlowMotionCoroutine(slowMotionDuration));
         }
 
-        StopAllCoroutines();
-        if (enableSlowMotionOnUlt) StartCoroutine(ApplySlowMotionCoroutine(slowMotionDuration));
-
         if (playerRb != null)
         {
             switch (leapMode)
@@ -271,7 +268,7 @@ public class Ultimate_Axe : MonoBehaviour
                 ? customJumpCurve.Evaluate(t)
                 : 4f * t * (1f - t);
 
-            float currentY = startPos.y + (heightFactor * parabolaPeakHeight);
+            float currentY = Mathf.Max(startPos.y, startPos.y + (heightFactor * parabolaPeakHeight));
 
             Vector3 nextPos = new Vector3(currentXZ.x, currentY, currentXZ.z);
             playerRb.MovePosition(nextPos);
