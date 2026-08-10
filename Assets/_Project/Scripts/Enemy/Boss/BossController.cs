@@ -73,7 +73,10 @@ public class BossController : MonoBehaviour
     public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUp" };
 
     [Header("Hitbox da Mão / Ataques Físicos")]
-    [Tooltip("Componente de Hitbox da mão do Boss. Se nulo, será autodetectado nos filhos.")]
+    [Tooltip("Arraste aqui o Box Collider do seu objeto 'HITBOX HAND'.")]
+    public Collider handCollider;
+
+    [Tooltip("Componente BossHandHitbox (configurado automaticamente ao arrastar o handCollider acima).")]
     public BossHandHitbox handHitbox;
 
     [Header("Mímica do Golem (Stun do Céu)")]
@@ -207,7 +210,15 @@ public class BossController : MonoBehaviour
             }
         }
 
-        // Auto-detecta a hitbox da mão do Boss
+        // Auto-detecta e configura a hitbox da mão a partir do handCollider (ex: HITBOX HAND)
+        if (handCollider != null && handHitbox == null)
+        {
+            handHitbox = handCollider.GetComponent<BossHandHitbox>();
+            if (handHitbox == null)
+                handHitbox = handCollider.gameObject.AddComponent<BossHandHitbox>();
+            handHitbox.handCollider = handCollider;
+        }
+
         if (handHitbox == null)
             handHitbox = GetComponentInChildren<BossHandHitbox>(true);
 
@@ -222,6 +233,7 @@ public class BossController : MonoBehaviour
                     Collider col = t.GetComponent<Collider>();
                     if (col != null)
                     {
+                        handCollider = col;
                         handHitbox = t.gameObject.AddComponent<BossHandHitbox>();
                         handHitbox.handCollider = col;
                         break;
