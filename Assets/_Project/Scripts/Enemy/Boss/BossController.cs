@@ -509,26 +509,6 @@ public class BossController : MonoBehaviour
     {
         if (health.CurrentHealth == lastCheckedHP) return;
 
-        // ── HP Clamp por Fase: impede one-shot entre fases ──────────────────────────
-        // Na Fase 1, o HP não pode cair abaixo do limiar da Fase 2 + 1 HP
-        // Na Fase 2, o HP não pode cair abaixo do limiar da Fase 3 + 1 HP
-        // Só na Fase 3 o boss pode morrer normalmente
-        if (phaseConfig != null)
-        {
-            if (CurrentPhase == 1)
-            {
-                int minHP = Mathf.RoundToInt(phaseConfig.phase2Threshold * health.maxHealth) + 1;
-                if (health.CurrentHealth < minHP)
-                    health.SetHealth(minHP);
-            }
-            else if (CurrentPhase == 2)
-            {
-                int minHP = Mathf.RoundToInt(phaseConfig.phase3Threshold * health.maxHealth) + 1;
-                if (health.CurrentHealth < minHP)
-                    health.SetHealth(minHP);
-            }
-        }
-
         int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;
         float hpPercent = HealthPercent;
@@ -539,21 +519,34 @@ public class BossController : MonoBehaviour
             OnTookDamage?.Invoke(); 
         }
 
-        // Notifica mudança de HP
+        // Notifica mudança de HP para a UI
         BossEvents.RaiseBossHealthChanged(hpPercent);
 
-        // Verifica transições (só avança, nunca regride)
-        if (CurrentPhase == 1 && hpPercent <= phaseConfig.phase2Threshold)
+        if (phaseConfig != null)
         {
-            TransitionToPhase(2);
+            int phase2HP = Mathf.RoundToInt(phaseConfig.phase2Threshold * health.maxHealth);
+            int phase3HP = Mathf.RoundToInt(phaseConfig.phase3Threshold * health.maxHealth);
+
+            // Transição para Fase 2 ao quebrar o Casulo
+            if (CurrentPhase == 1 && health.CurrentHealth <= phase2HP)
+            {
+                health.SetHealth(phase2HP);
+                lastCheckedHP = phase2HP;
+                BossEvents.RaiseBossHealthChanged((float)phase2HP / health.maxHealth);
+                TransitionToPhase(2);
+                return;
+            }
+            // Transição para Fase 3
+            else if (CurrentPhase == 2 && health.CurrentHealth <= phase3HP)
+            {
+                health.SetHealth(phase3HP);
+                lastCheckedHP = phase3HP;
+                BossEvents.RaiseBossHealthChanged((float)phase3HP / health.maxHealth);
+                if (IsInvisible) SetRefraction(false);
+                TransitionToPhase(3);
+                return;
+            }
         }
-        else if (CurrentPhase == 2 && hpPercent <= phaseConfig.phase3Threshold)
-        {
-            // Desativa refração se estiver ativa ao mudar de fase
-            if (IsInvisible) SetRefraction(false);
-            TransitionToPhase(3);
-        }
-        // Morte é tratada pelo onDeathOverride do DummyHealth
     }
 
     private void TransitionToPhase(int newPhase)
@@ -636,6 +629,9 @@ public class BossController : MonoBehaviour
 
         // Se o player não existir, cancela a perseguição de combate
         if (playerTransform == null) return;
+
+        // Na Fase 1 (Casulo), o Boss fica escondido e NÃO faz ataques físicos de soco/swipe!
+        if (CurrentPhase == 1) return;
 
         // Orientação em direção ao player
         HandleRotation();
