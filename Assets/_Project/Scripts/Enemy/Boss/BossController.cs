@@ -464,15 +464,29 @@ public class BossController : MonoBehaviour
 
     /// <summary>
     /// Dispara a animação PowerUP durante a transição da Fase 1 para a Fase 2.
-    /// O Boss absorve a essência de todos os mobs mortos.
+    /// O Boss fica INVULNERÁVEL durante toda a animação enquanto absorve a essência dos mobs.
     /// </summary>
-    public void TriggerPowerUP()
+    public void TriggerPowerUP(float invulnerabilityDuration = 2.5f)
     {
+        StartCoroutine(PowerUPInvulnerabilityRoutine(invulnerabilityDuration));
+    }
+
+    private IEnumerator PowerUPInvulnerabilityRoutine(float duration)
+    {
+        if (health != null) health.isInvulnerable = true;
+
         if (animator != null)
         {
             animator.SetTrigger("PowerUp");
         }
-        if (showDebugLog) Debug.Log("[BossController] ⚡ PowerUP ativado! Boss absorve essências para a Fase 2.");
+
+        if (showDebugLog) Debug.Log($"[BossController] 🛡️ Boss INVULNERÁVEL durante a animação de PowerUP ({duration}s)!");
+
+        yield return new WaitForSeconds(duration);
+
+        if (health != null && !IsDead) health.isInvulnerable = false;
+
+        if (showDebugLog) Debug.Log("[BossController] ⚔️ Invulnerabilidade do PowerUP encerrada! Boss pronto para combate na Fase 2.");
     }
 
     /// <summary>
