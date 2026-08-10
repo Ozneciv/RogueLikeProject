@@ -16,10 +16,9 @@ using UnityEngine.AI;
 /// INSPECTOR:
 ///   - refractionThresholds: porcentagens de HP que ativam a invisibilidade
 ///   - maxRefractionUses: quantas vezes o boss pode ficar invisivel
-///   - refractionDuration: duracao da invisibilidade em segundos
 /// </summary>
 [RequireComponent(typeof(BossController))]
-[AddComponentMenu(""Boss/BossPhase2_Refraction"")]
+[AddComponentMenu("Boss/BossPhase2_Refraction")]
 public class BossPhase2_Refraction : MonoBehaviour
 {
     // -- Referencias
@@ -135,7 +134,7 @@ public class BossPhase2_Refraction : MonoBehaviour
 
     void OnFightStarted()
     {
-        GameObject player = GameObject.FindGameObjectWithTag(""Player"");
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null) playerTransform = player.transform;
     }
 
@@ -144,13 +143,13 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (newPhase == 2)
         {
             isPhase2Active = true;
-            if (showDebugLog) Debug.Log(""[BossPhase2] Fase 2 ATIVA -- Invisibilidade disponivel!"");
+            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 ATIVA -- Invisibilidade disponivel!");
         }
         else
         {
             isPhase2Active = false;
             if (isRefracting) CancelRefraction();
-            if (showDebugLog) Debug.Log(""[BossPhase2] Fase 2 DESATIVADA."");
+            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 DESATIVADA.");
         }
     }
 
@@ -184,13 +183,13 @@ public class BossPhase2_Refraction : MonoBehaviour
 
         int useNumber = maxRefractionUses - refractionUsesRemaining;
         if (showDebugLog)
-            Debug.Log(string.Format(""[BossPhase2] Invisibilidade ATIVADA! (uso {0}/{1}, HP: {2}%)"", useNumber, maxRefractionUses, (int)(bossController.HealthPercent * 100)));
+            Debug.Log(string.Format("[BossPhase2] Invisibilidade ATIVADA! (uso {0}/{1}, HP: {2}%)", useNumber, maxRefractionUses, (int)(bossController.HealthPercent * 100)));
     }
 
     private void OnTookDamage()
     {
         if (!isRefracting) return;
-        if (showDebugLog) Debug.Log(""[BossPhase2] Boss atingido durante invisibilidade! REVELADO!"");
+        if (showDebugLog) Debug.Log("[BossPhase2] Boss atingido durante invisibilidade! REVELADO!");
         CancelRefraction();
     }
 
@@ -316,7 +315,7 @@ public class BossPhase2_Refraction : MonoBehaviour
     {
         if (data.material == null) return;
         if (data.hasColor) { Color c = data.material.color; c.a = alpha; data.material.color = c; }
-        if (data.hasBaseColor) { Color bc = data.material.GetColor(""_BaseColor""); bc.a = alpha; data.material.SetColor(""_BaseColor"", bc); }
+        if (data.hasBaseColor) { Color bc = data.material.GetColor("_BaseColor"); bc.a = alpha; data.material.SetColor("_BaseColor", bc); }
     }
 
     void CacheOriginalMaterials()
@@ -334,13 +333,13 @@ public class BossPhase2_Refraction : MonoBehaviour
                 MaterialData data = new MaterialData
                 {
                     material = mat,
-                    hasColor = mat.HasProperty(""_Color""),
-                    hasBaseColor = mat.HasProperty(""_BaseColor""),
+                    hasColor = mat.HasProperty("_Color"),
+                    hasBaseColor = mat.HasProperty("_BaseColor"),
                     originalRenderQueue = mat.renderQueue,
                     originalShader = mat.shader,
                 };
                 if (data.hasColor) { data.originalColor = mat.color; data.originalAlpha = mat.color.a; }
-                if (data.hasBaseColor) { data.originalBaseColor = mat.GetColor(""_BaseColor""); if (!data.hasColor) data.originalAlpha = data.originalBaseColor.a; }
+                if (data.hasBaseColor) { data.originalBaseColor = mat.GetColor("_BaseColor"); if (!data.hasColor) data.originalAlpha = data.originalBaseColor.a; }
                 originalMaterialData.Add(data);
             }
         }
@@ -353,23 +352,23 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (data.material == null) continue;
             if (transparent)
             {
-                data.material.SetFloat(""_Surface"", 1); data.material.SetFloat(""_Blend"", 0);
-                data.material.SetOverrideTag(""RenderType"", ""Transparent""); data.material.renderQueue = 3000;
-                data.material.SetInt(""_SrcBlend"", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                data.material.SetInt(""_DstBlend"", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                data.material.SetInt(""_ZWrite"", 1); data.material.EnableKeyword(""_ALPHABLEND_ON"");
-                data.material.DisableKeyword(""_ALPHATEST_ON""); data.material.DisableKeyword(""_ALPHAPREMULTIPLY_ON"");
-                data.material.EnableKeyword(""_SURFACE_TYPE_TRANSPARENT"");
+                data.material.SetFloat("_Surface", 1); data.material.SetFloat("_Blend", 0);
+                data.material.SetOverrideTag("RenderType", "Transparent"); data.material.renderQueue = 3000;
+                data.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                data.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                data.material.SetInt("_ZWrite", 1); data.material.EnableKeyword("_ALPHABLEND_ON");
+                data.material.DisableKeyword("_ALPHATEST_ON"); data.material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                data.material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             }
             else
             {
                 data.material.shader = data.originalShader; data.material.renderQueue = data.originalRenderQueue;
-                data.material.SetOverrideTag(""RenderType"", ""Opaque"");
-                data.material.SetInt(""_SrcBlend"", (int)UnityEngine.Rendering.BlendMode.One);
-                data.material.SetInt(""_DstBlend"", (int)UnityEngine.Rendering.BlendMode.Zero);
-                data.material.SetInt(""_ZWrite"", 1); data.material.DisableKeyword(""_ALPHABLEND_ON"");
-                data.material.DisableKeyword(""_SURFACE_TYPE_TRANSPARENT""); data.material.SetFloat(""_Surface"", 0);
-                if (data.material.HasProperty(""_EmissionColor"")) { data.material.SetColor(""_EmissionColor"", Color.black); data.material.DisableKeyword(""_EMISSION""); }
+                data.material.SetOverrideTag("RenderType", "Opaque");
+                data.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                data.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                data.material.SetInt("_ZWrite", 1); data.material.DisableKeyword("_ALPHABLEND_ON");
+                data.material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT"); data.material.SetFloat("_Surface", 0);
+                if (data.material.HasProperty("_EmissionColor")) { data.material.SetColor("_EmissionColor", Color.black); data.material.DisableKeyword("_EMISSION"); }
             }
         }
     }
@@ -382,8 +381,8 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (data.hasColor) data.material.color = data.originalColor;
             data.material.renderQueue = data.originalRenderQueue;
             data.material.shader = data.originalShader;
-            if (data.hasBaseColor) data.material.SetColor(""_BaseColor"", data.originalBaseColor);
-            if (data.material.HasProperty(""_EmissionColor"")) { data.material.SetColor(""_EmissionColor"", Color.black); data.material.DisableKeyword(""_EMISSION""); }
+            if (data.hasBaseColor) data.material.SetColor("_BaseColor", data.originalBaseColor);
+            if (data.material.HasProperty("_EmissionColor")) { data.material.SetColor("_EmissionColor", Color.black); data.material.DisableKeyword("_EMISSION"); }
         }
     }
 
