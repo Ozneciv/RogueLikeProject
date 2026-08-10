@@ -72,6 +72,10 @@ public class BossController : MonoBehaviour
     [Tooltip("Triggers do Animator a serem sorteados nos ataques de Magia/Spell (visível ou invisível).")]
     public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUp" };
 
+    [Header("Hitbox da Mão / Ataques Físicos")]
+    [Tooltip("Componente de Hitbox da mão do Boss. Se nulo, será autodetectado nos filhos.")]
+    public BossHandHitbox handHitbox;
+
     [Header("Mímica do Golem (Stun do Céu)")]
     [Tooltip("Prefab do marcador de telegrafagem no chão (se nulo, usa indicador dinâmico).")]
     public GameObject stunMarkerPrefab;
@@ -199,6 +203,29 @@ public class BossController : MonoBehaviour
                 {
                     footSpawnPoint = t;
                     break;
+                }
+            }
+        }
+
+        // Auto-detecta a hitbox da mão do Boss
+        if (handHitbox == null)
+            handHitbox = GetComponentInChildren<BossHandHitbox>(true);
+
+        if (handHitbox == null)
+        {
+            Transform[] allTransforms = GetComponentsInChildren<Transform>(true);
+            foreach (Transform t in allTransforms)
+            {
+                string n = t.name.ToLower();
+                if (n.Contains("hand") || n.Contains("mão") || n.Contains("fist") || n.Contains("wrist") || n.Contains("arm"))
+                {
+                    Collider col = t.GetComponent<Collider>();
+                    if (col != null)
+                    {
+                        handHitbox = t.gameObject.AddComponent<BossHandHitbox>();
+                        handHitbox.handCollider = col;
+                        break;
+                    }
                 }
             }
         }
@@ -545,22 +572,32 @@ public class BossController : MonoBehaviour
 
         if (marker != null) Destroy(marker);
 
-        // Instancia o raio de stun caindo do céu diretamente na posição onde o player estava
+        // Instancia o raio de stun caindo do céu diretamente na posição onde o player estava (Versão Empoderada do Boss)
         if (stunBeamPrefab != null)
         {
             GameObject beam = Instantiate(stunBeamPrefab, groundPos, Quaternion.identity);
             StunBeam stunScript = beam.GetComponent<StunBeam>();
             if (stunScript != null)
             {
+                stunScript.beamColor = new Color(0.65f, 0.15f, 0.95f); // Roxo Místico Imperial
+                stunScript.flashColor = new Color(1.0f, 0.85f, 0.3f);  // Flash Dourado
+                stunScript.pillarHeight = 14f;
+                stunScript.particleCount = 65;
+                stunScript.ringWidth = 1.0f;
                 stunScript.Initialize(stunRadius, stunDuration);
             }
             Destroy(beam, 1.5f);
         }
         else
         {
-            GameObject beamObj = new GameObject("Boss_Dynamic_StunBeam");
+            GameObject beamObj = new GameObject("Boss_Empowered_StunBeam");
             beamObj.transform.position = groundPos;
             StunBeam stunScript = beamObj.AddComponent<StunBeam>();
+            stunScript.beamColor = new Color(0.65f, 0.15f, 0.95f); // Roxo Místico Imperial
+            stunScript.flashColor = new Color(1.0f, 0.85f, 0.3f);  // Flash Dourado
+            stunScript.pillarHeight = 14f;
+            stunScript.particleCount = 65;
+            stunScript.ringWidth = 1.0f;
             stunScript.Initialize(stunRadius, stunDuration);
         }
 
@@ -919,6 +956,13 @@ public class BossController : MonoBehaviour
             elapsedWindUp += Time.deltaTime;
             HandleRotation();
             yield return null;
+        }
+
+        // Ativa a Hitbox física da mão do Boss durante o golpe!
+        if (handHitbox != null)
+        {
+            int dmg = phaseConfig != null ? phaseConfig.baseMeleeDamage : 35;
+            handHitbox.EnableHitbox(0.5f, dmg, 15f);
         }
 
         // Dispara a Onda de Choque Exclusiva do Boss (AoE Knockback de 7.5 metros)
