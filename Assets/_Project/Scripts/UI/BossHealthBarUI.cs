@@ -77,7 +77,7 @@ public class BossHealthBarUI : MonoBehaviour
         // Se o boss já começou a luta (ou mudou de fase/tomou dano), ativa a barra
         if (bossController != null)
         {
-            if (bossController.CurrentState != BossState.Idle && bossController.CurrentState != BossState.Dead)
+            if (bossController.IsFighting)
             {
                 OnFightStarted();
                 return;
