@@ -433,11 +433,13 @@ public class BossController : MonoBehaviour
 
     /// <summary>
     /// Dispara uma das animações de magia/spell do Boss (ex: invocação de pilares).
-    /// Pode ser usado visível ou durante a invisibilidade sem revelar o Boss.
+    /// Reduz drasticamente a velocidade de movimentação durante o feitiço.
     /// </summary>
     public void TriggerSpellAnimation()
     {
         if (animator == null) return;
+
+        SlowMovementForSpell(1.6f, 0.15f);
 
         if (spellAttackTriggers != null && spellAttackTriggers.Length > 0)
         {
@@ -451,11 +453,38 @@ public class BossController : MonoBehaviour
     }
 
     /// <summary>
+    /// Reduz a velocidade de movimentação do Boss drasticamente durante o cast de feitiços (15% da velocidade base).
+    /// </summary>
+    public void SlowMovementForSpell(float duration = 1.6f, float slowFactor = 0.15f)
+    {
+        StartCoroutine(SpellSlowRoutine(duration, slowFactor));
+    }
+
+    private IEnumerator SpellSlowRoutine(float duration, float slowFactor)
+    {
+        if (agent == null) yield break;
+
+        float baseNavSpeed = phaseConfig != null ? phaseConfig.baseSpeed : 4.8f;
+        
+        // Reduz drasticamente a velocidade do NavMeshAgent (15% da velocidade normal)
+        agent.speed = baseNavSpeed * slowFactor;
+
+        yield return new WaitForSeconds(duration);
+
+        if (agent != null && !IsStunned && !IsDead)
+        {
+            // Restaura a velocidade normal
+            agent.speed = baseNavSpeed;
+        }
+    }
+
+    /// <summary>
     /// Dispara a animação PowerUP durante a transição da Fase 1 para a Fase 2.
     /// O Boss fica INVULNERÁVEL durante toda a animação enquanto absorve a essência dos mobs.
     /// </summary>
     public void TriggerPowerUP(float invulnerabilityDuration = 2.5f)
     {
+        SlowMovementForSpell(invulnerabilityDuration, 0.05f);
         StartCoroutine(PowerUPInvulnerabilityRoutine(invulnerabilityDuration));
     }
 
@@ -482,6 +511,7 @@ public class BossController : MonoBehaviour
     /// </summary>
     public void PerformGolemStunCast(Vector3 targetPosition, float stunRadius = 4.0f, float stunDuration = 2.0f, float telegraphTime = 1.2f)
     {
+        SlowMovementForSpell(telegraphTime + 0.5f, 0.15f);
         StartCoroutine(GolemStunCastRoutine(targetPosition, stunRadius, stunDuration, telegraphTime));
     }
 
