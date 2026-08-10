@@ -260,14 +260,16 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     /// </summary>
     public void SpawnWave(WaveType waveType)
     {
-        // Verifica se a fase está ativa
-        if (!phase1Active) return;
+        // Permite spawnar mobs durante a Fase 1 OU durante a Refração/Invisibilidade da Fase 2
+        BossPhase2_Refraction refraction = GetComponent<BossPhase2_Refraction>();
+        bool isRefractingInPhase2 = (refraction != null && refraction.isRefracting);
+
+        if (!phase1Active && !isRefractingInPhase2) return;
 
         // Verifica cooldown global
-        float cooldown = config != null ? config.phase1SpawnCooldown : 8f;
+        float cooldown = config != null ? config.phase1SpawnCooldown : 3f;
         if (Time.time - lastSpawnTime < cooldown)
         {
-            Debug.Log($"[MobSpawner] Wave {waveType} bloqueada pelo cooldown ({cooldown}s).");
             return;
         }
 
@@ -385,6 +387,19 @@ public class BossPhase1_MobSpawner : MonoBehaviour
 
     private void AutoLoadMissingPrefabs()
     {
+#if UNITY_EDITOR
+        if (goblinPrefab == null) goblinPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Goblin/Goblin.prefab");
+        if (spiderPrefab == null) spiderPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Spider/Spider.prefab");
+        if (golemPrefab == null) golemPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Golem/Golem.prefab");
+        if (cristalusPrefab == null) cristalusPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Cristalus/Cristalus.prefab");
+        if (crystalWatcherPrefab == null) crystalWatcherPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/CrystalWatcher/CrystalWatcher.prefab");
+        if (magicStonePrefab == null) magicStonePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/MagicStone/MagicStoneEnemy.prefab");
+        if (totemPrefab == null) totemPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Totem/Totem 1.prefab");
+        if (shardSwarmPrefab == null) shardSwarmPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/ShardSwarm/Shard Swarm.prefab");
+        if (geobiontePrefab == null) geobiontePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Bismutado/bismutado.prefab");
+        if (sharpBlurPrefab == null) sharpBlurPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/SharpBlur/Sh.prefab");
+#endif
+
         if (goblinPrefab == null) goblinPrefab = Resources.Load<GameObject>("Goblin") ?? Resources.Load<GameObject>("Enemies/Goblin");
         if (spiderPrefab == null) spiderPrefab = Resources.Load<GameObject>("Spider") ?? Resources.Load<GameObject>("Enemies/Spider");
         if (sharpBlurPrefab == null) sharpBlurPrefab = Resources.Load<GameObject>("SharpBlur") ?? Resources.Load<GameObject>("Enemies/SharpBlur");

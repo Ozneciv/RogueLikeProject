@@ -652,35 +652,36 @@ public class BossController : MonoBehaviour
 
         Vector3 centerPos = transform.position;
         List<Vector3> spikePositions = new List<Vector3>();
+        float minDistance = 2.2f; // Espaçamento mínimo para NUNCA haver sobreposição
 
-        // Anel 1 (Raio 4m - 8 espinhos)
-        int count1 = 8;
-        for (int i = 0; i < count1; i++)
+        // Gera 28 posições orgânicas e desorganizadas pela arena
+        int totalSpikes = 28;
+        int attempts = 0;
+        while (spikePositions.Count < totalSpikes && attempts < 300)
         {
-            float angle = i * (360f / count1) * Mathf.Deg2Rad;
-            Vector3 pos = centerPos + new Vector3(Mathf.Cos(angle) * 4f, 0.05f, Mathf.Sin(angle) * 4f);
-            spikePositions.Add(pos);
+            attempts++;
+            float radius = UnityEngine.Random.Range(3.5f, 14.5f);
+            float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+
+            Vector3 candidate = centerPos + new Vector3(Mathf.Cos(angle) * radius, 0.05f, Mathf.Sin(angle) * radius);
+
+            bool overlap = false;
+            foreach (Vector3 existing in spikePositions)
+            {
+                if (Vector3.Distance(existing, candidate) < minDistance)
+                {
+                    overlap = true;
+                    break;
+                }
+            }
+
+            if (!overlap)
+            {
+                spikePositions.Add(candidate);
+            }
         }
 
-        // Anel 2 (Raio 8.5m - 12 espinhos)
-        int count2 = 12;
-        for (int i = 0; i < count2; i++)
-        {
-            float angle = (i * (360f / count2) + 15f) * Mathf.Deg2Rad;
-            Vector3 pos = centerPos + new Vector3(Mathf.Cos(angle) * 8.5f, 0.05f, Mathf.Sin(angle) * 8.5f);
-            spikePositions.Add(pos);
-        }
-
-        // Anel 3 (Raio 13m - 16 espinhos)
-        int count3 = 16;
-        for (int i = 0; i < count3; i++)
-        {
-            float angle = (i * (360f / count3) + 30f) * Mathf.Deg2Rad;
-            Vector3 pos = centerPos + new Vector3(Mathf.Cos(angle) * 13f, 0.05f, Mathf.Sin(angle) * 13f);
-            spikePositions.Add(pos);
-        }
-
-        // 1. Fase de Telegrafagem (1.2s): Marcações visuais de aviso no chão
+        // 1. Fase de Telegrafagem (1.2s): Anéis Místicos Bonitos no Chão
         List<GameObject> indicators = new List<GameObject>();
         foreach (Vector3 p in spikePositions)
         {
@@ -688,20 +689,28 @@ public class BossController : MonoBehaviour
             if (stunMarkerPrefab != null)
             {
                 ind = Instantiate(stunMarkerPrefab, p, Quaternion.Euler(90, 0, 0));
-                ind.transform.localScale = new Vector3(2.5f, 2.5f, 1f);
+                ind.transform.localScale = new Vector3(2.4f, 2.4f, 1f);
             }
             else
             {
-                ind = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                Destroy(ind.GetComponent<Collider>());
-                ind.transform.position = p + Vector3.up * 0.02f;
-                ind.transform.rotation = Quaternion.Euler(90, 0, 0);
-                ind.transform.localScale = Vector3.one * 2.2f;
-                
-                Renderer r = ind.GetComponent<Renderer>();
-                if (r != null)
+                // Indicador Místico Cristalino Bonito em Anel (LineRenderer) em vez de quadrado vermelho
+                ind = new GameObject("BossSpikeTelegraphRing");
+                ind.transform.position = p + Vector3.up * 0.05f;
+
+                LineRenderer lr = ind.AddComponent<LineRenderer>();
+                lr.positionCount = 25;
+                lr.useWorldSpace = false;
+                lr.startWidth = 0.18f;
+                lr.endWidth = 0.18f;
+                lr.material = new Material(Shader.Find("Sprites/Default"));
+                lr.startColor = new Color(0.95f, 0.2f, 0.4f, 0.85f); // Vermelho Místico / Magenta
+                lr.endColor = new Color(0.65f, 0.15f, 0.9f, 0.85f);
+
+                float circleRadius = 1.1f;
+                for (int i = 0; i < 25; i++)
                 {
-                    r.material.color = new Color(0.95f, 0.15f, 0.15f, 0.5f);
+                    float a = (i / 24f) * Mathf.PI * 2f;
+                    lr.SetPosition(i, new Vector3(Mathf.Cos(a) * circleRadius, 0f, Mathf.Sin(a) * circleRadius));
                 }
             }
             if (ind != null) indicators.Add(ind);

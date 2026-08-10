@@ -159,6 +159,8 @@ MonoBehaviour:
   handHitbox: {fileID: 0}
   stunMarkerPrefab: {fileID: 0}
   stunBeamPrefab: {fileID: 0}
+  wideSpinhoPrefab: {fileID: 7936005269762645577, guid: 04a5f360bf41f5e48a96dcd756facd86, type: 3}
+  wideSpikeDamage: 45
   toxicBloodPrefab: {fileID: 0}
   toxicBloodInterval: 0.4
   footSpawnPoint: {fileID: 0}

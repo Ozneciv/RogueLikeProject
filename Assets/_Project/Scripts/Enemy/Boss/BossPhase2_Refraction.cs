@@ -53,8 +53,8 @@ public class BossPhase2_Refraction : MonoBehaviour
     public float repositionInterval = 2.5f;
 
     [Header("Ataques durante Invisibilidade")]
-    [Tooltip("Com qual frequencia (segundos) o boss spawna mobs enquanto invisivel")]
-    public float mobSpawnInterval = 4f;
+    [Tooltip("Com qual frequencia (segundos) o boss spawna mobs aceleradamente enquanto invisivel")]
+    public float mobSpawnInterval = 2.5f;
 
     [Tooltip("Com qual frequencia (segundos) o boss invoca pilares enquanto invisivel")]
     public float pilarSpawnInterval = 5f;

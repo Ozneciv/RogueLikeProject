@@ -279,8 +279,8 @@ RectTransform:
   m_GameObject: {fileID: 8454972019307195022}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 0.6, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2465049846201804920}
   - {fileID: 869445095424575182}
@@ -288,7 +288,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 100}
+  m_AnchoredPosition: {x: 0, y: 200}
   m_SizeDelta: {x: 1920, y: 1080}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &3494543451212658714
@@ -316,6 +316,9 @@ MonoBehaviour:
   framePhase1: {fileID: -1414261168, guid: 74110240494d82a4e97a02d0f237c3e3, type: 3}
   framePhase2: {fileID: 115348365, guid: 40be0b2228c419642b3fc909efde2c6e, type: 3}
   framePhase3: {fileID: -646075099, guid: 0d458e2dce3f45d41978773a1618eca3, type: 3}
+  colorPhase1: {r: 0.2, g: 0.55, b: 1, a: 1}
+  colorPhase2: {r: 0.95, g: 0.15, b: 0.15, a: 1}
+  colorPhase3: {r: 0.2, g: 0.9, b: 0.35, a: 1}
   dontDestroyOnLoad: 1
   containerPanel: {fileID: 0}
   detectionDistance: 25
