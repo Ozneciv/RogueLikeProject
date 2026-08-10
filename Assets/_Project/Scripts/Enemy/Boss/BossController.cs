@@ -429,19 +429,7 @@ public class BossController : MonoBehaviour
     // API PÚBLICA
     // =====================================================
 
-    private void OnCollisionStay(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            Rigidbody playerRb = collision.gameObject.GetComponent<Rigidbody>();
-            if (playerRb != null && !playerRb.isKinematic)
-            {
-                Vector3 pushDir = (collision.transform.position - transform.position).normalized;
-                pushDir.y = 0f;
-                playerRb.AddForce(pushDir * 18f, ForceMode.Impulse);
-            }
-        }
-    }
+    // Colisão sólida: o Boss possui Rigidbody de 5000kg e CapsuleCollider ativo, agindo como uma parede sólida contra o player.
 
     /// <summary>
     /// Dispara uma das animações de magia/spell do Boss (ex: invocação de pilares).
@@ -643,7 +631,6 @@ public class BossController : MonoBehaviour
 
         int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;
-        float hpPercent = HealthPercent;
 
         // Dispara evento de dano se o HP diminuiu
         if (health.CurrentHealth < previousHP)
@@ -651,20 +638,34 @@ public class BossController : MonoBehaviour
             OnTookDamage?.Invoke(); 
         }
 
-        // Notifica mudança de HP para a UI
-        BossEvents.RaiseBossHealthChanged(hpPercent);
-
         if (phaseConfig != null)
         {
             int phase2HP = Mathf.RoundToInt(phaseConfig.phase2Threshold * health.maxHealth);
             int phase3HP = Mathf.RoundToInt(phaseConfig.phase3Threshold * health.maxHealth);
+
+            float phaseHpPercent = 1.0f;
+
+            if (CurrentPhase == 1)
+            {
+                phaseHpPercent = Mathf.InverseLerp(phase2HP, health.maxHealth, health.CurrentHealth);
+            }
+            else if (CurrentPhase == 2)
+            {
+                phaseHpPercent = Mathf.InverseLerp(phase3HP, phase2HP, health.CurrentHealth);
+            }
+            else if (CurrentPhase == 3)
+            {
+                phaseHpPercent = Mathf.InverseLerp(0, phase3HP, health.CurrentHealth);
+            }
+
+            // Notifica mudança de HP da fase atual (1.0 a 0.0) para a UI
+            BossEvents.RaiseBossHealthChanged(phaseHpPercent);
 
             // Transição para Fase 2 ao quebrar o Casulo
             if (CurrentPhase == 1 && health.CurrentHealth <= phase2HP)
             {
                 health.SetHealth(phase2HP);
                 lastCheckedHP = phase2HP;
-                BossEvents.RaiseBossHealthChanged((float)phase2HP / health.maxHealth);
                 TransitionToPhase(2);
                 return;
             }
@@ -673,7 +674,6 @@ public class BossController : MonoBehaviour
             {
                 health.SetHealth(phase3HP);
                 lastCheckedHP = phase3HP;
-                BossEvents.RaiseBossHealthChanged((float)phase3HP / health.maxHealth);
                 if (IsInvisible) SetRefraction(false);
                 TransitionToPhase(3);
                 return;

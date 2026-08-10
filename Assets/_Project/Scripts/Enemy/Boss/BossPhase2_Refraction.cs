@@ -136,13 +136,20 @@ public class BossPhase2_Refraction : MonoBehaviour
             {
                 CheckRefractionThreshold();
 
-                // Enquanto visível na Fase 2, invoca pilares/espinhos periodicamente para colocar pressão no player
+                // Enquanto visível na Fase 2, invoca pilares/espinhos ou raio de stun mímico periodicamente
                 visiblePilarTimer -= Time.deltaTime;
                 if (visiblePilarTimer <= 0f)
                 {
                     visiblePilarTimer = 4.5f;
-                    BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
-                    if (mestre != null) mestre.InvocarPrisaoForado();
+                    if (UnityEngine.Random.value < 0.5f && playerTransform != null && bossController != null)
+                    {
+                        bossController.PerformGolemStunCast(playerTransform.position);
+                    }
+                    else
+                    {
+                        BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+                        if (mestre != null) mestre.InvocarPrisaoForado();
+                    }
                 }
             }
         }
@@ -282,7 +289,11 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (nextPilarSpawn <= 0f)
             {
                 nextPilarSpawn = pilarSpawnInterval;
-                if (mestre != null && !mestre.Atacando)
+                if (playerTransform != null && bossController != null && UnityEngine.Random.value < 0.5f)
+                {
+                    bossController.PerformGolemStunCast(playerTransform.position);
+                }
+                else if (mestre != null && !mestre.Atacando)
                 {
                     if (bossController != null) bossController.TriggerSpellAnimation();
                     mestre.InvocarPrisaoForado();

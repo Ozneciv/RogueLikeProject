@@ -27,6 +27,11 @@ public class BossHealthBarUI : MonoBehaviour
     [Tooltip("Sprite da moldura para a Fase 3 (Raízes)")]
     public Sprite framePhase3;
 
+    [Header("Cores do Preenchimento da Vida por Fase")]
+    public Color colorPhase1 = new Color(0.2f, 0.55f, 1.0f);   // Azul (Fase 1 - Casulo)
+    public Color colorPhase2 = new Color(0.95f, 0.15f, 0.15f);  // Vermelho (Fase 2 - Cristal)
+    public Color colorPhase3 = new Color(0.2f, 0.9f, 0.35f);   // Verde (Fase 3 - Raízes)
+
     [Header("Controle de Visibilidade e Persistência")]
     [Tooltip("Se verdadeiro, o Canvas da barra de vida sobrevive a trocas de cena/portas.")]
     public bool dontDestroyOnLoad = true;
@@ -80,6 +85,7 @@ public class BossHealthBarUI : MonoBehaviour
     void Start()
     {
         UpdateFrame(1);
+        UpdateColor(1);
         ResetBar();
         SetBarVisible(false); // Começa oculta até chegar perto do boss
     }
@@ -130,6 +136,8 @@ public class BossHealthBarUI : MonoBehaviour
         isFightActive = true;
         currentPhase = (bossController != null && bossController.CurrentPhase > 0) ? bossController.CurrentPhase : 1;
         UpdateFrame(currentPhase);
+        UpdateColor(currentPhase);
+        ResetBar();
         SetBarVisible(true);
     }
 
@@ -150,6 +158,8 @@ public class BossHealthBarUI : MonoBehaviour
     {
         currentPhase = newPhase;
         UpdateFrame(newPhase);
+        UpdateColor(newPhase);
+        if (fillImage != null) fillImage.fillAmount = 1.0f; // Reseta a barra para 100% ao entrar na nova fase!
         if (!isFightActive) SetBarVisible(true);
     }
 
@@ -168,6 +178,18 @@ public class BossHealthBarUI : MonoBehaviour
             case 3:
                 if (framePhase3 != null) frameImage.sprite = framePhase3;
                 break;
+        }
+    }
+
+    void UpdateColor(int phase)
+    {
+        if (fillImage == null) return;
+
+        switch (phase)
+        {
+            case 1: fillImage.color = colorPhase1; break; // Azul
+            case 2: fillImage.color = colorPhase2; break; // Vermelho
+            case 3: fillImage.color = colorPhase3; break; // Verde
         }
     }
 
