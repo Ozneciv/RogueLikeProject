@@ -70,7 +70,7 @@ public class BossController : MonoBehaviour
     public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch" };
 
     [Tooltip("Triggers do Animator a serem sorteados nos ataques de Magia/Spell (visível ou invisível).")]
-    public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUP" };
+    public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUp" };
 
     [Header("Mímica do Golem (Stun do Céu)")]
     [Tooltip("Prefab do marcador de telegrafagem no chão (se nulo, usa indicador dinâmico).")]
@@ -470,7 +470,7 @@ public class BossController : MonoBehaviour
     {
         if (animator != null)
         {
-            animator.SetTrigger("PowerUP");
+            animator.SetTrigger("PowerUp");
         }
         if (showDebugLog) Debug.Log("[BossController] ⚡ PowerUP ativado! Boss absorve essências para a Fase 2.");
     }
