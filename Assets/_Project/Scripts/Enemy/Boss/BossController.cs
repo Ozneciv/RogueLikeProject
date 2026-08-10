@@ -460,13 +460,13 @@ public class BossController : MonoBehaviour
 
     /// <summary>
     /// Dispara uma das animações de magia/spell do Boss (ex: invocação de pilares).
-    /// Reduz drasticamente a velocidade de movimentação durante o feitiço.
+    /// Congela a movimentação 100% durante o feitiço.
     /// </summary>
     public void TriggerSpellAnimation()
     {
         if (animator == null) return;
 
-        SlowMovementForSpell(1.6f, 0.15f);
+        FreezeMovementForSpell(1.4f);
 
         if (spellAttackTriggers != null && spellAttackTriggers.Length > 0)
         {
@@ -480,38 +480,40 @@ public class BossController : MonoBehaviour
     }
 
     /// <summary>
-    /// Reduz a velocidade de movimentação do Boss drasticamente durante o cast de feitiços (15% da velocidade base).
+    /// Congela a movimentação do Boss 100% (agent.speed = 0) durante o cast de feitiços.
     /// </summary>
-    public void SlowMovementForSpell(float duration = 1.6f, float slowFactor = 0.15f)
+    public void FreezeMovementForSpell(float duration = 1.4f)
     {
-        StartCoroutine(SpellSlowRoutine(duration, slowFactor));
+        StartCoroutine(SpellFreezeRoutine(duration));
     }
 
-    private IEnumerator SpellSlowRoutine(float duration, float slowFactor)
+    private IEnumerator SpellFreezeRoutine(float duration)
     {
         if (agent == null) yield break;
 
         float baseNavSpeed = phaseConfig != null ? phaseConfig.baseSpeed : 4.8f;
         
-        // Reduz drasticamente a velocidade do NavMeshAgent (15% da velocidade normal)
-        agent.speed = baseNavSpeed * slowFactor;
+        // Congela 100% a movimentação do NavMeshAgent durante o feitiço
+        agent.speed = 0f;
+        agent.isStopped = true;
 
         yield return new WaitForSeconds(duration);
 
         if (agent != null && !IsStunned && !IsDead)
         {
-            // Restaura a velocidade normal
+            // Restaura a movimentação e velocidade normal
             agent.speed = baseNavSpeed;
+            agent.isStopped = false;
         }
     }
 
     /// <summary>
     /// Dispara a animação PowerUP durante a transição da Fase 1 para a Fase 2.
-    /// O Boss fica INVULNERÁVEL durante toda a animação enquanto absorve a essência dos mobs.
+    /// O Boss fica INVULNERÁVEL e congelado durante toda a animação.
     /// </summary>
     public void TriggerPowerUP(float invulnerabilityDuration = 2.5f)
     {
-        SlowMovementForSpell(invulnerabilityDuration, 0.05f);
+        FreezeMovementForSpell(invulnerabilityDuration);
         StartCoroutine(PowerUPInvulnerabilityRoutine(invulnerabilityDuration));
     }
 
@@ -524,7 +526,7 @@ public class BossController : MonoBehaviour
             animator.SetTrigger("PowerUp");
         }
 
-        if (showDebugLog) Debug.Log($"[BossController] 🛡️ Boss INVULNERÁVEL durante a animação de PowerUP ({duration}s)!");
+        if (showDebugLog) Debug.Log($"[BossController] 🛡️ Boss INVULNERÁVEL e CONGELADO durante o PowerUP ({duration}s)!");
 
         yield return new WaitForSeconds(duration);
 
@@ -534,11 +536,11 @@ public class BossController : MonoBehaviour
     }
 
     /// <summary>
-    /// Ataque Mímico do Golem (SimpleCast): invoca um raio de energia do céu diretamente no jogador que o estuna.
+    /// Ataque Mímico do Golem (SimpleCast): invoca um raio RÁPIDO do céu diretamente no jogador (0.45s de telegrafagem).
     /// </summary>
-    public void PerformGolemStunCast(Vector3 targetPosition = default, float stunRadius = 4.0f, float stunDuration = 2.5f, float telegraphTime = 1.0f)
+    public void PerformGolemStunCast(Vector3 targetPosition = default, float stunRadius = 5.0f, float stunDuration = 2.5f, float telegraphTime = 0.45f)
     {
-        SlowMovementForSpell(telegraphTime + 0.6f, 0.15f);
+        FreezeMovementForSpell(telegraphTime + 0.6f);
         StartCoroutine(GolemStunCastRoutine(stunRadius, stunDuration, telegraphTime));
     }
 
@@ -958,11 +960,33 @@ public class BossController : MonoBehaviour
             yield return null;
         }
 
-        // Ativa a Hitbox física da mão do Boss durante o golpe!
+        // Ativa a Hitbox física da mão do Boss (ou fallback automático frontal se o componente não for arrastado)
+        int dmg = phaseConfig != null ? phaseConfig.baseMeleeDamage : 35;
         if (handHitbox != null)
         {
-            int dmg = phaseConfig != null ? phaseConfig.baseMeleeDamage : 35;
-            handHitbox.EnableHitbox(0.5f, dmg, 15f);
+            handHitbox.EnableHitbox(0.5f, dmg, 16f);
+        }
+        else
+        {
+            // Fallback automático de Hitbox da Mão no raio do soco/swipe
+            Vector3 handHitPos = transform.position + transform.forward * 2.2f + Vector3.up * 1.2f;
+            Collider[] hits = Physics.OverlapSphere(handHitPos, 2.5f);
+            foreach (Collider h in hits)
+            {
+                if (h.CompareTag("Player"))
+                {
+                    PlayerHealth ph = h.GetComponent<PlayerHealth>();
+                    if (ph != null) ph.TakeDamage(dmg, gameObject);
+
+                    Rigidbody pRb = h.GetComponent<Rigidbody>();
+                    if (pRb != null && !pRb.isKinematic)
+                    {
+                        Vector3 push = (h.transform.position - transform.position).normalized;
+                        push.y = 0.2f;
+                        pRb.AddForce(push * 16f, ForceMode.Impulse);
+                    }
+                }
+            }
         }
 
         // Dispara a Onda de Choque Exclusiva do Boss (AoE Knockback de 7.5 metros)
