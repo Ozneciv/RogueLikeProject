@@ -77,10 +77,7 @@ public class BossHandHitbox : MonoBehaviour
                 playerRb.AddForce(dir * knockbackForce, ForceMode.Impulse);
             }
 
-            if (bossController != null)
-            {
-                bossController.TriggerCameraShake(0.2f, 0.12f);
-            }
+            BossController.TriggerCameraShake(0.2f, 0.12f);
 
             Debug.Log($"[BossHandHitbox] 💥 HITBOX DA MÃO ACERTOU O PLAYER! Dano: {damage}");
         }
