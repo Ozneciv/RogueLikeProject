@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using UnityEngine.AI;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Controlador central do Boss Cromático — Máquina de Estados (FSM).
