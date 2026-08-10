@@ -70,6 +70,7 @@ public class BossPhase2_Refraction : MonoBehaviour
     private int refractionUsesRemaining;
     private int nextThresholdIndex = 0;
     private bool isRefracting = false;
+    public bool IsRefracting => isRefracting;
     private bool isPhase2Active = false;
     private Coroutine refractionCoroutine;
     private float originalAgentSpeed = -1f;

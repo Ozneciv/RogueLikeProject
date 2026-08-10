@@ -262,7 +262,7 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     {
         // Permite spawnar mobs durante a Fase 1 OU durante a Refração/Invisibilidade da Fase 2
         BossPhase2_Refraction refraction = GetComponent<BossPhase2_Refraction>();
-        bool isRefractingInPhase2 = (refraction != null && refraction.isRefracting);
+        bool isRefractingInPhase2 = (refraction != null && refraction.IsRefracting) || (bossController != null && bossController.IsInvisible);
 
         if (!phase1Active && !isRefractingInPhase2) return;
 
