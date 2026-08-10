@@ -249,8 +249,8 @@ MonoBehaviour:
   crystalWatcherPrefab: {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
   totemPrefab: {fileID: 326464074420430212, guid: 75587e19386eb024c8b895034e0d087d, type: 3}
   cristalusPrefab: {fileID: 626950691794527064, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
-  shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
-  geobiontePrefab: {fileID: 227223189099962665, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
+  shardSwarmPrefab: {fileID: 0}
+  geobiontePrefab: {fileID: 2219830635270719724, guid: d8bf9856a9590de499ed775858ed6a48, type: 3}
   geobionteSpawnChance: 2
   spawnIndicatorPrefab: {fileID: 6680416817470113502, guid: b39730579acf2344fa42cb20842adaa7, type: 3}
   spawnIndicatorDelay: 0

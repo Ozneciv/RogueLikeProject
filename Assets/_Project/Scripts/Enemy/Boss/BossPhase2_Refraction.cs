@@ -143,7 +143,7 @@ public class BossPhase2_Refraction : MonoBehaviour
                     visiblePilarTimer = 4.5f;
                     if (UnityEngine.Random.value < 0.5f && playerTransform != null && bossController != null)
                     {
-                        bossController.PerformGolemStunCast(playerTransform.position);
+                        bossController.PerformGolemStunCast();
                     }
                     else
                     {
@@ -291,7 +291,7 @@ public class BossPhase2_Refraction : MonoBehaviour
                 nextPilarSpawn = pilarSpawnInterval;
                 if (playerTransform != null && bossController != null && UnityEngine.Random.value < 0.5f)
                 {
-                    bossController.PerformGolemStunCast(playerTransform.position);
+                    bossController.PerformGolemStunCast();
                 }
                 else if (mestre != null && !mestre.Atacando)
                 {

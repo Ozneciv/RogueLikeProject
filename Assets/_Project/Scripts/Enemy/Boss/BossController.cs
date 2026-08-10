@@ -507,19 +507,33 @@ public class BossController : MonoBehaviour
     }
 
     /// <summary>
-    /// Ataque Mímico do Golem (SimpleCast): invoca um raio de energia do céu que estuna o player.
+    /// Ataque Mímico do Golem (SimpleCast): invoca um raio de energia do céu diretamente no jogador que o estuna.
     /// </summary>
-    public void PerformGolemStunCast(Vector3 targetPosition, float stunRadius = 4.0f, float stunDuration = 2.0f, float telegraphTime = 1.2f)
+    public void PerformGolemStunCast(Vector3 targetPosition = default, float stunRadius = 4.0f, float stunDuration = 2.5f, float telegraphTime = 1.0f)
     {
-        SlowMovementForSpell(telegraphTime + 0.5f, 0.15f);
-        StartCoroutine(GolemStunCastRoutine(targetPosition, stunRadius, stunDuration, telegraphTime));
+        SlowMovementForSpell(telegraphTime + 0.6f, 0.15f);
+        StartCoroutine(GolemStunCastRoutine(stunRadius, stunDuration, telegraphTime));
     }
 
-    private IEnumerator GolemStunCastRoutine(Vector3 targetPosition, float stunRadius, float stunDuration, float telegraphTime)
+    private IEnumerator GolemStunCastRoutine(float stunRadius, float stunDuration, float telegraphTime)
     {
         if (animator != null) animator.SetTrigger("SimpleCast");
 
-        Vector3 groundPos = new Vector3(targetPosition.x, targetPosition.y + 0.05f, targetPosition.z);
+        // Rastreia a posição exata do player no momento do cast
+        if (playerTransform == null) playerTransform = FindPlayerTransform();
+
+        Vector3 targetPos = (playerTransform != null) ? playerTransform.position : transform.position + transform.forward * 4f;
+
+        // Vira o Boss instantaneamente para encarar o player
+        if (playerTransform != null)
+        {
+            Vector3 lookDir = (playerTransform.position - transform.position).normalized;
+            lookDir.y = 0f;
+            if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
+        }
+
+        Vector3 groundPos = new Vector3(targetPos.x, targetPos.y + 0.05f, targetPos.z);
+
         GameObject marker = null;
         if (stunMarkerPrefab != null)
         {
@@ -531,6 +545,7 @@ public class BossController : MonoBehaviour
 
         if (marker != null) Destroy(marker);
 
+        // Instancia o raio de stun caindo do céu diretamente na posição onde o player estava
         if (stunBeamPrefab != null)
         {
             GameObject beam = Instantiate(stunBeamPrefab, groundPos, Quaternion.identity);
@@ -549,7 +564,7 @@ public class BossController : MonoBehaviour
             stunScript.Initialize(stunRadius, stunDuration);
         }
 
-        if (showDebugLog) Debug.Log($"[BossController] ⚡ Stun mímico do Golem disparado em {groundPos}!");
+        if (showDebugLog) Debug.Log($"[BossController] ⚡ Stun mímico do Golem disparado DIRETAMENTE no player em {groundPos}!");
     }
 
     /// <summary>
