@@ -42,10 +42,10 @@ public class BossPhaseConfig : ScriptableObject
 
     [Header("Velocidade de Movimento")]
     [Tooltip("Velocidade base do NavMeshAgent nas fases 1 e 2.")]
-    public float baseSpeed = 3.5f;
+    public float baseSpeed = 4.5f;
 
     [Tooltip("Velocidade de rotação do boss em graus/segundo.")]
-    public float rotationSpeed = 120f;
+    public float rotationSpeed = 160f;
 
     // =====================================================
     // ATAQUES BASE (provisórios — cada fase pode ter seus próprios)
@@ -53,13 +53,13 @@ public class BossPhaseConfig : ScriptableObject
 
     [Header("Ataque Melee Base")]
     [Tooltip("Dano do golpe corpo a corpo básico.")]
-    public int baseMeleeDamage = 25;
+    public int baseMeleeDamage = 30;
 
     [Tooltip("Range do ataque melee.")]
-    public float baseMeleeRange = 4f;
+    public float baseMeleeRange = 4.2f;
 
     [Tooltip("Cooldown do ataque melee (segundos).")]
-    public float baseMeleeCooldown = 2.5f;
+    public float baseMeleeCooldown = 1.5f;
 
     // =====================================================
     // FASE 1 — SPAWN DE MOBS
@@ -67,13 +67,13 @@ public class BossPhaseConfig : ScriptableObject
 
     [Header("Fase 1 — Spawn de Mobs")]
     [Tooltip("Máximo de mobs do boss vivos simultaneamente na arena.")]
-    public int phase1MaxMobs = 5;
+    public int phase1MaxMobs = 8;
 
     [Tooltip("Cooldown mínimo entre waves de mobs (segundos).")]
-    public float phase1SpawnCooldown = 8f;
+    public float phase1SpawnCooldown = 3f;
 
     [Tooltip("Quantos hits seguidos o player precisa dar para o boss contra-atacar com mobs.")]
-    public int phase1HitCounterThreshold = 4;
+    public int phase1HitCounterThreshold = 3;
 
     [Tooltip("Raio ao redor do centro da arena onde os mobs podem spawnar.")]
     public float phase1SpawnRadius = 15f;

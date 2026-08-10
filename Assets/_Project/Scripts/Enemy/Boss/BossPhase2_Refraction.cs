@@ -123,13 +123,29 @@ public class BossPhase2_Refraction : MonoBehaviour
         }
     }
 
+    private float visiblePilarTimer = 2.0f;
+
     void Update()
     {
         if (bossController == null) bossController = GetComponent<BossController>();
         if (bossController == null || bossController.IsDead || bossController.IsStunned) return;
 
-        if (isPhase2Active && !isRefracting)
-            CheckRefractionThreshold();
+        if (isPhase2Active)
+        {
+            if (!isRefracting)
+            {
+                CheckRefractionThreshold();
+
+                // Enquanto visível na Fase 2, invoca pilares/espinhos periodicamente para colocar pressão no player
+                visiblePilarTimer -= Time.deltaTime;
+                if (visiblePilarTimer <= 0f)
+                {
+                    visiblePilarTimer = 4.5f;
+                    BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+                    if (mestre != null) mestre.InvocarPrisaoForado();
+                }
+            }
+        }
     }
 
     void OnFightStarted()
@@ -143,7 +159,13 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (newPhase == 2)
         {
             isPhase2Active = true;
-            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 ATIVA -- Invisibilidade disponivel!");
+            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 ATIVA -- Primeira Invisibilidade ativada!");
+            if (refractionUsesRemaining > 0 && nextThresholdIndex == 0)
+            {
+                nextThresholdIndex++;
+                refractionUsesRemaining--;
+                ActivateRefraction();
+            }
         }
         else
         {

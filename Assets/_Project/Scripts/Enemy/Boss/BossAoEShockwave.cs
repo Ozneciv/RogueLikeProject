@@ -1,9 +1,10 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Efeito de Impacto e Onda de Choque Exclusivo do Boss (AoE Knockback).
-/// Substitui o uso da bomba do goblin por uma explosão mística cristalina de área expandida (7.5m).
+/// Substitui quads laranjas por uma linda onda de choque circular expansiva com LineRenderer e luz mística.
 /// </summary>
 public class BossAoEShockwave : MonoBehaviour
 {
@@ -13,9 +14,10 @@ public class BossAoEShockwave : MonoBehaviour
     public float knockbackForce = 16.0f;
     public float upwardForce = 0.35f;
 
-    [Header("✨ Estética Visual")]
-    public Color shockwaveColor = new Color(1.00f, 0.55f, 0.10f, 0.90f);
-    public float duration = 0.8f;
+    [Header("✨ Estética Visual (Cristal Roxo/Ciano)")]
+    public Color shockwaveColor = new Color(0.75f, 0.25f, 1.00f, 0.90f); // Roxo Místico
+    public Color innerGlowColor = new Color(0.20f, 0.85f, 1.00f, 0.90f); // Ciano Brilhante
+    public float duration = 0.65f;
 
     public static void TriggerBossExplosion(Vector3 centerPosition, float radius = 7.5f, int damage = 35, float pushForce = 16.0f)
     {
@@ -36,38 +38,7 @@ public class BossAoEShockwave : MonoBehaviour
 
     private IEnumerator BlastRoutine()
     {
-        // 1. Cria a onda de choque expansiva no chão (Ring Decal)
-        GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        ring.name = "BossShockwaveRing";
-        Destroy(ring.GetComponent<Collider>());
-        
-        ring.transform.position = transform.position + Vector3.up * 0.05f;
-        ring.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        ring.transform.localScale = Vector3.zero;
-
-        Renderer r = ring.GetComponent<Renderer>();
-        if (r != null)
-        {
-            Shader uShader = Shader.Find("Universal Render Pipeline/Unlit")
-                          ?? Shader.Find("Universal Render Pipeline/Lit")
-                          ?? Shader.Find("Unlit/Color");
-            Material m = new Material(uShader);
-            m.color = shockwaveColor;
-            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", shockwaveColor);
-            m.EnableKeyword("_EMISSION");
-            if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", shockwaveColor * 3.0f);
-            r.material = m;
-        }
-
-        // 2. Luz de Flash de Explosão
-        GameObject lightObj = new GameObject("BossBlastLight");
-        lightObj.transform.position = transform.position + Vector3.up * 1.0f;
-        Light lightComp = lightObj.AddComponent<Light>();
-        lightComp.color = shockwaveColor;
-        lightComp.intensity = 15f;
-        lightComp.range = shockwaveRadius * 1.5f;
-
-        // 3. Aplica o Dano e o Knockback pesado no Player
+        // 1. Aplica o Dano e o Knockback pesado no Player
         Collider[] hits = Physics.OverlapSphere(transform.position, shockwaveRadius);
         foreach (Collider hit in hits)
         {
@@ -80,48 +51,76 @@ public class BossAoEShockwave : MonoBehaviour
                 }
 
                 Rigidbody pRb = hit.GetComponent<Rigidbody>();
-                if (pRb != null)
+                if (pRb != null && !pRb.isKinematic)
                 {
                     Vector3 pushDir = (hit.transform.position - transform.position).normalized;
                     pushDir.y = upwardForce;
                     pRb.AddForce(pushDir * knockbackForce, ForceMode.Impulse);
-                    Debug.Log($"[BossAoEShockwave] 💥 Player arremessado com força de knockback {knockbackForce}!");
                 }
             }
         }
 
-        // 4. Animação de Expansão e Desvanecimento do Anel
+        // 2. Luz de Flash Mística de Cristal
+        GameObject lightObj = new GameObject("BossBlastLight");
+        lightObj.transform.position = transform.position + Vector3.up * 1.2f;
+        Light lightComp = lightObj.AddComponent<Light>();
+        lightComp.color = shockwaveColor;
+        lightComp.intensity = 25f;
+        lightComp.range = shockwaveRadius * 1.8f;
+
+        // 3. Cria Anéis Circulares Expansivos elegantes com LineRenderer (Sem Quads Laranjas)
+        int segments = 48;
+        GameObject ringObj = new GameObject("CrystalShockwaveRing");
+        ringObj.transform.position = transform.position + Vector3.up * 0.05f;
+
+        LineRenderer lr = ringObj.AddComponent<LineRenderer>();
+        lr.loop = true;
+        lr.positionCount = segments + 1;
+        lr.startWidth = 0.4f;
+        lr.endWidth = 0.1f;
+        lr.useWorldSpace = true;
+        lr.numCapVertices = 4;
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lr.receiveShadows = false;
+
+        Shader sh = Shader.Find("Sprites/Default") ?? Shader.Find("UI/Default");
+        Material mat = new Material(sh);
+        mat.color = shockwaveColor;
+        lr.material = mat;
+
         float elapsed = 0f;
-        float animDuration = 0.55f;
-        Vector3 maxScale = new Vector3(shockwaveRadius * 2f, shockwaveRadius * 2f, 1f);
+        float animDuration = duration;
 
         while (elapsed < animDuration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / animDuration);
-            float expandCurve = Mathf.Sin(t * Mathf.PI * 0.5f);
+            float currentRadius = Mathf.Lerp(0.2f, shockwaveRadius, Mathf.Sin(t * Mathf.PI * 0.5f));
+            float alpha = Mathf.Lerp(1.0f, 0f, t * t);
 
-            if (ring != null)
+            // Atualiza o círculo
+            for (int i = 0; i <= segments; i++)
             {
-                ring.transform.localScale = Vector3.Lerp(Vector3.zero, maxScale, expandCurve);
-                if (r != null && r.material != null)
-                {
-                    Color c = shockwaveColor;
-                    c.a = Mathf.Lerp(0.9f, 0f, t);
-                    r.material.color = c;
-                }
+                float angle = (float)i / segments * Mathf.PI * 2f;
+                Vector3 pos = ringObj.transform.position + new Vector3(Mathf.Cos(angle) * currentRadius, 0.03f, Mathf.Sin(angle) * currentRadius);
+                lr.SetPosition(i, pos);
             }
+
+            Color currentColor = Color.Lerp(shockwaveColor, innerGlowColor, t);
+            currentColor.a = alpha;
+            lr.material.color = currentColor;
+            lr.startWidth = Mathf.Lerp(0.5f, 0.05f, t);
 
             if (lightComp != null)
             {
-                lightComp.intensity = Mathf.Lerp(15f, 0f, t);
+                lightComp.intensity = Mathf.Lerp(25f, 0f, t);
             }
 
             yield return null;
         }
 
         Destroy(lightObj);
-        Destroy(ring);
+        Destroy(ringObj);
         Destroy(gameObject);
     }
 

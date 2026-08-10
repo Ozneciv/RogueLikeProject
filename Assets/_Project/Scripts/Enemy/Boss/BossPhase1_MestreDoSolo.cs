@@ -138,6 +138,13 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             StopAllCoroutines();
             atacando = false;
 
+            // DESTROI O CASULO CASO AINDA EXISTA NA CENA
+            if (cristalInstanciado != null)
+            {
+                Destroy(cristalInstanciado);
+                cristalInstanciado = null;
+            }
+
             // Devolve o visual sólido para o Boss e ativa sua inteligência
             foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = true; }
             if (bossCollider != null) bossCollider.enabled = true;

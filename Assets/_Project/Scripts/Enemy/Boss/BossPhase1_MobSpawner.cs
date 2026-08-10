@@ -179,6 +179,8 @@ public class BossPhase1_MobSpawner : MonoBehaviour
             firstThresholdTriggered = false;
             secondThresholdTriggered = false;
             Debug.Log("[MobSpawner] Fase 1 ativada — pronto para spawnar mobs.");
+            StopCoroutine(nameof(AutoSpawnRoutineFase1));
+            StartCoroutine(AutoSpawnRoutineFase1());
         }
         else
         {
@@ -228,6 +230,21 @@ public class BossPhase1_MobSpawner : MonoBehaviour
             hitCounter = 0;
             Debug.Log("[MobSpawner] Contra-Ataque! Player acertou muitos hits seguidos.");
             SpawnWave(WaveType.CounterAttack);
+        }
+    }
+
+    private IEnumerator AutoSpawnRoutineFase1()
+    {
+        yield return new WaitForSeconds(1.5f);
+        while (phase1Active)
+        {
+            activeMobs.RemoveAll(mob => mob == null);
+            int maxMobs = config != null ? config.phase1MaxMobs : 6;
+            if (activeMobs.Count < maxMobs)
+            {
+                SpawnWave(WaveType.CounterAttack);
+            }
+            yield return new WaitForSeconds(3.5f);
         }
     }
 

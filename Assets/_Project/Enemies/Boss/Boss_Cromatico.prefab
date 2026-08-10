@@ -39,8 +39,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.5, y: 2.5, z: 2.5}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 2, y: 2.25, z: 2}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4770016296666447743}
   m_Father: {fileID: 0}
@@ -82,6 +82,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9a75c6074f564e4eaee93b9021eac7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossController
+  detectionDistance: 20
   phaseConfig: {fileID: 11400000, guid: 59c924409c776a8439d6745fd2b05bdf, type: 2}
   arenaSeal: {fileID: 0}
   animator: {fileID: 1500451120141395205}
@@ -91,6 +92,7 @@ MonoBehaviour:
   toxicBloodPrefab: {fileID: 0}
   toxicBloodInterval: 0.4
   footSpawnPoint: {fileID: 0}
+  bossHealthBarPrefab: {fileID: 1715828090872878114, guid: 8573b314ece098040b44500ed0e678f9, type: 3}
   showDebugLog: 1
 --- !u!195 &2397048516129404881
 NavMeshAgent:
@@ -240,11 +242,11 @@ MonoBehaviour:
   magicStonePrefab: {fileID: 4138484601771036003, guid: 3756182d398618847b5cad2c2be8caff, type: 3}
   crystalWatcherPrefab: {fileID: 6393874332621996799, guid: 7e7c3ed779af1c546bc02b3423ebde95, type: 3}
   totemPrefab: {fileID: 326464074420430212, guid: 75587e19386eb024c8b895034e0d087d, type: 3}
-  cristalusPrefab: {fileID: 5390169502761059047, guid: ac128f3903b4ea142b3ab43e791ce0f2, type: 3}
+  cristalusPrefab: {fileID: 626950691794527064, guid: 7a104b6634733f34b98f0afa73d3eba7, type: 3}
   shardSwarmPrefab: {fileID: 6240220712296181312, guid: 5cb7d0c703daa5642aad10250777eb0e, type: 3}
   geobiontePrefab: {fileID: 227223189099962665, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
   geobionteSpawnChance: 2
-  spawnIndicatorPrefab: {fileID: 0}
+  spawnIndicatorPrefab: {fileID: 6680416817470113502, guid: b39730579acf2344fa42cb20842adaa7, type: 3}
   spawnIndicatorDelay: 0
   spawnDepth: 3
   emergeTime: 0.6
