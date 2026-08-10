@@ -80,6 +80,10 @@ public class BossController : MonoBehaviour
     [Tooltip("Transform posicionado no pé do Boss para spawnar o sangue no chão.")]
     [SerializeField] private Transform footSpawnPoint;
 
+    [Header("UI da Barra de Vida")]
+    [Tooltip("Prefab do Canvas da barra de vida do Boss. Se atribuído (ou em Resources/BossHealthBar_Canvas), será instanciado automaticamente no mapa.")]
+    public GameObject bossHealthBarPrefab;
+
     [Header("Debug")]
     public bool showDebugLog = true;
 
@@ -228,6 +232,9 @@ public class BossController : MonoBehaviour
 
         // Encontra o player com múltiplos fallbacks
         playerTransform = FindPlayerTransform();
+
+        // Garante que o Canvas da barra de vida exista na cena do Boss
+        EnsureHealthBarUI();
 
         // Começa em Idle — espera o BossCombatTrigger ou auto-start em cenas de teste
         CurrentState = BossState.Idle;
@@ -404,6 +411,25 @@ public class BossController : MonoBehaviour
     // API PÚBLICA
     // =====================================================
 
+    public void EnsureHealthBarUI()
+    {
+        if (FindObjectOfType<BossHealthBarUI>() == null)
+        {
+            if (bossHealthBarPrefab == null)
+            {
+                bossHealthBarPrefab = Resources.Load<GameObject>("BossHealthBar_Canvas")
+                                ?? Resources.Load<GameObject>("UI/BossHealthBar_Canvas")
+                                ?? Resources.Load<GameObject>("BossCanvas");
+            }
+
+            if (bossHealthBarPrefab != null)
+            {
+                Instantiate(bossHealthBarPrefab);
+                if (showDebugLog) Debug.Log("[BossController] 🎨 Canvas da Barra de Vida instanciado no mapa!");
+            }
+        }
+    }
+
     /// <summary>
     /// Inicia a luta com o boss. Chamado pelo BossCombatTrigger.
     /// Transiciona de Idle para Phase1.
@@ -411,6 +437,8 @@ public class BossController : MonoBehaviour
     public void StartFight()
     {
         if (CurrentState != BossState.Idle) return;
+
+        EnsureHealthBarUI();
 
         if (showDebugLog) Debug.Log("[BossController] ⚔️ LUTA INICIADA!");
 

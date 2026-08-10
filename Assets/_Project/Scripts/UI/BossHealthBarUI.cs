@@ -4,9 +4,9 @@ using UnityEngine.UI;
 /// <summary>
 /// Gerencia a barra de vida do Boss no Canvas.
 /// 
-/// COMPORTAMENTO DE ATIVAÇÃO:
-///   • Começa oculta.
-///   • Quando o jogador se aproxima do Boss (distância de detecção) ou quando a luta inicia, a barra aparece automaticamente na tela.
+/// COMPORTAMENTO DE PERSISTÊNCIA E MAPA:
+///   • Pode ser instanciado pelo BossController automaticamente ou colocado na cena.
+///   • Suporta DontDestroyOnLoad para não sumir ao trocar de salas/portas.
 /// </summary>
 public class BossHealthBarUI : MonoBehaviour
 {
@@ -27,17 +27,39 @@ public class BossHealthBarUI : MonoBehaviour
     [Tooltip("Sprite da moldura para a Fase 3 (Raízes)")]
     public Sprite framePhase3;
 
-    [Header("Controle de Visibilidade")]
-    [Tooltip("Opcional: Painel/Container filho com os visuais. Se nulo, usará este próprio GameObject.")]
+    [Header("Controle de Visibilidade e Persistência")]
+    [Tooltip("Se verdadeiro, o Canvas da barra de vida sobrevive a trocas de cena/portas.")]
+    public bool dontDestroyOnLoad = true;
+
+    [Tooltip("Opcional: Painel/Container filho com os visuais.")]
     public GameObject containerPanel;
 
-    [Tooltip("Distância (em metros) do Boss para ativar a barra de vida automaticamente caso a luta não tenha iniciado.")]
+    [Tooltip("Distância (em metros) do Boss para ativar a barra de vida automaticamente.")]
     public float detectionDistance = 25f;
 
     private int currentPhase = 1;
     private bool isFightActive = false;
     private Transform playerTransform;
     private BossController bossController;
+
+    private static BossHealthBarUI instance;
+
+    void Awake()
+    {
+        // Singleton simples para evitar duplicatas ao carregar novas cenas
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+
+        if (dontDestroyOnLoad)
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+    }
 
     void OnEnable()
     {
@@ -64,27 +86,35 @@ public class BossHealthBarUI : MonoBehaviour
 
     void Update()
     {
-        if (isFightActive) return;
+        // Procura BossController na cena atual caso tenha trocado de sala ou recarregado
+        if (bossController == null)
+        {
+            bossController = FindObjectOfType<BossController>();
+            if (bossController != null && bossController.IsFighting)
+            {
+                OnFightStarted();
+                OnHealthChanged(bossController.HealthPercent);
+            }
+        }
 
-        // Procura referências se não tiver
-        if (bossController == null) bossController = FindObjectOfType<BossController>();
         if (playerTransform == null)
         {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
             if (p != null) playerTransform = p.transform;
         }
 
-        // Se o boss já começou a luta (ou mudou de fase/tomou dano), ativa a barra
+        // Se o boss estiver em combate, garante que a barra está visível
         if (bossController != null)
         {
-            if (bossController.IsFighting)
+            if (bossController.IsFighting && !isFightActive)
             {
                 OnFightStarted();
+                OnHealthChanged(bossController.HealthPercent);
                 return;
             }
 
             // Checa aproximação do player ao boss
-            if (playerTransform != null)
+            if (!isFightActive && playerTransform != null && bossController.CurrentState == BossController.BossState.Idle)
             {
                 float dist = Vector3.Distance(bossController.transform.position, playerTransform.position);
                 if (dist <= detectionDistance)
@@ -98,9 +128,8 @@ public class BossHealthBarUI : MonoBehaviour
     void OnFightStarted()
     {
         isFightActive = true;
-        currentPhase = 1;
-        UpdateFrame(1);
-        ResetBar();
+        currentPhase = (bossController != null && bossController.CurrentPhase > 0) ? bossController.CurrentPhase : 1;
+        UpdateFrame(currentPhase);
         SetBarVisible(true);
     }
 
@@ -170,5 +199,10 @@ public class BossHealthBarUI : MonoBehaviour
     {
         isFightActive = false;
         SetBarVisible(false);
+    }
+
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
     }
 }
