@@ -722,6 +722,8 @@ public class BossController : MonoBehaviour
 
         // 2. Fase de Erupção dos Espinhos do Chão
         List<Transform> spawnedSpikes = new List<Transform>();
+        List<Vector3> startPositions = new List<Vector3>();
+
         foreach (Vector3 p in spikePositions)
         {
             Vector3 spawnUnderground = p + Vector3.down * 3.5f;
@@ -730,21 +732,17 @@ public class BossController : MonoBehaviour
             {
                 GameObject spikeObj = Instantiate(prefabUse, spawnUnderground, rot);
                 spawnedSpikes.Add(spikeObj.transform);
+                startPositions.Add(spawnUnderground);
 
                 SpikeDamageDealer dealer = spikeObj.GetComponent<SpikeDamageDealer>();
                 if (dealer == null) dealer = spikeObj.AddComponent<SpikeDamageDealer>();
                 dealer.damage = wideSpikeDamage;
-
-                Destroy(spikeObj, 4.5f);
             }
         }
 
-        // Ergue todos os espinhos simultaneamente do chão em 0.35s
+        // A. Ergue os espinhos rapidamente do chão (0.25s)
         float elapsed = 0f;
-        float emergeDuration = 0.35f;
-        List<Vector3> startPositions = new List<Vector3>();
-        foreach (Transform s in spawnedSpikes) startPositions.Add(s.position);
-
+        float emergeDuration = 0.25f;
         while (elapsed < emergeDuration)
         {
             elapsed += Time.deltaTime;
@@ -753,14 +751,39 @@ public class BossController : MonoBehaviour
             {
                 if (spawnedSpikes[i] != null)
                 {
-                    Vector3 targetPos = spikePositions[i];
-                    spawnedSpikes[i].position = Vector3.Lerp(startPositions[i], targetPos, t);
+                    spawnedSpikes[i].position = Vector3.Lerp(startPositions[i], spikePositions[i], t);
                 }
             }
             yield return null;
         }
 
-        if (showDebugLog) Debug.Log("[BossController] waves Espinhos do BossSpellWide surgiram com sucesso!");
+        // B. Permanece no topo por um breve instante para espetar (0.40s)
+        yield return new WaitForSeconds(0.40f);
+
+        // C. Retrai os espinhos de volta para o subsolo (0.30s)
+        elapsed = 0f;
+        float retractDuration = 0.30f;
+        while (elapsed < retractDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / retractDuration;
+            for (int i = 0; i < spawnedSpikes.Count; i++)
+            {
+                if (spawnedSpikes[i] != null)
+                {
+                    spawnedSpikes[i].position = Vector3.Lerp(spikePositions[i], startPositions[i], t);
+                }
+            }
+            yield return null;
+        }
+
+        // Destrói os objetos de espinho após retornarem ao chão
+        foreach (Transform s in spawnedSpikes)
+        {
+            if (s != null) Destroy(s.gameObject);
+        }
+
+        if (showDebugLog) Debug.Log("[BossController] 🌊 Espinhos do BossSpellWide espetaram e recolheram!");
     }
 
     public void EnsureHealthBarUI()
