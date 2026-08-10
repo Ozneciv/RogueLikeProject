@@ -392,6 +392,8 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     {
         if (atacando || bossController == null || bossController.IsDead || bossController.IsStunned) return;
 
+        if (bossController != null) bossController.TriggerSpellAnimation();
+
         // Sorteia entre pilares ou espinhos
         if (pilarPrefab != null || espinhoPrefab != null)
         {

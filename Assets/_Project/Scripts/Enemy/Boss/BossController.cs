@@ -69,6 +69,9 @@ public class BossController : MonoBehaviour
     [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo (somente golpes físicos).")]
     public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch" };
 
+    [Tooltip("Triggers do Animator a serem sorteados nos ataques de Magia/Spell (visível ou invisível).")]
+    public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUP" };
+
 
     [Header("Sangue Ácido (Invisibilidade)")]
     [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
@@ -142,6 +145,14 @@ public class BossController : MonoBehaviour
     {
         health = GetComponent<DummyHealth>();
         agent = GetComponent<NavMeshAgent>();
+
+        // Rigidbody do Boss: ultra pesado para o player NUNCA conseguir empurrá-lo
+        Rigidbody rbBoss = GetComponent<Rigidbody>();
+        if (rbBoss != null)
+        {
+            rbBoss.mass = 5000f;
+            rbBoss.constraints = RigidbodyConstraints.FreezeRotation;
+        }
 
         // Auto-conecta o componente Animator presente no modelo filho (Orc Idle)
         if (animator == null)
@@ -411,6 +422,39 @@ public class BossController : MonoBehaviour
     // API PÚBLICA
     // =====================================================
 
+    private void OnCollisionStay(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            Rigidbody playerRb = collision.gameObject.GetComponent<Rigidbody>();
+            if (playerRb != null && !playerRb.isKinematic)
+            {
+                Vector3 pushDir = (collision.transform.position - transform.position).normalized;
+                pushDir.y = 0f;
+                playerRb.AddForce(pushDir * 18f, ForceMode.Impulse);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dispara uma das animações de magia/spell do Boss (ex: invocação de pilares).
+    /// Pode ser usado visível ou durante a invisibilidade sem revelar o Boss.
+    /// </summary>
+    public void TriggerSpellAnimation()
+    {
+        if (animator == null) return;
+
+        if (spellAttackTriggers != null && spellAttackTriggers.Length > 0)
+        {
+            string chosen = spellAttackTriggers[UnityEngine.Random.Range(0, spellAttackTriggers.Length)];
+            animator.SetTrigger(chosen);
+        }
+        else
+        {
+            animator.SetTrigger("bossSpell");
+        }
+    }
+
     public void EnsureHealthBarUI()
     {
         if (FindObjectOfType<BossHealthBarUI>() == null)
@@ -630,14 +674,14 @@ public class BossController : MonoBehaviour
         // Se o player não existir, cancela a perseguição de combate
         if (playerTransform == null) return;
 
-        // Na Fase 1 (Casulo), o Boss fica escondido e NÃO faz ataques físicos de soco/swipe!
-        if (CurrentPhase == 1) return;
+        // Na Fase 1 (Casulo) OU quando Invisível (Refração), o Boss NÃO ataca corpo a corpo (somente spells/mobs)!
+        if (CurrentPhase == 1 || IsInvisible) return;
 
         // Orientação em direção ao player
         HandleRotation();
 
         // Checa distância para ataque melee
-        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4f;
+        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 6.5f;
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
         if (distToPlayer <= meleeRange && meleeTimer <= 0f)

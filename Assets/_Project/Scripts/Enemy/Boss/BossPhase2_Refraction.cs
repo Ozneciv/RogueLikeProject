@@ -159,13 +159,8 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (newPhase == 2)
         {
             isPhase2Active = true;
-            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 ATIVA -- Primeira Invisibilidade ativada!");
-            if (refractionUsesRemaining > 0 && nextThresholdIndex == 0)
-            {
-                nextThresholdIndex++;
-                refractionUsesRemaining--;
-                ActivateRefraction();
-            }
+            nextThresholdIndex = 0;
+            if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 ATIVA -- Boss visivel, lutando normalmente ate o threshold de refração!");
         }
         else
         {
@@ -288,7 +283,10 @@ public class BossPhase2_Refraction : MonoBehaviour
             {
                 nextPilarSpawn = pilarSpawnInterval;
                 if (mestre != null && !mestre.Atacando)
+                {
+                    if (bossController != null) bossController.TriggerSpellAnimation();
                     mestre.InvocarPrisaoForado();
+                }
             }
 
             yield return null;

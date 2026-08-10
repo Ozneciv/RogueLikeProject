@@ -2,15 +2,6 @@ using UnityEngine;
 
 /// <summary>
 /// ScriptableObject com os parâmetros de configuração do Boss Cromático.
-///
-/// COMO USAR:
-///   1. No Unity: Assets → Create → Boss → Boss Phase Config
-///   2. Preencha os valores no Inspector (ou use os defaults provisórios)
-///   3. Arraste no campo "phaseConfig" do BossController
-///
-/// PARA O MATHEUS:
-///   Você pode editar os valores numéricos aqui sem mexer em nenhum script.
-///   Crie múltiplas configs para testar balanceamento diferente.
 /// </summary>
 [CreateAssetMenu(fileName = "BossPhaseConfig", menuName = "Boss/Boss Phase Config")]
 public class BossPhaseConfig : ScriptableObject
@@ -20,8 +11,8 @@ public class BossPhaseConfig : ScriptableObject
     // =====================================================
 
     [Header("Vida do Boss")]
-    [Tooltip("HP máximo do boss. Provisório — Matheus define o valor final.")]
-    public int maxHealth = 1500;
+    [Tooltip("HP máximo do boss. Aumentado 5x (7500 HP) para batalhas mais longas e estratégicas.")]
+    public int maxHealth = 7500;
 
     // =====================================================
     // THRESHOLDS DE FASE
@@ -42,24 +33,24 @@ public class BossPhaseConfig : ScriptableObject
 
     [Header("Velocidade de Movimento")]
     [Tooltip("Velocidade base do NavMeshAgent nas fases 1 e 2.")]
-    public float baseSpeed = 4.5f;
+    public float baseSpeed = 4.8f;
 
-    [Tooltip("Velocidade de rotação do boss em graus/segundo.")]
-    public float rotationSpeed = 160f;
+    [Tooltip("Velocidade de rotação do boss em graus/segundo (agora super ágil: 360°/s).")]
+    public float rotationSpeed = 360f;
 
     // =====================================================
-    // ATAQUES BASE (provisórios — cada fase pode ter seus próprios)
+    // ATAQUES BASE
     // =====================================================
 
     [Header("Ataque Melee Base")]
     [Tooltip("Dano do golpe corpo a corpo básico.")]
-    public int baseMeleeDamage = 30;
+    public int baseMeleeDamage = 35;
 
-    [Tooltip("Range do ataque melee.")]
-    public float baseMeleeRange = 4.2f;
+    [Tooltip("Range do ataque melee (aumentado para 6.5m para não errar o player).")]
+    public float baseMeleeRange = 6.5f;
 
     [Tooltip("Cooldown do ataque melee (segundos).")]
-    public float baseMeleeCooldown = 1.5f;
+    public float baseMeleeCooldown = 1.6f;
 
     // =====================================================
     // FASE 1 — SPAWN DE MOBS
