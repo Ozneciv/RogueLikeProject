@@ -155,6 +155,7 @@ MonoBehaviour:
   - Spell
   - SimpleCast
   - BossSpellWide
+  handCollider: {fileID: 4305553575958445036}
   handHitbox: {fileID: 0}
   stunMarkerPrefab: {fileID: 0}
   stunBeamPrefab: {fileID: 0}
@@ -1979,6 +1980,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4742707341684947977}
   - component: {fileID: 4305553575958445036}
+  - component: {fileID: 1529732745737728966}
   m_Layer: 0
   m_Name: HITBOX HAND
   m_TagString: Untagged
@@ -2016,12 +2018,27 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.1, y: 0.4, z: 0.1}
+  m_Size: {x: 0.2, y: 0.4, z: 0.2}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1529732745737728966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7363865733894864262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 392a780769296034f8729d4cede340c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossHandHitbox
+  handCollider: {fileID: 4305553575958445036}
+  damage: 35
+  knockbackForce: 15
 --- !u!1 &7375687427414807402
 GameObject:
   m_ObjectHideFlags: 0

@@ -141,9 +141,14 @@ public class BossPhase2_Refraction : MonoBehaviour
                 if (visiblePilarTimer <= 0f)
                 {
                     visiblePilarTimer = 4.5f;
-                    if (UnityEngine.Random.value < 0.5f && playerTransform != null && bossController != null)
+                    float rnd = UnityEngine.Random.value;
+                    if (rnd < 0.20f && bossController != null)
                     {
-                        bossController.PerformGolemStunCast();
+                        bossController.PerformBossSpellWide(); // Super Ataque Raro 360° de Espinhos!
+                    }
+                    else if (rnd < 0.60f && bossController != null)
+                    {
+                        bossController.PerformGolemStunCast(); // Stun do Céu no Player!
                     }
                     else
                     {
@@ -289,7 +294,12 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (nextPilarSpawn <= 0f)
             {
                 nextPilarSpawn = pilarSpawnInterval;
-                if (playerTransform != null && bossController != null && UnityEngine.Random.value < 0.5f)
+                float rnd = UnityEngine.Random.value;
+                if (rnd < 0.20f && bossController != null)
+                {
+                    bossController.PerformBossSpellWide();
+                }
+                else if (rnd < 0.60f && bossController != null)
                 {
                     bossController.PerformGolemStunCast();
                 }

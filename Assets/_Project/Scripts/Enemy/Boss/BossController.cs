@@ -86,6 +86,13 @@ public class BossController : MonoBehaviour
     [Tooltip("Prefab do raio de energia que cai do céu (se nulo, usa StunBeam dinâmico).")]
     public GameObject stunBeamPrefab;
 
+    [Header("Super Ataque (BossSpellWide)")]
+    [Tooltip("Prefab do espinho de cristal a ser invocado no chão (se nulo, autodetectará o espinhoPrefab do MestreDoSolo).")]
+    public GameObject wideSpinhoPrefab;
+
+    [Tooltip("Dano de cada espinho do BossSpellWide.")]
+    public int wideSpikeDamage = 45;
+
 
     [Header("Sangue Ácido (Invisibilidade)")]
     [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
@@ -619,12 +626,140 @@ public class BossController : MonoBehaviour
     }
 
     /// <summary>
-    /// Super Ataque Devastador (BossSpellWide).
+    /// Super Ataque Devastador (BossSpellWide): Invoca uma formação massiva de espinhos de cristal em onda 360° com telegrafagem.
     /// </summary>
     public void PerformBossSpellWide()
     {
+        StartCoroutine(BossSpellWideRoutine());
+    }
+
+    private IEnumerator BossSpellWideRoutine()
+    {
+        FreezeMovementForSpell(3.4f);
+
         if (animator != null) animator.SetTrigger("BossSpellWide");
-        if (showDebugLog) Debug.Log("[BossController] 🌊 BossSpellWide disparado!");
+
+        if (showDebugLog) Debug.Log("[BossController] 🌊 BossSpellWide ativado! Carregando super ataque de espinhos 360°...");
+
+        GameObject prefabUse = wideSpinhoPrefab;
+        if (prefabUse == null)
+        {
+            BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+            if (mestre != null && mestre.espinhoPrefab != null)
+                prefabUse = mestre.espinhoPrefab;
+        }
+
+        Vector3 centerPos = transform.position;
+        List<Vector3> spikePositions = new List<Vector3>();
+
+        // Anel 1 (Raio 4m - 8 espinhos)
+        int count1 = 8;
+        for (int i = 0; i < count1; i++)
+        {
+            float angle = i * (360f / count1) * Mathf.Deg2Rad;
+            Vector3 pos = centerPos + new Vector3(Mathf.Cos(angle) * 4f, 0.05f, Mathf.Sin(angle) * 4f);
+            spikePositions.Add(pos);
+        }
+
+        // Anel 2 (Raio 8.5m - 12 espinhos)
+        int count2 = 12;
+        for (int i = 0; i < count2; i++)
+        {
+            float angle = (i * (360f / count2) + 15f) * Mathf.Deg2Rad;
+            Vector3 pos = centerPos + new Vector3(Mathf.Cos(angle) * 8.5f, 0.05f, Mathf.Sin(angle) * 8.5f);
+            spikePositions.Add(pos);
+        }
+
+        // Anel 3 (Raio 13m - 16 espinhos)
+        int count3 = 16;
+        for (int i = 0; i < count3; i++)
+        {
+            float angle = (i * (360f / count3) + 30f) * Mathf.Deg2Rad;
+            Vector3 pos = centerPos + new Vector3(Mathf.Cos(angle) * 13f, 0.05f, Mathf.Sin(angle) * 13f);
+            spikePositions.Add(pos);
+        }
+
+        // 1. Fase de Telegrafagem (1.2s): Marcações visuais de aviso no chão
+        List<GameObject> indicators = new List<GameObject>();
+        foreach (Vector3 p in spikePositions)
+        {
+            GameObject ind = null;
+            if (stunMarkerPrefab != null)
+            {
+                ind = Instantiate(stunMarkerPrefab, p, Quaternion.Euler(90, 0, 0));
+                ind.transform.localScale = new Vector3(2.5f, 2.5f, 1f);
+            }
+            else
+            {
+                ind = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Destroy(ind.GetComponent<Collider>());
+                ind.transform.position = p + Vector3.up * 0.02f;
+                ind.transform.rotation = Quaternion.Euler(90, 0, 0);
+                ind.transform.localScale = Vector3.one * 2.2f;
+                
+                Renderer r = ind.GetComponent<Renderer>();
+                if (r != null)
+                {
+                    r.material.color = new Color(0.95f, 0.15f, 0.15f, 0.5f);
+                }
+            }
+            if (ind != null) indicators.Add(ind);
+        }
+
+        TriggerCameraShake(0.4f, 0.15f);
+
+        // Espera a telegrafagem para o jogador conseguir ver e desviar
+        yield return new WaitForSeconds(1.2f);
+
+        // Remove os indicadores
+        foreach (GameObject ind in indicators)
+        {
+            if (ind != null) Destroy(ind);
+        }
+
+        TriggerCameraShake(0.5f, 0.25f);
+
+        // 2. Fase de Erupção dos Espinhos do Chão
+        List<Transform> spawnedSpikes = new List<Transform>();
+        foreach (Vector3 p in spikePositions)
+        {
+            Vector3 spawnUnderground = p + Vector3.down * 3.5f;
+            Quaternion rot = Quaternion.LookRotation(p - centerPos);
+            if (prefabUse != null)
+            {
+                GameObject spikeObj = Instantiate(prefabUse, spawnUnderground, rot);
+                spawnedSpikes.Add(spikeObj.transform);
+
+                SpikeDamageDealer dealer = spikeObj.GetComponent<SpikeDamageDealer>();
+                if (dealer == null) dealer = spikeObj.AddComponent<SpikeDamageDealer>();
+                dealer.damage = wideSpikeDamage;
+
+                Destroy(spikeObj, 4.5f);
+            }
+        }
+
+        // Ergue todos os espinhos simultaneamente do chão em 0.35s
+        float elapsed = 0f;
+        float emergeDuration = 0.35f;
+        List<Vector3> startPositions = new List<Vector3>();
+        foreach (Transform s in spawnedSpikes) startPositions.Add(s.position);
+
+        while (elapsed < emergeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / emergeDuration;
+            for (int i = 0; i < spawnedSpikes.Count; i++)
+            {
+                if (spawnedSpikes[i] != null)
+                {
+                    Vector3 targetPos = spikePositions[i];
+                    spawnedSpikes[i].position = Vector3.Lerp(startPositions[i], targetPos, t);
+                }
+            }
+            yield return null;
+        }
+
+        if (showDebugLog) Debug.Log("[BossController] waves Espinhos do BossSpellWide surgiram com sucesso!");
     }
 
     public void EnsureHealthBarUI()
