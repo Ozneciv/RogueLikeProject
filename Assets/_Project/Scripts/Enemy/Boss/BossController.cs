@@ -72,6 +72,13 @@ public class BossController : MonoBehaviour
     [Tooltip("Triggers do Animator a serem sorteados nos ataques de Magia/Spell (visível ou invisível).")]
     public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUP" };
 
+    [Header("Mímica do Golem (Stun do Céu)")]
+    [Tooltip("Prefab do marcador de telegrafagem no chão (se nulo, usa indicador dinâmico).")]
+    public GameObject stunMarkerPrefab;
+
+    [Tooltip("Prefab do raio de energia que cai do céu (se nulo, usa StunBeam dinâmico).")]
+    public GameObject stunBeamPrefab;
+
 
     [Header("Sangue Ácido (Invisibilidade)")]
     [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
@@ -455,6 +462,73 @@ public class BossController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Dispara a animação PowerUP durante a transição da Fase 1 para a Fase 2.
+    /// O Boss absorve a essência de todos os mobs mortos.
+    /// </summary>
+    public void TriggerPowerUP()
+    {
+        if (animator != null)
+        {
+            animator.SetTrigger("PowerUP");
+        }
+        if (showDebugLog) Debug.Log("[BossController] ⚡ PowerUP ativado! Boss absorve essências para a Fase 2.");
+    }
+
+    /// <summary>
+    /// Ataque Mímico do Golem (SimpleCast): invoca um raio de energia do céu que estuna o player.
+    /// </summary>
+    public void PerformGolemStunCast(Vector3 targetPosition, float stunRadius = 4.0f, float stunDuration = 2.0f, float telegraphTime = 1.2f)
+    {
+        StartCoroutine(GolemStunCastRoutine(targetPosition, stunRadius, stunDuration, telegraphTime));
+    }
+
+    private IEnumerator GolemStunCastRoutine(Vector3 targetPosition, float stunRadius, float stunDuration, float telegraphTime)
+    {
+        if (animator != null) animator.SetTrigger("SimpleCast");
+
+        Vector3 groundPos = new Vector3(targetPosition.x, targetPosition.y + 0.05f, targetPosition.z);
+        GameObject marker = null;
+        if (stunMarkerPrefab != null)
+        {
+            marker = Instantiate(stunMarkerPrefab, groundPos, Quaternion.Euler(90, 0, 0));
+            marker.transform.localScale = new Vector3(stunRadius * 2, stunRadius * 2, 1);
+        }
+
+        yield return new WaitForSeconds(telegraphTime);
+
+        if (marker != null) Destroy(marker);
+
+        if (stunBeamPrefab != null)
+        {
+            GameObject beam = Instantiate(stunBeamPrefab, groundPos, Quaternion.identity);
+            StunBeam stunScript = beam.GetComponent<StunBeam>();
+            if (stunScript != null)
+            {
+                stunScript.Initialize(stunRadius, stunDuration);
+            }
+            Destroy(beam, 1.5f);
+        }
+        else
+        {
+            GameObject beamObj = new GameObject("Boss_Dynamic_StunBeam");
+            beamObj.transform.position = groundPos;
+            StunBeam stunScript = beamObj.AddComponent<StunBeam>();
+            stunScript.Initialize(stunRadius, stunDuration);
+        }
+
+        if (showDebugLog) Debug.Log($"[BossController] ⚡ Stun mímico do Golem disparado em {groundPos}!");
+    }
+
+    /// <summary>
+    /// Super Ataque Devastador (BossSpellWide).
+    /// </summary>
+    public void PerformBossSpellWide()
+    {
+        if (animator != null) animator.SetTrigger("BossSpellWide");
+        if (showDebugLog) Debug.Log("[BossController] 🌊 BossSpellWide disparado!");
+    }
+
     public void EnsureHealthBarUI()
     {
         if (FindObjectOfType<BossHealthBarUI>() == null)
@@ -613,9 +687,9 @@ public class BossController : MonoBehaviour
                 break;
             case 2:
                 CurrentState = BossState.Phase2;
-                // Efeito dramático cinematográfico de Camera Shake e Flash de Luz na quebra do casulo da Fase 2!
                 TriggerCameraShake(0.5f, 0.20f);
                 StartCoroutine(CocoonShatterLightPulseRoutine());
+                TriggerPowerUP();
                 break;
             case 3:
                 CurrentState = BossState.Phase3;
