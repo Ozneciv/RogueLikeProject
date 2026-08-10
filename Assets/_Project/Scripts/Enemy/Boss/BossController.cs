@@ -49,6 +49,9 @@ public class BossController : MonoBehaviour
     // =====================================================
 
     [Header("Configuração")]
+    [Tooltip("Distância máxima do player em metros para ativar a luta e a barra de vida.")]
+    public float detectionDistance = 20f;
+
     [Tooltip("ScriptableObject com todos os parâmetros de balanceamento.\n" +
              "Crie via Assets → Create → Boss → Boss Phase Config.")]
     public BossPhaseConfig phaseConfig;
@@ -263,12 +266,16 @@ public class BossController : MonoBehaviour
         if (playerTransform == null)
             playerTransform = FindPlayerTransform();
 
-        // Se o boss estiver em Idle, auto-inicia o combate se o player existir na cena
+        // Se o boss estiver em Idle, auto-inicia o combate se o player estiver dentro da distância de detecção ou se o boss tomar dano
         if (CurrentState == BossState.Idle)
         {
-            if (playerTransform != null || (health != null && health.CurrentHealth < health.maxHealth))
+            if (playerTransform != null)
             {
-                StartFight();
+                float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+                if (distToPlayer <= detectionDistance || (health != null && health.CurrentHealth < health.maxHealth))
+                {
+                    StartFight();
+                }
             }
         }
 
