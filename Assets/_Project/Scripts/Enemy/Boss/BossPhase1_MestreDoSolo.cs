@@ -55,7 +55,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         Renderer[] todosRenderers = GetComponentsInChildren<Renderer>(true);
         foreach(Renderer r in todosRenderers)
         {
-            if (r.enabled == true) 
+            if (r != null && r.gameObject != gameObject && !(r is ParticleSystemRenderer)) 
             {
                 renderersDoBoss.Add(r);
             }

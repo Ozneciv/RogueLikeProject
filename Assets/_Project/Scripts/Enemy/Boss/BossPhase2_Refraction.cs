@@ -326,6 +326,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         {
             if (rend == null) continue;
             if (rend is ParticleSystemRenderer) continue;
+            if (rend.gameObject == gameObject) continue; // Ignora o MeshRenderer esférico legado na raiz do Boss!
             if (rend is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
             rend.enabled = visible;
         }
