@@ -32,7 +32,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{\textbf{LIVING PLEROTUS} - Game Design Document}
-\lhead{v6.0 - Boss Combat, Systems \& Spawn Update}
+\lhead{v6.0 --- Boss \& Mobs Update}
 \cfoot{\thepage}
 
 \title{\textbf{LIVING PLEROTUS}\\ \large Game Design Document (GDD)}
@@ -576,20 +576,53 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.45\textwidth]{Inimigo_ShardSwarm.png}
-    \caption{Enxame de Cristais: Ataca em grupo, se divide ao tomar burst de dano e explode ao morrer.}
+    \caption{Enxame de Cristais: Quatro fragmentos fundidos em forma de carambola que se separam como projéteis e só podem ser destruídos na forma unida.}
 \end{figure}
 
 \begin{description}
-    \item[Lore:] O planeta em sua forma mais primitiva — fragmentos orbitais animados por impulso de destruição, sem forma definitiva e impossíveis de conter.
-    \item[Comportamento:]
+    \item[Lore:] Consciência coletiva fraturada do planeta. Quatro vontades iguais que só existem em plenitude quando unidas — ao se separarem, perdem a consciência e se tornam pura força cinética.
+    \item[Forma Unida (Núcleo --- Estado Vulnerável):]
+    O Enxame flutua lentamente em direção ao jogador com os quatro fragmentos fundidos em uma única estrutura com formato de \textbf{carambola/estrela de quatro pontas}. Neste estado:
     \begin{itemize}
-        \item Fragmentos orbitam o núcleo; conforme o HP cai, fragmentos somem visualmente.
-        \item \textbf{Swarm Attack:} Dentro de \texttt{5m}, todos os fragmentos voam simultaneamente ao jogador (\texttt{dano = 20 combinado}, cooldown \texttt{2s}).
-        \item \textbf{Divisão (Split):} Se receber $>$30\% do HP máximo de uma vez, clona-se ao lado com metade do HP. O clone não pode se dividir.
-        \item \textbf{Explosão de Morte:} Ao morrer, explode em \texttt{raio = 3m} causando \texttt{dano = 15}.
+        \item O Enxame é a única fase em que pode receber e acumular dano.
+        \item Serve como janela de ataque para o jogador --- atacar os fragmentos individuais não causa nenhum dano.
     \end{itemize}
-    \item[Stats:] Dano combinado \texttt{20} --- Dano individual \texttt{5}/fragmento --- Gatilho split \texttt{30\%} do HP em burst
-    \item[Buff do Sintonizador:] Dano +50\%.
+    \item[Separação (Disparo --- Estado Invulnerável):]
+    Ao detectar o jogador dentro do raio de ataque, o Enxame \textbf{separa os quatro fragmentos} simultaneamente. Cada fragmento:
+    \begin{itemize}
+        \item Dispara-se em \textbf{linha reta} na direção atual do jogador a alta velocidade.
+        \item O trajeto é \textbf{fixo no momento do disparo} --- os projéteis não rastreiam, não curvam e não reagem ao movimento do jogador após serem lançados.
+        \item Se bater no jogador, causa dano e continua sua trajetória (não é destruído pelo impacto).
+        \item Se errar ou atingir uma parede, os fragmentos param e iniciam a \textbf{reagrupamento}.
+    \end{itemize}
+    \item[Reagrupamento --- Rastro Eletrificado:]
+    Após o disparo, todos os fragmentos navegam de volta ao ponto central e se fundem novamente na forma de carambola, retornando ao Estado Vulnerável. O Enxame \textbf{não pode disparar enquanto estiver reagrupando}.
+    Durante o trajeto de retorno, cada fragmento \textbf{deixa uma trilha elétrica no piso} pelo caminho que percorreu. As trilhas formam um padrão de estrela convergindo ao centro:
+    \begin{itemize}
+        \item Trilhas permanecem ativas por \texttt{\~{}2--3s} antes de dissipar.
+        \item Pisar em uma trilha causa \textbf{dano por tick} leve (\texttt{\~{}5/s}) e aplica uma \textbf{leve redução de velocidade} enquanto em contato.
+        \item Cria pressão de posicionamento: o jogador quer se aproximar do núcleo para atacar, mas o caminho até ele está temporariamente bloqueado pelas trilhas irradiadas pelos fragmentos.
+        \item A arena fica visualmente eletrificada após cada disparo, transformando o piso em campo minado temporário.
+    \end{itemize}
+    \item[Carga Progressiva (Núcleo Ativo):]
+    Enquanto na forma unida (Estado Vulnerável), o Enxame \textbf{acumula carga elétrica de forma passiva e visível} --- pequenas faíscas surgem inicialmente e a intensidade visual e sonora cresce com o tempo. Se o jogador \textbf{não destruir o núcleo dentro da janela de tempo}, o Enxame descarrega:
+    \begin{itemize}
+        \item \textbf{Pulso Elétrico em Área (Nova):} Emite uma descarga circular de energia elétrica ao redor do núcleo (\texttt{raio \~{}5m}), causando dano moderado (\texttt{\~{}25}) e aplicando \textbf{stun breve} (\texttt{\~{}0.8s}) no jogador se ele estiver dentro do raio.
+        \item Após a descarga, o Enxame \textbf{retorna à fase de Separação} (disparo) imediatamente --- a carga acumulada foi usada como ataque e reinicia o ciclo.
+        \item O tempo até a descarga é \textbf{lido visualmente}: poucas faíscas = seguro; corpo inteiro brilhando = descarga iminente. Sem HUD ou barra --- comunicação puramente visual.
+        \item \textbf{Pressão de tempo}: o jogador não pode atacar o núcleo devagar e com segurança. Precisa ser eficiente dentro da janela antes da descarga.
+    \end{itemize}
+    \item[Status de Impacto Múltiplo:]
+    Se o jogador for atingido por \textbf{3 ou mais} dos 4 fragmentos em um mesmo disparo, recebe um dos seguintes efeitos (a definir pelo time de balanceamento):
+    \begin{itemize}
+        \item \textbf{Opção A --- Stun:} Paralisado brevemente por \texttt{\~{}1.5s}.
+        \item \textbf{Opção B --- Lentidão Severa:} Velocidade de movimento drasticamente reduzida por \texttt{\~{}3s}.
+    \end{itemize}
+    \item[Resumo do Loop de Combate:]
+    \textit{Flutua unido e carrega (vulnerável + pressão de tempo) $\rightarrow$ Detecta jogador $\rightarrow$ Disparo em onda: 2 fragmentos $+$ 0.4s delay $+$ 2 fragmentos (invulnerável) $\rightarrow$ Reagrupa com Rastro Elétrico no piso (invulnerável) $\rightarrow$ Repete.}\\
+    O jogador precisa equilibrar três pressões simultâneas: \textbf{(1)} atacar o núcleo antes da descarga, \textbf{(2)} desviar dos disparos em onda e \textbf{(3)} não pisar nas trilhas durante o reagrupamento.
+    \item[Stats (referência):] Velocidade de flutuação \texttt{\~{}3} --- Velocidade dos fragmentos lançados \texttt{\~{}20--25} --- Dano por fragmento \texttt{\~{}15} --- Dano do Rastro \texttt{\~{}5/s} --- Dano do Pulso Elétrico \texttt{\~{}25} --- Tempo até descarga \texttt{\~{}4--5s} acumulando.
+    \item[Buff do Sintonizador:] Velocidade dos fragmentos +30\%, tempo de acumulação da carga reduzido (descarga mais rápida), duração do Rastro +1s.
 \end{description}
 
 % -------------------------------------------------------------------------
@@ -637,24 +670,40 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
 \end{description}
 
 % -------------------------------------------------------------------------
-\subsection{Dragão de Cristal (\textit{CrystalDragon\_AI}) --- Comum Híbrido Pesado}
+\subsection{Dragão de Cristal (\textit{CrystalDragon\_AI}) --- Elite Flutuante}
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.45\textwidth]{cristal_dragon.png}
-    \caption{Dragão de Cristal: Combate pesado com investidas aéreas parabólicas e disparos frontais.}
+    \caption{Dragão de Cristal: Elite flutuante com espinhos rotacionais e mecanismo de insuflamento defensivo estilo peixe-leão/baiacu.}
 \end{figure}
 
 \begin{description}
-    \item[Lore:] Fusão grotesca de réptil orgânico e escamas cristalizadas rígidas. Devido ao seu grande peso, é incapaz de voos prolongados, usando suas asas apenas para avanços e investidas desastradas de impacto.
-    \item[Comportamento:]
+    \item[Lore:] Uma forma de vida mineral que imita a biologia do baiacu como mecanismo de defesa evolutivo. Seus espinhos de cristal estão permanentemente carregados com a energia do núcleo do planeta — ao girar, dispara-os como projéteis de defesa perimetral.
+    \item[Design de Referência:] Visualmente inspirado em um \textbf{peixe-leão/baiacu}: corpo esférico com espinhos cristalinos ao redor, flutuando lentamente pelo espaço. Quando insuflado, incha visivelmente, dobrando de tamanho, com os espinhos se eriçando para fora de forma ameaçadora.
+    \item[Estado Normal --- Flutuante e Ranged:]
     \begin{itemize}
-        \item \textbf{Combate Terrestre:} Persegue o jogador usando \texttt{NavMeshAgent} a velocidade \texttt{5}.
-        \item \textbf{Espinhos de Cristal (Ranged):} Se estiver à distância e de frente para o jogador, dispara 3 projéteis de cristal retos (\texttt{dano = 8} cada).
-        \item \textbf{Tail Sweep (Melee Flanqueamento):} Se o jogador tentar circular suas laterais ou traseira, desfere um golpe de cauda circular rápido (\texttt{dano = 15}, cooldown \texttt{2s}).
-        \item \textbf{Investida Aérea (Heavy Crash):} Se a distância ao jogador for menor que \texttt{4m} e o cooldown de voo estiver zerado, desliga o NavMesh, ativa física de Rigidbody e projeta-se no ar a velocidade \texttt{8} em um arco parabólico travado na última posição do jogador.
-        \item \textbf{Crash Recovery (Vulnerabilidade):} Ao colidir com o solo ou paredes durante a investida, causa \texttt{15} de dano em área com knockback massivo e fica completamente atordoado/imóvel por \texttt{2s}, abrindo uma excelente janela de punição.
+        \item Flutua lentamente em direção ao jogador, mantendo distância de combate segura (\texttt{\~{}8--12m}).
+        \item \textbf{Disparo Rotacional:} Gira o próprio corpo e lança os espinhos em arco/rotação, disparando projéteis em múltiplas direções radiais ao redor de si. O ataque funciona como uma salva giratória, obrigando o jogador a se reposicionar.
     \end{itemize}
-    \item[Stats:] Velocidade Terrestre \texttt{5} --- Velocidade de Voo \texttt{8} --- Dano do Pulo \texttt{15} --- Cooldown Voo \texttt{8s}
+    \item[Trigger de Insuflamento:]
+    Quando o jogador entra dentro do raio de proximidade crítica (\texttt{\~{}3--4m}), o Dragão de Cristal ativa seu mecanismo de defesa:
+    \begin{itemize}
+        \item \textbf{Insuflamento (Puffer State):} O corpo incha visivelmente, dobrando de volume. Os espinhos se eriçam para fora, cobrindo toda a superfície.
+        \item \textbf{Imune a Melee:} Enquanto insuflado, o Dragão é \textbf{imune a ataques corpo a corpo} --- os espinhos eriçados deflectem qualquer golpe físico direto. Contudo, \textbf{ataques à distância (ranged) e a Habilidade Suprema (ULT) do jogador atravessam a defesa} e causam dano normalmente, recompensando jogadores com builds de longo alcance e incentivando troca de estilo de combate situacional.
+        \item \textbf{Dano de Contato:} Se o jogador tocar o corpo insuflado (com espinhos), recebe dano passivo por proximidade.
+        \item \textbf{Sem Locomoção:} O Dragão \textbf{para completamente} enquanto insuflado --- não persegue o jogador neste estado.
+    \end{itemize}
+    \item[Janela de Ataque --- O Desinsuflamento:]
+    O Dragão possui um \textbf{cooldown} no estado insuflado. Quando o jogador se afasta além do raio crítico, o insuflamento começa a dissipar-se \textbf{gradualmente} (desinsuflamento lento e visível). Durante essa transição de volta ao estado normal:
+    \begin{itemize}
+        \item O Dragão fica \textbf{vulnerável} a dano --- esta é a única janela de ataque do jogador.
+        \item O loop de combate exige que o jogador \textbf{isque} (\textit{bait}) o insuflamento, afaste-se rapidamente e ataque durante o desinsuflamento.
+    \end{itemize}
+    \item[Loop de Combate:]
+    \textit{Dragão flutua e gira (ranged) $\rightarrow$ Jogador se aproxima $\rightarrow$ Insuflamento (imune + dano de contato) $\rightarrow$ Jogador se afasta $\rightarrow$ Desinsuflamento gradual (\textbf{janela de ataque}) $\rightarrow$ Repete.}
+    \item[Drop Principal:] \textbf{Thorn (Espinhos)} --- principal matéria-prima dropada pelo Dragão de Cristal, usada em infusões ofensivas.
+    \item[Stats (referência):] Velocidade de flutuação \texttt{\~{}2--3} --- Raio de disparo rotacional \texttt{\~{}10m} --- Raio de trigger do insuflamento \texttt{\~{}3--4m} --- Dano de contato/s \texttt{\~{}10} --- Duração máx. do insuflamento \texttt{\~{}4--5s} --- Tempo de desinsuflamento \texttt{\~{}2--3s}.
+    \item[Buff do Sintonizador:] Cadência de disparo rotacional +50\%, raio de trigger do insuflamento aumentado.
 \end{description}
 
 % -------------------------------------------------------------------------
@@ -739,7 +788,7 @@ As criaturas do bioma cristalino são manifestações físicas do sistema imunol
     Cristalus            & Mob Menor (1 pt)          & \texttt{Cristalus\_AI} \\
     Goblin               & Atirador (4 pts)          & \texttt{GoblinAI\_Transform} \\
     Golem                & Tanque (4 pts)            & \texttt{Golem\_AI} \\
-    Dragão de Cristal    & Comum Híbrido (4 pts)     & \texttt{CrystalDragon\_AI} \\
+    Dragão de Cristal    & Elite Flutuante (10 pts)  & \texttt{CrystalDragon\_AI} \\
     Sintonizador         & Suporte (5 pts)           & \texttt{CrystalTuner} \\
     Totem                & Estrutura (6 pts)         & \texttt{TotemSpawner} \\
     Pedra Mágica         & Elite (10 pts)            & \texttt{MagicStone\_AI} \\
