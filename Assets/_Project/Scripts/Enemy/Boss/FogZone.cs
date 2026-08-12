@@ -112,6 +112,9 @@ public class FogZone : MonoBehaviour
     // ATIVACAO DA ZONA
     // =====================================================
 
+    /// <summary>Ativa a zona imediatamente (use ao spawnar em runtime).</summary>
+    public void Activate() => SetZoneActive(true);
+
     private void SetZoneActive(bool active)
     {
         zoneActive = active;
