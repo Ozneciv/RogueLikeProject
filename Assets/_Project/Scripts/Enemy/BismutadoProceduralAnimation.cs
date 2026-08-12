@@ -370,7 +370,22 @@ public class BismutadoProceduralAnimation : MonoBehaviour
 
     public void TriggerCrystalSlam()
     {
-        isAttacking = true;
-        attackTimer = 0f;
+        if (!isAttacking)
+        {
+            isAttacking = true;
+            attackTimer = 0f;
+
+            // Busca o Geobionte_AI no pai ou no próprio GameObject para disparar o som de ataque
+            Geobionte_AI ai = GetComponentInParent<Geobionte_AI>() ?? GetComponent<Geobionte_AI>();
+            if (ai != null)
+            {
+                ai.PlayBismutadoAttackSound();
+            }
+        }
+        else
+        {
+            // Se já estava atacando, apenas reseta o timer
+            attackTimer = 0f;
+        }
     }
 }

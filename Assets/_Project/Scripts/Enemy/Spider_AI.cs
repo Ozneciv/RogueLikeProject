@@ -65,6 +65,12 @@ public class Spider_AI : MonoBehaviour
     public float stepInterval = 0.18f;
     private float stepTimer = 0f;
 
+    [Tooltip("Vetor de áudios de dash/ataque que serão selecionados aleatoriamente")]
+    public AudioClip[] dashSounds;
+    [Tooltip("Volume dos sons de dash/ataque")]
+    [Range(0f, 1f)]
+    public float dashSoundVolume = 0.8f;
+
     [Header("Estados")]
     private bool isLeaping = false;
     private bool isRetreating = false;
@@ -211,6 +217,9 @@ public class Spider_AI : MonoBehaviour
             dashVFX.StartDashEffect();
             dashVFX.SpawnAfterImage();
         }
+
+        // Toca som de dash aleatório do vetor dashSounds
+        PlayDashSound();
 
         // Aplica força do pulo
         rb.linearVelocity = Vector3.zero;
@@ -360,6 +369,21 @@ public class Spider_AI : MonoBehaviour
                 pitch = Random.Range(1.4f, 1.6f);
             }
             PlayClipAtPointWithPitch(clipToPlay, transform.position, pitch, walkingSoundVolume);
+        }
+    }
+
+    private void PlayDashSound()
+    {
+        if (dashSounds == null || dashSounds.Length == 0)
+            return;
+
+        int randIndex = Random.Range(0, dashSounds.Length);
+        AudioClip clipToPlay = dashSounds[randIndex];
+
+        if (clipToPlay != null)
+        {
+            float pitch = Random.Range(0.9f, 1.1f);
+            PlayClipAtPointWithPitch(clipToPlay, transform.position, pitch, dashSoundVolume);
         }
     }
 
