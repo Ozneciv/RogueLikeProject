@@ -55,20 +55,23 @@ public class EssenceVFX : MonoBehaviour
             glowLight.range = glowRadius * pulse;
         }
 
-        // Pulso na esfera de glow externo
+        // Pulso na esfera de glow externo (Aura sutil e translúcida amarela)
         if (glowSphere != null)
         {
-            float glowScale = glowRadius * pulse * 0.75f;
+            float glowScale = (glowRadius * 0.6f) * pulse;
             glowSphere.transform.localScale = new Vector3(glowScale, glowScale, glowScale);
 
             if (glowMaterial != null)
             {
-                float alpha = 0.25f + (pulse - 1f) * 0.35f;
-                glowMaterial.color = new Color(glowColor.r, glowColor.g, glowColor.b, alpha);
+                float alpha = 0.05f + (pulse - 1f) * 0.05f; // Transparência suave (nunca sólida)
+                Color goldAlpha = new Color(1.0f, 0.80f, 0.15f, alpha);
+                glowMaterial.color = goldAlpha;
+                if (glowMaterial.HasProperty("_BaseColor")) glowMaterial.SetColor("_BaseColor", goldAlpha);
+                if (glowMaterial.HasProperty("_Color")) glowMaterial.SetColor("_Color", goldAlpha);
             }
         }
 
-        // Pulso na emissão do núcleo (Profundidade de Cor HDR)
+        // Pulso na emissão do núcleo (Profundidade de Cor HDR Dourado)
         if (coreMaterial != null)
         {
             float emissionMult = 1.2f + fastPulse * 0.8f;
@@ -78,58 +81,68 @@ public class EssenceVFX : MonoBehaviour
         }
     }
 
+    private Material CreateYellowMaterial(bool transparent)
+    {
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+                     ?? Shader.Find("Universal Render Pipeline/Lit")
+                     ?? Shader.Find("Particles/Standard Unlit")
+                     ?? Shader.Find("Unlit/Color")
+                     ?? Shader.Find("Sprites/Default")
+                     ?? Shader.Find("Standard");
+
+        Material mat = new Material(shader);
+        Color yellow = transparent ? new Color(1.0f, 0.80f, 0.15f, 0.08f) : new Color(1.0f, 0.85f, 0.10f, 1.0f);
+
+        mat.color = yellow;
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", yellow);
+        if (mat.HasProperty("_Color")) mat.SetColor("_Color", yellow);
+
+        if (!transparent)
+        {
+            mat.EnableKeyword("_EMISSION");
+            if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", yellow * glowIntensity * 2.5f);
+        }
+        else
+        {
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f); // Transparent
+            if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 1f); // Additive
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            mat.SetInt("_ZWrite", 0);
+            mat.renderQueue = 3000;
+        }
+
+        return mat;
+    }
+
     void SetupCoreMaterial()
     {
         Renderer rend = GetComponent<Renderer>();
         if (rend != null)
         {
-            // Tenta encontrar shader URP Unlit/Lit ou Standard
-            Shader targetShader = Shader.Find("Universal Render Pipeline/Lit");
-            if (targetShader == null) targetShader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (targetShader == null) targetShader = Shader.Find("Standard");
-            if (targetShader == null) targetShader = Shader.Find("Sprites/Default");
-
-            coreMaterial = new Material(targetShader);
-            coreMaterial.color = coreColor;
-            coreMaterial.EnableKeyword("_EMISSION");
-            coreMaterial.SetColor("_EmissionColor", coreColor * glowIntensity * 2.5f);
-
-            // Suporte a transparência e modo de renderização emissivo
-            if (coreMaterial.HasProperty("_Mode"))
-            {
-                coreMaterial.SetFloat("_Mode", 3);
-            }
-            coreMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            coreMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-            coreMaterial.SetInt("_ZWrite", 1);
-            coreMaterial.EnableKeyword("_ALPHABLEND_ON");
-            coreMaterial.renderQueue = 3000;
-
+            coreMaterial = CreateYellowMaterial(false);
             rend.material = coreMaterial;
         }
     }
 
     void SetupGlowSphere()
     {
-        // Esfera maior translúcida para criar a atmosfera ao redor da orbe
         glowSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         glowSphere.name = "EssenceGlowAtmosphere";
         glowSphere.transform.SetParent(transform);
         glowSphere.transform.localPosition = Vector3.zero;
-        glowSphere.transform.localScale = new Vector3(glowRadius, glowRadius, glowRadius);
+        glowSphere.transform.localScale = new Vector3(glowRadius * 0.6f, glowRadius * 0.6f, glowRadius * 0.6f);
 
         Collider col = glowSphere.GetComponent<Collider>();
         if (col != null) Destroy(col);
 
-        Renderer rend = glowSphere.GetComponent<Renderer>();
-        if (rend != null)
+        Renderer gRend = glowSphere.GetComponent<Renderer>();
+        if (gRend != null)
         {
-            Shader blendShader = Shader.Find("Sprites/Default");
-            if (blendShader == null) blendShader = Shader.Find("Mobile/Particles/Additive");
-            
-            glowMaterial = new Material(blendShader);
-            glowMaterial.color = new Color(glowColor.r, glowColor.g, glowColor.b, 0.35f);
-            rend.material = glowMaterial;
+            glowMaterial = CreateYellowMaterial(true);
+            gRend.material = glowMaterial;
+            gRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            gRend.receiveShadows = false;
         }
     }
 
@@ -162,11 +175,8 @@ public class EssenceVFX : MonoBehaviour
         trailComp.time = 0.4f;
         trailComp.startWidth = 0.3f;
         trailComp.endWidth = 0.02f;
-        
-        Shader trailShader = Shader.Find("Sprites/Default");
-        if (trailShader == null) trailShader = Shader.Find("Mobile/Particles/Additive");
-        
-        trailComp.material = new Material(trailShader);
+
+        trailComp.material = CreateYellowMaterial(true);
         trailComp.startColor = new Color(coreColor.r, coreColor.g, coreColor.b, 0.9f);
         trailComp.endColor = new Color(glowColor.r, glowColor.g, glowColor.b, 0.0f);
         trailComp.emitting = false;
@@ -179,11 +189,9 @@ public class EssenceVFX : MonoBehaviour
         pObj.transform.localPosition = Vector3.zero;
 
         particleComp = pObj.AddComponent<ParticleSystem>();
+        particleComp.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ParticleSystemRenderer pRend = pObj.GetComponent<ParticleSystemRenderer>();
-
-        Shader particleShader = Shader.Find("Mobile/Particles/Additive");
-        if (particleShader == null) particleShader = Shader.Find("Sprites/Default");
-        pRend.material = new Material(particleShader);
+        pRend.material = CreateYellowMaterial(true);
 
         // Módulo Main
         var main = particleComp.main;
@@ -207,10 +215,12 @@ public class EssenceVFX : MonoBehaviour
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = 0.35f;
 
-        // Módulo Velocity Over Lifetime (Subida flutuante)
+        // Módulo Velocity Over Lifetime (Subida flutuante - eixos uniformizados)
         var vel = particleComp.velocityOverLifetime;
         vel.enabled = true;
+        vel.x = new ParticleSystem.MinMaxCurve(0f, 0f);
         vel.y = new ParticleSystem.MinMaxCurve(0.4f, 1.0f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         // Módulo Noise (Efeito orgânico de dança/órbita)
         var noise = particleComp.noise;
@@ -263,11 +273,9 @@ public class EssenceVFX : MonoBehaviour
         burstObj.transform.position = transform.position;
 
         ParticleSystem burst = burstObj.AddComponent<ParticleSystem>();
+        burst.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ParticleSystemRenderer bRend = burstObj.GetComponent<ParticleSystemRenderer>();
-
-        Shader particleShader = Shader.Find("Mobile/Particles/Additive");
-        if (particleShader == null) particleShader = Shader.Find("Sprites/Default");
-        bRend.material = new Material(particleShader);
+        bRend.material = CreateYellowMaterial(true);
 
         var main = burst.main;
         main.duration = 0.4f;

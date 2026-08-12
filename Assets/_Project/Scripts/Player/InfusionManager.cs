@@ -102,7 +102,8 @@ public class InfusionManager : MonoBehaviour
     public void ResetRunInflation()
     {
         totalInfusionWeight = 0f;
-        Debug.Log("[INFUSION MANAGER] Peso de inflação resetado para nova Run.");
+        if (infusedItems != null) infusedItems.Clear();
+        Debug.Log("[INFUSION MANAGER] Peso de inflação e histórico de infusões resetados para nova Run.");
     }
 
     /// <summary>
@@ -115,6 +116,13 @@ public class InfusionManager : MonoBehaviour
         
         ItemData data = ItemDatabase.Instance.GetItemData(itemId);
         if (data == null) return false;
+
+        // Regra de Balanceamento (Brotato x Hades): Itens Lendários (T4) têm limite de 1 infusão por run (Max Stacks = 1)
+        if (data.tier == ItemTier.Legendary && infusedItems.Contains(data))
+        {
+            Debug.LogWarning($"[INFUSÃO] {data.itemName} é um item Lendário (T4) e já foi infundido nesta run! (Limite = 1)");
+            return false;
+        }
 
         if (inventory.HasItem(itemId, 1))
         {
@@ -233,8 +241,8 @@ public class InfusionManager : MonoBehaviour
         string attrName = buff.attributeType.ToString();
 
         // Para inverter a soma, mandamos -buff.value
-        // Para inverter o multiplicador, mandamos 1f / buff.value
-        float invertedValue = buff.isMultiplier ? (1f / buff.value) : (-buff.value);
+        // Para inverter o multiplicador, mandamos 1f / buff.value (com verificação contra divisão por zero)
+        float invertedValue = buff.isMultiplier ? (Mathf.Abs(buff.value) > 0.0001f ? (1f / buff.value) : 1f) : (-buff.value);
 
         switch (buff.attributeType)
         {

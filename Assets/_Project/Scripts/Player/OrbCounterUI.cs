@@ -143,17 +143,6 @@ public class OrbCounterUI : MonoBehaviour
                 UpdateCounter(playerEssence.currentEssence);
             }
         }
-
-        // Esconde o Contador de Orbs quando o jogador morre ou quando a Tela de Morte é aberta
-        PlayerHealth ph = playerEssence != null ? playerEssence.GetComponent<PlayerHealth>() : null;
-        if (ph == null) ph = Object.FindFirstObjectByType<PlayerHealth>();
-
-        bool isDead = (ph != null && ph.isDead) || (DeathScreenUI.Instance != null && DeathScreenUI.Instance.deathPanel != null && DeathScreenUI.Instance.deathPanel.activeSelf);
-
-        if (counterContainer != null && counterContainer.gameObject.activeSelf == isDead)
-        {
-            counterContainer.gameObject.SetActive(!isDead);
-        }
     }
 
     // ─── Construção da UI ─────────────────────────────────────────────────────

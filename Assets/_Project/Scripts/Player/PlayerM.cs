@@ -78,6 +78,10 @@ public class PlayerM : MonoBehaviour
             Debug.LogWarning($"[PlayerM] moveDirection: {moveDirection}, grounded: {grounded}, linearVelocity: {rb.linearVelocity}");
         }
 
+        // Bloquear rotação e movimentação manual se o Ultimate estiver ativo
+        PlayerUltimate ult = GetComponent<PlayerUltimate>() ?? GetComponentInChildren<PlayerUltimate>();
+        if (ult != null && ult.IsUltimateActive()) return;
+
         if (groundCheck != null) grounded = Physics.CheckSphere(groundCheck.position, groundRadius, whatIsGround);
 
         MyInput();
@@ -87,6 +91,14 @@ public class PlayerM : MonoBehaviour
 
     private void FixedUpdate()
     {
+        PlayerUltimate ult = GetComponent<PlayerUltimate>() ?? GetComponentInChildren<PlayerUltimate>();
+        if (ult != null && ult.IsUltimateActive())
+        {
+            // Zera totalmente a velocidade no plano horizontal para travar o jogador no chão no fim do slam sem deslizar!
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            return;
+        }
+
         if (dashScript != null && dashScript.isDashing) return;
         MovePlayer();
     }

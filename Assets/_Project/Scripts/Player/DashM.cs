@@ -28,43 +28,61 @@ public class DashM : MonoBehaviour
     [Header("Input")]
     public KeyCode dashKey = KeyCode.E;
 
-    private void Start()
-        {
-           rb = GetComponent<Rigidbody>();
-          dashesLeft = maxDashes;
-        
-         // Buscar PlayerAttributesDefensive
-         playerAttributes = GetComponent<PlayerAttributesDefensive>();
-         if (playerAttributes == null)
-         {
-             Debug.LogWarning("DashM: PlayerAttributesDefensive não encontrado! Atributos de dash não serão aplicados.");
-         }
-         
-         // Buscar PlayerHealth para invulnerabilidade
-         playerHealth = GetComponent<PlayerHealth>();
-         
-         // Tenta encontrar UI no inicio
-         FindUIReferences();
-        }
+    [Header("Input Buffer & Dash-Canceling (Estilo Hades)")]
+    public float inputBufferWindow = 0.20f;
+    private float lastDashInputTime = -999f;
+    private PrimaryAttackKnife attackScript;
 
-        // --- NOVA FUNÇÃO PÚBLICA ---
-        public void FindUIReferences()
+    private void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        dashesLeft = maxDashes;
+        attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>() ?? GetComponentInParent<PrimaryAttackKnife>();
+        
+        // Buscar PlayerAttributesDefensive
+        playerAttributes = GetComponent<PlayerAttributesDefensive>();
+        if (playerAttributes == null)
         {
-            GameObject textObj = GameObject.Find("DashText"); //
-            if (textObj != null)
-            {
-             dashCountText = textObj.GetComponent<TextMeshProUGUI>();
-             dashCountText.enabled = true;
-            HandleDashUI(); // Atualiza o texto imediatamente
-            }
+            Debug.LogWarning("DashM: PlayerAttributesDefensive não encontrado! Atributos de dash não serão aplicados.");
         }
+        
+        // Buscar PlayerHealth para invulnerabilidade
+        playerHealth = GetComponent<PlayerHealth>();
+        
+        // Tenta encontrar UI no inicio
+        FindUIReferences();
+    }
+
+    public void FindUIReferences()
+    {
+        GameObject textObj = GameObject.Find("DashText"); 
+        if (textObj != null)
+        {
+            dashCountText = textObj.GetComponent<TextMeshProUGUI>();
+            dashCountText.enabled = true;
+            HandleDashUI(); // Atualiza o texto imediatamente
+        }
+    }
+
     private void Update()
     {
         if (CheatConsole.IsOpen) return;
 
-        // Lógica para iniciar o dash
-        if (Input.GetKeyDown(dashKey) && dashesLeft > 0 && !isDashing && !isRecharging)
+        if (Input.GetKeyDown(dashKey))
         {
+            lastDashInputTime = Time.time;
+        }
+
+        // Lógica para iniciar o dash com suporte a Input Buffer Temporal e Dash-Canceling de ataque (Estilo Hades)
+        if ((Time.time - lastDashInputTime <= inputBufferWindow) && dashesLeft > 0 && !isDashing && !isRecharging)
+        {
+            // Se o player estiver atacando, cancela a recuperação do ataque imediatamente para realizar o Dash
+            if (attackScript != null && attackScript.isAttacking)
+            {
+                attackScript.CancelAttackForDash();
+            }
+
+            lastDashInputTime = -999f; // Consome o comando
             StartCoroutine(PerformDash());
         }
 

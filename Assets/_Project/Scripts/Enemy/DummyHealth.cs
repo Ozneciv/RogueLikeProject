@@ -165,10 +165,7 @@ public class DummyHealth : MonoBehaviour
         if (isInvulnerable) return;
         if (CurrentHealth <= 0) return;
 
-        if (debugLogDamage)
-        {
-            Debug.Log($"[DummyHealth] {gameObject.name} TakeDamage({damage}) before={CurrentHealth}");
-        }
+        Debug.Log($"💥 [DAMAGE LOG] {gameObject.name} recebeu {damage} de dano! (HP antes: {CurrentHealth}/{maxHealth} -> HP restante: {Mathf.Max(0, CurrentHealth - damage)})");
 
         // Se fixedDamageOverride está ativo, cada hit causa exatamente esse valor
         if (fixedDamageOverride > 0)
@@ -295,6 +292,21 @@ public class DummyHealth : MonoBehaviour
             if (slowTimer <= 0f)
             {
                 RemoveSlow();
+            }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // Orientação Billboard: Garante que o Canvas/Slider de vida fique sempre virado de frente para a Câmera do Jogador
+        if (healthBarSlider != null && healthBarSlider.gameObject.activeInHierarchy)
+        {
+            Camera mainCam = Camera.main;
+            if (mainCam != null)
+            {
+                Canvas canvas = healthBarSlider.GetComponentInParent<Canvas>();
+                Transform targetTransform = (canvas != null) ? canvas.transform : healthBarSlider.transform;
+                targetTransform.rotation = mainCam.transform.rotation;
             }
         }
     }

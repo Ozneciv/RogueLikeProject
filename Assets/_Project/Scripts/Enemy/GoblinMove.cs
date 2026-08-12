@@ -39,17 +39,17 @@ public class GoblinAI_Transform : MonoBehaviour
     // ── Speeds ──────────────────────────────────────────────────
     [Header("Speeds")]
     [FormerlySerializedAs("velocidadePerseguicao")]
-    public float chaseSpeed = 5.5f;
+    public float chaseSpeed = 4.2f;
     
     [FormerlySerializedAs("velocidadeFuga")]
-    public float fleeSpeed = 7.5f;
+    public float fleeSpeed = 5.2f;
     
     [FormerlySerializedAs("velocidadeStrafe")]
-    public float strafeSpeed = 3.2f;
+    public float strafeSpeed = 2.5f;
     
-    [Tooltip("Movement acceleration (lower = smoother acceleration).")]
+    [Tooltip("Movement acceleration (higher = responsive ground control without ice-skating).")]
     [FormerlySerializedAs("aceleracao")]
-    public float acceleration = 2.4f;
+    public float acceleration = 10.0f;
 
     // ── Ranged Attack (Bomb) ────────────────────────────────────
     [Header("Ranged - Bomb Throw")]
@@ -242,7 +242,6 @@ public class GoblinAI_Transform : MonoBehaviour
 
             case State.Flee:
                 targetVelocity = FleeDirection() * fleeSpeed;
-                LookAtDirection(FleeDirection());
                 break;
 
             case State.MeleeAttack:
@@ -267,7 +266,7 @@ public class GoblinAI_Transform : MonoBehaviour
                 break;
         }
 
-        // Suaviza a aceleração gradualmente
+        // Suaviza a aceleração de forma responsiva no chão
         currentVelocity = Vector3.MoveTowards(
             currentVelocity,
             new Vector3(targetVelocity.x, 0, targetVelocity.z),
@@ -276,10 +275,32 @@ public class GoblinAI_Transform : MonoBehaviour
 
         rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
 
-        // Sincroniza a animação Running com a velocidade real
-        // Threshold alto o suficiente para o strafe lento (1.2 u/s) não ativar corrida
-        float speed = new Vector3(currentVelocity.x, 0f, currentVelocity.z).magnitude;
-        anim.SetBool("Running", speed > 2.5f);
+        // Alinha a rotação do corpo com a velocidade de deslocamento real (evita rotações abruptas no ar)
+        if (currentVelocity.sqrMagnitude > 0.15f)
+        {
+            LookAtDirection(currentVelocity.normalized);
+        }
+        else if (player != null && !isThrowing && !isDoingMelee)
+        {
+            LookAtPlayer();
+        }
+
+        // 🏃 SINCRONIZAÇÃO DE ANIMAÇÃO DINÂMICA (Elimina a sensação de "patinar no chão")
+        float currentSpeedMagnitude = new Vector3(currentVelocity.x, 0f, currentVelocity.z).magnitude;
+        bool isRunning = currentSpeedMagnitude > 0.8f && !isThrowing && !isDoingMelee;
+
+        anim.SetBool("Running", isRunning);
+
+        if (isRunning && chaseSpeed > 0.1f)
+        {
+            // Ajusta o speed do Animator proporcionalmente à velocidade física real
+            float speedRatio = currentSpeedMagnitude / chaseSpeed;
+            anim.speed = Mathf.Clamp(speedRatio * 1.15f, 0.7f, 1.4f);
+        }
+        else
+        {
+            anim.speed = 1.0f;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────

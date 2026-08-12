@@ -61,10 +61,12 @@ public class PlayerAttributesOffensive : MonoBehaviour
                 baseDamageMultiplier = isMultiplier ? baseDamageMultiplier * value : baseDamageMultiplier + value;
                 break;
             case "attackspeedmelee":
-                attackSpeedMelee = Mathf.Clamp(isMultiplier ? attackSpeedMelee * value : attackSpeedMelee + value, 0.2f, 2.5f);
+                // Cap de balanceamento: no máximo 1.6x (+60% de velocidade de ataque)
+                attackSpeedMelee = Mathf.Clamp(isMultiplier ? attackSpeedMelee * value : attackSpeedMelee + value, 0.2f, 1.60f);
                 break;
             case "critchance":
-                critChance = Mathf.Clamp(isMultiplier ? critChance * value : critChance + value, 0f, 100f);
+                // Cap de balanceamento: no máximo 50% de chance crítica
+                critChance = Mathf.Clamp(isMultiplier ? critChance * value : critChance + value, 0f, 50.0f);
                 break;
             case "critmultiplier":
                 critMultiplier = isMultiplier ? critMultiplier * value : critMultiplier + value;

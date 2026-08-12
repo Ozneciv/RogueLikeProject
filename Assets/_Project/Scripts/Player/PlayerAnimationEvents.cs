@@ -74,4 +74,49 @@ public class PlayerAnimationEvents : MonoBehaviour
             Debug.LogError("PlayerAnimationEvents: Não encontrei o PlayerHealth no pai!");
         }
     }
+
+    /// <summary>
+    /// Evento de animação para o impacto da onda de choque do Machado (Suporta maiúsculas e minúsculas).
+    /// </summary>
+    public void OnAxeSlam() => OnAxeSlamImpact();
+    public void onaxeslam() => OnAxeSlamImpact();
+    public void onaxeslamimpact() => OnAxeSlamImpact();
+
+    public void OnAxeSlamImpact()
+    {
+        Debug.Log("[PlayerAnimationEvents] Repassando evento 'OnAxeSlamImpact' para o Ultimate_Axe...");
+        Ultimate_Axe axeUlt = GetComponentInParent<Ultimate_Axe>() ?? GetComponent<Ultimate_Axe>();
+        if (axeUlt == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null) axeUlt = player.GetComponentInChildren<Ultimate_Axe>() ?? player.GetComponent<Ultimate_Axe>();
+        }
+
+        if (axeUlt != null)
+        {
+            axeUlt.TriggerAxeSlamImpact();
+        }
+        else
+        {
+            Debug.LogError("[PlayerAnimationEvents] ERRO: Ultimate_Axe não encontrado no Player!");
+        }
+    }
+
+    /// <summary>
+    /// Evento de animação para o fim da sequência do Ultimate (retorno ao Idle).
+    /// </summary>
+    public void EndUltimateSequence()
+    {
+        PlayerUltimate ultManager = GetComponentInParent<PlayerUltimate>() ?? GetComponent<PlayerUltimate>();
+        if (ultManager == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null) ultManager = player.GetComponentInChildren<PlayerUltimate>();
+        }
+
+        if (ultManager != null)
+        {
+            ultManager.EndUltimateSequence();
+        }
+    }
 }

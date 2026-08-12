@@ -28,6 +28,11 @@ public class PrimaryAttackKnife : MonoBehaviour
     private Vector3 currentOriginalSize;
     private float lastAppliedWeaponRange = 1f;
 
+    [Header("Hades-Style Input Buffer Settings")]
+    [Tooltip("Janela temporal (em segundos) que o buffer de entrada guarda os cliques")]
+    public float inputBufferWindow = 0.20f;
+    private float lastAttackInputTime = -999f;
+
     [Header("Attack Stats")]
     public float currentRange;
     public float defaultRange = 2f;
@@ -39,7 +44,11 @@ public class PrimaryAttackKnife : MonoBehaviour
     [Tooltip("Arraste aqui suas variações de VFX (o original e o Slash). O script vai sortear um deles a cada hit!")]
     public GameObject[] hitImpactVariations;
     // (Mantive o antigo escondido só para não dar erro se alguma outra coisa puxar ele)
-    [HideInInspector] public GameObject hitImpactPrefab; 
+    [HideInInspector] public GameObject hitImpactPrefab;
+
+    [Header("Trail Settings")]
+    [Tooltip("Arraste aqui o TrailRenderer da arma (ou do objeto filho) para ativar automaticamente no momento do ataque.")]
+    public TrailRenderer weaponTrail; 
 
     [Header("Settings")]
     public float attackAnimationSpeed = 1.0f;
@@ -84,9 +93,9 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float daggerHitDuration = 0.2f;
 
     [Tooltip("Delay (em segundos) para ativar o colisor de dano do Machado")]
-    public float axeHitDelay = 0.35f;
+    public float axeHitDelay = 0.15f;
     [Tooltip("Duração (em segundos) que o colisor do Machado fica ativo")]
-    public float axeHitDuration = 0.3f;
+    public float axeHitDuration = 0.2f;
 
     [Tooltip("Delay (em segundos) para ativar o colisor de dano padrão")]
     public float defaultHitDelay = 0.15f;
@@ -98,21 +107,29 @@ public class PrimaryAttackKnife : MonoBehaviour
     private bool canAttack = true;
     public bool CanAttack => canAttack;
     private bool hasBufferedAttack = false;
+    private float lastAttackTime = 0f;
     private Coroutine comboResetCoroutine;
     private Coroutine backupAttackCoroutine;
     private bool eventFiredEnableHitbox = false;
     private bool eventFiredDisableHitbox = false;
     private bool eventFiredOpenWindow = false;
-    private List<Collider> enemiesHitInThisAttack;
+    private HashSet<GameObject> enemiesHitInThisAttack;
+
+    private void OnDisable()
+    {
+        ResetCombo();
+    }
 
     private void Start()
     {
         defaultAttackSpeed = attackAnimationSpeed; // Salva a velocidade customizada do Inspector (como a da Adaga) antes de qualquer troca
-        enemiesHitInThisAttack = new List<Collider>();
+        enemiesHitInThisAttack = new HashSet<GameObject>();
         EquipDefaultWeapon();
         hasWeapon = true;
         isAttacking = false;
         isHitboxActive = false;
+
+        SetTrailsEmitting(false);
 
         // Buscar PlayerAttributesOffensive
         playerAttributes = GetComponent<PlayerAttributesOffensive>();
@@ -186,6 +203,8 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
             {
+                lastAttackInputTime = Time.time;
+
                 // Impede ataque se qualquer janela de menu/inventário/console estiver aberta
                 if (IsAnyUIOpen())
                 {
@@ -199,24 +218,78 @@ public class PrimaryAttackKnife : MonoBehaviour
                         if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
                         PerformNextAttack();
                     }
-                    else if (isAttacking)
+                    else
                     {
-                        // Só permitimos bufferizar se NÃO estivermos no último hit do combo.
-                        // O último golpe não deve enfileirar o reinício do combo (golpe 1) automaticamente.
-                        int maxComboSteps = (currentDamages != null) ? currentDamages.Length : 3;
+                        int maxComboSteps = GetMaxComboSteps();
                         if (comboStep < maxComboSteps)
                         {
                             hasBufferedAttack = true;
-                            Debug.Log("[PrimaryAttackKnife] Input buffered for next combo step.");
+                            Debug.Log($"[PrimaryAttackKnife] Input buffered para o próximo passo do combo ({comboStep + 1}/{maxComboSteps}).");
                         }
                     }
                 }
+            }
+            else if (hasBufferedAttack && canAttack && (Time.time - lastAttackInputTime <= inputBufferWindow))
+            {
+                hasBufferedAttack = false;
+                if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
+                PerformNextAttack();
             }
         }
         catch (System.Exception)
         {
             // Evita crashar o loop de update se referências estiverem se restabelecendo
         }
+    }
+
+    /// <summary>
+    /// Cancela a animação e o estado de ataque atual imediatamente para permitir que o Dash execute (Dash-Canceling estilo Hades).
+    /// </summary>
+    public void CancelAttackForDash()
+    {
+        isAttacking = false;
+        canAttack = true;
+        hasBufferedAttack = false;
+        lastAttackInputTime = -999f;
+
+        if (animator != null)
+        {
+            animator.speed = 1.0f;
+        }
+
+        DisableHitbox();
+
+        if (comboResetCoroutine != null)
+        {
+            StopCoroutine(comboResetCoroutine);
+        }
+
+        Debug.Log("[PrimaryAttackKnife] Ataque cancelado via Dash-Canceling (Estilo Hades).");
+    }
+
+    public int GetMaxComboSteps()
+    {
+        // Garante que axeDamages tenha 4 elementos mesmo se o Inspector da Unity tiver salvo com 2 elementos
+        if (axeDamages == null || axeDamages.Length < 4)
+        {
+            axeDamages = new int[] { 45, 60, 110, 150 };
+        }
+
+        Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+        if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
+        {
+            WeaponOffset offset = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+            if (offset != null && offset.weaponType == WeaponType.Axe)
+            {
+                return 4;
+            }
+        }
+        
+        if (currentDamages != null && currentDamages.Length > 0)
+        {
+            return Mathf.Max(currentDamages.Length, 4);
+        }
+        return 4;
     }
 
     private bool IsAnyUIOpen()
@@ -259,14 +332,21 @@ public class PrimaryAttackKnife : MonoBehaviour
 
             isAttacking = true;
             canAttack = false;
+            hasBufferedAttack = false;
+            lastAttackTime = Time.time;
             comboStep++;
 
+            // Ativa o rastro para cada novo ataque do combo (Hit 1, 2, 3, 4)
+            SetTrailsEmitting(true);
+
             // Loop do combo de volta para o primeiro hit se passar do limite de ataques
-            int maxComboSteps = (currentDamages != null) ? currentDamages.Length : 3;
+            int maxComboSteps = GetMaxComboSteps();
             if (comboStep > maxComboSteps)
             {
                 comboStep = 1;
             }
+
+            Debug.Log($"⚔️ [PrimaryAttackKnife] Executando Golpe {comboStep}/{maxComboSteps} do Combo!");
 
             animator.ResetTrigger("Attack");
             animator.SetInteger("ComboStep", comboStep);
@@ -294,8 +374,13 @@ public class PrimaryAttackKnife : MonoBehaviour
                     }
                 }
 
-                // Aplica impulso na direção frontal do jogador
+                // Aplica impulso na direção frontal do jogador com verificação de parede próxima (Raycast)
                 Vector3 lungeDir = transform.forward;
+                if (Physics.Raycast(transform.position + Vector3.up * 0.5f, lungeDir, out RaycastHit wallHit, 1.2f))
+                {
+                    lungeForce *= 0.15f; // Evita atravessar a geometria de paredes
+                }
+
                 playerRb.linearVelocity = new Vector3(lungeDir.x * lungeForce, playerRb.linearVelocity.y, lungeDir.z * lungeForce);
                 Debug.Log($"[PrimaryAttackKnife] Lunge aplicado com força {lungeForce} na direção {lungeDir}");
             }
@@ -382,6 +467,8 @@ public class PrimaryAttackKnife : MonoBehaviour
 
     public void RegisterHit(Collider enemyCollider)
     {
+        if (!isHitboxActive) return;
+
         // Busca DummyHealth ou ShardSwarmHealth: primeiro no próprio collider, depois no pai
         DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>()
                          ?? enemyCollider.GetComponentInParent<DummyHealth>();
@@ -391,15 +478,11 @@ public class PrimaryAttackKnife : MonoBehaviour
 
         if (enemy == null && swarmEnemy == null) return;
 
-        // Anti-hit-duplo: usa o Collider do objeto raiz de vida
-        Collider rootCollider;
-        if (enemy != null)
-            rootCollider = enemy.GetComponent<Collider>() ?? enemyCollider;
-        else
-            rootCollider = swarmEnemy.GetComponent<Collider>() ?? enemyCollider;
+        // Anti-hit-duplo: usa o GameObject de vida do inimigo para garantir 1 hit único por golpe
+        GameObject targetGO = enemy != null ? enemy.gameObject : swarmEnemy.gameObject;
 
-        if (enemiesHitInThisAttack.Contains(rootCollider)) return;
-        enemiesHitInThisAttack.Add(rootCollider);
+        if (enemiesHitInThisAttack.Contains(targetGO)) return;
+        enemiesHitInThisAttack.Add(targetGO);
 
         if (comboStep > 0 && comboStep <= currentDamages.Length)
         {
@@ -425,6 +508,8 @@ public class PrimaryAttackKnife : MonoBehaviour
                     isCritical = true;
                 }
             }
+
+            Debug.Log($"🗡️ [KNIFE DIAGNOSTIC] base={baseDamage} | attrMult={(playerAttributes != null ? playerAttributes.baseDamageMultiplier : 1)} | healthMult={(playerHealth != null ? playerHealth.damageMultiplier : 1)} | critMult={(isCritical ? playerAttributes.critMultiplier : 1)} => finalDamage={finalDamage}");
 
             // Aplica dano no componente correto
             if (enemy != null)
@@ -474,12 +559,33 @@ public class PrimaryAttackKnife : MonoBehaviour
         }
     }
 
+    public void SetTrailsEmitting(bool active)
+    {
+        if (weaponTrail != null)
+        {
+            if (active) weaponTrail.Clear();
+            weaponTrail.emitting = active;
+        }
+
+        TrailRenderer[] childTrails = GetComponentsInChildren<TrailRenderer>(true);
+        foreach (var t in childTrails)
+        {
+            if (t != null && t.gameObject.activeInHierarchy)
+            {
+                if (active) t.Clear();
+                t.emitting = active;
+            }
+        }
+    }
+
     // Eventos de Animação (ou chamados pela corrotina de backup)
     public void EnableHitbox()
     {
         eventFiredEnableHitbox = true;
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
+
+        SetTrailsEmitting(true);
 
         if (currentHitbox != null)
         {
@@ -500,6 +606,8 @@ public class PrimaryAttackKnife : MonoBehaviour
         eventFiredDisableHitbox = true;
         isHitboxActive = false;
         if (currentHitbox != null) currentHitbox.enabled = false;
+
+        SetTrailsEmitting(false);
     }
 
     public void OpenAttackWindow()
@@ -517,6 +625,7 @@ public class PrimaryAttackKnife : MonoBehaviour
         {
             canAttack = true;
             isAttacking = false;
+            SetTrailsEmitting(false);
         }
     }
 
@@ -529,6 +638,8 @@ public class PrimaryAttackKnife : MonoBehaviour
         comboStep = 0;
         canAttack = true;
 
+        SetTrailsEmitting(false);
+
         if (animator != null)
         {
             animator.SetInteger("ComboStep", 0);
@@ -539,9 +650,25 @@ public class PrimaryAttackKnife : MonoBehaviour
         if (comboResetCoroutine != null) StopCoroutine(comboResetCoroutine);
     }
 
+    public float GetComboResetTime()
+    {
+        Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+        if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
+        {
+            WeaponOffset offset = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+            if (offset != null && offset.weaponType == WeaponType.Axe)
+            {
+                return 2.5f; // Machado ganha 2.5 segundos de margem
+            }
+        }
+        return (comboResetTime > 0f) ? comboResetTime : 1.8f;
+    }
+
     private IEnumerator ResetComboAfterTime()
     {
-        yield return new WaitForSeconds(comboResetTime);
+        float waitTime = GetComboResetTime();
+        yield return new WaitForSeconds(waitTime);
+        Debug.Log($"⏱️ [PrimaryAttackKnife] Tempo do combo expirou ({waitTime}s). Resetando ComboStep para 0.");
         ResetCombo();
     }
 

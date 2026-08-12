@@ -1,0 +1,143 @@
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+
+/// <summary>
+/// Sistema de Áudio para o Menu Principal:
+/// 1. Música/Ambiente de fundo em Loop.
+/// 2. SoundFX de Hover (passar o mouse) gerado proceduralmente com frequência cristalina alta.
+/// 3. SoundFX de Click (clicar no botão) gerado proceduralmente com impacto encorpado e grave.
+/// </summary>
+public class MenuAudioFX : MonoBehaviour
+{
+    public static MenuAudioFX Instance { get; private set; }
+
+    [Header("Áudio de Fundo (BGM)")]
+    public AudioClip backgroundMusic;
+    [Range(0f, 1f)] public float musicVolume = 0.55f;
+
+    [Header("Efeitos de Interface (UI SFX)")]
+    public AudioClip customHoverSound;
+    public AudioClip customClickSound;
+    [Range(0f, 1f)] public float sfxVolume = 0.85f;
+
+    private AudioSource bgmSource;
+    private AudioSource sfxSource;
+    private AudioClip synthHoverClip;
+    private AudioClip synthClickClip;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
+        SetupAudioSources();
+        GenerateProceduralClips();
+    }
+
+    private void Start()
+    {
+        PlayBackgroundMusic();
+        AttachAudioToAllButtons();
+    }
+
+    private void SetupAudioSources()
+    {
+        bgmSource = gameObject.AddComponent<AudioSource>();
+        bgmSource.loop = true;
+        bgmSource.playOnAwake = false;
+        bgmSource.volume = musicVolume;
+
+        sfxSource = gameObject.AddComponent<AudioSource>();
+        sfxSource.loop = false;
+        sfxSource.playOnAwake = false;
+        sfxSource.volume = sfxVolume;
+    }
+
+    private void GenerateProceduralClips()
+    {
+        // 1. Hover Sound: Tick cristalino rápido (0.04s, 1200Hz -> 1800Hz)
+        synthHoverClip = CreateSynthClip("HoverSFX", 0.04f, (t) => {
+            float freq = Mathf.Lerp(1200f, 1800f, t);
+            float wave = Mathf.Sin(t * freq * Mathf.PI * 2f);
+            float env = Mathf.Exp(-t * 85f); // Fast decay
+            return wave * env * 0.45f;
+        });
+
+        // 2. Click Sound: Impacto encorpado grave cristalino (0.12s, 440Hz -> 90Hz)
+        synthClickClip = CreateSynthClip("ClickSFX", 0.12f, (t) => {
+            float freq = Mathf.Lerp(480f, 90f, t);
+            float wave1 = Mathf.Sin(t * freq * Mathf.PI * 2f);
+            float wave2 = Mathf.Sin(t * (freq * 0.5f) * Mathf.PI * 2f); // Sub bass
+            float env = Mathf.Exp(-t * 25f);
+            return (wave1 * 0.6f + wave2 * 0.4f) * env * 0.8f;
+        });
+    }
+
+    private AudioClip CreateSynthClip(string name, float duration, System.Func<float, float> generator)
+    {
+        int sampleRate = 44100;
+        int numSamples = Mathf.FloorToInt(duration * sampleRate);
+        float[] samples = new float[numSamples];
+
+        for (int i = 0; i < numSamples; i++)
+        {
+            float t = (float)i / numSamples;
+            samples[i] = Mathf.Clamp(generator(t), -1f, 1f);
+        }
+
+        AudioClip clip = AudioClip.Create(name, numSamples, 1, sampleRate, false);
+        clip.SetData(samples, 0);
+        return clip;
+    }
+
+    public void PlayBackgroundMusic()
+    {
+        if (MusicManager.instance != null)
+        {
+            MusicManager.instance.PlayTrack(0);
+            return;
+        }
+
+        if (backgroundMusic != null && bgmSource != null)
+        {
+            bgmSource.clip = backgroundMusic;
+            bgmSource.Play();
+        }
+    }
+
+    public void PlayHoverSound()
+    {
+        if (sfxSource == null) return;
+        AudioClip clipToPlay = customHoverSound != null ? customHoverSound : synthHoverClip;
+        if (clipToPlay != null)
+        {
+            sfxSource.PlayOneShot(clipToPlay, sfxVolume * 0.65f);
+        }
+    }
+
+    public void PlayClickSound()
+    {
+        if (sfxSource == null) return;
+        AudioClip clipToPlay = customClickSound != null ? customClickSound : synthClickClip;
+        if (clipToPlay != null)
+        {
+            sfxSource.PlayOneShot(clipToPlay, sfxVolume);
+        }
+    }
+
+    public void AttachAudioToAllButtons()
+    {
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Button btn in buttons)
+        {
+            if (btn == null) continue;
+            btn.onClick.RemoveListener(PlayClickSound);
+            btn.onClick.AddListener(PlayClickSound);
+        }
+    }
+}

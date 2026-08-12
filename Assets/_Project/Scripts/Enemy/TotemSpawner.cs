@@ -63,6 +63,12 @@ public class TotemSpawner : MonoBehaviour
 
         if (!isActivated)
         {
+            if (playerTransform == null)
+            {
+                GameObject p = GameObject.FindGameObjectWithTag("Player");
+                if (p != null) playerTransform = p.transform;
+            }
+
             if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) < activationDistance)
             {
                 isActivated = true;

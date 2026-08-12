@@ -1,180 +1,230 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
-/// Barra de vida do Boss Cromatico - HUD no topo da tela.
+/// Gerencia a barra de vida do Boss no Canvas.
+/// 
+/// COMPORTAMENTO DE PERSISTÊNCIA E MAPA:
+///   • Pode ser instanciado pelo BossController automaticamente ou colocado na cena.
+///   • Suporta DontDestroyOnLoad para não sumir ao trocar de salas/portas.
 /// </summary>
 public class BossHealthBarUI : MonoBehaviour
 {
-    public static BossHealthBarUI Instance { get; private set; }
+    [Header("1 Barra de Vida Única (Vermelha)")]
+    [Tooltip("A imagem vermelha da vida que vai diminuir (Image Type = Filled, Fill Method = Horizontal).")]
+    public Image fillImage;
 
-    [Header("Layout")]
-    public float barWidth  = 720f;
-    public float barHeight = 26f;
-    public float topOffset = 28f;
+    [Header("Molduras por Fase")]
+    [Tooltip("A Image no Canvas que vai exibir a moldura em volta da barra.")]
+    public Image frameImage;
 
-    [Header("Visual")]
-    [Tooltip("Cor de preenchimento da barra de HP.")]
-    public Color barColor = new Color(0.85f, 0.15f, 0.15f, 1f);
+    [Tooltip("Sprite da moldura para a Fase 1 (Casulo)")]
+    public Sprite framePhase1;
 
-    private BossController boss;
-    private GameObject rootPanel;
-    private RectTransform fillRect;   // anchorMax.x controla o preenchimento
-    private Image fillImage;
-    private TextMeshProUGUI phaseLabel;
-    private TextMeshProUGUI hpLabel;
+    [Tooltip("Sprite da moldura para a Fase 2 (Cristal)")]
+    public Sprite framePhase2;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void AutoInitialize()
+    [Tooltip("Sprite da moldura para a Fase 3 (Raízes)")]
+    public Sprite framePhase3;
+
+    [Header("Cores do Preenchimento da Vida por Fase")]
+    public Color colorPhase1 = new Color(0.2f, 0.55f, 1.0f);   // Azul (Fase 1 - Casulo)
+    public Color colorPhase2 = new Color(0.95f, 0.15f, 0.15f);  // Vermelho (Fase 2 - Cristal)
+    public Color colorPhase3 = new Color(0.2f, 0.9f, 0.35f);   // Verde (Fase 3 - Raízes)
+
+    [Header("Controle de Visibilidade e Persistência")]
+    [Tooltip("Se verdadeiro, o Canvas da barra de vida sobrevive a trocas de cena/portas.")]
+    public bool dontDestroyOnLoad = true;
+
+    [Tooltip("Opcional: Painel/Container filho com os visuais.")]
+    public GameObject containerPanel;
+
+    [Tooltip("Distância (em metros) do Boss para ativar a barra de vida automaticamente.")]
+    public float detectionDistance = 25f;
+
+    private int currentPhase = 1;
+    private bool isFightActive = false;
+    private Transform playerTransform;
+    private BossController bossController;
+
+    private static BossHealthBarUI instance;
+
+    void Awake()
     {
-        if (Instance == null)
+        // Singleton simples para evitar duplicatas ao carregar novas cenas
+        if (instance != null && instance != this)
         {
-            GameObject go = new GameObject("BossHealthBarUI_AutoInit");
-            DontDestroyOnLoad(go);
-            go.AddComponent<BossHealthBarUI>();
-        }
-    }
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
-
-    private void Update()
-    {
-        if (boss == null)
-            boss = FindFirstObjectByType<BossController>();
-
-        bool shouldShow = boss != null && boss.IsFighting && !boss.IsDead;
-
-        if (!shouldShow)
-        {
-            if (rootPanel != null && rootPanel.activeSelf)
-                rootPanel.SetActive(false);
+            Destroy(gameObject);
             return;
         }
 
-        if (rootPanel == null) BuildUI();
-        if (rootPanel == null) return;
+        instance = this;
 
-        if (!rootPanel.activeSelf) rootPanel.SetActive(true);
-
-        UpdateBar();
-    }
-
-    private void UpdateBar()
-    {
-        // Muda a ancora direita do fill — confiavel sem precisar de sprite
-        if (fillRect != null)
-            fillRect.anchorMax = new Vector2(boss.HealthPercent, 1f);
-
-        if (phaseLabel != null)
+        if (dontDestroyOnLoad)
         {
-            int p = Mathf.Clamp(boss.CurrentPhase, 1, 3);
-            phaseLabel.text = string.Format("BOSS CROMATICO  -  <b>FASE {0}/3</b>", p);
-        }
-
-        if (hpLabel != null && boss.phaseConfig != null)
-        {
-            int maxHP     = boss.phaseConfig.maxHealth;
-            int currentHP = Mathf.RoundToInt(boss.HealthPercent * maxHP);
-            hpLabel.text  = string.Format("{0} / {1}", currentHP, maxHP);
+            DontDestroyOnLoad(gameObject);
         }
     }
 
-    private void BuildUI()
+    void OnEnable()
     {
-        Canvas canvas = FindTargetPlayerCanvas();
-        if (canvas == null) return;
-
-        // Painel raiz
-        rootPanel = new GameObject("BossHealthBarPanel");
-        rootPanel.transform.SetParent(canvas.transform, false);
-        RectTransform rootRt = rootPanel.AddComponent<RectTransform>();
-        rootRt.anchorMin = new Vector2(0.5f, 1f);
-        rootRt.anchorMax = new Vector2(0.5f, 1f);
-        rootRt.pivot     = new Vector2(0.5f, 1f);
-        rootRt.anchoredPosition = new Vector2(0f, -topOffset);
-        rootRt.sizeDelta = new Vector2(barWidth, barHeight + 26f);
-
-        // Label de fase
-        GameObject labelGo = new GameObject("PhaseLabel");
-        labelGo.transform.SetParent(rootPanel.transform, false);
-        RectTransform labelRt = labelGo.AddComponent<RectTransform>();
-        labelRt.anchorMin = new Vector2(0f, 1f);
-        labelRt.anchorMax = new Vector2(1f, 1f);
-        labelRt.pivot     = new Vector2(0.5f, 1f);
-        labelRt.anchoredPosition = Vector2.zero;
-        labelRt.sizeDelta = new Vector2(0f, 22f);
-        phaseLabel = labelGo.AddComponent<TextMeshProUGUI>();
-        phaseLabel.fontSize   = 16f;
-        phaseLabel.fontStyle  = FontStyles.Bold;
-        phaseLabel.alignment  = TextAlignmentOptions.Center;
-        phaseLabel.color      = Color.white;
-        phaseLabel.text       = "BOSS CROMATICO  -  <b>FASE 1/3</b>";
-        Shadow labelShadow = labelGo.AddComponent<Shadow>();
-        labelShadow.effectColor    = new Color(0f, 0f, 0f, 0.8f);
-        labelShadow.effectDistance = new Vector2(2f, -2f);
-
-        // Container da barra
-        GameObject barGo = new GameObject("Bar");
-        barGo.transform.SetParent(rootPanel.transform, false);
-        RectTransform barRt = barGo.AddComponent<RectTransform>();
-        barRt.anchorMin = new Vector2(0.5f, 1f);
-        barRt.anchorMax = new Vector2(0.5f, 1f);
-        barRt.pivot     = new Vector2(0.5f, 1f);
-        barRt.anchoredPosition = new Vector2(0f, -24f);
-        barRt.sizeDelta = new Vector2(barWidth, barHeight);
-
-        // Fundo escuro
-        Image bg = barGo.AddComponent<Image>();
-        bg.color = new Color(0.15f, 0.05f, 0.05f, 0.9f);
-        Outline barOutline = barGo.AddComponent<Outline>();
-        barOutline.effectColor    = new Color(0f, 0f, 0f, 0.9f);
-        barOutline.effectDistance = new Vector2(2f, -2f);
-
-        // Fill — ancora direita muda proporcionalmente ao HP
-        GameObject fillGo = new GameObject("Fill");
-        fillGo.transform.SetParent(barGo.transform, false);
-        fillRect = fillGo.AddComponent<RectTransform>();
-        fillRect.anchorMin = Vector2.zero;
-        fillRect.anchorMax = Vector2.one;   // comeca cheio; UpdateBar vai ajustar
-        fillRect.offsetMin = Vector2.zero;
-        fillRect.offsetMax = Vector2.zero;
-        fillImage = fillGo.AddComponent<Image>();
-        fillImage.color = barColor;
-
-        // Texto de HP
-        GameObject hpGo = new GameObject("HPLabel");
-        hpGo.transform.SetParent(barGo.transform, false);
-        RectTransform hpRt = hpGo.AddComponent<RectTransform>();
-        hpRt.anchorMin = Vector2.zero;
-        hpRt.anchorMax = Vector2.one;
-        hpRt.offsetMin = Vector2.zero;
-        hpRt.offsetMax = Vector2.zero;
-        hpLabel = hpGo.AddComponent<TextMeshProUGUI>();
-        hpLabel.fontSize  = 13f;
-        hpLabel.fontStyle = FontStyles.Bold;
-        hpLabel.alignment = TextAlignmentOptions.Center;
-        hpLabel.color     = Color.white;
-        Shadow hpShadow = hpGo.AddComponent<Shadow>();
-        hpShadow.effectColor    = new Color(0f, 0f, 0f, 1f);
-        hpShadow.effectDistance = new Vector2(1f, -1f);
+        BossEvents.OnBossHealthChanged += OnHealthChanged;
+        BossEvents.OnPhaseChanged      += OnPhaseChanged;
+        BossEvents.OnBossFightStarted  += OnFightStarted;
+        BossEvents.OnBossDefeated      += OnBossDefeated;
     }
 
-    private static Canvas FindTargetPlayerCanvas()
+    void OnDisable()
     {
-        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-        foreach (var c in canvases)
-            if (c != null && c.gameObject.activeInHierarchy &&
-               (c.name.Contains("Player Canvas") || c.name.Contains("PlayerCanvas") || c.name.Contains("HUD")))
-                return c;
-        foreach (var c in canvases)
-            if (c != null && c.gameObject.activeInHierarchy && c.renderMode == RenderMode.ScreenSpaceOverlay)
-                return c;
-        return canvases.Length > 0 ? canvases[0] : null;
+        BossEvents.OnBossHealthChanged -= OnHealthChanged;
+        BossEvents.OnPhaseChanged      -= OnPhaseChanged;
+        BossEvents.OnBossFightStarted  -= OnFightStarted;
+        BossEvents.OnBossDefeated      -= OnBossDefeated;
+    }
+
+    void Start()
+    {
+        UpdateFrame(1);
+        UpdateColor(1);
+        ResetBar();
+        SetBarVisible(false); // Começa oculta até chegar perto do boss
+    }
+
+    void Update()
+    {
+        // Procura BossController na cena atual caso tenha trocado de sala ou recarregado
+        if (bossController == null)
+        {
+            bossController = FindObjectOfType<BossController>();
+            if (bossController != null && bossController.IsFighting)
+            {
+                OnFightStarted();
+                OnHealthChanged(bossController.HealthPercent);
+            }
+        }
+
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+        }
+
+        // Se o boss estiver em combate, garante que a barra está visível
+        if (bossController != null)
+        {
+            if (bossController.IsFighting && !isFightActive)
+            {
+                OnFightStarted();
+                OnHealthChanged(bossController.HealthPercent);
+                return;
+            }
+
+            // Checa aproximação do player ao boss
+            if (!isFightActive && playerTransform != null && bossController.CurrentState == BossController.BossState.Idle)
+            {
+                float dist = Vector3.Distance(bossController.transform.position, playerTransform.position);
+                if (dist <= detectionDistance)
+                {
+                    bossController.StartFight();
+                }
+            }
+        }
+    }
+
+    void OnFightStarted()
+    {
+        isFightActive = true;
+        currentPhase = (bossController != null && bossController.CurrentPhase > 0) ? bossController.CurrentPhase : 1;
+        UpdateFrame(currentPhase);
+        UpdateColor(currentPhase);
+        ResetBar();
+        SetBarVisible(true);
+    }
+
+    void OnHealthChanged(float hpPercent)
+    {
+        if (!isFightActive && hpPercent < 1.0f)
+        {
+            OnFightStarted();
+        }
+
+        if (fillImage != null)
+        {
+            fillImage.fillAmount = Mathf.Clamp01(hpPercent);
+        }
+    }
+
+    void OnPhaseChanged(int newPhase)
+    {
+        currentPhase = newPhase;
+        UpdateFrame(newPhase);
+        UpdateColor(newPhase);
+        if (fillImage != null) fillImage.fillAmount = 1.0f; // Reseta a barra para 100% ao entrar na nova fase!
+        if (!isFightActive) SetBarVisible(true);
+    }
+
+    void UpdateFrame(int phase)
+    {
+        if (frameImage == null) return;
+
+        switch (phase)
+        {
+            case 1:
+                if (framePhase1 != null) frameImage.sprite = framePhase1;
+                break;
+            case 2:
+                if (framePhase2 != null) frameImage.sprite = framePhase2;
+                break;
+            case 3:
+                if (framePhase3 != null) frameImage.sprite = framePhase3;
+                break;
+        }
+    }
+
+    void UpdateColor(int phase)
+    {
+        if (fillImage == null) return;
+
+        switch (phase)
+        {
+            case 1: fillImage.color = colorPhase1; break; // Azul
+            case 2: fillImage.color = colorPhase2; break; // Vermelho
+            case 3: fillImage.color = colorPhase3; break; // Verde
+        }
+    }
+
+    void OnBossDefeated()
+    {
+        if (fillImage != null) fillImage.fillAmount = 0f;
+        Invoke(nameof(HideWithDelay), 1.5f);
+    }
+
+    void ResetBar()
+    {
+        if (fillImage != null) fillImage.fillAmount = 1f;
+    }
+
+    void SetBarVisible(bool visible)
+    {
+        if (containerPanel != null)
+        {
+            containerPanel.SetActive(visible);
+        }
+        else
+        {
+            if (fillImage != null) fillImage.gameObject.SetActive(visible);
+            if (frameImage != null) frameImage.gameObject.SetActive(visible);
+        }
+    }
+
+    void HideWithDelay()
+    {
+        isFightActive = false;
+        SetBarVisible(false);
+    }
+
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
     }
 }

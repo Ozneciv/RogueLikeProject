@@ -86,17 +86,20 @@ public class PlayerAttributesDefensive : MonoBehaviour
                 
             // Mobilidade
             case "dashcooldownmultiplier":
-                dashCooldownMultiplier = isMultiplier ? dashCooldownMultiplier * value : dashCooldownMultiplier + value;
+                // Cap de balanceamento: no máximo -40% de cooldown (0.60x)
+                dashCooldownMultiplier = Mathf.Clamp(isMultiplier ? dashCooldownMultiplier * value : dashCooldownMultiplier + value, 0.60f, 1.50f);
                 break;
             case "dashcounts":
-                dashCounts = Mathf.Max(1, isMultiplier ? Mathf.RoundToInt(dashCounts * value) : dashCounts + Mathf.RoundToInt(value));
+                // Cap de balanceamento: máximo de 4 cargas totais de Dash
+                dashCounts = Mathf.Clamp(isMultiplier ? Mathf.RoundToInt(dashCounts * value) : dashCounts + Mathf.RoundToInt(value), 1, 4);
                 break;
             case "dashinvulnerability":
                 dashInvulnerability = isMultiplier ? dashInvulnerability * value : dashInvulnerability + value;
                 break;
             case "speedmultiplier":
             case "speed":
-                _speedMultiplier = isMultiplier ? _speedMultiplier * value : _speedMultiplier + value;
+                // Cap de balanceamento: no máximo +35% de velocidade de movimento (1.35x)
+                _speedMultiplier = Mathf.Clamp(isMultiplier ? _speedMultiplier * value : _speedMultiplier + value, 0.5f, 1.35f);
                 break;
             case "magnetrangemultiplier":
             case "magnetrange":

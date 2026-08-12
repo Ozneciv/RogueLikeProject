@@ -67,23 +67,23 @@ public class CheatConsole : MonoBehaviour
 
     void Update()
     {
-        // Se o console está aberto e o jogador aperta ESC, fecha o console
-        if (isConsoleActive && Input.GetKeyDown(KeyCode.Escape))
+        // Se o console está aberto e o jogador aperta ESC ou Ponto e Vírgula ';', fecha o console
+        if (isConsoleActive && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Semicolon)))
         {
-            Debug.Log("🔍 CHEAT: Tecla 'ESC' pressionada, fechando console.");
+            Debug.Log("🔍 CHEAT: Tecla de fechamento pressionada!");
             ToggleConsole();
             return;
         }
 
-        // Ligar o console
-        if (Input.GetKeyDown(KeyCode.Slash) || Input.GetKeyDown(KeyCode.KeypadDivide))
+        // Ligar / Alternar o console com Barra '/', Divisão ou Ponto e Vírgula ';'
+        if (Input.GetKeyDown(KeyCode.Slash) || Input.GetKeyDown(KeyCode.KeypadDivide) || Input.GetKeyDown(KeyCode.Semicolon))
         {
-            Debug.Log("🔍 CHEAT: Tecla Barra '/' pressionada!");
+            Debug.Log("🔍 CHEAT: Tecla de atalho do console pressionada!");
             if (consoleInput == null)
             {
                 FindConsoleInput();
             }
-            if (!isConsoleActive) ToggleConsole();
+            ToggleConsole();
             return;
         }
 
@@ -112,6 +112,12 @@ public class CheatConsole : MonoBehaviour
         
         // Ativa ou desativa a telinha do console
         consoleInput.gameObject.SetActive(isConsoleActive);
+
+        // Se a Bolsa Sintética / Inventário estiver aberto por engano, fecha-o
+        if (isConsoleActive && SyntheticBagUI.Instance != null)
+        {
+            SyntheticBagUI.Instance.CloseBag();
+        }
 
         // Congela/Descongela o movimento, dash, interação e ataque
         if (movementScript != null) movementScript.enabled = !isConsoleActive;
@@ -278,26 +284,33 @@ public class CheatConsole : MonoBehaviour
                 EptinhoPopupController.instancia.MostrarPopupAviso("+99.999 Orbs Adicionados!");
             }
         }
-        else if (string.Equals(command, "boss", System.StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(command, "boss", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "loadboss", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "gotoboss", System.StringComparison.OrdinalIgnoreCase))
         {
-            Debug.Log("💻 CHEAT APROVADO: Forçando Boss Round!");
+            Debug.Log("💻 CHEAT APROVADO: Forçando Boss Round e Carregando Sala do Boss!");
             if (RunManager.instance != null)
             {
-                // Efeito imediato: seta currentLevel pro boss round (funciona se já estiver na run)
+                // Seta nivel atual pro Boss Round
                 RunManager.instance.currentLevel = RunManager.instance.totalLevels;
-                // Flag persistente: garante que funciona mesmo ao iniciar nova run da Base
                 RunManager.instance.forceBossNextRun = true;
 
-                Debug.Log($"💻 CHEAT: currentLevel setado para {RunManager.instance.currentLevel}/{RunManager.instance.totalLevels}. isBossRound = {RunManager.instance.isBossRound}");
-
-                if (EptinhoPopupController.instancia != null)
-                {
-                    EptinhoPopupController.instancia.MostrarPopupAviso("Boss Round ATIVADO!\nInicie uma run ou avance de nível.");
-                }
+                Debug.Log($"💻 CHEAT: currentLevel setado para {RunManager.instance.currentLevel}/{RunManager.instance.totalLevels}.");
             }
-            else
+
+            if (EptinhoPopupController.instancia != null)
             {
-                Debug.LogWarning("💻 CHEAT: RunManager.instance é null! O cheat boss precisa ser usado em jogo.");
+                EptinhoPopupController.instancia.MostrarPopupAviso("Boss Round ATIVADO!\nEntrando no combate...");
+            }
+
+            // Tenta carregar diretamente a cena do Boss
+            if (Application.CanStreamedLevelBeLoaded("BossRoom_Cromatico"))
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("BossRoom_Cromatico");
+            }
+            else if (Application.CanStreamedLevelBeLoaded("Geobionte"))
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("Geobionte");
             }
         }
         else

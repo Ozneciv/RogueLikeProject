@@ -145,6 +145,8 @@ public class SyntheticBagUI : MonoBehaviour
         if (panelObject != null) panelObject.SetActive(false);
         if (customPanel != null) customPanel.SetActive(false);
         if (tooltip != null) tooltip.Hide();
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void OnDestroy()
@@ -162,6 +164,7 @@ public class SyntheticBagUI : MonoBehaviour
     void Update()
     {
         if (!uiBuilt) return;
+        if (CheatConsole.IsOpen) return; // Ignora teclas de atalho se o CheatConsole estiver aberto
 
         if (Input.GetKeyDown(toggleKey))
         {

@@ -106,7 +106,12 @@ public class Spider_AI : MonoBehaviour
 
     void Update()
     {
-        if (playerTransform == null) return;
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+            else return;
+        }
         if (health != null && health.CurrentHealth <= 0) return;
 
         // Timer de cooldowns
@@ -371,7 +376,8 @@ public class Spider_AI : MonoBehaviour
         aSource.maxDistance = 20f;
         aSource.rolloffMode = AudioRolloffMode.Linear;
         aSource.Play();
-        Destroy(audioObj, clip.length / Mathf.Abs(pitch));
+        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
+        Destroy(audioObj, clip.length / safePitch);
     }
     // Visualização do range no Editor
     void OnDrawGizmosSelected()
