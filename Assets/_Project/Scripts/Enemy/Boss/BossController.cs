@@ -99,6 +99,9 @@ public class BossController : MonoBehaviour
     [Tooltip("Prefab do sangue ácido que pinga no chão durante a invisibilidade.")]
     [SerializeField] private GameObject toxicBloodPrefab;
 
+    [Tooltip("Prefab de partículas de gotejamento instanciado ao sofrer dano enquanto invisível.")]
+    [SerializeField] private GameObject drippingParticlePrefab;
+
     [Tooltip("Intervalo em segundos entre cada gota de sangue ácido.")]
     [SerializeField] private float toxicBloodInterval = 0.4f;
 
@@ -159,6 +162,9 @@ public class BossController : MonoBehaviour
     // Sangue ácido — timer iniciado positivo para nunca spawnar no primeiro frame
     private float toxicBloodTimer = 2f;
 
+    // Instância viva do sistema de partículas de gotejamento (dripping contínuo durante refração)
+    private ParticleSystem drippingInstance;
+
     // =====================================================
     // UNITY LIFECYCLE
     // =====================================================
@@ -201,6 +207,19 @@ public class BossController : MonoBehaviour
         {
             toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood") 
                             ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
+        }
+
+#if UNITY_EDITOR
+        if (drippingParticlePrefab == null)
+        {
+            drippingParticlePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Boss/BossDrippingFX.prefab");
+        }
+#endif
+
+        if (drippingParticlePrefab == null)
+        {
+            drippingParticlePrefab = Resources.Load<GameObject>("BossDrippingFX") 
+                                  ?? Resources.Load<GameObject>("Enemies/Boss/BossDrippingFX");
         }
 
         // Auto-detecta o osso/transform do pé (footSpawnPoint) criado pelo Matheus
@@ -300,6 +319,20 @@ public class BossController : MonoBehaviour
 
         // Garante que o Canvas da barra de vida exista na cena do Boss
         EnsureHealthBarUI();
+
+        // Instancia o sistema de partículas de gotejamento como FILHO do Boss
+        // para que caminhe junto com ele durante a refração (invisibilidade)
+        if (drippingParticlePrefab != null && drippingInstance == null)
+        {
+            Vector3 offset = Vector3.up * 1.2f;
+            GameObject drippingObj = Instantiate(drippingParticlePrefab, transform.position + offset, Quaternion.identity, transform);
+            drippingObj.transform.localPosition = offset;
+            drippingInstance = drippingObj.GetComponent<ParticleSystem>();
+            if (drippingInstance != null)
+            {
+                drippingInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
 
         // Começa em Idle — espera o BossCombatTrigger ou auto-start em cenas de teste
         CurrentState = BossState.Idle;
@@ -463,6 +496,8 @@ public class BossController : MonoBehaviour
                 Debug.Log($"[BossController] 🩸 Sangue ácido (Matheus) pingou com espaçamento de {distFromLast:F1}m em {spawnPos}");
         }
     }
+
+    // TriggerDamageDripping removido — o gotejamento agora é contínuo via SetRefraction().
 
     // Fallback removido — sem o prefab ToxicBlood conectado, simplesmente não spawna nada.
 
@@ -873,7 +908,23 @@ public class BossController : MonoBehaviour
         if (IsInvisible == invisible) return;
         IsInvisible = invisible;
 
-        // Ao sair da invisibilidade, reseta o timer e posicao do drip
+        // Controle do sistema de partículas de gotejamento contínuo (dripping)
+        // Ativado durante TODA a refração para rastreamento visual do Boss invisível
+        if (drippingInstance != null)
+        {
+            if (invisible)
+            {
+                drippingInstance.Play(true);
+                if (showDebugLog) Debug.Log("[BossController] 💧 Dripping contínuo ATIVADO (refração ON).");
+            }
+            else
+            {
+                drippingInstance.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                if (showDebugLog) Debug.Log("[BossController] 💧 Dripping contínuo DESATIVADO (refração OFF).");
+            }
+        }
+
+        // Ao sair da invisibilidade, reseta o timer e posicao do drip do sangue ácido
         // para que o sangue nao apareca imediatamente na proxima ativacao
         if (!invisible)
         {
