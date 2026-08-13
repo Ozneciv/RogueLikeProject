@@ -284,11 +284,41 @@ public class CheatConsole : MonoBehaviour
                 EptinhoPopupController.instancia.MostrarPopupAviso("+99.999 Orbs Adicionados!");
             }
         }
+        else if (string.Equals(command, "bosssolo", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "soloboss", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "bosstest", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "solo", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("💻 CHEAT APROVADO: Carregando Sala do Boss em MODO SOLO (Sem Mobs)!");
+            BossPhase1_MobSpawner.SetBossSoloMode(true);
+
+            if (RunManager.instance != null)
+            {
+                RunManager.instance.currentLevel = RunManager.instance.totalLevels;
+                RunManager.instance.forceBossNextRun = true;
+            }
+
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso("MODO SOLO DO BOSS ATIVADO!\nEntrando sem inimigos extras...");
+            }
+
+            if (Application.CanStreamedLevelBeLoaded("BossRoom_Cromatico"))
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("BossRoom_Cromatico");
+            }
+            else if (Application.CanStreamedLevelBeLoaded("Geobionte"))
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("Geobionte");
+            }
+        }
         else if (string.Equals(command, "boss", System.StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(command, "loadboss", System.StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(command, "gotoboss", System.StringComparison.OrdinalIgnoreCase))
         {
-            Debug.Log("💻 CHEAT APROVADO: Forçando Boss Round e Carregando Sala do Boss!");
+            Debug.Log("💻 CHEAT APROVADO: Forçando Boss Round e Carregando Sala do Boss Padrão!");
+            BossPhase1_MobSpawner.SetBossSoloMode(false);
+
             if (RunManager.instance != null)
             {
                 // Seta nivel atual pro Boss Round
@@ -315,7 +345,7 @@ public class CheatConsole : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é reconhecida. Tente: EPTA, killall, endless, recursos, unlockall, orbs ou boss.");
+            Debug.LogWarning($"💻 CHEAT RECUSADO: A palavra '{command}' não é reconhecida. Tente: EPTA, killall, endless, recursos, unlockall, orbs, boss ou bosssolo.");
         }
 
         // Depois de tentar o cheat, fecha o console pro jogo voltar ao normal

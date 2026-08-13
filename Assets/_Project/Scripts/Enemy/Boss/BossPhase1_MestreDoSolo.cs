@@ -92,11 +92,27 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             if (bossCollider != null) bossCollider.enabled = false;
             foreach (Renderer r in renderersDoBoss) { if (r != null) r.enabled = false; }
 
-            // 2. Instancia o Casulo
+            // 2. Instancia o Casulo (Objeto separado com seu próprio colisor dedicado de 1.8m de raio)
             if (cristalPrefab != null)
             {
                 cristalInstanciado = Instantiate(cristalPrefab, transform.position, transform.rotation);
                 
+                CapsuleCollider casuloCol = cristalInstanciado.GetComponent<CapsuleCollider>();
+                if (casuloCol == null) casuloCol = cristalInstanciado.AddComponent<CapsuleCollider>();
+                casuloCol.radius = 1.8f;
+                casuloCol.height = 3.5f;
+                casuloCol.center = new Vector3(0f, 1.75f, 0f);
+                casuloCol.isTrigger = false; // SÓLIDO durante a Fase 1!
+
+                Collider[] allCasuloCols = cristalInstanciado.GetComponentsInChildren<Collider>(true);
+                foreach (Collider c in allCasuloCols)
+                {
+                    if (c != casuloCol)
+                    {
+                        c.isTrigger = true;
+                    }
+                }
+
                 // 3. PREPARA O CASULO E O GATILHO DE MORTE
                 DummyHealth casuloHealth = cristalInstanciado.GetComponent<DummyHealth>();
                 if (casuloHealth != null)

@@ -32,6 +32,19 @@ public class BossHealthBarUI : MonoBehaviour
     public Color colorPhase2 = new Color(0.95f, 0.15f, 0.15f);  // Vermelho (Fase 2 - Cristal)
     public Color colorPhase3 = new Color(0.2f, 0.9f, 0.35f);   // Verde (Fase 3 - Raízes)
 
+    [Header("Nome Dinâmico do Chefe na UI")]
+    [Tooltip("Texto (TMPro) para o nome/título dinâmico do Boss.")]
+    public TMPro.TextMeshProUGUI bossNameText;
+
+    [Tooltip("Nome do Boss na Fase 1")]
+    public string namePhase1 = "ORC CROMÁTICO — O GUARDIÃO CRISTALINO";
+
+    [Tooltip("Nome do Boss na Fase 2")]
+    public string namePhase2 = "ORC CROMÁTICO — FORMA REFRATADA";
+
+    [Tooltip("Nome do Boss na Fase 3")]
+    public string namePhase3 = "ORC CROMÁTICO — CORRUPÇÃO ÁCIDA";
+
     [Header("Controle de Visibilidade e Persistência")]
     [Tooltip("Se verdadeiro, o Canvas da barra de vida sobrevive a trocas de cena/portas.")]
     public bool dontDestroyOnLoad = true;
@@ -137,6 +150,7 @@ public class BossHealthBarUI : MonoBehaviour
         currentPhase = (bossController != null && bossController.CurrentPhase > 0) ? bossController.CurrentPhase : 1;
         UpdateFrame(currentPhase);
         UpdateColor(currentPhase);
+        UpdateName(currentPhase);
         ResetBar();
         SetBarVisible(true);
     }
@@ -159,8 +173,27 @@ public class BossHealthBarUI : MonoBehaviour
         currentPhase = newPhase;
         UpdateFrame(newPhase);
         UpdateColor(newPhase);
+        UpdateName(newPhase);
         if (fillImage != null) fillImage.fillAmount = 1.0f; // Reseta a barra para 100% ao entrar na nova fase!
         if (!isFightActive) SetBarVisible(true);
+    }
+
+    void UpdateName(int phase)
+    {
+        if (bossNameText == null)
+        {
+            bossNameText = GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+        }
+
+        if (bossNameText != null)
+        {
+            switch (phase)
+            {
+                case 1: bossNameText.text = namePhase1; break;
+                case 2: bossNameText.text = namePhase2; break;
+                case 3: bossNameText.text = namePhase3; break;
+            }
+        }
     }
 
     void UpdateFrame(int phase)

@@ -67,18 +67,33 @@ public class BossController : MonoBehaviour
     [Tooltip("O Animator do boss. Se nulo, tentará encontrar nos filhos.")]
     public Animator animator;
 
-    [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo (somente golpes físicos).")]
-    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch" };
+    [Tooltip("Triggers do Animator a serem sorteados nos ataques corpo a corpo (4 ataques: Swipe, Punch, JumpAttack, Stomp).")]
+    public string[] meleeAttackTriggers = new string[] { "bossSwipe", "bossPunch", "bossJumpAttack", "bossStomp" };
 
     [Tooltip("Triggers do Animator a serem sorteados nos ataques de Magia/Spell (visível ou invisível).")]
     public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUp" };
 
-    [Header("Hitbox da Mão / Ataques Físicos")]
-    [Tooltip("Arraste aqui o Box Collider do seu objeto 'HITBOX HAND'.")]
-    public Collider handCollider;
+    [Header("VFX de Impacto em Área (Stomp & Jump Attack)")]
+    [Tooltip("Prefab de VFX de onda de choque no solo para a Pisada (Stomp).")]
+    public GameObject vfxStompPrefab;
 
-    [Tooltip("Componente BossHandHitbox (configurado automaticamente ao arrastar o handCollider acima).")]
-    public BossHandHitbox handHitbox;
+    [Tooltip("Prefab de VFX de impacto explosivo no solo para o Salto Esmagador (Jump Attack).")]
+    public GameObject vfxJumpAttackPrefab;
+
+    [Header("Hitboxes & Trails das Mãos (Inspector)")]
+    [Tooltip("Componente BossHandHitbox da Mão Esquerda.")]
+    public BossHandHitbox leftHandHitbox;
+    [Tooltip("Componente BossHandHitbox da Mão Direita.")]
+    public BossHandHitbox rightHandHitbox;
+
+    [Header("🎯 Inclinação de Ataque no Chão (Opção 1 - Spine Tilt)")]
+    [Tooltip("Osso da coluna/peito (Spine/Chest) do seu Rig atual que será inclinado para baixo durante os ataques.")]
+    public Transform spineBone;
+    [Tooltip("Ângulo de inclinação em graus para baixo durante o golpe (Padrão: 25.0°).")]
+    public float attackTiltAngle = 25.0f;
+    [Tooltip("Velocidade de suavização do movimento de inclinação.")]
+    public float tiltSmoothSpeed = 12.0f;
+    private float currentTilt = 0f;
 
     [Header("Mímica do Golem (Stun do Céu)")]
     [Tooltip("Prefab do marcador de telegrafagem no chão (se nulo, usa indicador dinâmico).")]
@@ -148,6 +163,23 @@ public class BossController : MonoBehaviour
     // Ataque melee
     private float meleeTimer = 0f;
     private bool isAttacking = false;
+    [HideInInspector] public List<BossHandHitbox> allHandHitboxes = new List<BossHandHitbox>();
+
+    public void DesativarTodosOsTrails()
+    {
+        foreach (BossHandHitbox hb in allHandHitboxes)
+        {
+            if (hb != null) hb.DisableHitbox();
+        }
+    }
+
+    public void EnableMeleeHitboxBothHands(float duration, int attackDamage = 35, float pushForce = 15f)
+    {
+        foreach (BossHandHitbox hb in allHandHitboxes)
+        {
+            if (hb != null) hb.EnableHitbox(duration, attackDamage, pushForce);
+        }
+    }
 
     // Stun
     private BossState stateBeforeStun;
@@ -158,6 +190,78 @@ public class BossController : MonoBehaviour
 
     // Sangue ácido — timer iniciado positivo para nunca spawnar no primeiro frame
     private float toxicBloodTimer = 2f;
+
+    /// <summary>
+    /// Limpa e Sanitiza todos os Colisores do Boss:
+    ///  • Garante que APENAS o CapsuleCollider principal da raiz (raio 0.45m, altura 2.8m) seja sólido.
+    ///  • Converte TODOS os colisores nos objetos filhos (MeshColliders de FBX, Casulo, Hitboxes) para isTrigger = true!
+    ///  • Elimina a barreira invisível gigante que impedia o player de se aproximar.
+    /// </summary>
+    [ContextMenu("🧹 Purge & Fix Extra Boss Colliders")]
+    public void SanitizeBossColliders()
+    {
+        CapsuleCollider rootCapsule = GetComponent<CapsuleCollider>();
+        if (rootCapsule == null)
+        {
+            rootCapsule = gameObject.AddComponent<CapsuleCollider>();
+        }
+
+        rootCapsule.isTrigger = false;
+        rootCapsule.radius = 0.45f;
+        rootCapsule.height = 2.8f;
+        rootCapsule.center = new Vector3(0f, 1.4f, 0f);
+
+        // Varre e sanitiza todos os colisores nos filhos
+        Collider[] allChildColliders = GetComponentsInChildren<Collider>(true);
+        foreach (Collider col in allChildColliders)
+        {
+            if (col != rootCapsule)
+            {
+                if (col is MeshCollider mc)
+                {
+                    mc.convex = true;
+                }
+                col.isTrigger = true;
+            }
+        }
+        
+        DebugListAllColliders();
+    }
+
+    [ContextMenu("🔍 List All Boss Colliders")]
+    public void DebugListAllColliders()
+    {
+        Collider[] colliders = GetComponentsInChildren<Collider>(true);
+        Debug.Log($"<color=cyan>=== 🔍 DIAGNÓSTICO DE COLISORES DO BOSS ({colliders.Length} ENCONTRADOS) ===</color>");
+        
+        foreach (Collider col in colliders)
+        {
+            string path = GetGameObjectPath(col.gameObject);
+            bool isRoot = col.gameObject == gameObject;
+            string status = col.isTrigger ? "<color=green>[TRIGGER - OK]</color>" : "<color=red>⚠️ [SÓLIDO - PODE BLOQUEAR FISICAMENTE!]</color>";
+            
+            string info = "";
+            if (col is CapsuleCollider cc) info = $"CapsuleCollider (Raio: {cc.radius:F2}, Altura: {cc.height:F2})";
+            else if (col is SphereCollider sc) info = $"SphereCollider (Raio: {sc.radius:F2})";
+            else if (col is BoxCollider bc) info = $"BoxCollider (Tamanho: {bc.size})";
+            else if (col is MeshCollider mc) info = $"MeshCollider (Convex: {mc.convex})";
+            else info = col.GetType().Name;
+
+            Debug.Log($"👾 Objeto: <b>{col.gameObject.name}</b> | {status} | Tipo: {info} | Caminho: <i>{path}</i>");
+        }
+    }
+
+    private string GetGameObjectPath(GameObject obj)
+    {
+        string path = obj.name;
+        Transform curr = obj.transform.parent;
+        while (curr != null)
+        {
+            path = curr.name + "/" + path;
+            curr = curr.parent;
+        }
+        return path;
+    }
 
     // =====================================================
     // UNITY LIFECYCLE
@@ -176,6 +280,9 @@ public class BossController : MonoBehaviour
             rbBoss.constraints = RigidbodyConstraints.FreezeRotation;
         }
 
+        // Sanitiza colisores: Garante que APENAS o CapsuleCollider raiz (raio 0.45m) seja sólido
+        SanitizeBossColliders();
+
         // Auto-conecta o componente Animator presente no modelo filho (Orc Idle)
         if (animator == null)
             animator = GetComponentInChildren<Animator>(true);
@@ -183,6 +290,11 @@ public class BossController : MonoBehaviour
         if (animator != null)
         {
             animator.applyRootMotion = false; // Desativa Root Motion para evitar que animações elevem o Boss no ar
+
+            if (animator.GetComponent<BossAnimationEvents>() == null)
+            {
+                animator.gameObject.AddComponent<BossAnimationEvents>();
+            }
         }
 
 #if UNITY_EDITOR
@@ -218,42 +330,182 @@ public class BossController : MonoBehaviour
             }
         }
 
-        // Auto-detecta e configura a hitbox da mão a partir do handCollider (ex: HITBOX HAND)
-        if (handCollider != null && handHitbox == null)
+        // Auto-detecta o osso da coluna/peito (spineBone) do Rig atual
+        if (spineBone == null)
         {
-            handHitbox = handCollider.GetComponent<BossHandHitbox>();
-            if (handHitbox == null)
-                handHitbox = handCollider.gameObject.AddComponent<BossHandHitbox>();
-            handHitbox.handCollider = handCollider;
-        }
-
-        if (handHitbox == null)
-            handHitbox = GetComponentInChildren<BossHandHitbox>(true);
-
-        if (handHitbox == null)
-        {
-            Transform[] allTransforms = GetComponentsInChildren<Transform>(true);
-            foreach (Transform t in allTransforms)
+            Transform[] allBones = GetComponentsInChildren<Transform>(true);
+            foreach (Transform bone in allBones)
             {
-                string n = t.name.ToLower();
-                if (n.Contains("hand") || n.Contains("mão") || n.Contains("fist") || n.Contains("wrist") || n.Contains("arm"))
+                string n = bone.name.ToLower();
+                if (n.Contains("spine") || n.Contains("chest") || n.Contains("coluna") || n.Contains("tronco") || n.Contains("torso"))
                 {
-                    Collider col = t.GetComponent<Collider>();
-                    if (col != null)
-                    {
-                        handCollider = col;
-                        handHitbox = t.gameObject.AddComponent<BossHandHitbox>();
-                        handHitbox.handCollider = col;
-                        break;
-                    }
+                    spineBone = bone;
+                    break;
                 }
             }
         }
 
-        // 1. Garante que a Fase 2 (Refração / Invisibilidade) esteja sempre presente
+        // Auto-detecta e configura AS HITBOXES DE AMBAS AS MÃOS (Mão Esquerda e Mão Direita)
+        BossHandHitbox[] existingHitboxes = GetComponentsInChildren<BossHandHitbox>(true);
+        foreach (BossHandHitbox hb in existingHitboxes)
+        {
+            if (hb != null && !allHandHitboxes.Contains(hb))
+            {
+                allHandHitboxes.Add(hb);
+            }
+        }
+
+        Transform[] handTransforms = GetComponentsInChildren<Transform>(true);
+        foreach (Transform t in handTransforms)
+        {
+            string n = t.name.ToLower();
+            if (n.Contains("hand") || n.Contains("mão") || n.Contains("fist") || n.Contains("wrist") || n.Contains("arm"))
+            {
+                BossHandHitbox hb = t.GetComponent<BossHandHitbox>() ?? t.gameObject.AddComponent<BossHandHitbox>();
+                Collider col = t.GetComponent<Collider>();
+                if (col != null) hb.handCollider = col;
+
+                if (!allHandHitboxes.Contains(hb))
+                {
+                    allHandHitboxes.Add(hb);
+                }
+            }
+        }
+
+        foreach (BossHandHitbox hb in allHandHitboxes)
+        {
+            if (hb != null)
+            {
+                if (hb.handSide == HandSide.Left || hb.name.ToLower().Contains("left") || hb.name.ToLower().Contains("esquerda"))
+                {
+                    leftHandHitbox = hb;
+                }
+                else if (hb.handSide == HandSide.Right || hb.name.ToLower().Contains("right") || hb.name.ToLower().Contains("direita"))
+                {
+                    rightHandHitbox = hb;
+                }
+            }
+        }
+
+        if (leftHandHitbox == null && allHandHitboxes.Count > 0) leftHandHitbox = allHandHitboxes[0];
+        if (rightHandHitbox == null && allHandHitboxes.Count > 1) rightHandHitbox = allHandHitboxes[1];
+
         if (GetComponent<BossPhase2_Refraction>() == null)
         {
             gameObject.AddComponent<BossPhase2_Refraction>();
+        }
+
+        DesativarTodosOsTrails();
+    }
+
+    // =====================================================
+    // ANIMATION EVENTS (Separados por Mão Esquerda / Mão Direita / Ambas)
+    // =====================================================
+    public void AnimEvent_EnableRightHand()
+    {
+        if (rightHandHitbox != null) rightHandHitbox.OnAnimationEvent_EnableHitbox();
+    }
+
+    public void AnimEvent_DisableRightHand()
+    {
+        if (rightHandHitbox != null) rightHandHitbox.OnAnimationEvent_DisableHitbox();
+    }
+
+    public void AnimEvent_EnableLeftHand()
+    {
+        if (leftHandHitbox != null) leftHandHitbox.OnAnimationEvent_EnableHitbox();
+    }
+
+    public void AnimEvent_DisableLeftHand()
+    {
+        if (leftHandHitbox != null) leftHandHitbox.OnAnimationEvent_DisableHitbox();
+    }
+
+    public void AnimEvent_EnableBothHands()
+    {
+        if (leftHandHitbox != null) leftHandHitbox.OnAnimationEvent_EnableHitbox();
+        if (rightHandHitbox != null) rightHandHitbox.OnAnimationEvent_EnableHitbox();
+    }
+
+    public void AnimEvent_DisableBothHands()
+    {
+        DesativarTodosOsTrails();
+    }
+
+    public void AnimEvent_GroundImpact()
+    {
+        if (leftHandHitbox != null) leftHandHitbox.OnAnimationEvent_GroundImpact();
+        if (rightHandHitbox != null) rightHandHitbox.OnAnimationEvent_GroundImpact();
+    }
+
+    public void AnimEvent_StompImpact()
+    {
+        Vector3 pos = footSpawnPoint != null ? footSpawnPoint.position : transform.position;
+        pos.y = transform.position.y + 0.05f;
+
+        if (vfxStompPrefab != null)
+        {
+            Instantiate(vfxStompPrefab, pos, Quaternion.identity);
+        }
+        else
+        {
+            VFX_BossShockwave.CriarEfeitoOndaDeChoque(pos, 5.5f, new Color(0f, 0.95f, 1f, 0.95f), new Color(0.8f, 0.1f, 1f, 0f), 0.35f, 1.0f);
+        }
+
+        // Knockback equilibrado no Stomp (Empurrão: 8.0f, Elevação: 0.35f)
+        AplicarDanoEKnockbackEmArea(pos, 5.0f, 35, 8.0f, 0.35f);
+        TriggerCameraShake(0.38f, 0.25f);
+        Debug.Log("🦶 [BOSS STOMP] Pisada devastadora com choque no solo!");
+    }
+
+    public void AnimEvent_JumpImpact()
+    {
+        Vector3 pos = transform.position + transform.forward * 1.0f;
+        pos.y = transform.position.y + 0.05f;
+
+        if (vfxJumpAttackPrefab != null)
+        {
+            Instantiate(vfxJumpAttackPrefab, pos, Quaternion.identity);
+        }
+        else
+        {
+            VFX_BossShockwave.CriarEfeitoOndaDeChoque(pos, 7.0f, new Color(1f, 0.25f, 0.85f, 1.0f), new Color(0f, 0.9f, 1f, 0f), 0.45f, 1.5f);
+        }
+
+        // Knockback equilibrado no Jump Attack (Empurrão: 11.0f, Elevação: 0.45f)
+        AplicarDanoEKnockbackEmArea(pos, 7.0f, 45, 11.0f, 0.45f);
+        TriggerCameraShake(0.55f, 0.40f);
+        Debug.Log("💥 [BOSS JUMP ATTACK] Salto esmagador com choque no solo!");
+    }
+
+    private void AplicarDanoEKnockbackEmArea(Vector3 centro, float raio, int dano, float forcaEmpurrao, float proporcaoVertical = 1.0f)
+    {
+        Collider[] hits = Physics.OverlapSphere(centro, raio);
+        foreach (Collider col in hits)
+        {
+            if (col.CompareTag("Player"))
+            {
+                PlayerHealth ph = col.GetComponent<PlayerHealth>() ?? col.GetComponentInParent<PlayerHealth>();
+                if (ph != null) ph.TakeDamage(dano, gameObject);
+
+                Rigidbody rbPlayer = col.GetComponent<Rigidbody>() ?? col.GetComponentInParent<Rigidbody>();
+                if (rbPlayer != null && !rbPlayer.isKinematic)
+                {
+                    Vector3 dirHorizontal = (col.transform.position - centro);
+                    dirHorizontal.y = 0f;
+                    if (dirHorizontal == Vector3.zero) dirHorizontal = transform.forward;
+                    dirHorizontal = dirHorizontal.normalized;
+
+                    Vector3 dirFinal = (dirHorizontal + Vector3.up * proporcaoVertical).normalized;
+
+                    // Reseta qualquer velocidade de queda atual para garantir um lançamento vertical perfeito no ar
+                    Vector3 vel = rbPlayer.linearVelocity;
+                    vel.y = 0f;
+                    rbPlayer.linearVelocity = vel;
+
+                    rbPlayer.AddForce(dirFinal * forcaEmpurrao, ForceMode.Impulse);
+                }
+            }
         }
     }
 
@@ -266,6 +518,22 @@ public class BossController : MonoBehaviour
             if (Mathf.Abs(localPos.y) > 0.01f || Mathf.Abs(localPos.x) > 0.01f || Mathf.Abs(localPos.z) > 0.01f)
             {
                 animator.transform.localPosition = Vector3.zero;
+            }
+        }
+
+        // OPÇÃO 1: Inclinação suave da coluna (Spine Tilt) apontando os golpes para o chão durante os ataques
+        if (spineBone != null)
+        {
+            bool isMeleeActive = isAttacking || 
+                (leftHandHitbox != null && leftHandHitbox.enabled) || 
+                (rightHandHitbox != null && rightHandHitbox.enabled);
+
+            float targetTilt = isMeleeActive ? attackTiltAngle : 0f;
+            currentTilt = Mathf.Lerp(currentTilt, targetTilt, Time.deltaTime * tiltSmoothSpeed);
+
+            if (currentTilt > 0.1f)
+            {
+                spineBone.Rotate(Vector3.right * currentTilt, Space.Self);
             }
         }
     }
@@ -533,12 +801,14 @@ public class BossController : MonoBehaviour
     /// </summary>
     public void TriggerPowerUP(float invulnerabilityDuration = 2.5f)
     {
+        DesativarTodosOsTrails();
         FreezeMovementForSpell(invulnerabilityDuration);
         StartCoroutine(PowerUPInvulnerabilityRoutine(invulnerabilityDuration));
     }
 
     private IEnumerator PowerUPInvulnerabilityRoutine(float duration)
     {
+        DesativarTodosOsTrails();
         if (health != null) health.isInvulnerable = true;
 
         if (animator != null)
@@ -849,16 +1119,79 @@ public class BossController : MonoBehaviour
         BossEvents.RaiseBossFightStarted();
     }
 
+    [Header("🛡️ Poise & Posture Break System")]
+    [Tooltip("Limite máximo da barra de postura/poise do Boss.")]
+    public float maxPoise = 100f;
+
+    [Tooltip("Valor atual da postura/poise do Boss.")]
+    public float currentPoise = 100f;
+
+    [Tooltip("Taxa de regeneração de poise por segundo quando o player não ataca.")]
+    public float poiseRegenRate = 12f;
+
+    [Tooltip("Indica se o núcleo vulnerável está exposto (+50% dano crítico).")]
+    public bool isVulnerableCoreExposed { get; private set; } = false;
+
+    private float timeSinceLastDamage = 0f;
+    private bool isInvulnerableDuringTransition = false;
+
     /// <summary>
-    /// Aplica stun no boss. Pode ser chamado de qualquer lugar.
-    /// O boss para de se mover e fica vulnerável por [duration] segundos.
+    /// Aplica dano à barra de Poise/Postura do Boss.
+    /// Quando a postura quebra, o Boss entra em Stagger com núcleo vulnerável exposto.
+    /// </summary>
+    public void ApplyPoiseDamage(float poiseDamage)
+    {
+        if (CurrentState == BossState.Dead || isInvulnerableDuringTransition) return;
+
+        timeSinceLastDamage = Time.time;
+
+        // Se o núcleo vulnerável estiver exposto, recebe +50% de bônus de dano de postura
+        if (isVulnerableCoreExposed) poiseDamage *= 1.5f;
+
+        currentPoise -= poiseDamage;
+
+        if (currentPoise <= 0f && CurrentState != BossState.Stunned)
+        {
+            TriggerPoiseBreak();
+        }
+    }
+
+    /// <summary>
+    /// Executa a Quebra de Postura (Poise Break) com efeito de Slow-Mo (Time-Dilation) e estresse visual.
+    /// </summary>
+    public void TriggerPoiseBreak()
+    {
+        currentPoise = 0f;
+        isVulnerableCoreExposed = true;
+
+        // Dispara Time-Dilation (Slow-Mo de 0.15s a 25% de velocidade)
+        StartCoroutine(TimeDilationRoutine(0.15f, 0.25f));
+
+        // Tremor de Câmera Intenso de impacto
+        TriggerCameraShake(0.45f, 0.30f);
+
+        // Aplica Stagger de 4.0s com núcleo exposto para o player causar dano massivo
+        ApplyStun(4.0f);
+
+        Debug.Log("💥 [POISE BREAK] Postura do Boss QUEBRADA! Núcleo vulnerável exposto (+50% Dano Crítico)!");
+    }
+
+    private IEnumerator TimeDilationRoutine(float realTimeDuration, float targetTimeScale)
+    {
+        Time.timeScale = targetTimeScale;
+        yield return new WaitForSecondsRealtime(realTimeDuration);
+        Time.timeScale = 1.0f;
+    }
+
+    /// <summary>
+    /// Aplica Stun / Stagger ao Boss.
     /// </summary>
     public void ApplyStun(float duration)
     {
         if (CurrentState == BossState.Dead || CurrentState == BossState.Idle) return;
         if (CurrentState == BossState.Stunned) return; // Não empilha stun
 
-        float stunTime = 3.0f; // Duração padrão do stun (pode ser ajustada)
+        float stunTime = duration > 0f ? duration : 3.0f;
 
         if (stunCoroutine != null) StopCoroutine(stunCoroutine);
         stunCoroutine = StartCoroutine(StunRoutine(stunTime));
@@ -873,9 +1206,11 @@ public class BossController : MonoBehaviour
         if (IsInvisible == invisible) return;
         IsInvisible = invisible;
 
-        // Ao sair da invisibilidade, reseta o timer e posicao do drip
-        // para que o sangue nao apareca imediatamente na proxima ativacao
-        if (!invisible)
+        if (invisible)
+        {
+            BossTacticalEptinhoUI.TriggerTacticalNotice(BossTacticalEptinhoUI.CalloutType.Phase2RefractionInvisibility);
+        }
+        else
         {
             toxicBloodTimer = 1.2f;
             lastDripPosition = Vector3.zero;
@@ -896,9 +1231,11 @@ public class BossController : MonoBehaviour
         int previousHP = lastCheckedHP;
         lastCheckedHP = health.CurrentHealth;
 
-        // Dispara evento de dano se o HP diminuiu
+        // Dispara evento de dano e reduz a barra de Poise/Postura do Boss
         if (health.CurrentHealth < previousHP)
         {
+            int damageTaken = previousHP - health.CurrentHealth;
+            ApplyPoiseDamage(damageTaken * 0.85f);
             OnTookDamage?.Invoke(); 
         }
 
@@ -949,6 +1286,9 @@ public class BossController : MonoBehaviour
     {
         if (showDebugLog) Debug.Log($"[BossController] 🔄 FASE {CurrentPhase} → FASE {newPhase} (HP: {HealthPercent:P0})");
 
+        // Aplica invulnerabilidade limpa de transição por 1.2s sem cancelar hitboxes do player
+        StartCoroutine(PhaseTransitionInvulnerabilityRoutine(1.2f));
+
         // Sai do stun se estiver stunado durante transição
         if (CurrentState == BossState.Stunned && stunCoroutine != null)
         {
@@ -983,6 +1323,17 @@ public class BossController : MonoBehaviour
 
         // Notifica todos os sistemas
         BossEvents.RaisePhaseChanged(newPhase);
+    }
+
+    private IEnumerator PhaseTransitionInvulnerabilityRoutine(float duration)
+    {
+        isInvulnerableDuringTransition = true;
+        if (health != null) health.isInvulnerable = true;
+
+        yield return new WaitForSeconds(duration);
+
+        if (health != null) health.isInvulnerable = false;
+        isInvulnerableDuringTransition = false;
     }
 
     private IEnumerator CocoonShatterLightPulseRoutine()
@@ -1021,7 +1372,7 @@ public class BossController : MonoBehaviour
 
     private void HandleCombatUpdate()
     {
-        if (isAttacking) return;
+        if (!CanInitiateAction) return;
 
         // Se o player não existir, cancela a perseguição de combate
         if (playerTransform == null) return;
@@ -1051,11 +1402,12 @@ public class BossController : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.speed = speed;
+            agent.radius = 0.45f;
             agent.isStopped = false;
             agent.SetDestination(playerTransform.position);
 
-            // Ajusta a distância de parada para colar no player no ataque
-            agent.stoppingDistance = meleeRange * 0.8f;
+            // Ajusta a distância de parada para COLAR no player (1.2m ao invés de 5.2m)
+            agent.stoppingDistance = 1.2f;
             return;
         }
 
@@ -1064,7 +1416,7 @@ public class BossController : MonoBehaviour
         Vector3 target = playerTransform.position;
         target.y = transform.position.y;
 
-        float meleeStopRange = meleeRange * 0.8f;
+        float meleeStopRange = 1.2f;
         if (distToPlayer > meleeStopRange)
         {
             transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
@@ -1075,6 +1427,13 @@ public class BossController : MonoBehaviour
         }
     }
     // --------------------
+
+    [Header("🏃 Steering & Locomotion Easing")]
+    [Tooltip("Velocidade de rotação suave em graus por segundo (Slerp Easing).")]
+    public float turnSmoothSpeed = 8.5f;
+
+    [Tooltip("Tempo de antecedência (em segundos) em que o Boss TRAVA o rastreamento antes do ataque (Tracking Cutoff).")]
+    public float trackingCutoffWindow = 0.40f;
 
     private void HandleRotation()
     {
@@ -1087,12 +1446,61 @@ public class BossController : MonoBehaviour
         {
             float rotSpeed = phaseConfig != null ? phaseConfig.rotationSpeed : 120f;
             Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotSpeed * Time.deltaTime);
+            
+            // Slerp Easing: Rotação suave que desacelera organicamente ao se aproximar da direção do player
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * turnSmoothSpeed);
         }
     }
 
+    [Header("🎮 Game Feel & Combat Responsiveness")]
+    [Tooltip("Duração do micro-freeze de impacto (Hitstop) ao acertar golpes pesados.")]
+    public float defaultHitstopDuration = 0.06f;
+
+    private Coroutine hitstopCoroutine;
+    private bool isRecovering = false;
+
+    /// <summary>
+    /// Dispara o efeito de Hitstop (Micro-Freeze / Frame Freeze) na animação para dar peso ao impacto.
+    /// </summary>
+    public void TriggerHitstop(float duration = 0.06f)
+    {
+        if (hitstopCoroutine != null) StopCoroutine(hitstopCoroutine);
+        hitstopCoroutine = StartCoroutine(HitstopRoutine(duration));
+    }
+
+    private IEnumerator HitstopRoutine(float duration)
+    {
+        if (animator != null) animator.speed = 0.0f;
+        yield return new WaitForSecondsRealtime(duration);
+        if (animator != null) animator.speed = 1.0f;
+        hitstopCoroutine = null;
+    }
+
+    private void HandleRotationSmooth(float slerpSpeed = 10f)
+    {
+        if (playerTransform == null) return;
+
+        Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
+        directionToPlayer.y = 0;
+
+        if (directionToPlayer != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * slerpSpeed);
+        }
+    }
+
+    [HideInInspector] public bool isCastingSpell = false;
+
+    /// <summary>
+    /// Trava de Fluxo de Animação: Garante que o Boss NUNCA sobreponha ataques, magias ou staggers!
+    /// </summary>
+    public bool CanInitiateAction => !isAttacking && !isCastingSpell && !isRecovering && CurrentState != BossState.Stunned && CurrentState != BossState.Dead;
+
     private IEnumerator PerformMeleeAttack()
     {
+        if (!CanInitiateAction) yield break;
+
         isAttacking = true;
         float baseCooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
         float cooldown = IsInvisible ? (baseCooldown * 0.6f) : baseCooldown;
@@ -1110,74 +1518,68 @@ public class BossController : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
 
-        Vector3 blastPos = transform.position + transform.forward * 1.5f;
-
+        string selectedTrigger = "bossSwipe";
         if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
         {
-            string selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
+            selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
             
-            // Mapeia o nome do gatilho (ex: bossSwipe) para o nome exato do Estado no Animator (ex: BossSwipe)
             string stateName = selectedTrigger;
             if (selectedTrigger == "bossSwipe") stateName = "BossSwipe";
             if (selectedTrigger == "bossPunch") stateName = "BossPunch";
-            if (selectedTrigger == "Spell") stateName = "Spell";
 
             animator.ResetTrigger("bossSwipe");
             animator.ResetTrigger("bossPunch");
-            animator.ResetTrigger("Spell");
+            animator.ResetTrigger("bossJumpAttack");
+            animator.ResetTrigger("bossStomp");
 
             animator.SetTrigger(selectedTrigger);
             animator.Play(stateName, 0, 0f);
         }
 
-        float windUp = IsInvisible ? 0.10f : 0.15f;
-        
+        // === 1. ANTICIPATION & TRACKING CUTOFF (Telegrafagem com janela justa de Esquiva estilo Hades) ===
+        float windUp = IsInvisible ? 0.20f : 0.55f;
+        float trackingCutoffTime = Mathf.Max(0.08f, windUp - trackingCutoffWindow);
         float elapsedWindUp = 0f;
+
         while (elapsedWindUp < windUp)
         {
             elapsedWindUp += Time.deltaTime;
-            HandleRotation();
+            
+            // Rastreia o player suavemente até atingir a janela de corte (Cutoff). Nos últimos 0.40s, o Boss trava a direção!
+            if (elapsedWindUp <= trackingCutoffTime)
+            {
+                HandleRotationSmooth(turnSmoothSpeed * 1.4f);
+            }
             yield return null;
         }
 
-        // Ativa a Hitbox física da mão do Boss (ou fallback automático frontal se o componente não for arrastado)
+        // === 2. MOMENTO DO IMPACTO & HITSTOP ===
         int dmg = phaseConfig != null ? phaseConfig.baseMeleeDamage : 35;
-        if (handHitbox != null)
-        {
-            handHitbox.EnableHitbox(0.5f, dmg, 16f);
-        }
-        else
-        {
-            // Fallback automático de Hitbox da Mão no raio do soco/swipe
-            Vector3 handHitPos = transform.position + transform.forward * 2.2f + Vector3.up * 1.2f;
-            Collider[] hits = Physics.OverlapSphere(handHitPos, 2.5f);
-            foreach (Collider h in hits)
-            {
-                if (h.CompareTag("Player"))
-                {
-                    PlayerHealth ph = h.GetComponent<PlayerHealth>();
-                    if (ph != null) ph.TakeDamage(dmg, gameObject);
+        EnableMeleeHitboxBothHands(0.45f, dmg, 16f);
 
-                    Rigidbody pRb = h.GetComponent<Rigidbody>();
-                    if (pRb != null && !pRb.isKinematic)
-                    {
-                        Vector3 push = (h.transform.position - transform.position).normalized;
-                        push.y = 0.2f;
-                        pRb.AddForce(push * 16f, ForceMode.Impulse);
-                    }
-                }
-            }
-        }
-
-        // Dispara a Onda de Choque Exclusiva do Boss (AoE Knockback de 7.5 metros)
-        blastPos = transform.position + transform.forward * 1.5f;
+        Vector3 blastPos = transform.position + transform.forward * 1.5f;
         BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
-        TriggerCameraShake(0.2f, 0.10f);
+        TriggerCameraShake(0.25f, 0.15f);
 
-        // Recovery rápido e fluido
-        yield return new WaitForSeconds(0.20f);
+        // Aplica o Hitstop (Micro-freeze de 0.06s no momento exato do impacto)
+        TriggerHitstop(defaultHitstopDuration);
 
-        // Se estava refratando, volta para o estado invisível para continuar fugindo
+        // === 3. RECOVERY FRAMES (Janela de Punição para o Player) ===
+        bool isHeavyAttack = (selectedTrigger == "bossJumpAttack" || selectedTrigger == "bossStomp");
+        float recoveryWindow = isHeavyAttack ? 1.4f : 0.85f;
+
+        isRecovering = true;
+        float recoveryElapsed = 0f;
+
+        while (recoveryElapsed < recoveryWindow)
+        {
+            recoveryElapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        isRecovering = false;
+
+        // Restaura a invisibilidade se estiver na Fase 2
         if (refractionComp != null && IsInvisible)
         {
             refractionComp.SetTemporaryVisibility(false);
@@ -1225,7 +1627,7 @@ public class BossController : MonoBehaviour
         stateBeforeStun = CurrentState;
         CurrentState = BossState.Stunned;
 
-        if (showDebugLog) Debug.Log($"[BossController] ⚡ STUNNED por {duration}s!");
+        if (showDebugLog) Debug.Log($"[BossController] ⚡ STUNNED / STAGGERED por {duration}s!");
 
         // Para completamente
         if (agent != null && agent.enabled && agent.isOnNavMesh)
@@ -1236,7 +1638,10 @@ public class BossController : MonoBehaviour
 
         yield return new WaitForSeconds(duration);
 
-        // Recupera
+        // Recupera da quebra de postura / stagger (Núcleo vulnerável fecha e Poise restaura)
+        isVulnerableCoreExposed = false;
+        currentPoise = maxPoise;
+
         if (CurrentState == BossState.Stunned) // Garante que não mudou durante o stun
         {
             CurrentState = stateBeforeStun;
@@ -1244,7 +1649,7 @@ public class BossController : MonoBehaviour
             if (agent != null && agent.enabled && agent.isOnNavMesh)
                 agent.isStopped = false;
 
-            if (showDebugLog) Debug.Log($"[BossController] 🔄 Stun acabou. Voltando para {CurrentState}.");
+            if (showDebugLog) Debug.Log($"[BossController] 🔄 Stun/Stagger acabou. Postura recuperada. Voltando para {CurrentState}.");
         }
 
         stunCoroutine = null;

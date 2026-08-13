@@ -83,7 +83,7 @@ public class DeathScreenUI : MonoBehaviour
                 $"<color=#ff4455><b>INIMIGOS DERROTADOS:</b></color>  <color=#ffffff>{s.totalMobsKilled}</color>\n\n" +
                 $"<color=#00ff99><b>ESSÊNCIAS COLETADAS:</b></color>  <color=#ffffff>{s.totalEssenceCollected}</color>\n\n" +
                 $"<color=#ffcc00><b>ESSÊNCIAS GASTAS:</b></color>  <color=#ffffff>{s.totalEssenceSpent}</color>\n\n" +
-                $"<color=#ff6666><b>DANO RECEBIDO:</b></color>  <color=#ffffff>{dmgTakenStr}</color>\n\n" +
+                $"<color=#ff6666><b>DANO TOTAL RECEBIDO (RUN):</b></color>  <color=#ffffff>{dmgTakenStr}</color>\n\n" +
                 $"<color=#cc88ff><b>LOCAL DA MORTE:</b></color>  <color=#ffffff>{s.deathStage}</color>";
         }
 

@@ -36,7 +36,12 @@ public class PlayerHealth : MonoBehaviour
     public TextMeshProUGUI armorText;
     public TextMeshProUGUI percentageText; // O texto de %
 
-    [Header("Pactos")]
+    /// <summary>
+    /// Evento estático desacoplado disparado quando o jogador recebe dano.
+    /// Parâmetros: (int danoRecebido, GameObject atacante)
+    /// </summary>
+    public static event System.Action<int, GameObject> OnPlayerDamaged;
+
     public bool hasPactCorrupted = false;
     public Color darkPactHealthColor = new Color(0.38f, 0.04f, 0.08f, 1.0f); // Sangue Escuro Obscuro (#610a14)
     private Color originalHealthFillColor = Color.white;
@@ -643,12 +648,19 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    private float lastDamageTime = -999f;
+    public float damageIFrameCooldown = 0.25f; // Proteção contra empilhamento de multi-hits no mesmo frame
+
     /// <summary>
     /// Aplica dano ao jogador com todos os atributos defensivos.
     /// </summary>
     public void TakeDamage(int damage, GameObject attacker = null)
     {
         if (isDead || isInvulnerable) return;
+
+        // Proteção Anti-Multi-Hit: Impede que múltiplos colisores no mesmo milissegundo zerem a vida do player instantaneamente!
+        if (Time.time - lastDamageTime < damageIFrameCooldown) return;
+        lastDamageTime = Time.time;
 
         // Dispara modelo ficando levemente vermelho
         TriggerPlayerRedFlash();
@@ -682,12 +694,15 @@ public class PlayerHealth : MonoBehaviour
             Debug.Log($"🛡️ DAMAGE NEGATION! Dano: {damageBeforeNegation} → {finalDamage} (-{playerAttributes.damageNegation}%)");
         }
         
+        int totalDamageTakenThisHit = 0;
+
         // Aplicar dano em armor primeiro, depois health
         if (currentArmor > 0)
         {
             int damageToArmor = Mathf.Min(finalDamage, currentArmor);
             currentArmor -= damageToArmor;
             finalDamage -= damageToArmor;
+            totalDamageTakenThisHit += damageToArmor;
             UpdateArmorBar();
         }
         
@@ -726,6 +741,7 @@ public class PlayerHealth : MonoBehaviour
             if (finalDamage > 0)
             {
                 currentHealth -= finalDamage;
+                totalDamageTakenThisHit += finalDamage;
                 RunStatsManager.Instance?.RecordDamageTaken(finalDamage);
                 UpdateHealthBar();
                 
@@ -735,6 +751,17 @@ public class PlayerHealth : MonoBehaviour
                 {
                     Die();
                 }
+            }
+        }
+
+        // Dispara o evento desacoplado de dano e o indicador de dano recebido na tela via Eptinho Popup
+        if (totalDamageTakenThisHit > 0)
+        {
+            OnPlayerDamaged?.Invoke(totalDamageTakenThisHit, attacker);
+
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso($"💥 Você recebeu -{totalDamageTakenThisHit} de Dano!");
             }
         }
         
