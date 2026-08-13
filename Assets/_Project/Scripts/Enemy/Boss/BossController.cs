@@ -898,6 +898,11 @@ public class BossController : MonoBehaviour
         if (health.CurrentHealth < previousHP)
         {
             OnTookDamage?.Invoke();
+            if (showDebugLog)
+            {
+                int p3HP = phaseConfig != null ? Mathf.RoundToInt(phaseConfig.phase3Threshold * health.maxHealth) : -1;
+                Debug.Log($"[BossController] HP: {health.CurrentHealth}/{health.maxHealth} ({(float)health.CurrentHealth/health.maxHealth:P0}) | Fase: {CurrentPhase} | Threshold Fase3: {p3HP}");
+            }
         }
 
         if (phaseConfig != null)

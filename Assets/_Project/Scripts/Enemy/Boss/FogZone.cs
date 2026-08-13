@@ -44,7 +44,7 @@ public class FogZone : MonoBehaviour
     public GameObject fogVisual;
 
     [Header("Debug")]
-    public bool showDebugLog = false;
+    public bool showDebugLog = true;
 
     // =====================================================
     // ESTADO INTERNO

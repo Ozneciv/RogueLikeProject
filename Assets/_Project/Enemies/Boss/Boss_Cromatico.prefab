@@ -264,12 +264,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 292c5e3549394fc48ac38cd94cc35c83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossPhase3AcidPuddles
-  acidPuddlePrefab: {fileID: 0}
+  acidPuddlePrefab: {fileID: 7445730668720387329, guid: ae0c23bf7354a5f45b55b132be0db1ac, type: 3}
   bossController: {fileID: 4966253884742131004}
   spawnIntervalMin: 3
   spawnIntervalMax: 6
-  slamCooldownBase: 8
-  slamTelegraphDuration: 1.2
   maxSimultaneousPuddles: 6
   showDebugLog: 1
 --- !u!136 &1185927364958233710

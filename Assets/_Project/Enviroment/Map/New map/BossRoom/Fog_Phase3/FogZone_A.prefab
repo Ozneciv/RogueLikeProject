@@ -90,7 +90,7 @@ MonoBehaviour:
   fogZonePrefab: {fileID: 1990121923201277064}
   spawnCount: 3
   arenaCenter: {fileID: 0}
-  arenaRadius: 8
+  arenaRadius: 40
   minDistanceBetween: 3
   activateOnPhase: 3
   showDebugLog: 1

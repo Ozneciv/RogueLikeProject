@@ -25,7 +25,7 @@ public class FogZoneSpawner : MonoBehaviour
     public Transform arenaCenter;
 
     [Tooltip("Raio da area de spawn dentro da arena.")]
-    public float arenaRadius = 8f;
+    public float arenaRadius = 20f;
 
     [Tooltip("Distancia minima entre duas FogZones spawnadas.")]
     public float minDistanceBetween = 3f;
@@ -42,6 +42,11 @@ public class FogZoneSpawner : MonoBehaviour
     private readonly List<GameObject> spawnedZones = new List<GameObject>();
 
     // ── Eventos ──────────────────────────────────────────────────────────────
+    void Awake()
+    {
+        Debug.Log($"[FogZoneSpawner] Awake - activateOnPhase={activateOnPhase} | prefab={fogZonePrefab} | center={arenaCenter}");
+    }
+
     void OnEnable()
     {
         BossEvents.OnPhaseChanged     += OnPhaseChanged;
@@ -94,10 +99,12 @@ public class FogZoneSpawner : MonoBehaviour
 
         List<Vector3> usedPositions = new List<Vector3>();
         int spawned = 0;
+        // Rotação aleatória no anel de setores a cada run para não repetir padrão
+        float angleOffset = Random.Range(0f, 360f);
 
         for (int i = 0; i < spawnCount; i++)
         {
-            Vector3 pos = TryGetRandomPosition(usedPositions);
+            Vector3 pos = TryGetRandomPosition(usedPositions, i, angleOffset);
             if (pos == Vector3.negativeInfinity)
             {
                 Debug.LogWarning("[FogZoneSpawner] Não conseguiu encontrar posição válida para FogZone " + i);
@@ -113,18 +120,29 @@ public class FogZoneSpawner : MonoBehaviour
         }
 
         if (showDebugLog)
-            Debug.Log($"[FogZoneSpawner] {spawned} FogZones spawnadas na Fase {activateOnPhase}.");
+        {
+            Debug.Log($"[FogZoneSpawner] {spawned} FogZones spawnadas na Fase {activateOnPhase}. Centro: {arenaCenter?.position} | Raio: {arenaRadius}");
+            foreach (GameObject z in spawnedZones)
+                if (z != null) Debug.Log($"[FogZoneSpawner] -> {z.name} em {z.transform.position}");
+        }
     }
 
-    private Vector3 TryGetRandomPosition(List<Vector3> existing)
+    // Divide a arena em setores angulares iguais para evitar clustering
+    private Vector3 TryGetRandomPosition(List<Vector3> existing, int sectorIndex, float angleOffset)
     {
-        const int maxAttempts = 40;
+        const int maxAttempts = 20;
+        Vector3 center = arenaCenter != null ? arenaCenter.position : Vector3.zero;
+
+        float sectorSize = 360f / spawnCount;
+        float angleMin   = angleOffset + sectorIndex * sectorSize;
+        float angleMax   = angleMin + sectorSize;
 
         for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            Vector2 rand = Random.insideUnitCircle * arenaRadius;
-            Vector3 center = arenaCenter != null ? arenaCenter.position : Vector3.zero;
-            Vector3 candidate = center + new Vector3(rand.x, 0f, rand.y);
+            float angle     = Random.Range(angleMin, angleMax) * Mathf.Deg2Rad;
+            // mínimo de 60% do raio para evitar spawn perto do centro
+            float radius    = Random.Range(arenaRadius * 0.6f, arenaRadius * 0.95f);
+            Vector3 candidate = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
 
             bool tooClose = false;
             foreach (Vector3 p in existing)
