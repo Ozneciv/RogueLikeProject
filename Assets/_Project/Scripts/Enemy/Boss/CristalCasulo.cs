@@ -56,7 +56,7 @@ public class CristalCasulo : MonoBehaviour
     
     private MeshFilter meuMeshFilter; 
     private MeshCollider meuMeshCollider;
-    private CapsuleCollider meuCapsuleCollider;
+    private Collider meuColisorPrincipal;
 
     private int indiceAtual = -1;
     private int vidaAnterior;
@@ -247,7 +247,7 @@ public class CristalCasulo : MonoBehaviour
         Collider existingCol = GetComponent<Collider>();
         if (existingCol != null)
         {
-            meuCapsuleCollider = existingCol;
+            meuColisorPrincipal = existingCol;
             Debug.Log($"[CristalCasulo] 🛡️ Preservado colisor original do prefab Teste_casulo: {existingCol.GetType().Name}");
             return;
         }
@@ -258,7 +258,7 @@ public class CristalCasulo : MonoBehaviour
         rootCapsule.height = 3.5f;
         rootCapsule.center = new Vector3(0f, 1.75f, 0f);
         rootCapsule.isTrigger = false;
-        meuCapsuleCollider = rootCapsule;
+        meuColisorPrincipal = rootCapsule;
     }
 
     public void Setup(DummyHealth healthDoBoss)
