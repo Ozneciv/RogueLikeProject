@@ -51,8 +51,8 @@ Material:
     - _scroll_speed: 0.1
     - _texture_scroll_opacity: 0.1
     m_Colors:
-    - _base_color: {r: 2.670157, g: 0, b: 0.4401569, a: 1}
-    - _fresnel_color: {r: 0.90943396, g: 0.14242072, b: 0.48716068, a: 1}
+    - _base_color: {r: 0.023584902, g: 0.31776997, b: 1, a: 1}
+    - _fresnel_color: {r: 0.6226415, g: 0.5119393, b: 0.3729975, a: 1}
     - _texture_tiling: {r: 2, g: 2, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

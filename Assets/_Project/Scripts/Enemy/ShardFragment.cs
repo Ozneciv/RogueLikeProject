@@ -74,8 +74,9 @@ public class ShardFragment : MonoBehaviour
     // Para compatibilidade com o sistema de dano existente (WeaponHitbox)
     void OnTriggerEnter(Collider other)
     {
-        // Se for atingido por hitbox de arma do player
-        if (other.CompareTag("PlayerWeapon") || other.gameObject.layer == LayerMask.NameToLayer("PlayerAttack"))
+        // Se for atingido por hitbox de arma do player (checa layer ou nome com segurança sem estourar exceção de tag inexistente)
+        int playerAttackLayer = LayerMask.NameToLayer("PlayerAttack");
+        if ((playerAttackLayer != -1 && other.gameObject.layer == playerAttackLayer) || other.name.Contains("Weapon") || other.name.Contains("Attack"))
         {
             // O dano será registrado pelo WeaponHitbox através do DummyHealth
             // Este trigger é apenas backup
