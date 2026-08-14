@@ -723,7 +723,7 @@ Transform:
   m_GameObject: {fileID: 447919897}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 1.27}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -957,7 +957,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6284554266325809849, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1234251460}
   m_SourcePrefab: {fileID: 100100000, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
 --- !u!1001 &720140867
 PrefabInstance:
@@ -1038,7 +1041,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
   m_PrefabInstance: {fileID: 670016264}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1234251454}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d885b6f971474394b86e9c0df6231369, type: 3}
@@ -1446,6 +1449,31 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8172568531489577954, guid: 9e5721d39f16106429f8a8c3ac74fab0, type: 3}
   m_PrefabInstance: {fileID: 1461961181571249074}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1234251454 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6284554266325809849, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+  m_PrefabInstance: {fileID: 670016264}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1234251460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1234251454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55d5bf26756cae847a610bb1c2ae7bf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ultimate_Dagger
+  bladeWaveVFX: {fileID: 3020920808754819069, guid: 9e1749955dc6c7042aa459a890276a34, type: 3}
+  groundYOffset: 0
+  spawnForwardOffset: 1
+  waveDamage: 500
+  waveSpeed: 8
+  waveMaxDistance: 10
+  hitboxHalfExtents: {x: 1.5, y: 1, z: 0.5}
+  knockbackForce: 5
 --- !u!114 &1331199985 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2622090170748288850, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
@@ -1731,7 +1759,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1050884993333835841, guid: 744d65fa64009c34da6871835ddff748, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: 0.26
       objectReference: {fileID: 0}
     - target: {fileID: 1050884993333835841, guid: 744d65fa64009c34da6871835ddff748, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
