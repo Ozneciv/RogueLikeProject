@@ -1887,7 +1887,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
   maxArmor: 300
-  armorRegenRate: 1
+  armorRegenRate: 50
   isInvulnerable: 0
   playerMovement: {fileID: 0}
   playerAttack: {fileID: 399265535294509767}
@@ -1913,6 +1913,7 @@ MonoBehaviour:
   enemiesBuffed: 0
   canRegenArmor: 1
   damageLightObj: {fileID: 0}
+  damageIFrameCooldown: 0.25
 --- !u!114 &2877796600527432851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2301,7 +2302,7 @@ MonoBehaviour:
   upwardKnockbackForce: 0.4
   useAnimationEventForImpact: 1
   unlockPlayerOnImpact: 0
-  customShockwaveSprite: {fileID: -535416314, guid: e2f3928190c1f5a4a90fa763c8a14b52, type: 3}
+  customShockwaveSprite: {fileID: -535416314, guid: c5c05f2ab9320c2448e675faed50e290, type: 3}
   spriteHeightOffset: -0.95
   spriteMaxScale: 2
   spriteFormDuration: 0.15
@@ -2314,7 +2315,7 @@ MonoBehaviour:
   enable3DShockwaveRingOverlay: 1
   shockwaveRingDuration: 1
   shockwaveRingScaleMultiplier: 50
-  shockwaveRingMaxOpacity: 0.15
+  shockwaveRingMaxOpacity: 0.05
   shockwaveRingExpansionCurve:
     serializedVersion: 2
     m_Curve:
@@ -2355,14 +2356,14 @@ MonoBehaviour:
       time: 0
       value: 1
       inSlope: 0
-      outSlope: -0.8
+      outSlope: 0
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.5
-      value: 0.5
+      time: 0.4091797
+      value: 0.338089
       inSlope: -1.2
       outSlope: -1.2
       tangentMode: 0
@@ -2373,7 +2374,7 @@ MonoBehaviour:
       time: 1
       value: 0
       inSlope: -0.4
-      outSlope: 0
+      outSlope: -0.4
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -4293,6 +4294,7 @@ MonoBehaviour:
   swordComboResetTime: 1.2
   axeComboResetTime: 1.2
   comboResetTime: 1.2
+  enableLunge: 0
   daggerHitDelay: 0.15
   daggerHitDuration: 0.2
   axeHitDelay: 1

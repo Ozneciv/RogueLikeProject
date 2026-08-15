@@ -74,11 +74,26 @@ public class BossController : MonoBehaviour
     public string[] spellAttackTriggers = new string[] { "bossSpell", "SimpleCast", "BossSpellWide", "PowerUp" };
 
     [Header("VFX de Impacto em Área (Stomp & Jump Attack)")]
+    [Tooltip("Objeto de VFX de Pisada (Stomp) pré-posicionado como filho no Prefab do Boss.")]
+    public GameObject stompVFXChildObject;
+
     [Tooltip("Prefab de VFX de onda de choque no solo para a Pisada (Stomp).")]
     public GameObject vfxStompPrefab;
 
+    [Tooltip("Escala multiplicadora do VFX de Pisada (Padrão: 2.5 para uma pisada gigante e imponente).")]
+    public float stompVFXScale = 2.5f;
+
+    [Tooltip("Distância à frente do Boss onde o pé/onda de choque atinge o solo (Padrão: 0.8 metros).")]
+    public float stompForwardOffset = 0.8f;
+
+    [Tooltip("Objeto de VFX de Salto (Jump) pré-posicionado como filho no Prefab do Boss.")]
+    public GameObject jumpAttackVFXChildObject;
+
     [Tooltip("Prefab de VFX de impacto explosivo no solo para o Salto Esmagador (Jump Attack).")]
     public GameObject vfxJumpAttackPrefab;
+
+    [Tooltip("Escala multiplicadora do VFX de Salto Esmagador.")]
+    public float jumpAttackVFXScale = 2.5f;
 
     [Header("Hitboxes & Trails das Mãos (Inspector)")]
     [Tooltip("Componente BossHandHitbox da Mão Esquerda.")]
@@ -307,12 +322,18 @@ public class BossController : MonoBehaviour
         {
             toxicBloodPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Boss/ToxicBlood.prefab");
         }
+
+        if (bossHealthBarPrefab == null)
+        {
+            bossHealthBarPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Boss/Canvas-Boss.prefab");
+        }
 #endif
 
-        if (toxicBloodPrefab == null)
+        if (bossHealthBarPrefab == null)
         {
-            toxicBloodPrefab = Resources.Load<GameObject>("ToxicBlood") 
-                            ?? Resources.Load<GameObject>("Enemies/Boss/ToxicBlood");
+            bossHealthBarPrefab = Resources.Load<GameObject>("BossHealthBar_Canvas")
+                            ?? Resources.Load<GameObject>("Canvas-Boss")
+                            ?? Resources.Load<GameObject>("UI/BossHealthBar_Canvas");
         }
 
         // Auto-detecta o osso/transform do pé (footSpawnPoint) criado pelo Matheus
@@ -440,22 +461,92 @@ public class BossController : MonoBehaviour
 
     public void AnimEvent_StompImpact()
     {
-        Vector3 pos = footSpawnPoint != null ? footSpawnPoint.position : transform.position;
-        pos.y = transform.position.y + 0.05f;
-
-        if (vfxStompPrefab != null)
+        // Posição de contato no solo
+        Vector3 pos = transform.position;
+        if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit groundHit, 6.0f))
         {
-            Instantiate(vfxStompPrefab, pos, Quaternion.identity);
+            pos = groundHit.point + Vector3.up * 0.05f;
+        }
+
+        // 1. Busca AUTOMATICAMENTE o objeto de VFX que é exclusivamente o Stomp (Pisada)
+        if (stompVFXChildObject == null || stompVFXChildObject == jumpAttackVFXChildObject || stompVFXChildObject.name.ToLower().Contains("centro"))
+        {
+            Transform found = transform.Find("Stomp") ?? transform.Find("VFX_Stomp") ?? transform.Find("Pisada") ?? transform.Find("StompVFX");
+            if (found == null)
+            {
+                foreach (Transform child in GetComponentsInChildren<Transform>(true))
+                {
+                    string n = child.name.ToLower();
+                    if ((n.Contains("stomp") || n.Contains("pisada")) && !n.Contains("centro") && !n.Contains("jump"))
+                    {
+                        found = child;
+                        break;
+                    }
+                }
+            }
+            if (found != null) stompVFXChildObject = found.gameObject;
+        }
+
+        // Garante que o VFX de salto seja desativado para evitar sobreposição
+        if (jumpAttackVFXChildObject != null) jumpAttackVFXChildObject.SetActive(false);
+
+        // 2. ATIVAÇÃO PURA DO OBJETO FILHO (Zero clones, zero alterações de rotação/escala!)
+        if (stompVFXChildObject != null)
+        {
+            stompVFXChildObject.SetActive(false);
+            stompVFXChildObject.SetActive(true);
+
+            ParticleSystem[] psList = stompVFXChildObject.GetComponentsInChildren<ParticleSystem>(true);
+            if (psList != null && psList.Length > 0)
+            {
+                foreach (var ps in psList)
+                {
+                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    ps.time = 0f;
+                    ps.Play(true);
+                }
+            }
+
+            // Dano progressivo em cone através do próprio VFX
+            BossStompConeHitbox coneHitbox = stompVFXChildObject.GetComponent<BossStompConeHitbox>() ?? stompVFXChildObject.GetComponentInChildren<BossStompConeHitbox>();
+            if (coneHitbox == null) coneHitbox = stompVFXChildObject.AddComponent<BossStompConeHitbox>();
+            coneHitbox.StartWave(gameObject);
+
+            Debug.Log($"🦶 [BOSS STOMP] ✅ Ativou VFX FILHO DO PREFAB: '{stompVFXChildObject.name}' (Sem criar nenhum clone e com escala 100% nativa)!");
+        }
+        // 3. Fallback apenas se não existir nenhum objeto no prefab
+        else if (vfxStompPrefab != null)
+        {
+            GameObject spawnedVFX = Instantiate(vfxStompPrefab, transform);
+            spawnedVFX.transform.localPosition = Vector3.zero;
+            spawnedVFX.transform.localRotation = vfxStompPrefab.transform.localRotation;
+            spawnedVFX.transform.localScale = vfxStompPrefab.transform.localScale;
+
+            ParticleSystem[] psList = spawnedVFX.GetComponentsInChildren<ParticleSystem>(true);
+            if (psList != null && psList.Length > 0)
+            {
+                foreach (var ps in psList)
+                {
+                    ps.time = 0f;
+                    ps.Play(true);
+                }
+            }
+
+            BossStompConeHitbox coneHitbox = spawnedVFX.GetComponent<BossStompConeHitbox>() ?? spawnedVFX.GetComponentInChildren<BossStompConeHitbox>();
+            if (coneHitbox == null) coneHitbox = spawnedVFX.AddComponent<BossStompConeHitbox>();
+            coneHitbox.StartWave(gameObject);
+
+            Destroy(spawnedVFX, 3.5f);
+            Debug.Log($"🦶 [BOSS STOMP] Fallback: Instanciou como filho do Boss para manter a escala: '{vfxStompPrefab.name}'");
         }
         else
         {
             VFX_BossShockwave.CriarEfeitoOndaDeChoque(pos, 5.5f, new Color(0f, 0.95f, 1f, 0.95f), new Color(0.8f, 0.1f, 1f, 0f), 0.35f, 1.0f);
+            AplicarDanoEKnockbackEmArea(pos, 5.0f, 35, 8.0f, 0.35f);
         }
 
-        // Knockback equilibrado no Stomp (Empurrão: 8.0f, Elevação: 0.35f)
-        AplicarDanoEKnockbackEmArea(pos, 5.0f, 35, 8.0f, 0.35f);
+        // Camera Shake
         TriggerCameraShake(0.38f, 0.25f);
-        Debug.Log("🦶 [BOSS STOMP] Pisada devastadora com choque no solo!");
     }
 
     public void AnimEvent_JumpImpact()
@@ -463,9 +554,60 @@ public class BossController : MonoBehaviour
         Vector3 pos = transform.position + transform.forward * 1.0f;
         pos.y = transform.position.y + 0.05f;
 
-        if (vfxJumpAttackPrefab != null)
+        // Auto-busca o objeto de VFX de salto que já é filho do Boss no Prefab
+        if (jumpAttackVFXChildObject == null)
         {
-            Instantiate(vfxJumpAttackPrefab, pos, Quaternion.identity);
+            Transform found = transform.Find("JumpAttack") ?? transform.Find("VFX_JumpAttack") ?? transform.Find("Salto") ?? transform.Find("Jump") ?? transform.Find("centro");
+            if (found == null)
+            {
+                foreach (Transform child in GetComponentsInChildren<Transform>(true))
+                {
+                    string n = child.name.ToLower();
+                    if (n.Contains("jump") || n.Contains("salto") || n.Contains("centro"))
+                    {
+                        found = child;
+                        break;
+                    }
+                }
+            }
+            if (found != null) jumpAttackVFXChildObject = found.gameObject;
+        }
+
+        // Garante que o VFX de stomp seja desativado para evitar sobreposição
+        if (stompVFXChildObject != null) stompVFXChildObject.SetActive(false);
+
+        // 1. Dispara o VFX filho de salto se existir
+        if (jumpAttackVFXChildObject != null)
+        {
+            jumpAttackVFXChildObject.SetActive(false);
+            jumpAttackVFXChildObject.SetActive(true);
+            ParticleSystem[] psList = jumpAttackVFXChildObject.GetComponentsInChildren<ParticleSystem>(true);
+            if (psList != null && psList.Length > 0)
+            {
+                foreach (var ps in psList)
+                {
+                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    ps.time = 0f;
+                    ps.Play(true);
+                }
+            }
+            Debug.Log($"💥 [BOSS JUMP ATTACK] ✅ Ativou VFX filho nativo de salto: '{jumpAttackVFXChildObject.name}'!");
+        }
+        // 2. Ou instancia o prefab de salto
+        else if (vfxJumpAttackPrefab != null)
+        {
+            GameObject spawnedVFX = Instantiate(vfxJumpAttackPrefab, pos, Quaternion.identity);
+            ParticleSystem[] psList = spawnedVFX.GetComponentsInChildren<ParticleSystem>(true);
+            if (psList != null && psList.Length > 0)
+            {
+                foreach (var ps in psList)
+                {
+                    ps.time = 0f;
+                    ps.Play(true);
+                }
+            }
+            Destroy(spawnedVFX, 3.5f);
+            Debug.Log($"💥 [BOSS JUMP ATTACK] Instanciou VFX prefab de salto: '{vfxJumpAttackPrefab.name}'!");
         }
         else
         {
@@ -476,6 +618,42 @@ public class BossController : MonoBehaviour
         AplicarDanoEKnockbackEmArea(pos, 7.0f, 45, 11.0f, 0.45f);
         TriggerCameraShake(0.55f, 0.40f);
         Debug.Log("💥 [BOSS JUMP ATTACK] Salto esmagador com choque no solo!");
+
+        // Ancoragem de Solo: Impede que o Boss afunde 20cm ao pousar e se levantar!
+        SnapToGround();
+    }
+
+    /// <summary>
+    /// Ancoragem no solo no pouso do salto (impede que o Root Motion puxe o Boss para baixo do chão).
+    /// </summary>
+    public void SnapToGround()
+    {
+        StartCoroutine(SnapToGroundRoutine());
+    }
+
+    private IEnumerator SnapToGroundRoutine()
+    {
+        float timer = 0f;
+        while (timer < 1.0f)
+        {
+            timer += Time.deltaTime;
+            if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit hit, 5.0f))
+            {
+                if (transform.position.y < hit.point.y)
+                {
+                    transform.position = new Vector3(transform.position.x, hit.point.y, transform.position.z);
+                }
+            }
+            yield return null;
+        }
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out UnityEngine.AI.NavMeshHit navHit, 2.0f, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                agent.Warp(navHit.position);
+            }
+        }
     }
 
     private void AplicarDanoEKnockbackEmArea(Vector3 centro, float raio, int dano, float forcaEmpurrao, float proporcaoVertical = 1.0f)
@@ -750,9 +928,13 @@ public class BossController : MonoBehaviour
     /// Dispara uma das animações de magia/spell do Boss (ex: invocação de pilares).
     /// Congela a movimentação 100% durante o feitiço.
     /// </summary>
+    /// <summary>
+    /// Dispara uma das animações de magia/spell do Boss (ex: invocação de pilares).
+    /// Congela a movimentação 100% durante o feitiço.
+    /// </summary>
     public void TriggerSpellAnimation()
     {
-        if (animator == null) return;
+        if (animator == null || !CanInitiateAction) return;
 
         FreezeMovementForSpell(1.4f);
 
@@ -783,11 +965,12 @@ public class BossController : MonoBehaviour
         
         // Congela 100% a movimentação do NavMeshAgent durante o feitiço
         agent.speed = 0f;
+        agent.velocity = Vector3.zero;
         agent.isStopped = true;
 
         yield return new WaitForSeconds(duration);
 
-        if (agent != null && !IsStunned && !IsDead)
+        if (agent != null && !IsStunned && !IsDead && !isCastingSpell && !isAttacking && !isExecutingCombo)
         {
             // Restaura a movimentação e velocidade normal
             agent.speed = baseNavSpeed;
@@ -830,47 +1013,72 @@ public class BossController : MonoBehaviour
     /// </summary>
     public void PerformGolemStunCast(Vector3 targetPosition = default, float stunRadius = 5.0f, float stunDuration = 2.5f, float telegraphTime = 0.45f)
     {
-        FreezeMovementForSpell(telegraphTime + 0.6f);
+        if (!CanInitiateAction) return;
         StartCoroutine(GolemStunCastRoutine(stunRadius, stunDuration, telegraphTime));
     }
 
     private IEnumerator GolemStunCastRoutine(float stunRadius, float stunDuration, float telegraphTime)
     {
-        if (animator != null) animator.SetTrigger("SimpleCast");
-
-        // Rastreia a posição exata do player no momento do cast
-        if (playerTransform == null) playerTransform = FindPlayerTransform();
-
-        Vector3 targetPos = (playerTransform != null) ? playerTransform.position : transform.position + transform.forward * 4f;
-
-        // Vira o Boss instantaneamente para encarar o player
-        if (playerTransform != null)
+        isCastingSpell = true;
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            Vector3 lookDir = (playerTransform.position - transform.position).normalized;
-            lookDir.y = 0f;
-            if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
         }
 
-        Vector3 groundPos = new Vector3(targetPos.x, targetPos.y + 0.05f, targetPos.z);
-
-        GameObject marker = null;
-        if (stunMarkerPrefab != null)
+        try
         {
-            marker = Instantiate(stunMarkerPrefab, groundPos, Quaternion.Euler(90, 0, 0));
-            marker.transform.localScale = new Vector3(stunRadius * 2, stunRadius * 2, 1);
-        }
+            FreezeMovementForSpell(telegraphTime + 0.6f);
 
-        yield return new WaitForSeconds(telegraphTime);
+            if (animator != null) animator.SetTrigger("SimpleCast");
 
-        if (marker != null) Destroy(marker);
+            // Rastreia a posição exata do player no momento do cast
+            if (playerTransform == null) playerTransform = FindPlayerTransform();
 
-        // Instancia o raio de stun caindo do céu diretamente na posição onde o player estava (Versão Empoderada do Boss)
-        if (stunBeamPrefab != null)
-        {
-            GameObject beam = Instantiate(stunBeamPrefab, groundPos, Quaternion.identity);
-            StunBeam stunScript = beam.GetComponent<StunBeam>();
-            if (stunScript != null)
+            Vector3 targetPos = (playerTransform != null) ? playerTransform.position : transform.position + transform.forward * 4f;
+
+            // Vira o Boss instantaneamente para encarar o player
+            if (playerTransform != null)
             {
+                Vector3 lookDir = (playerTransform.position - transform.position).normalized;
+                lookDir.y = 0f;
+                if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
+            }
+
+            Vector3 groundPos = new Vector3(targetPos.x, targetPos.y + 0.05f, targetPos.z);
+
+            GameObject marker = null;
+            if (stunMarkerPrefab != null)
+            {
+                marker = Instantiate(stunMarkerPrefab, groundPos, Quaternion.Euler(90, 0, 0));
+                marker.transform.localScale = new Vector3(stunRadius * 2, stunRadius * 2, 1);
+            }
+
+            yield return new WaitForSeconds(telegraphTime);
+
+            if (marker != null) Destroy(marker);
+
+            // Instancia o raio de stun caindo do céu diretamente na posição onde o player estava (Versão Empoderada do Boss)
+            if (stunBeamPrefab != null)
+            {
+                GameObject beam = Instantiate(stunBeamPrefab, groundPos, Quaternion.identity);
+                StunBeam stunScript = beam.GetComponent<StunBeam>();
+                if (stunScript != null)
+                {
+                    stunScript.beamColor = new Color(0.65f, 0.15f, 0.95f); // Roxo Místico Imperial
+                    stunScript.flashColor = new Color(1.0f, 0.85f, 0.3f);  // Flash Dourado
+                    stunScript.pillarHeight = 14f;
+                    stunScript.particleCount = 65;
+                    stunScript.ringWidth = 1.0f;
+                    stunScript.Initialize(stunRadius, stunDuration);
+                }
+                Destroy(beam, 1.5f);
+            }
+            else
+            {
+                GameObject beamObj = new GameObject("Boss_Empowered_StunBeam");
+                beamObj.transform.position = groundPos;
+                StunBeam stunScript = beamObj.AddComponent<StunBeam>();
                 stunScript.beamColor = new Color(0.65f, 0.15f, 0.95f); // Roxo Místico Imperial
                 stunScript.flashColor = new Color(1.0f, 0.85f, 0.3f);  // Flash Dourado
                 stunScript.pillarHeight = 14f;
@@ -878,22 +1086,19 @@ public class BossController : MonoBehaviour
                 stunScript.ringWidth = 1.0f;
                 stunScript.Initialize(stunRadius, stunDuration);
             }
-            Destroy(beam, 1.5f);
-        }
-        else
-        {
-            GameObject beamObj = new GameObject("Boss_Empowered_StunBeam");
-            beamObj.transform.position = groundPos;
-            StunBeam stunScript = beamObj.AddComponent<StunBeam>();
-            stunScript.beamColor = new Color(0.65f, 0.15f, 0.95f); // Roxo Místico Imperial
-            stunScript.flashColor = new Color(1.0f, 0.85f, 0.3f);  // Flash Dourado
-            stunScript.pillarHeight = 14f;
-            stunScript.particleCount = 65;
-            stunScript.ringWidth = 1.0f;
-            stunScript.Initialize(stunRadius, stunDuration);
-        }
 
-        if (showDebugLog) Debug.Log($"[BossController] ⚡ Stun mímico do Golem disparado DIRETAMENTE no player em {groundPos}!");
+            if (showDebugLog) Debug.Log($"[BossController] ⚡ Stun mímico do Golem disparado DIRETAMENTE no player em {groundPos}!");
+
+            yield return new WaitForSeconds(0.4f);
+        }
+        finally
+        {
+            isCastingSpell = false;
+            if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead)
+            {
+                agent.isStopped = false;
+            }
+        }
     }
 
     /// <summary>
@@ -901,186 +1106,323 @@ public class BossController : MonoBehaviour
     /// </summary>
     public void PerformBossSpellWide()
     {
+        if (!CanInitiateAction) return;
         StartCoroutine(BossSpellWideRoutine());
     }
 
     private IEnumerator BossSpellWideRoutine()
     {
-        FreezeMovementForSpell(3.4f);
-
-        if (animator != null) animator.SetTrigger("BossSpellWide");
-
-        if (showDebugLog) Debug.Log("[BossController] 🌊 BossSpellWide ativado! Carregando super ataque de espinhos 360°...");
-
-        GameObject prefabUse = wideSpinhoPrefab;
-        if (prefabUse == null)
+        isCastingSpell = true;
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
-            if (mestre != null && mestre.espinhoPrefab != null)
-                prefabUse = mestre.espinhoPrefab;
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
         }
 
-        Vector3 centerPos = transform.position;
-        List<Vector3> spikePositions = new List<Vector3>();
-        float minDistance = 2.2f; // Espaçamento mínimo para NUNCA haver sobreposição
-
-        // Gera 28 posições orgânicas e desorganizadas pela arena
-        int totalSpikes = 28;
-        int attempts = 0;
-        while (spikePositions.Count < totalSpikes && attempts < 300)
+        try
         {
-            attempts++;
-            float radius = UnityEngine.Random.Range(3.5f, 14.5f);
-            float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            FreezeMovementForSpell(3.4f);
 
-            Vector3 candidate = centerPos + new Vector3(Mathf.Cos(angle) * radius, 0.05f, Mathf.Sin(angle) * radius);
+            if (animator != null) animator.SetTrigger("BossSpellWide");
 
-            bool overlap = false;
-            foreach (Vector3 existing in spikePositions)
+            if (showDebugLog) Debug.Log("[BossController] 🌊 BossSpellWide ativado! Carregando super ataque de espinhos 360°...");
+
+            GameObject prefabUse = wideSpinhoPrefab;
+            if (prefabUse == null)
             {
-                if (Vector3.Distance(existing, candidate) < minDistance)
+                BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+                if (mestre != null && mestre.espinhoPrefab != null)
+                    prefabUse = mestre.espinhoPrefab;
+            }
+
+            Vector3 centerPos = transform.position;
+            List<Vector3> spikePositions = new List<Vector3>();
+            float minDistance = 2.2f; // Espaçamento mínimo para NUNCA haver sobreposição
+
+            // Gera 28 posições orgânicas e desorganizadas pela arena
+            int totalSpikes = 28;
+            int attempts = 0;
+            while (spikePositions.Count < totalSpikes && attempts < 300)
+            {
+                attempts++;
+                float radius = UnityEngine.Random.Range(3.5f, 14.5f);
+                float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+
+                Vector3 candidate = centerPos + new Vector3(Mathf.Cos(angle) * radius, 0.05f, Mathf.Sin(angle) * radius);
+
+                bool overlap = false;
+                foreach (Vector3 existing in spikePositions)
                 {
-                    overlap = true;
-                    break;
+                    if (Vector3.Distance(existing, candidate) < minDistance)
+                    {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap)
+                {
+                    spikePositions.Add(candidate);
                 }
             }
 
-            if (!overlap)
+            // 1. Fase de Telegrafagem (1.2s): Anéis Místicos Bonitos no Chão
+            List<GameObject> indicators = new List<GameObject>();
+            foreach (Vector3 p in spikePositions)
             {
-                spikePositions.Add(candidate);
-            }
-        }
-
-        // 1. Fase de Telegrafagem (1.2s): Anéis Místicos Bonitos no Chão
-        List<GameObject> indicators = new List<GameObject>();
-        foreach (Vector3 p in spikePositions)
-        {
-            GameObject ind = null;
-            if (stunMarkerPrefab != null)
-            {
-                ind = Instantiate(stunMarkerPrefab, p, Quaternion.Euler(90, 0, 0));
-                ind.transform.localScale = new Vector3(2.4f, 2.4f, 1f);
-            }
-            else
-            {
-                // Indicador Místico Cristalino Bonito em Anel (LineRenderer) em vez de quadrado vermelho
-                ind = new GameObject("BossSpikeTelegraphRing");
-                ind.transform.position = p + Vector3.up * 0.05f;
-
-                LineRenderer lr = ind.AddComponent<LineRenderer>();
-                lr.positionCount = 25;
-                lr.useWorldSpace = false;
-                lr.startWidth = 0.18f;
-                lr.endWidth = 0.18f;
-                lr.material = new Material(Shader.Find("Sprites/Default"));
-                lr.startColor = new Color(0.95f, 0.2f, 0.4f, 0.85f); // Vermelho Místico / Magenta
-                lr.endColor = new Color(0.65f, 0.15f, 0.9f, 0.85f);
-
-                float circleRadius = 1.1f;
-                for (int i = 0; i < 25; i++)
+                GameObject ind = null;
+                if (stunMarkerPrefab != null)
                 {
-                    float a = (i / 24f) * Mathf.PI * 2f;
-                    lr.SetPosition(i, new Vector3(Mathf.Cos(a) * circleRadius, 0f, Mathf.Sin(a) * circleRadius));
+                    ind = Instantiate(stunMarkerPrefab, p, Quaternion.Euler(90, 0, 0));
+                    ind.transform.localScale = new Vector3(2.4f, 2.4f, 1f);
+                }
+                else
+                {
+                    // Indicador Místico Cristalino Bonito em Anel (LineRenderer) em vez de quadrado vermelho
+                    ind = new GameObject("BossSpikeTelegraphRing");
+                    ind.transform.position = p + Vector3.up * 0.05f;
+
+                    LineRenderer lr = ind.AddComponent<LineRenderer>();
+                    lr.positionCount = 25;
+                    lr.useWorldSpace = false;
+                    lr.startWidth = 0.18f;
+                    lr.endWidth = 0.18f;
+                    lr.material = new Material(Shader.Find("Sprites/Default"));
+                    lr.startColor = new Color(0.95f, 0.2f, 0.4f, 0.85f); // Vermelho Místico / Magenta
+                    lr.endColor = new Color(0.65f, 0.15f, 0.9f, 0.85f);
+
+                    float circleRadius = 1.1f;
+                    for (int i = 0; i < 25; i++)
+                    {
+                        float a = (i / 24f) * Mathf.PI * 2f;
+                        lr.SetPosition(i, new Vector3(Mathf.Cos(a) * circleRadius, 0f, Mathf.Sin(a) * circleRadius));
+                    }
+                }
+                if (ind != null) indicators.Add(ind);
+            }
+
+            TriggerCameraShake(0.4f, 0.15f);
+
+            // Espera a telegrafagem para o jogador conseguir ver e desviar
+            yield return new WaitForSeconds(1.2f);
+
+            // Remove os indicadores
+            foreach (GameObject ind in indicators)
+            {
+                if (ind != null) Destroy(ind);
+            }
+
+            TriggerCameraShake(0.5f, 0.25f);
+
+            // 2. Fase de Erupção dos Espinhos do Chão
+            List<Transform> spawnedSpikes = new List<Transform>();
+            List<Vector3> startPositions = new List<Vector3>();
+
+            foreach (Vector3 p in spikePositions)
+            {
+                Vector3 spawnUnderground = p + Vector3.down * 3.5f;
+                Quaternion rot = Quaternion.LookRotation(p - centerPos);
+                if (prefabUse != null)
+                {
+                    GameObject spikeObj = Instantiate(prefabUse, spawnUnderground, rot);
+                    spawnedSpikes.Add(spikeObj.transform);
+                    startPositions.Add(spawnUnderground);
+
+                    SpikeDamageDealer dealer = spikeObj.GetComponent<SpikeDamageDealer>();
+                    if (dealer == null) dealer = spikeObj.AddComponent<SpikeDamageDealer>();
+                    dealer.damage = wideSpikeDamage;
                 }
             }
-            if (ind != null) indicators.Add(ind);
+
+            // A. Ergue os espinhos rapidamente do chão (0.25s)
+            float elapsed = 0f;
+            float emergeDuration = 0.25f;
+            while (elapsed < emergeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / emergeDuration;
+                for (int i = 0; i < spawnedSpikes.Count; i++)
+                {
+                    if (spawnedSpikes[i] != null)
+                    {
+                        spawnedSpikes[i].position = Vector3.Lerp(startPositions[i], spikePositions[i], t);
+                    }
+                }
+                yield return null;
+            }
+
+            // B. Permanece no topo por um breve instante para espetar (0.40s)
+            yield return new WaitForSeconds(0.40f);
+
+            // C. Retrai os espinhos de volta para o subsolo (0.30s)
+            elapsed = 0f;
+            float retractDuration = 0.30f;
+            while (elapsed < retractDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / retractDuration;
+                for (int i = 0; i < spawnedSpikes.Count; i++)
+                {
+                    if (spawnedSpikes[i] != null)
+                    {
+                        spawnedSpikes[i].position = Vector3.Lerp(spikePositions[i], startPositions[i], t);
+                    }
+                }
+                yield return null;
+            }
+
+            // Destrói os objetos de espinho após retornarem ao chão
+            foreach (Transform s in spawnedSpikes)
+            {
+                if (s != null) Destroy(s.gameObject);
+            }
+
+            if (showDebugLog) Debug.Log("[BossController] 🌊 Espinhos do BossSpellWide espetaram e recolheram!");
+
+            yield return new WaitForSeconds(0.3f);
+        }
+        finally
+        {
+            isCastingSpell = false;
+            if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead)
+            {
+                agent.isStopped = false;
+            }
+        }
+    }
+
+    // =====================================================
+    // ⚔️ SISTEMA DE COMBOS INTELIGENTES DA IA
+    // =====================================================
+
+    [HideInInspector] public bool isExecutingCombo = false;
+
+    /// <summary>
+    /// Combo Tático: PRISÃO ESMAGADORA (Trap & Stomp)
+    ///  1. Prende o jogador com a prisão de pilares/espinhos.
+    ///  2. Vira para o centro da prisão e desfere o Stomp na direção do jogador contido.
+    /// </summary>
+    public bool ExecuteTrapAndStompCombo()
+    {
+        if (!CanInitiateAction) return false;
+        StartCoroutine(TrapAndStompComboRoutine());
+        return true;
+    }
+
+    private IEnumerator TrapAndStompComboRoutine()
+    {
+        isExecutingCombo = true;
+        isCastingSpell = true;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
         }
 
-        TriggerCameraShake(0.4f, 0.15f);
+        if (showDebugLog) Debug.Log("⚔️ [BOSS COMBO] 🕸️ Iniciando Combo Tático: PRISÃO ESMAGADORA (Trap & Stomp)!");
 
-        // Espera a telegrafagem para o jogador conseguir ver e desviar
+        // Passo 1: Vira para o jogador e conjura os pilares ao redor dele
+        if (playerTransform != null)
+        {
+            Vector3 lookDir = (playerTransform.position - transform.position).normalized;
+            lookDir.y = 0f;
+            if (lookDir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(lookDir);
+        }
+
+        if (animator != null)
+        {
+            animator.ResetTrigger("bossSpell");
+            animator.SetTrigger("bossSpell");
+            animator.Play("SpellGround", 0, 0f);
+        }
+
+        BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+        if (mestre != null)
+        {
+            mestre.InvocarPrisaoForado();
+        }
+
+        // Aguarda os pilares emergirem e prenderem o jogador (1.0s)
+        yield return new WaitForSeconds(1.0f);
+
+        isCastingSpell = false;
+
+        // Passo 2: Vira para o centro da prisão e desfere o Stomp / Salto Esmagador!
+        if (playerTransform != null)
+        {
+            Vector3 targetDir = (playerTransform.position - transform.position).normalized;
+            targetDir.y = 0f;
+            if (targetDir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(targetDir);
+        }
+
+        isAttacking = true;
+
+        if (animator != null)
+        {
+            animator.ResetTrigger("bossStomp");
+            animator.SetTrigger("bossStomp");
+            animator.Play("STOMP", 0, 0f);
+        }
+
+        // Telegrafagem do Stomp
+        yield return new WaitForSeconds(0.45f);
+
+        // Impacto do Stomp
+        AnimEvent_StompImpact();
+
+        // Janela de recuperação do golpe pesado
+        isRecovering = true;
         yield return new WaitForSeconds(1.2f);
+        isRecovering = false;
 
-        // Remove os indicadores
-        foreach (GameObject ind in indicators)
-        {
-            if (ind != null) Destroy(ind);
-        }
+        isAttacking = false;
+        isExecutingCombo = false;
 
-        TriggerCameraShake(0.5f, 0.25f);
+        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead)
+            agent.isStopped = false;
 
-        // 2. Fase de Erupção dos Espinhos do Chão
-        List<Transform> spawnedSpikes = new List<Transform>();
-        List<Vector3> startPositions = new List<Vector3>();
-
-        foreach (Vector3 p in spikePositions)
-        {
-            Vector3 spawnUnderground = p + Vector3.down * 3.5f;
-            Quaternion rot = Quaternion.LookRotation(p - centerPos);
-            if (prefabUse != null)
-            {
-                GameObject spikeObj = Instantiate(prefabUse, spawnUnderground, rot);
-                spawnedSpikes.Add(spikeObj.transform);
-                startPositions.Add(spawnUnderground);
-
-                SpikeDamageDealer dealer = spikeObj.GetComponent<SpikeDamageDealer>();
-                if (dealer == null) dealer = spikeObj.AddComponent<SpikeDamageDealer>();
-                dealer.damage = wideSpikeDamage;
-            }
-        }
-
-        // A. Ergue os espinhos rapidamente do chão (0.25s)
-        float elapsed = 0f;
-        float emergeDuration = 0.25f;
-        while (elapsed < emergeDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / emergeDuration;
-            for (int i = 0; i < spawnedSpikes.Count; i++)
-            {
-                if (spawnedSpikes[i] != null)
-                {
-                    spawnedSpikes[i].position = Vector3.Lerp(startPositions[i], spikePositions[i], t);
-                }
-            }
-            yield return null;
-        }
-
-        // B. Permanece no topo por um breve instante para espetar (0.40s)
-        yield return new WaitForSeconds(0.40f);
-
-        // C. Retrai os espinhos de volta para o subsolo (0.30s)
-        elapsed = 0f;
-        float retractDuration = 0.30f;
-        while (elapsed < retractDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / retractDuration;
-            for (int i = 0; i < spawnedSpikes.Count; i++)
-            {
-                if (spawnedSpikes[i] != null)
-                {
-                    spawnedSpikes[i].position = Vector3.Lerp(spikePositions[i], startPositions[i], t);
-                }
-            }
-            yield return null;
-        }
-
-        // Destrói os objetos de espinho após retornarem ao chão
-        foreach (Transform s in spawnedSpikes)
-        {
-            if (s != null) Destroy(s.gameObject);
-        }
-
-        if (showDebugLog) Debug.Log("[BossController] 🌊 Espinhos do BossSpellWide espetaram e recolheram!");
+        if (showDebugLog) Debug.Log("⚔️ [BOSS COMBO] ✅ Combo Prisão Esmagadora finalizado com sucesso!");
     }
 
     public void EnsureHealthBarUI()
     {
-        if (FindObjectOfType<BossHealthBarUI>() == null)
+        BossHealthBarUI existingUI = FindFirstObjectByType<BossHealthBarUI>(FindObjectsInactive.Include);
+        if (existingUI != null)
         {
-            if (bossHealthBarPrefab == null)
+            if (!existingUI.gameObject.activeInHierarchy)
             {
-                bossHealthBarPrefab = Resources.Load<GameObject>("BossHealthBar_Canvas")
-                                ?? Resources.Load<GameObject>("UI/BossHealthBar_Canvas")
-                                ?? Resources.Load<GameObject>("BossCanvas");
+                existingUI.gameObject.SetActive(true);
             }
+            existingUI.SetBarVisible(true);
+            return;
+        }
 
-            if (bossHealthBarPrefab != null)
+        if (bossHealthBarPrefab == null)
+        {
+            bossHealthBarPrefab = Resources.Load<GameObject>("BossHealthBar_Canvas")
+                            ?? Resources.Load<GameObject>("Canvas-Boss")
+                            ?? Resources.Load<GameObject>("UI/BossHealthBar_Canvas");
+        }
+
+#if UNITY_EDITOR
+        if (bossHealthBarPrefab == null)
+        {
+            bossHealthBarPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Enemies/Boss/Canvas-Boss.prefab");
+        }
+#endif
+
+        if (bossHealthBarPrefab != null)
+        {
+            GameObject spawnedUI = Instantiate(bossHealthBarPrefab);
+            spawnedUI.name = "Canvas-Boss";
+            BossHealthBarUI uiComp = spawnedUI.GetComponentInChildren<BossHealthBarUI>(true);
+            if (uiComp != null)
             {
-                Instantiate(bossHealthBarPrefab);
-                if (showDebugLog) Debug.Log("[BossController] 🎨 Canvas da Barra de Vida instanciado no mapa!");
+                uiComp.gameObject.SetActive(true);
+                uiComp.SetBarVisible(true);
             }
+            if (showDebugLog) Debug.Log("[BossController] 🎨 Canvas da Barra de Vida instanciado no mapa!");
         }
     }
 
@@ -1315,10 +1657,15 @@ public class BossController : MonoBehaviour
                 break;
         }
 
-        // Garante que o agent está despausado ao mudar de fase
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        // Garante que o agent está despausado e posicionado no NavMesh
+        if (agent != null)
         {
-            agent.isStopped = false;
+            agent.enabled = true;
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5.0f, NavMesh.AllAreas))
+            {
+                agent.Warp(hit.position);
+            }
+            if (agent.isOnNavMesh) agent.isStopped = false;
         }
 
         // Notifica todos os sistemas
@@ -1372,7 +1719,15 @@ public class BossController : MonoBehaviour
 
     private void HandleCombatUpdate()
     {
-        if (!CanInitiateAction) return;
+        if (!CanInitiateAction)
+        {
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.velocity = Vector3.zero;
+            }
+            return;
+        }
 
         // Se o player não existir, cancela a perseguição de combate
         if (playerTransform == null) return;
@@ -1495,7 +1850,7 @@ public class BossController : MonoBehaviour
     /// <summary>
     /// Trava de Fluxo de Animação: Garante que o Boss NUNCA sobreponha ataques, magias ou staggers!
     /// </summary>
-    public bool CanInitiateAction => !isAttacking && !isCastingSpell && !isRecovering && CurrentState != BossState.Stunned && CurrentState != BossState.Dead;
+    public bool CanInitiateAction => !isAttacking && !isCastingSpell && !isExecutingCombo && !isRecovering && CurrentState != BossState.Stunned && CurrentState != BossState.Dead;
 
     private IEnumerator PerformMeleeAttack()
     {
@@ -1516,7 +1871,10 @@ public class BossController : MonoBehaviour
         if (showDebugLog) Debug.Log("[BossController] 👊 ATAQUE DO BOSS — Executando golpe exclusivo!");
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
             agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
 
         string selectedTrigger = "bossSwipe";
         if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
@@ -1525,7 +1883,9 @@ public class BossController : MonoBehaviour
             
             string stateName = selectedTrigger;
             if (selectedTrigger == "bossSwipe") stateName = "BossSwipe";
-            if (selectedTrigger == "bossPunch") stateName = "BossPunch";
+            else if (selectedTrigger == "bossPunch") stateName = "BossPunch";
+            else if (selectedTrigger == "bossJumpAttack") stateName = "JumpAttack";
+            else if (selectedTrigger == "bossStomp") stateName = "STOMP";
 
             animator.ResetTrigger("bossSwipe");
             animator.ResetTrigger("bossPunch");
@@ -1557,15 +1917,21 @@ public class BossController : MonoBehaviour
         int dmg = phaseConfig != null ? phaseConfig.baseMeleeDamage : 35;
         EnableMeleeHitboxBothHands(0.45f, dmg, 16f);
 
-        Vector3 blastPos = transform.position + transform.forward * 1.5f;
-        BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
+        // Onda de choque no solo e knockback pesado APENAS para ataques de impacto no solo (JumpAttack e Stomp)
+        // Para ataques simples (Punch e Swipe), o dano vem diretamente das mãos/hitbox sem shockwave nos pés!
+        bool isHeavyAttack = (selectedTrigger == "bossJumpAttack" || selectedTrigger == "bossStomp");
+        if (isHeavyAttack)
+        {
+            Vector3 blastPos = transform.position + transform.forward * 1.5f;
+            BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
+        }
+
         TriggerCameraShake(0.25f, 0.15f);
 
         // Aplica o Hitstop (Micro-freeze de 0.06s no momento exato do impacto)
         TriggerHitstop(defaultHitstopDuration);
 
         // === 3. RECOVERY FRAMES (Janela de Punição para o Player) ===
-        bool isHeavyAttack = (selectedTrigger == "bossJumpAttack" || selectedTrigger == "bossStomp");
         float recoveryWindow = isHeavyAttack ? 1.4f : 0.85f;
 
         isRecovering = true;
@@ -1585,7 +1951,7 @@ public class BossController : MonoBehaviour
             refractionComp.SetTemporaryVisibility(false);
         }
 
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead)
             agent.isStopped = false;
 
         isAttacking = false;

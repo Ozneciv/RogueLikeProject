@@ -125,4 +125,10 @@ public class BossAnimationEvents : MonoBehaviour
         var boss = GetBoss();
         if (boss != null) boss.AnimEvent_JumpImpact();
     }
+
+    public void AnimEvent_SnapToGround()
+    {
+        var boss = GetBoss();
+        if (boss != null) boss.SnapToGround();
+    }
 }

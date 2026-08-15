@@ -131,16 +131,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                     {
                         casuloScript.Setup(vidaDoBoss);
                     }
-
-                    // O GATILHO MESTRE: Quando o Casulo morrer, ele dá o dano no Boss forçando a Fase 2!
-                    casuloHealth.onDeathOverride += () => 
-                    { 
-                        Debug.Log("[Fase 1] O Casulo quebrou! Avisando o Boss..."); 
-                        if (vidaDoBoss != null)
-                        {
-                            vidaDoBoss.TakeDamage(danoNecessario); 
-                        }
-                    };
                 }
             }
 
@@ -172,6 +162,10 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             if (agent != null) 
             {
                 agent.enabled = true;
+                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5.0f, NavMesh.AllAreas))
+                {
+                    agent.Warp(hit.position);
+                }
                 if (agent.isOnNavMesh) agent.isStopped = false;
             }
             
@@ -188,9 +182,9 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
         while (phase1Ativa)
         {
-            if (bossController != null && !bossController.IsStunned && !bossController.IsDead && !atacando)
+            if (bossController != null && bossController.CanInitiateAction && !atacando)
             {
-                int ataqueSorteado = Random.Range(0, 3);
+                int ataqueSorteado = Random.Range(0, 4);
                 
                 if (ataqueSorteado == 0)
                 {
@@ -201,6 +195,15 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 {
                     yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
                     if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
+                }
+                else if (ataqueSorteado == 2)
+                {
+                    // Combo Tático Inteligente: Prisão Esmagadora (Trap & Stomp)
+                    bossController.ExecuteTrapAndStompCombo();
+                    while (bossController.isExecutingCombo || !bossController.CanInitiateAction)
+                    {
+                        yield return null;
+                    }
                 }
                 else
                 {
@@ -222,7 +225,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
         {
             animator.ResetTrigger("Spell");
             animator.SetTrigger("Spell");
-            animator.Play("Spell", 0, 0f);
+            animator.Play("SpellGround", 0, 0f);
         }
         
         if (playerTransform != null)
@@ -402,13 +405,11 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
     /// <summary>
     /// Invoca uma prisão de pilares forçadamente, independente da fase ativa.
-    /// Chamado pela BossPhase2_Refraction durante a invisibilidade.
+    /// Chamado pela BossPhase2_Refraction ou combos da IA.
     /// </summary>
     public void InvocarPrisaoForado()
     {
-        if (atacando || bossController == null || bossController.IsDead || bossController.IsStunned) return;
-
-        if (bossController != null) bossController.TriggerSpellAnimation();
+        if (atacando || bossController == null || !bossController.CanInitiateAction) return;
 
         // Sorteia entre pilares ou espinhos
         if (pilarPrefab != null || espinhoPrefab != null)

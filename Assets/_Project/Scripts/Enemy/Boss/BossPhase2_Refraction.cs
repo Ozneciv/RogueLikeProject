@@ -32,7 +32,10 @@ public class BossPhase2_Refraction : MonoBehaviour
     // -- Configuracao (Inspector)
     [Header("Invisibilidade -- Configuracao")]
     [Tooltip("Numero maximo de vezes que o boss pode ficar invisivel durante a Fase 2")]
-    public int maxRefractionUses = 2;
+    public int maxRefractionUses = 1;
+
+    [Tooltip("Duração máxima em segundos da invisibilidade antes de reaparecer automaticamente")]
+    public float refractionDuration = 6.0f;
 
     [Tooltip("Tempo para o boss sumir (fade out)")]
     public float fadeOutTime = 0.4f;
@@ -40,11 +43,9 @@ public class BossPhase2_Refraction : MonoBehaviour
     [Tooltip("Tempo para o boss reaparecer (fade in)")]
     public float fadeInTime = 0.7f;
 
-    // Nota: invisibilidade e INDEFINIDA — dura ate o player acertar o boss.
-
     [Header("Limiares de HP para Ativar Invisibilidade")]
-    [Tooltip("Porcentagens de HP (0.0 a 1.0) nas quais a invisibilidade e ativada. Ex: 0.50 = 50 por cento. Devem estar em ordem decrescente.")]
-    public float[] refractionThresholds = { 0.50f, 0.20f };
+    [Tooltip("Porcentagens de HP (0.0 a 1.0) nas quais a invisibilidade e ativada. Ex: 0.55 = 55% de HP total.")]
+    public float[] refractionThresholds = { 0.55f };
 
     [Tooltip("Distancia que o boss tenta fugir do player durante a invisibilidade")]
     public float fleeDistance = 12f;
@@ -137,24 +138,31 @@ public class BossPhase2_Refraction : MonoBehaviour
             {
                 CheckRefractionThreshold();
 
-                // Enquanto visível na Fase 2, invoca pilares/espinhos ou raio de stun mímico periodicamente
-                visiblePilarTimer -= Time.deltaTime;
-                if (visiblePilarTimer <= 0f)
+                // Enquanto visível na Fase 2, invoca magias e combos apenas quando estiver LIVRE (sem sobreposição)
+                if (bossController != null && bossController.CanInitiateAction)
                 {
-                    visiblePilarTimer = 4.5f;
-                    float rnd = UnityEngine.Random.value;
-                    if (rnd < 0.20f && bossController != null)
+                    visiblePilarTimer -= Time.deltaTime;
+                    if (visiblePilarTimer <= 0f)
                     {
-                        bossController.PerformBossSpellWide(); // Super Ataque Raro 360° de Espinhos!
-                    }
-                    else if (rnd < 0.60f && bossController != null)
-                    {
-                        bossController.PerformGolemStunCast(); // Stun do Céu no Player!
-                    }
-                    else
-                    {
-                        BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
-                        if (mestre != null) mestre.InvocarPrisaoForado();
+                        visiblePilarTimer = 5.0f;
+                        float rnd = UnityEngine.Random.value;
+                        if (rnd < 0.20f && bossController != null)
+                        {
+                            bossController.PerformBossSpellWide(); // Super Ataque Raro 360° de Espinhos!
+                        }
+                        else if (rnd < 0.50f && bossController != null)
+                        {
+                            bossController.ExecuteTrapAndStompCombo(); // Combo Inteligente: Prende e Pisa!
+                        }
+                        else if (rnd < 0.75f && bossController != null)
+                        {
+                            bossController.PerformGolemStunCast(); // Stun do Céu no Player!
+                        }
+                        else
+                        {
+                            BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
+                            if (mestre != null) mestre.InvocarPrisaoForado();
+                        }
                     }
                 }
             }
@@ -173,6 +181,8 @@ public class BossPhase2_Refraction : MonoBehaviour
         {
             isPhase2Active = true;
             nextThresholdIndex = 0;
+            refractionUsesRemaining = maxRefractionUses;
+            if (isRefracting) CancelRefraction();
             if (showDebugLog) Debug.Log("[BossPhase2] Fase 2 ATIVA -- Boss visivel, lutando normalmente ate o threshold de refração!");
         }
         else
@@ -238,14 +248,15 @@ public class BossPhase2_Refraction : MonoBehaviour
         SetMaterialsTransparent(false);
         SetRenderersVisibility(true);
 
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        if (agent != null && agent.enabled)
         {
-            agent.isStopped = false;
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5.0f, NavMesh.AllAreas))
+            {
+                agent.Warp(hit.position);
+            }
+            if (agent.isOnNavMesh) agent.isStopped = false;
             if (originalAgentSpeed > 0f) agent.speed = originalAgentSpeed;
         }
-
-        if (health != null && health.healthBarSlider != null)
-            health.healthBarSlider.gameObject.SetActive(true);
     }
 
     IEnumerator RefractionRoutine()
@@ -255,26 +266,24 @@ public class BossPhase2_Refraction : MonoBehaviour
 
         SetRenderersVisibility(false);
 
-        if (health != null && health.healthBarSlider != null)
-            health.healthBarSlider.gameObject.SetActive(false);
-
         BossPhase1_MobSpawner mobSpawner = GetComponent<BossPhase1_MobSpawner>();
         BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
 
         if (agent != null && agent.enabled)
         {
             originalAgentSpeed = agent.speed;
-            agent.speed = originalAgentSpeed * 1.4f;
+            agent.speed = originalAgentSpeed * 1.35f;
         }
 
         float nextMobSpawn = mobSpawnInterval;
         float nextPilarSpawn = pilarSpawnInterval;
-        float nextReposition = repositionInterval;
+        float nextReposition = 0.5f;
+        float remainingDuration = refractionDuration;
 
-        // Invisibilidade INDEFINIDA — o boss fica invisível ate o player acertar nele.
-        // CancelRefraction() e chamado pelo OnTookDamage() quando o player acerta.
-        while (isRefracting)
+        // Duração máxima de refração (ex: 6 segundos). Ao acabar OU tomar dano, o boss é revelado!
+        while (isRefracting && remainingDuration > 0f)
         {
+            remainingDuration -= Time.deltaTime;
             nextMobSpawn -= Time.deltaTime;
             nextPilarSpawn -= Time.deltaTime;
             nextReposition -= Time.deltaTime;
@@ -292,7 +301,7 @@ public class BossPhase2_Refraction : MonoBehaviour
                     mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.CounterAttack);
             }
 
-            if (nextPilarSpawn <= 0f)
+            if (nextPilarSpawn <= 0f && (bossController == null || bossController.CanInitiateAction))
             {
                 nextPilarSpawn = pilarSpawnInterval;
                 float rnd = UnityEngine.Random.value;
@@ -306,12 +315,17 @@ public class BossPhase2_Refraction : MonoBehaviour
                 }
                 else if (mestre != null && !mestre.Atacando)
                 {
-                    if (bossController != null) bossController.TriggerSpellAnimation();
                     mestre.InvocarPrisaoForado();
                 }
             }
 
             yield return null;
+        }
+
+        if (isRefracting)
+        {
+            if (showDebugLog) Debug.Log("[BossPhase2] Tempo de refração esgotado! Boss reaparece para combate!");
+            CancelRefraction();
         }
     }
 

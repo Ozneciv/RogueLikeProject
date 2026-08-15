@@ -324,18 +324,18 @@ public class ShardSwarm_AI : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / totalDuration;
 
-            // Curva Senoidal para Fade In (0 -> 1) e Fade Out (1 -> 0)
-            float alpha = Mathf.Sin(t * Mathf.PI);
+            // Opacidade instantânea 100% no hit (frame 1) -> Fade out gradual
+            float alpha = 1.0f - t;
 
-            // Animação de Escala: Micro-pulsar de holograma (0.95x -> 1.08x)
-            float scaleMultiplier = Mathf.Lerp(0.95f, 1.08f, alpha);
+            // Animação de Escala: Micro-pulsar de holograma (1.0x -> 1.08x)
+            float scaleMultiplier = Mathf.Lerp(1.0f, 1.08f, t);
             shieldTr.localScale = baseScale * scaleMultiplier;
 
-            // Transparência suave no Material (Fade In & Fade Out)
+            // Transparência suave no Material
             if (shieldMat != null && !string.IsNullOrEmpty(colorProp))
             {
                 Color c = baseColor;
-                c.a = baseColor.a * alpha * 0.7f;
+                c.a = baseColor.a * alpha * 0.85f;
                 shieldMat.SetColor(colorProp, c);
             }
 
@@ -537,6 +537,17 @@ public class ShardSwarm_AI : MonoBehaviour
     void SetState(SwarmState newState)
     {
         currentState = newState;
+
+        // Ao mudar de estado (ex: rearmar / disparar), interrompe a corrotina e desativa o escudo imediatamente!
+        if (shieldFlashCoroutine != null)
+        {
+            StopCoroutine(shieldFlashCoroutine);
+            shieldFlashCoroutine = null;
+        }
+        if (shieldVisualObject != null)
+        {
+            shieldVisualObject.SetActive(false);
+        }
 
         if (health != null)
         {
