@@ -101,6 +101,8 @@ public class PlayerHealth : MonoBehaviour
         isDead = false;
         gameObject.layer = playerLayer;
 
+        MerchantHallucinationEffect.ResetImmediate();
+
         // Reset rotação do pai para posição limpa e em pé
         transform.rotation = Quaternion.identity;
 
@@ -264,6 +266,8 @@ public class PlayerHealth : MonoBehaviour
         {
             MerchantUIController.Instance.ResetPactState();
         }
+
+        MerchantHallucinationEffect.ResetImmediate();
 
         FullHeal();
 

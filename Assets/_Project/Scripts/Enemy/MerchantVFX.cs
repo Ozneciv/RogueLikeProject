@@ -1,14 +1,10 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// Controlador Dedicado de VFX, Defesa e Reação Visual do Mercador das Sombras (Capítulo 4 - GDD).
-/// 
-/// RECURSOS E ORGANIZAÇÃO:
-///   1. Escudo de Invulnerabilidade Místico em formato Elipsoide (chapéu e manto).
-///   2. Múltiplos pontos de faíscas de impacto (Hit Sparks) em posições alternadas.
-///   3. Camera Shake de alta intensidade para dar peso de repulsão à figura misteriosa.
-///   4. Hooks de VFX para Pactos do Mercador (Câmbio de Sangue, Cirurgia de Remoção e Maldições).
+/// Totalmente otimizado para zero lag e alta performance.
 /// </summary>
 public class MerchantVFX : MonoBehaviour
 {
@@ -46,13 +42,8 @@ public class MerchantVFX : MonoBehaviour
     public float shakeIntensity = 0.55f;
 
     [Header("4. VFX dos Pactos do Mercador (Futuras Expansões)")]
-    [Tooltip("Efeito de partículas de veias/sangue para o Câmbio de Sangue.")]
     public GameObject bloodExchangeVFX;
-
-    [Tooltip("Efeito de lâmina/corte místico para a Cirurgia de Remoção.")]
     public GameObject surgicalRemovalVFX;
-
-    [Tooltip("Aura/fumaça sombria nos pés para a ativação de Maldições.")]
     public GameObject curseAuraVFX;
 
     [Header("5. Áudio de Repulsão Mística")]
@@ -69,7 +60,25 @@ public class MerchantVFX : MonoBehaviour
     [Tooltip("Duração da força de empurrão em segundos.")]
     public float knockbackDuration = 0.12f;
 
+    [Header("7. Escala de Ira do Mercador (Progressão de Punição)")]
+    [Tooltip("4º Hit: Ativa a distorção óptica de olho de peixe na câmera.")]
+    public int hitsToTriggerHallucination = 4;
+    [Tooltip("7º Hit: Deixa o ambiente/mapa escuro (-1.2 EV).")]
+    public int hitsToTriggerDarkEnvironment = 7;
+    [Tooltip("9º Hit: Inversão total de cores na câmera (Visão Negativa).")]
+    public int hitsToTriggerColorInversion = 9;
+    [Tooltip("10º Hit: Execução das Sombras (Morte imediata do jogador).")]
+    public int hitsToTriggerDeath = 10;
+
+    // Cache interno de partículas para evitar GetComponentsInChildren em tempo de execução
+    private ParticleSystem[] cachedShieldParticles;
+    private Dictionary<GameObject, ParticleSystem[]> cachedSparkParticles = new Dictionary<GameObject, ParticleSystem[]>();
+
     private Coroutine shieldCoroutine;
+    private Coroutine repulsionCoroutine;
+    private int consecutiveHitCount = 0;
+    private float timeSinceLastHit = 0f;
+    private float lastShakeTime = -1f;
 
     private void Awake()
     {
@@ -88,29 +97,21 @@ public class MerchantVFX : MonoBehaviour
         {
             shieldVisualObject.transform.localScale = shieldElipsoidScale;
             shieldVisualObject.SetActive(false);
+            cachedShieldParticles = shieldVisualObject.GetComponentsInChildren<ParticleSystem>(true);
         }
 
         if (hitSparkChildObjects != null)
         {
             foreach (var spark in hitSparkChildObjects)
             {
-                if (spark != null) spark.SetActive(false);
+                if (spark != null)
+                {
+                    spark.SetActive(false);
+                    cachedSparkParticles[spark] = spark.GetComponentsInChildren<ParticleSystem>(true);
+                }
             }
         }
     }
-
-    [Header("7. Escala de Ira do Mercador (Progressão de Punição)")]
-    [Tooltip("4º Hit: Ativa a distorção óptica de olho de peixe na câmera.")]
-    public int hitsToTriggerHallucination = 4;
-    [Tooltip("7º Hit: Deixa o ambiente/mapa escuro (-1.2 EV).")]
-    public int hitsToTriggerDarkEnvironment = 7;
-    [Tooltip("9º Hit: Inversão total de cores na câmera (Visão Negativa).")]
-    public int hitsToTriggerColorInversion = 9;
-    [Tooltip("10º Hit: Execução das Sombras (Morte imediata do jogador).")]
-    public int hitsToTriggerDeath = 10;
-
-    private int consecutiveHitCount = 0;
-    private float timeSinceLastHit = 0f;
 
     void Update()
     {
@@ -135,28 +136,25 @@ public class MerchantVFX : MonoBehaviour
         // Progressão dos Estágios de Punição do Mercador:
         if (consecutiveHitCount >= hitsToTriggerDeath)
         {
-            // 10º Hit: Morte Imediata!
             MerchantHallucinationEffect.TriggerMerchantExecution(gameObject);
         }
         else if (consecutiveHitCount >= hitsToTriggerColorInversion)
         {
-            // 9º Hit: Inversão Total de Cores!
             MerchantHallucinationEffect.TriggerColorInversion();
         }
         else if (consecutiveHitCount >= hitsToTriggerDarkEnvironment)
         {
-            // 7º Hit: O Ambiente e o Mapa Escurecem!
             MerchantHallucinationEffect.TriggerDarkEnvironment();
         }
         else if (consecutiveHitCount >= hitsToTriggerHallucination)
         {
-            // 4º Hit: Distorção Óptica de Olho de Peixe!
             MerchantHallucinationEffect.TriggerHallucination();
         }
 
-        // 1. Tremor Forte de Câmera
-        if (enableStrongCameraShake)
+        // 1. Tremor de Câmera (Com Throttle de 0.08s para evitar sobrecarga com facas rápidas)
+        if (enableStrongCameraShake && Time.time - lastShakeTime > 0.08f)
         {
+            lastShakeTime = Time.time;
             if (CameraShakeFeedback.Instance != null)
             {
                 CameraShakeFeedback.TriggerShake(shakeDuration, shakeIntensity, 35f);
@@ -167,7 +165,7 @@ public class MerchantVFX : MonoBehaviour
             }
         }
 
-        // 2. Disparo de Faíscas Alternadas nos Pontos do Manto
+        // 2. Disparo de Faíscas
         TriggerHitSpark(hitPosition);
 
         // 3. Áudio de Repulsão
@@ -183,7 +181,7 @@ public class MerchantVFX : MonoBehaviour
             shieldCoroutine = StartCoroutine(MerchantShieldRoutine());
         }
 
-        // 5. Repulsão Leve (Knockback sutil empurrando o jogador para trás)
+        // 5. Repulsão Leve de Knockback
         if (enableRepulsionKnockback)
         {
             ApplyPlayerRepulsion();
@@ -209,7 +207,8 @@ public class MerchantVFX : MonoBehaviour
                 if (pushDir.sqrMagnitude < 0.001f) pushDir = -transform.forward;
                 else pushDir.Normalize();
 
-                StartCoroutine(RepulsionRoutine(playerRb, pushDir));
+                if (repulsionCoroutine != null) StopCoroutine(repulsionCoroutine);
+                repulsionCoroutine = StartCoroutine(RepulsionRoutine(playerRb, pushDir));
             }
         }
     }
@@ -224,11 +223,9 @@ public class MerchantVFX : MonoBehaviour
             playerRb.linearVelocity = new Vector3(pushDir.x * currentForce, playerRb.linearVelocity.y, pushDir.z * currentForce);
             yield return null;
         }
+        repulsionCoroutine = null;
     }
 
-    /// <summary>
-    /// Método padronizado para compatibilidade com o sistema de dano do Player (TakeDamage).
-    /// </summary>
     public void TakeDamage(int damage, bool isCritical = false)
     {
         TriggerMerchantHitReaction();
@@ -245,11 +242,17 @@ public class MerchantVFX : MonoBehaviour
             {
                 sparkObj.SetActive(false);
                 sparkObj.SetActive(true);
-                ParticleSystem[] particles = sparkObj.GetComponentsInChildren<ParticleSystem>(true);
-                foreach (var ps in particles)
+
+                if (cachedSparkParticles.TryGetValue(sparkObj, out var particles) && particles != null)
                 {
-                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                    ps.Play(true);
+                    foreach (var ps in particles)
+                    {
+                        if (ps != null)
+                        {
+                            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                            ps.Play(true);
+                        }
+                    }
                 }
             }
         }
@@ -271,13 +274,15 @@ public class MerchantVFX : MonoBehaviour
         Transform shieldTr = shieldVisualObject.transform;
         shieldTr.localScale = shieldElipsoidScale;
 
-        ParticleSystem[] shieldParticles = shieldVisualObject.GetComponentsInChildren<ParticleSystem>(true);
-        if (shieldParticles != null && shieldParticles.Length > 0)
+        if (cachedShieldParticles != null)
         {
-            foreach (var ps in shieldParticles)
+            foreach (var ps in cachedShieldParticles)
             {
-                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                ps.Play(true);
+                if (ps != null)
+                {
+                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    ps.Play(true);
+                }
             }
         }
 
@@ -289,52 +294,27 @@ public class MerchantVFX : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
 
-            float expansionT = Mathf.Clamp01(t * shieldExpansionSpeed);
-            float currentPulse = Mathf.Lerp(0.85f, impactPulseMultiplier, expansionT);
-            shieldTr.localScale = shieldElipsoidScale * currentPulse;
+            if (t < 0.15f)
+            {
+                float pulse = Mathf.Sin((t / 0.15f) * Mathf.PI * 0.5f);
+                shieldTr.localScale = shieldElipsoidScale * Mathf.Lerp(1.0f, impactPulseMultiplier, pulse);
+            }
+            else
+            {
+                shieldTr.localScale = Vector3.Lerp(shieldTr.localScale, shieldElipsoidScale, Time.deltaTime * shieldExpansionSpeed);
+            }
 
             yield return null;
         }
 
-        if (shieldParticles != null && shieldParticles.Length > 0)
-        {
-            foreach (var ps in shieldParticles)
-            {
-                ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-            }
-            yield return new WaitForSeconds(0.6f);
-        }
-
-        shieldTr.localScale = shieldElipsoidScale;
         shieldVisualObject.SetActive(false);
         shieldCoroutine = null;
     }
 
-    // --- HOOKS DE EXPANSÃO DE VFX PARA PACTOS DO MERCADOR ---
-
-    public void TriggerBloodExchangeVFX()
+    private void OnDisable()
     {
-        if (bloodExchangeVFX != null)
-        {
-            bloodExchangeVFX.SetActive(false);
-            bloodExchangeVFX.SetActive(true);
-        }
-    }
-
-    public void TriggerSurgeryVFX()
-    {
-        if (surgicalRemovalVFX != null)
-        {
-            surgicalRemovalVFX.SetActive(false);
-            surgicalRemovalVFX.SetActive(true);
-        }
-    }
-
-    public void TriggerCurseAuraVFX(bool active)
-    {
-        if (curseAuraVFX != null)
-        {
-            curseAuraVFX.SetActive(active);
-        }
+        if (shieldCoroutine != null) { StopCoroutine(shieldCoroutine); shieldCoroutine = null; }
+        if (repulsionCoroutine != null) { StopCoroutine(repulsionCoroutine); repulsionCoroutine = null; }
+        if (shieldVisualObject != null) shieldVisualObject.SetActive(false);
     }
 }

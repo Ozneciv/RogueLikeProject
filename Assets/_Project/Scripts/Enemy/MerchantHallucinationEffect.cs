@@ -1,16 +1,17 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Sistema de Ira do Mercador das Sombras (4 Estágios de Punição):
-///   • 4º Hit: Olho de Peixe Dinâmico (Lens Distortion + Panini + Micro-Zoom de 0.12m).
-///   • 7º Hit: Escuridão do Ambiente (-1.2 EV + Luzes a 35% + Névoa Sombria).
-///   • 9º Hit: Inversão Espectral de Cores (Hue Inversion 180° + Contraste + Filtro Negativo Nítido).
+/// Sistema de Ira do Mercador das Sombras (Altamente Otimizado / Zero Lag):
+///   • 4º Hit: Olho de Peixe Dinâmico (Lens Distortion + Panini + FOV Micro-Breathing).
+///   • 7º Hit: Escuridão Atmosférica (-1.2 EV via URP GPU Post-Processing - Zero CPU overhead).
+///   • 9º Hit: Inversão Espectral de Cores (Hue Inversion 180° + Contraste Nítido - Sem tela branca).
 ///   • 10º Hit: Morte Imediata / Execução das Sombras.
-///   • Persistência: Os efeitos NÃO se esvaem enquanto você ataca. Permanece ativo por 25s de inatividade.
+///   • Reset Automático no Respawn/Morte: Ao morrer ou respawnar, todos os efeitos são limpos instantaneamente.
 /// </summary>
 public class MerchantHallucinationEffect : MonoBehaviour
 {
@@ -25,7 +26,7 @@ public class MerchantHallucinationEffect : MonoBehaviour
     public float fadeInSpeed = 3.0f;
 
     [Tooltip("Velocidade de retorno suave ao normal após o tempo expirar (Fade Out).")]
-    public float fadeOutSpeed = 0.35f;
+    public float fadeOutSpeed = 0.40f;
 
     [Header("🐟 4º Hit: Olho de Peixe Dinâmico")]
     [Range(-1f, 0f)] public float maxFishEyeDistortion = -0.80f;
@@ -35,23 +36,18 @@ public class MerchantHallucinationEffect : MonoBehaviour
     [Range(0f, 1f)] public float minPaniniCurvature = 0.05f;
     public float maxFovBonus = 1.0f;
     public float minFovBonus = 0.0f;
-    public float maxZoomDistance = 0.12f;
-    public float minZoomDistance = 0.0f;
 
-    [Header("🌑 7º Hit: Escuridão do Ambiente")]
+    [Header("🌑 7º Hit: Escuridão do Ambiente (GPU Post-Processing)")]
     public float maxDarkExposure = -1.2f; // Exatamente -1.2 EV
-    public Color darkAmbientColor = new Color(0.22f, 0.10f, 0.15f, 1.0f);
-    public Color darkFogColor = new Color(0.12f, 0.06f, 0.10f, 1.0f);
-    public float darkFogDensity = 0.016f;
     public Color darkColorFilter = new Color(0.72f, 0.48f, 0.55f);
 
     [Header("🌈 9º Hit: Inversão de Cores Nítida (Espectro Negativo)")]
-    public Color invertedColorFilter = new Color(0.35f, 0.70f, 0.95f); // Azul/Ciano espectral (sem tela branca)
+    public Color invertedColorFilter = new Color(0.35f, 0.70f, 0.95f);
 
-    // Câmera & FOV & Zoom
+    // Câmera & FOV
     private Camera targetCamera;
     private float baseFOV = 60f;
-    private float currentZoomDistance = 0f;
+    private bool hasBaseFOV = false;
 
     // Volume URP e Componentes de Post-Processing
     private Volume dynamicVolume;
@@ -71,18 +67,6 @@ public class MerchantHallucinationEffect : MonoBehaviour
     private float currentLingerTimer = 0f;
     private bool isEffectActive = false;
 
-    // Backup da Iluminação Original do Ambiente
-    private bool hasSavedEnvironment = false;
-    private Color originalAmbientLight;
-    private Color originalAmbientSky;
-    private Color originalAmbientEquator;
-    private Color originalAmbientGround;
-    private bool originalFogEnabled;
-    private Color originalFogColor;
-    private float originalFogDensity;
-    private Dictionary<Light, float> originalLightIntensities = new Dictionary<Light, float>();
-    private Dictionary<Light, Color> originalLightColors = new Dictionary<Light, Color>();
-
     void Awake()
     {
         if (_instance == null)
@@ -96,54 +80,42 @@ public class MerchantHallucinationEffect : MonoBehaviour
         }
 
         InitCamera();
-        SaveOriginalEnvironmentLighting();
         SetupPostProcessingVolume();
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    void Start()
+    void OnDestroy()
     {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        ResetAllEffectsImmediate();
+        if (dynamicProfile != null)
+        {
+            Destroy(dynamicProfile);
+        }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ResetAllEffectsImmediate();
         InitCamera();
     }
 
     private void InitCamera()
     {
-        if (targetCamera == null)
+        targetCamera = GetComponent<Camera>() ?? Camera.main;
+        if (targetCamera != null)
         {
-            targetCamera = GetComponent<Camera>() ?? Camera.main;
-            if (targetCamera != null)
+            if (!hasBaseFOV)
             {
-                baseFOV = targetCamera.fieldOfView;
-
-                var urpCam = targetCamera.GetComponent<UniversalAdditionalCameraData>();
-                if (urpCam != null)
-                {
-                    urpCam.renderPostProcessing = true;
-                }
+                baseFOV = targetCamera.fieldOfView > 10f ? targetCamera.fieldOfView : 60f;
+                hasBaseFOV = true;
             }
-        }
-    }
 
-    private void SaveOriginalEnvironmentLighting()
-    {
-        if (hasSavedEnvironment) return;
-        hasSavedEnvironment = true;
-
-        originalAmbientLight = RenderSettings.ambientLight;
-        originalAmbientSky = RenderSettings.ambientSkyColor;
-        originalAmbientEquator = RenderSettings.ambientEquatorColor;
-        originalAmbientGround = RenderSettings.ambientGroundColor;
-
-        originalFogEnabled = RenderSettings.fog;
-        originalFogColor = RenderSettings.fogColor;
-        originalFogDensity = RenderSettings.fogDensity > 0 ? RenderSettings.fogDensity : 0.01f;
-
-        Light[] allLights = Object.FindObjectsByType<Light>(FindObjectsSortMode.None);
-        foreach (Light l in allLights)
-        {
-            if (l != null && !originalLightIntensities.ContainsKey(l))
+            var urpCam = targetCamera.GetComponent<UniversalAdditionalCameraData>();
+            if (urpCam != null)
             {
-                originalLightIntensities[l] = l.intensity;
-                originalLightColors[l] = l.color;
+                urpCam.renderPostProcessing = true;
             }
         }
     }
@@ -154,11 +126,12 @@ public class MerchantHallucinationEffect : MonoBehaviour
 
         GameObject volObj = new GameObject("Merchant_FishEye_Volume");
         volObj.transform.SetParent(transform);
-        volObj.layer = 0; // Default Layer
+        volObj.layer = 0;
 
         dynamicVolume = volObj.AddComponent<Volume>();
         dynamicVolume.isGlobal = true;
         dynamicVolume.priority = 999f;
+        dynamicVolume.weight = 0f;
 
         dynamicProfile = ScriptableObject.CreateInstance<VolumeProfile>();
         dynamicProfile.name = "Merchant_FishEyeProfile";
@@ -176,7 +149,7 @@ public class MerchantHallucinationEffect : MonoBehaviour
         paniniProjection.distance.overrideState = true;
         paniniProjection.distance.value = 0f;
 
-        // 3. Color Adjustments (Escuridão, Matiz e Inversão Nítida)
+        // 3. Color Adjustments (Escuridão e Inversão Espectral via GPU)
         colorAdjustments = dynamicProfile.Add<ColorAdjustments>(true);
         colorAdjustments.postExposure.overrideState = true;
         colorAdjustments.postExposure.value = 0f;
@@ -255,13 +228,23 @@ public class MerchantHallucinationEffect : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Reseta imediatamente todos os efeitos de ira (chamado no Respawn, Morte ou Troca de Cena).
+    /// </summary>
+    public static void ResetImmediate()
+    {
+        if (_instance != null)
+        {
+            _instance.ResetAllEffectsImmediate();
+        }
+    }
+
     private void StartFishEyeInternal()
     {
         isEffectActive = true;
         highestActiveTier = Mathf.Max(highestActiveTier, 1);
         currentLingerTimer = lingerDuration;
         RefreshTargetIntensities();
-        Debug.Log("🐟 [MERCADOR] (4º Hit) ✨ Efeito Olho de Peixe ativo!");
     }
 
     private void StartDarkEnvironmentInternal()
@@ -270,7 +253,6 @@ public class MerchantHallucinationEffect : MonoBehaviour
         highestActiveTier = Mathf.Max(highestActiveTier, 2);
         currentLingerTimer = lingerDuration;
         RefreshTargetIntensities();
-        Debug.Log("🌑 [MERCADOR] (7º Hit) 💀 Escuridão do Mapa ativa (-1.2 EV)!");
     }
 
     private void StartColorInversionInternal()
@@ -279,7 +261,6 @@ public class MerchantHallucinationEffect : MonoBehaviour
         highestActiveTier = Mathf.Max(highestActiveTier, 3);
         currentLingerTimer = lingerDuration;
         RefreshTargetIntensities();
-        Debug.Log("👁️‍🗨️ [MERCADOR] (9º Hit) 🌈 INVERSÃO DE CORES ATIVA (Nítida e sem tela branca)!");
     }
 
     private void RefreshTargetIntensities()
@@ -287,18 +268,17 @@ public class MerchantHallucinationEffect : MonoBehaviour
         targetFishEyeIntensity = (highestActiveTier >= 1) ? 1.0f : 0.0f;
         targetDarkIntensity = (highestActiveTier >= 2) ? 1.0f : 0.0f;
         targetInvertIntensity = (highestActiveTier >= 3) ? 1.0f : 0.0f;
+        if (dynamicVolume != null) dynamicVolume.weight = 1.0f;
     }
 
     private void ExecutePlayerInternal(GameObject merchantSource)
     {
-        Debug.Log("☠️ [MERCADOR] (10º Hit) ⚡ PACTO VIOLADO: Execução instantânea do jogador!");
-
         if (colorAdjustments != null)
         {
             colorAdjustments.postExposure.value = -6.0f;
         }
 
-        BossController.TriggerCameraShake(1.2f, 0.55f);
+        BossController.TriggerCameraShake(0.8f, 0.45f);
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null)
@@ -320,13 +300,17 @@ public class MerchantHallucinationEffect : MonoBehaviour
 
     void Update()
     {
-        if (targetCamera == null) InitCamera();
-
-        if (dynamicVolume == null)
+        // Se nenhum efeito estiver ativo e as intensidades já estiverem zeradas, não faz nada (0% CPU)
+        if (!isEffectActive && fishEyeIntensity <= 0.001f && darkIntensity <= 0.001f && invertIntensity <= 0.001f)
         {
-            SetupPostProcessingVolume();
-            if (dynamicVolume == null) return;
+            if (dynamicVolume != null && dynamicVolume.weight > 0f)
+            {
+                dynamicVolume.weight = 0f;
+            }
+            return;
         }
+
+        if (targetCamera == null) InitCamera();
 
         // 1. Controle do Timer de Linger (Persistência)
         if (isEffectActive)
@@ -334,7 +318,6 @@ public class MerchantHallucinationEffect : MonoBehaviour
             if (currentLingerTimer > 0f)
             {
                 currentLingerTimer -= Time.deltaTime;
-                // Mantém os alvos dos estágios desbloqueados travados em 1.0f enquanto houver tempo
                 RefreshTargetIntensities();
             }
             else
@@ -348,6 +331,8 @@ public class MerchantHallucinationEffect : MonoBehaviour
                 {
                     isEffectActive = false;
                     highestActiveTier = 0;
+                    ResetAllEffectsImmediate();
+                    return;
                 }
             }
         }
@@ -362,11 +347,9 @@ public class MerchantHallucinationEffect : MonoBehaviour
         float speedInvert = targetInvertIntensity > invertIntensity ? fadeInSpeed : fadeOutSpeed;
         invertIntensity = Mathf.MoveTowards(invertIntensity, targetInvertIntensity, Time.deltaTime * speedInvert);
 
-        // Se todos estiverem em zero, reseta iluminação e economiza
-        if (fishEyeIntensity <= 0.001f && darkIntensity <= 0.001f && invertIntensity <= 0.001f)
+        if (dynamicVolume != null)
         {
-            ResetAllEffects();
-            return;
+            dynamicVolume.weight = Mathf.Max(fishEyeIntensity, Mathf.Max(darkIntensity, invertIntensity));
         }
 
         // 3. Aplicação do Efeito Olho de Peixe Dinâmico (Hit 4)
@@ -375,7 +358,6 @@ public class MerchantHallucinationEffect : MonoBehaviour
             float w1 = Mathf.Sin(Time.time * lensOscillationSpeed);
             float w2 = Mathf.Cos(Time.time * (lensOscillationSpeed * 0.65f));
             float w3 = Mathf.Sin(Time.time * (lensOscillationSpeed * 1.35f) + 1.2f);
-            
             float waveFactor = Mathf.Clamp01(((w1 + (w2 * 0.6f) + (w3 * 0.4f)) / 2.0f + 1.0f) * 0.5f);
 
             float currentDistortion = Mathf.Lerp(minFishEyeDistortion, maxFishEyeDistortion, waveFactor);
@@ -391,25 +373,17 @@ public class MerchantHallucinationEffect : MonoBehaviour
             }
 
             float currentFovBonus = Mathf.Lerp(minFovBonus, maxFovBonus, waveFactor);
-            if (targetCamera != null)
+            if (targetCamera != null && hasBaseFOV)
             {
                 targetCamera.fieldOfView = baseFOV + (currentFovBonus * fishEyeIntensity);
             }
-
-            currentZoomDistance = Mathf.Lerp(minZoomDistance, maxZoomDistance, waveFactor);
-        }
-        else
-        {
-            currentZoomDistance = 0f;
         }
 
-        // 4. Aplicação da Escuridão e Inversão Espectral (Hit 7 e Hit 9)
+        // 4. Aplicação da Escuridão e Inversão Espectral (Hit 7 e Hit 9 via GPU)
         if (colorAdjustments != null)
         {
-            // Exposição: mantida em -1.2 EV (sem lavar a tela)
             colorAdjustments.postExposure.value = maxDarkExposure * darkIntensity;
 
-            // Filtro de Cor: transita para tom sombrio no Hit 7 e para o espectro invertido no Hit 9
             Color currentFilter = Color.Lerp(Color.white, darkColorFilter, darkIntensity);
             if (invertIntensity > 0.001f)
             {
@@ -417,66 +391,30 @@ public class MerchantHallucinationEffect : MonoBehaviour
             }
             colorAdjustments.colorFilter.value = currentFilter;
 
-            // Inversão de Matiz de 180°: inverte todas as cores primárias/secundárias mantendo nitidez absoluta
             colorAdjustments.hueShift.value = Mathf.Lerp(0f, 180f, invertIntensity);
-
-            // Contraste e Saturação para deixar os detalhes bem definidos e visíveis
             colorAdjustments.contrast.value = Mathf.Lerp(0f, 40f, invertIntensity);
             colorAdjustments.saturation.value = Mathf.Lerp(0f, 25f, invertIntensity);
         }
-
-        ApplyEnvironmentLighting(darkIntensity);
     }
 
-    void LateUpdate()
+    public void ResetAllEffectsImmediate()
     {
-        if (targetCamera == null) return;
+        isEffectActive = false;
+        highestActiveTier = 0;
+        currentLingerTimer = 0f;
 
-        if (fishEyeIntensity > 0.001f && currentZoomDistance > 0.001f)
+        fishEyeIntensity = 0f;
+        targetFishEyeIntensity = 0f;
+        darkIntensity = 0f;
+        targetDarkIntensity = 0f;
+        invertIntensity = 0f;
+        targetInvertIntensity = 0f;
+
+        if (dynamicVolume != null)
         {
-            Vector3 zoomOffset = targetCamera.transform.forward * (currentZoomDistance * fishEyeIntensity);
-            targetCamera.transform.position += zoomOffset;
-        }
-    }
-
-    private void ApplyEnvironmentLighting(float darkness)
-    {
-        if (!hasSavedEnvironment) return;
-
-        RenderSettings.ambientLight = Color.Lerp(originalAmbientLight, darkAmbientColor, darkness);
-        RenderSettings.ambientSkyColor = Color.Lerp(originalAmbientSky, darkAmbientColor, darkness);
-        RenderSettings.ambientEquatorColor = Color.Lerp(originalAmbientEquator, darkAmbientColor * 0.6f, darkness);
-        RenderSettings.ambientGroundColor = Color.Lerp(originalAmbientGround, Color.black, darkness);
-
-        if (darkness > 0.05f)
-        {
-            RenderSettings.fog = true;
-            RenderSettings.fogColor = Color.Lerp(originalFogColor, darkFogColor, darkness);
-            RenderSettings.fogDensity = Mathf.Lerp(originalFogDensity, darkFogDensity, darkness);
-        }
-        else
-        {
-            RenderSettings.fog = originalFogEnabled;
-            RenderSettings.fogColor = originalFogColor;
-            RenderSettings.fogDensity = originalFogDensity;
+            dynamicVolume.weight = 0f;
         }
 
-        foreach (var kvp in originalLightIntensities)
-        {
-            Light l = kvp.Key;
-            if (l != null)
-            {
-                float origInt = kvp.Value;
-                Color origCol = originalLightColors.ContainsKey(l) ? originalLightColors[l] : Color.white;
-
-                l.intensity = Mathf.Lerp(origInt, origInt * 0.35f, darkness);
-                l.color = Color.Lerp(origCol, new Color(0.55f, 0.25f, 0.35f), darkness * 0.65f);
-            }
-        }
-    }
-
-    private void ResetAllEffects()
-    {
         if (lensDistortion != null) lensDistortion.intensity.value = 0f;
         if (paniniProjection != null) paniniProjection.distance.value = 0f;
         if (colorAdjustments != null)
@@ -488,29 +426,14 @@ public class MerchantHallucinationEffect : MonoBehaviour
             colorAdjustments.saturation.value = 0f;
         }
 
-        if (targetCamera != null)
+        if (targetCamera != null && hasBaseFOV)
         {
             targetCamera.fieldOfView = baseFOV;
         }
-
-        ApplyEnvironmentLighting(0f);
     }
 
     void OnDisable()
     {
-        ResetAllEffects();
-        if (dynamicVolume != null)
-        {
-            dynamicVolume.weight = 0f;
-        }
-    }
-
-    void OnDestroy()
-    {
-        ResetAllEffects();
-        if (dynamicProfile != null)
-        {
-            Destroy(dynamicProfile);
-        }
+        ResetAllEffectsImmediate();
     }
 }
