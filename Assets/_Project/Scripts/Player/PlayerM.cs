@@ -195,10 +195,9 @@ public class PlayerM : MonoBehaviour
             {
                 animator.speed = 1f; 
 
-                // Lógica normal de pernas correndo/paradas (verifica entrada de movimento E velocidade do Rigidbody)
+                // Lógica de pernas correndo/paradas (baseada no input de movimento para parada instantânea)
                 float moveMagnitude = moveDirection.sqrMagnitude;
-                float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-                float speedParam = (moveMagnitude > 0.01f || velocityMagnitude > 0.1f) ? 1f : 0f;
+                float speedParam = (moveMagnitude > 0.01f) ? 1f : 0f;
 
                 animator.SetFloat("Speed", speedParam);
             }

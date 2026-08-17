@@ -17,7 +17,11 @@ public class Ultimate_Axe : MonoBehaviour
     [Range(-0.5f, 0.5f)]
     public float groundYOffset = -0.225f;
 
-    [Header("🚀 Mecânica de Salto e Deslocamento")]
+    [Header("🚀 Mecânica de Root Motion e Salto")]
+    [Tooltip("Quando ativado, usa o Root Motion nativo da animação para mover e saltar o personagem com a fluidez original, sem scripts.")]
+    public bool useRootMotion = false;
+
+    [Tooltip("Modo legado de deslocamento por script (usado apenas se useRootMotion for desmarcado).")]
     public LeapMode leapMode = LeapMode.ParabolicCurve;
 
     [Header("🏃 Transição Suave de Corrida (Ground Takeoff Transition)")]
@@ -26,7 +30,7 @@ public class Ultimate_Axe : MonoBehaviour
     [Range(0.1f, 1.0f)]
     public float windupGlideFactor = 0.4f;
 
-    [Header("📈 Configurações do Salto em Parábola")]
+    [Header("📈 Configurações do Salto em Parábola (Legado)")]
     public float windupDelay = 0.15f;
     public float parabolaForwardDistance = 6.0f;
     public float parabolaPeakHeight = 2.0f;
@@ -132,12 +136,30 @@ public class Ultimate_Axe : MonoBehaviour
 
     // Componentes e Estado Interno
     private Rigidbody playerRb;
+    private Animator playerAnimator;
     private bool slamImpactExecuted = false;
     private Quaternion lockedRotation;
 
     void Awake()
     {
         playerRb = GetComponentInParent<Rigidbody>() ?? GetComponent<Rigidbody>();
+        FindAnimator();
+    }
+
+    private void FindAnimator()
+    {
+        if (playerAnimator == null)
+        {
+            Player_WeaponManager wm = GetComponentInParent<Player_WeaponManager>() ?? GetComponent<Player_WeaponManager>();
+            if (wm != null && wm.playerAnimator != null && wm.playerAnimator.isActiveAndEnabled)
+            {
+                playerAnimator = wm.playerAnimator;
+            }
+            else
+            {
+                playerAnimator = GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
+            }
+        }
     }
 
     void Update()
@@ -167,6 +189,7 @@ public class Ultimate_Axe : MonoBehaviour
         slamImpactExecuted = false;
         FindBladeTipIfMissing();
         playerRb = GetComponentInParent<Rigidbody>() ?? GetComponent<Rigidbody>();
+        FindAnimator();
 
         Debug.Log("[Ultimate_Axe] ExecuteUltimate() iniciado!");
 
@@ -191,6 +214,21 @@ public class Ultimate_Axe : MonoBehaviour
 
         if (playerRb != null)
         {
+            playerRb.linearVelocity = Vector3.zero;
+        }
+
+        // Ativa Root Motion para a animação do pulo/slam se useRootMotion estiver ativado
+        if (useRootMotion)
+        {
+            if (playerAnimator != null)
+            {
+                Debug.Log("🚀 [Ultimate_Axe] Ativando applyRootMotion para o salto e golpe original do Machado!");
+                playerAnimator.applyRootMotion = true;
+            }
+        }
+        else if (playerRb != null)
+        {
+            // Modo legado: salto guiado por script
             switch (leapMode)
             {
                 case LeapMode.ParabolicCurve:

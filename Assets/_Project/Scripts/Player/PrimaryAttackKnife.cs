@@ -224,12 +224,11 @@ public class PrimaryAttackKnife : MonoBehaviour
                     }
                     else
                     {
+                        // Permite bufferizar o próximo ataque mesmo durante o último golpe (loopando de volta para o Attack 1)
+                        hasBufferedAttack = true;
                         int maxComboSteps = GetMaxComboSteps();
-                        if (comboStep < maxComboSteps)
-                        {
-                            hasBufferedAttack = true;
-                            Debug.Log($"[PrimaryAttackKnife] Input buffered para o próximo passo do combo ({comboStep + 1}/{maxComboSteps}).");
-                        }
+                        int nextStep = (comboStep >= maxComboSteps) ? 1 : comboStep + 1;
+                        Debug.Log($"[PrimaryAttackKnife] Input buffered para o próximo passo do combo ({nextStep}/{maxComboSteps}).");
                     }
                 }
             }

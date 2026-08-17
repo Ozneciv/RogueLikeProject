@@ -106,10 +106,9 @@ public class PlayerHealth : MonoBehaviour
         // Reset rotação do pai para posição limpa e em pé
         transform.rotation = Quaternion.identity;
 
-        // Restaura o Animator para estado Idle em pé, sem root motion e sem animações de acordar
+        // Restaura o Animator para estado Idle em pé e sem animações de acordar
         if (playerAnimator != null)
         {
-            playerAnimator.applyRootMotion = false;
             playerAnimator.ResetTrigger("Revive1");
             playerAnimator.ResetTrigger("Revive2");
             playerAnimator.ResetTrigger("DeathForward");
@@ -134,7 +133,6 @@ public class PlayerHealth : MonoBehaviour
 
     public void UnlockPlayer()
     {
-        if (playerAnimator != null) playerAnimator.applyRootMotion = false;
         isDead = false;
         if (playerMovement != null) playerMovement.enabled = true;
         if (playerAttack != null) playerAttack.enabled = true;
