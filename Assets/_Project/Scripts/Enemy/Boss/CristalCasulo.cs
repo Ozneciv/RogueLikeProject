@@ -328,6 +328,10 @@ public class CristalCasulo : MonoBehaviour
             Instantiate(vfxMortePrefab, transform.position + Vector3.up * 1.0f, Quaternion.identity);
         }
 
+        // 🍃 Dispara a explosão de folhas e Impact Frame da Vefects na quebra do casulo
+        VFXManager.Play(VFXType.CocoonLeavesBurst, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+        VFXManager.Play(VFXType.ImpactFrame, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+
         if (meuMeshFilter != null && meuMeshFilter.gameObject != null)
         {
             Destroy(meuMeshFilter.gameObject, 0.2f);

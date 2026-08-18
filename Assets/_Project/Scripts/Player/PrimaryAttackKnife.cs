@@ -648,7 +648,8 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         eventFiredOpenWindow = true;
         
-        if (hasBufferedAttack)
+        // Proteção para evitar consumir buffer quase instantaneamente com menos de 0.15s de ataque
+        if (hasBufferedAttack && (Time.time - lastAttackTime >= 0.15f))
         {
             hasBufferedAttack = false;
             Debug.Log("[PrimaryAttackKnife] Consumindo ataque buffered.");

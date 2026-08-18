@@ -42,6 +42,42 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     private bool phase1Ativa = false;
     private bool atacando = false;
     public bool Atacando => atacando;
+    private List<GameObject> activePrisonObjects = new List<GameObject>();
+
+    /// <summary>
+    /// Verifica se já existem pilares de cristal ou espinhos ativos na cena.
+    /// Se houver pelo menos um pilar/espinho, impede novas invocações sobrepostas.
+    /// </summary>
+    public bool ExistemPilaresNaCena()
+    {
+        // 1. Limpa e verifica a lista interna de instâncias criadas
+        activePrisonObjects.RemoveAll(item => item == null);
+        if (activePrisonObjects.Count > 0) return true;
+
+        // 2. Busca componentes CrystalPillar ativos na cena
+        CrystalPillar[] pilares = Object.FindObjectsByType<CrystalPillar>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        if (pilares != null && pilares.Length > 0)
+        {
+            for (int i = 0; i < pilares.Length; i++)
+            {
+                if (pilares[i] != null && pilares[i].gameObject.activeInHierarchy)
+                    return true;
+            }
+        }
+
+        // 3. Busca componentes SpikeDamageDealer ativos na cena
+        SpikeDamageDealer[] espinhos = Object.FindObjectsByType<SpikeDamageDealer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        if (espinhos != null && espinhos.Length > 0)
+        {
+            for (int i = 0; i < espinhos.Length; i++)
+            {
+                if (espinhos[i] != null && espinhos[i].gameObject.activeInHierarchy)
+                    return true;
+            }
+        }
+
+        return false;
+    }
 
     private void Awake()
     {
@@ -188,13 +224,27 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 
                 if (ataqueSorteado == 0)
                 {
-                    yield return StartCoroutine(Ataque_Prisao(pilarPrefab, false));
-                    if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Pillar);
+                    if (ExistemPilaresNaCena() || pilarPrefab == null)
+                    {
+                        yield return StartCoroutine(RecuarDoPlayer());
+                    }
+                    else
+                    {
+                        yield return StartCoroutine(Ataque_Prisao(pilarPrefab, false));
+                        if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Pillar);
+                    }
                 }
                 else if (ataqueSorteado == 1)
                 {
-                    yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
-                    if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
+                    if (ExistemPilaresNaCena() || espinhoPrefab == null)
+                    {
+                        yield return StartCoroutine(RecuarDoPlayer());
+                    }
+                    else
+                    {
+                        yield return StartCoroutine(Ataque_Prisao(espinhoPrefab, true));
+                        if (mobSpawner != null) mobSpawner.SpawnWave(BossPhase1_MobSpawner.WaveType.PostPrison_Spike);
+                    }
                 }
                 else if (ataqueSorteado == 2)
                 {
@@ -219,7 +269,20 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     // =====================================================
     private IEnumerator Ataque_Prisao(GameObject prefabObstaculo, bool formatoQuadrado)
     {
+        // Se o prefab for nulo ou se já houver pilares/espinhos ativos na arena, NÃO TOCA NENHUMA ANIMAÇÃO e cancela imediatamente!
+        if (prefabObstaculo == null || ExistemPilaresNaCena())
+        {
+            yield break;
+        }
+
         atacando = true;
+
+        // Congela 100% a movimentação do Boss durante a conjuração
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
 
         if (animator != null)
         {
@@ -278,6 +341,7 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 Quaternion rotacao = Quaternion.LookRotation(centro - posFinal);
                 GameObject obj = Instantiate(prefabObstaculo, posSubsolo, rotacao);
                 objetosCriados.Add(obj.transform);
+                activePrisonObjects.Add(obj);
                 
                 Destroy(obj, tempoVidaPrisao);
             }
@@ -285,7 +349,10 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
 
         yield return StartCoroutine(ErguerObjetosDoChao(objetosCriados, posicoesFinais));
 
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        // Mantém o Boss congelado até a animação de conjuração SpellGround finalizar completamente (~1.80s total)
+        yield return new WaitForSeconds(0.85f);
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh && bossController != null && bossController.CanInitiateAction)
             agent.isStopped = false;
 
         atacando = false;
@@ -320,8 +387,6 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
             }
             yield return null;
         }
-
-        atacando = false;
     }
 
     // =====================================================
@@ -396,6 +461,8 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     {
         if (phase1Ativa && !atacando && bossController != null && !bossController.IsStunned && !bossController.IsDead)
         {
+            if (ExistemPilaresNaCena()) return;
+
             if (Random.Range(0, 2) == 0)
                 StartCoroutine(Ataque_Prisao(pilarPrefab, false));
             else
@@ -409,7 +476,14 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
     /// </summary>
     public void InvocarPrisaoForado()
     {
-        if (atacando || bossController == null || !bossController.CanInitiateAction) return;
+        InvocarPrisaoForcado(false);
+    }
+
+    public bool InvocarPrisaoForcado(bool bypassActionCheck = false)
+    {
+        if (atacando) return false;
+        if (!bypassActionCheck && (bossController == null || !bossController.CanInitiateAction)) return false;
+        if (ExistemPilaresNaCena()) return false;
 
         // Sorteia entre pilares ou espinhos
         if (pilarPrefab != null || espinhoPrefab != null)
@@ -418,8 +492,12 @@ public class BossPhase1_MestreDoSolo : MonoBehaviour
                 ? (Random.Range(0, 2) == 0 ? pilarPrefab : espinhoPrefab)
                 : (pilarPrefab != null ? pilarPrefab : espinhoPrefab);
 
+            if (prefab == null) return false;
+
             bool quadrado = (prefab == espinhoPrefab);
             StartCoroutine(Ataque_Prisao(prefab, quadrado));
+            return true;
         }
+        return false;
     }
 }

@@ -131,4 +131,13 @@ public class BossAnimationEvents : MonoBehaviour
         var boss = GetBoss();
         if (boss != null) boss.SnapToGround();
     }
+
+    private void OnAnimatorMove()
+    {
+        var boss = GetBoss();
+        if (boss != null)
+        {
+            boss.OnChildAnimatorMove(GetComponent<Animator>());
+        }
+    }
 }

@@ -222,9 +222,15 @@ public class BossHandHitbox : MonoBehaviour
         {
             Instantiate(vfxAtaqueMeleePrefab, player.transform.position + Vector3.up * 1.0f, Quaternion.identity);
         }
+        else
+        {
+            VFXManager.Play(VFXType.BossPunchImpact, player.transform.position + Vector3.up * 1.0f, Quaternion.identity);
+        }
 
-        BossController.TriggerCameraShake(0.3f, 0.2f);
+        // Dispara o Impact Frame da Vefects no ponto do acerto
+        VFXManager.Play(VFXType.ImpactFrame, player.transform.position + Vector3.up * 1.0f, Quaternion.identity);
+        BossController.TriggerCameraShake(0.35f, 0.2f);
 
-        Debug.Log($"[BossHandHitbox - {handSide}] 💥 GOLPE ÚNICO DA MÃO {handSide.ToString().ToUpper()} ACERTOU O PLAYER! Dano: {damage}");
+        Debug.Log($"[BossHandHitbox - {handSide}] 💥 GOLPE ÚNICO DA MÃO {handSide.ToString().ToUpper()} ACERTOU O PLAYER COM IMPACT FRAME! Dano: {damage}");
     }
 }

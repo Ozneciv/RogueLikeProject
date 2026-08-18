@@ -464,6 +464,10 @@ public class Ultimate_Axe : MonoBehaviour
             }
         }
 
+        // VFX do Cartoon FX e Impact Frame da Vefects no solo
+        VFXManager.Play(VFXType.PlayerAxeGroundSlam, impactPoint, Quaternion.identity);
+        VFXManager.Play(VFXType.ImpactFrame, impactPoint, Quaternion.identity);
+
         if (shockwaveVFX != null)
         {
             GameObject vfxInstance = Instantiate(shockwaveVFX, impactPoint, Quaternion.identity);

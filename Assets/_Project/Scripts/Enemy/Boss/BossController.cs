@@ -135,6 +135,35 @@ public class BossController : MonoBehaviour
     [Tooltip("Transform posicionado no pé do Boss para spawnar o sangue no chão.")]
     [SerializeField] private Transform footSpawnPoint;
 
+    [Header("🎬 Configurações de VFX & Impact Frame")]
+    [Tooltip("Velocidade de reprodução do Impact Frame no PowerUp (padrão 0.5 para efeito cinematográfico lento e estendido).")]
+    [Range(0.1f, 5.0f)] public float powerUpImpactFrameSpeed = 0.5f;
+
+    [Header("⚡ Teleporte / Dash Estilo SharpBlur (Alternativa ao Sprint)")]
+    [Tooltip("Se ativado, o Boss usará Teleporte com Holograma de Predição (estilo SharpBlur) para surpreender o jogador em vez de correr (Sprint).")]
+    public bool enableSharpBlurTeleport = true;
+
+    [Tooltip("Chance (0% a 100%) do Boss escolher teleportar em vez de correr quando estiver à distância.")]
+    [Range(0f, 100f)] public float teleportChance = 100f;
+
+    [Tooltip("Tempo de antecipação que o holograma/fantasma fica visível no destino antes do Boss teleportar (padrão: 0.25s).")]
+    public float teleportAnticipationTime = 0.25f;
+
+    [Tooltip("Distância de aproximação que o Boss reaparece perto do jogador (padrão: 2.8m).")]
+    public float teleportDistanceOffset = 2.8f;
+
+    [Tooltip("Fator de predição do movimento do player (0 = onde ele está, 1 = onde ele estará no reflexo).")]
+    [Range(0f, 1f)] public float teleportLeadPrediction = 0.5f;
+
+    [Tooltip("Prefab do Holograma com DashHologram.cs (se nulo, autodetectará hologramPrefab).")]
+    public GameObject teleportHologramPrefab;
+
+    [Tooltip("Material translúcido para o holograma do teleporte.")]
+    public Material teleportHologramMaterial;
+
+    [Tooltip("Transparência do holograma fantasma (0.1 a 1.0).")]
+    [Range(0.1f, 1f)] public float teleportHologramAlpha = 0.6f;
+
     [Header("UI da Barra de Vida")]
     [Tooltip("Prefab do Canvas da barra de vida do Boss. Se atribuído (ou em Resources/BossHealthBar_Canvas), será instanciado automaticamente no mapa.")]
     public GameObject bossHealthBarPrefab;
@@ -175,9 +204,13 @@ public class BossController : MonoBehaviour
     private NavMeshAgent agent;
     private Transform playerTransform;
 
-    // Ataque melee
+    // Ataque melee e Locomoção
     private float meleeTimer = 0f;
     private bool isAttacking = false;
+    private bool isSprinting = false;
+    private string lastMeleeAttack = "";
+    private float lastStompImpactTime = -10f;
+    private float lastJumpImpactTime = -10f;
     [HideInInspector] public List<BossHandHitbox> allHandHitboxes = new List<BossHandHitbox>();
 
     public void DesativarTodosOsTrails()
@@ -281,6 +314,15 @@ public class BossController : MonoBehaviour
     // =====================================================
     // UNITY LIFECYCLE
     // =====================================================
+
+    void OnDisable()
+    {
+        if (Time.timeScale < 1.0f)
+        {
+            Time.timeScale = 1.0f;
+            Time.fixedDeltaTime = 0.02f;
+        }
+    }
 
     void Awake()
     {
@@ -461,15 +503,15 @@ public class BossController : MonoBehaviour
 
     public void AnimEvent_StompImpact()
     {
-        // Posição de contato no solo
-        Vector3 pos = transform.position;
-        if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit groundHit, 6.0f))
+        // Previne disparo duplo consecutivo (ex: AnimationEvent no FBX + chamada de segurança no script)
+        if (Time.time - lastStompImpactTime < 0.35f)
         {
-            pos = groundHit.point + Vector3.up * 0.05f;
+            return;
         }
+        lastStompImpactTime = Time.time;
 
-        // 1. Busca AUTOMATICAMENTE o objeto de VFX que é exclusivamente o Stomp (Pisada)
-        if (stompVFXChildObject == null || stompVFXChildObject == jumpAttackVFXChildObject || stompVFXChildObject.name.ToLower().Contains("centro"))
+        // 1. Busca AUTOMATICAMENTE o objeto de VFX que é exclusivamente o Stomp (Pisada frontal no pé)
+        if (stompVFXChildObject == null || stompVFXChildObject == jumpAttackVFXChildObject || stompVFXChildObject.name.ToLower().Contains("centro") || stompVFXChildObject.name.ToLower().Contains("radial"))
         {
             Transform found = transform.Find("Stomp") ?? transform.Find("VFX_Stomp") ?? transform.Find("Pisada") ?? transform.Find("StompVFX");
             if (found == null)
@@ -477,7 +519,7 @@ public class BossController : MonoBehaviour
                 foreach (Transform child in GetComponentsInChildren<Transform>(true))
                 {
                     string n = child.name.ToLower();
-                    if ((n.Contains("stomp") || n.Contains("pisada")) && !n.Contains("centro") && !n.Contains("jump"))
+                    if ((n.Contains("stomp") || n.Contains("pisada")) && !n.Contains("centro") && !n.Contains("jump") && !n.Contains("radial"))
                     {
                         found = child;
                         break;
@@ -487,13 +529,9 @@ public class BossController : MonoBehaviour
             if (found != null) stompVFXChildObject = found.gameObject;
         }
 
-        // Garante que o VFX de salto seja desativado para evitar sobreposição
-        if (jumpAttackVFXChildObject != null) jumpAttackVFXChildObject.SetActive(false);
-
-        // 2. ATIVAÇÃO PURA DO OBJETO FILHO (Zero clones, zero alterações de rotação/escala!)
+        // 2. Dispara o VFX nativo do Prefab mantendo sua posição no pé, rotação (-90° Y) e escala (0.65) intactas!
         if (stompVFXChildObject != null)
         {
-            stompVFXChildObject.SetActive(false);
             stompVFXChildObject.SetActive(true);
 
             ParticleSystem[] psList = stompVFXChildObject.GetComponentsInChildren<ParticleSystem>(true);
@@ -501,7 +539,8 @@ public class BossController : MonoBehaviour
             {
                 foreach (var ps in psList)
                 {
-                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    ps.gameObject.SetActive(true);
+                    ps.Clear(true);
                     ps.time = 0f;
                     ps.Play(true);
                 }
@@ -512,58 +551,45 @@ public class BossController : MonoBehaviour
             if (coneHitbox == null) coneHitbox = stompVFXChildObject.AddComponent<BossStompConeHitbox>();
             coneHitbox.StartWave(gameObject);
 
-            Debug.Log($"🦶 [BOSS STOMP] ✅ Ativou VFX FILHO DO PREFAB: '{stompVFXChildObject.name}' (Sem criar nenhum clone e com escala 100% nativa)!");
-        }
-        // 3. Fallback apenas se não existir nenhum objeto no prefab
-        else if (vfxStompPrefab != null)
-        {
-            GameObject spawnedVFX = Instantiate(vfxStompPrefab, transform);
-            spawnedVFX.transform.localPosition = Vector3.zero;
-            spawnedVFX.transform.localRotation = vfxStompPrefab.transform.localRotation;
-            spawnedVFX.transform.localScale = vfxStompPrefab.transform.localScale;
-
-            ParticleSystem[] psList = spawnedVFX.GetComponentsInChildren<ParticleSystem>(true);
-            if (psList != null && psList.Length > 0)
-            {
-                foreach (var ps in psList)
-                {
-                    ps.time = 0f;
-                    ps.Play(true);
-                }
-            }
-
-            BossStompConeHitbox coneHitbox = spawnedVFX.GetComponent<BossStompConeHitbox>() ?? spawnedVFX.GetComponentInChildren<BossStompConeHitbox>();
-            if (coneHitbox == null) coneHitbox = spawnedVFX.AddComponent<BossStompConeHitbox>();
-            coneHitbox.StartWave(gameObject);
-
-            Destroy(spawnedVFX, 3.5f);
-            Debug.Log($"🦶 [BOSS STOMP] Fallback: Instanciou como filho do Boss para manter a escala: '{vfxStompPrefab.name}'");
+            Debug.Log($"🦶 [BOSS STOMP] ✅ Disparou VFX Nativo do Prefab: '{stompVFXChildObject.name}' (Posição, Rotação e Escala preservadas)!");
         }
         else
         {
+            Vector3 pos = transform.position;
+            if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit groundHit, 6.0f))
+            {
+                pos = groundHit.point + Vector3.up * 0.05f;
+            }
             VFX_BossShockwave.CriarEfeitoOndaDeChoque(pos, 5.5f, new Color(0f, 0.95f, 1f, 0.95f), new Color(0.8f, 0.1f, 1f, 0f), 0.35f, 1.0f);
             AplicarDanoEKnockbackEmArea(pos, 5.0f, 35, 8.0f, 0.35f);
         }
 
-        // Camera Shake
+        // Camera Shake, Ancoragem, VFX e Impact Frame da Vefects
         TriggerCameraShake(0.38f, 0.25f);
+        VFXManager.Play(VFXType.BossStompShockwave, transform.position + transform.forward * 1.5f, transform.rotation);
+        VFXManager.Play(VFXType.ImpactFrame, transform.position + transform.forward * 1.5f, transform.rotation);
+        SnapToGround();
     }
 
     public void AnimEvent_JumpImpact()
     {
-        Vector3 pos = transform.position + transform.forward * 1.0f;
-        pos.y = transform.position.y + 0.05f;
+        // Previne disparo duplo consecutivo (ex: AnimationEvent no FBX + chamada de segurança no script)
+        if (Time.time - lastJumpImpactTime < 0.35f)
+        {
+            return;
+        }
+        lastJumpImpactTime = Time.time;
 
-        // Auto-busca o objeto de VFX de salto que já é filho do Boss no Prefab
+        // 1. Busca AUTOMATICAMENTE o objeto de VFX de salto (Prioriza Stomp_Radial_360)
         if (jumpAttackVFXChildObject == null)
         {
-            Transform found = transform.Find("JumpAttack") ?? transform.Find("VFX_JumpAttack") ?? transform.Find("Salto") ?? transform.Find("Jump") ?? transform.Find("centro");
+            Transform found = transform.Find("Stomp_Radial_360") ?? transform.Find("JumpAttack") ?? transform.Find("VFX_JumpAttack") ?? transform.Find("Salto") ?? transform.Find("Jump") ?? transform.Find("centro");
             if (found == null)
             {
                 foreach (Transform child in GetComponentsInChildren<Transform>(true))
                 {
                     string n = child.name.ToLower();
-                    if (n.Contains("jump") || n.Contains("salto") || n.Contains("centro"))
+                    if (n.Contains("radial") || n.Contains("jump") || n.Contains("salto") || n.Contains("centro"))
                     {
                         found = child;
                         break;
@@ -573,51 +599,42 @@ public class BossController : MonoBehaviour
             if (found != null) jumpAttackVFXChildObject = found.gameObject;
         }
 
-        // Garante que o VFX de stomp seja desativado para evitar sobreposição
-        if (stompVFXChildObject != null) stompVFXChildObject.SetActive(false);
-
-        // 1. Dispara o VFX filho de salto se existir
+        // 2. Dispara o VFX nativo de salto do Prefab (Stomp_Radial_360) mantendo sua rotação (-90° Y) e escala (0.65) intactas!
         if (jumpAttackVFXChildObject != null)
         {
-            jumpAttackVFXChildObject.SetActive(false);
             jumpAttackVFXChildObject.SetActive(true);
+
             ParticleSystem[] psList = jumpAttackVFXChildObject.GetComponentsInChildren<ParticleSystem>(true);
             if (psList != null && psList.Length > 0)
             {
                 foreach (var ps in psList)
                 {
-                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    ps.gameObject.SetActive(true);
+                    ps.Clear(true);
                     ps.time = 0f;
                     ps.Play(true);
                 }
             }
-            Debug.Log($"💥 [BOSS JUMP ATTACK] ✅ Ativou VFX filho nativo de salto: '{jumpAttackVFXChildObject.name}'!");
-        }
-        // 2. Ou instancia o prefab de salto
-        else if (vfxJumpAttackPrefab != null)
-        {
-            GameObject spawnedVFX = Instantiate(vfxJumpAttackPrefab, pos, Quaternion.identity);
-            ParticleSystem[] psList = spawnedVFX.GetComponentsInChildren<ParticleSystem>(true);
-            if (psList != null && psList.Length > 0)
-            {
-                foreach (var ps in psList)
-                {
-                    ps.time = 0f;
-                    ps.Play(true);
-                }
-            }
-            Destroy(spawnedVFX, 3.5f);
-            Debug.Log($"💥 [BOSS JUMP ATTACK] Instanciou VFX prefab de salto: '{vfxJumpAttackPrefab.name}'!");
+
+            Debug.Log($"💥 [BOSS JUMP ATTACK] ✅ Disparou VFX Nativo de Salto (Stomp_Radial_360): '{jumpAttackVFXChildObject.name}'!");
         }
         else
         {
+            Vector3 pos = transform.position;
+            if (Physics.Raycast(transform.position + Vector3.up * 2.0f, Vector3.down, out RaycastHit groundHit, 6.0f))
+            {
+                pos = groundHit.point + Vector3.up * 0.05f;
+            }
             VFX_BossShockwave.CriarEfeitoOndaDeChoque(pos, 7.0f, new Color(1f, 0.25f, 0.85f, 1.0f), new Color(0f, 0.9f, 1f, 0f), 0.45f, 1.5f);
         }
 
-        // Knockback equilibrado no Jump Attack (Empurrão: 11.0f, Elevação: 0.45f)
-        AplicarDanoEKnockbackEmArea(pos, 7.0f, 45, 11.0f, 0.45f);
+        // Knockback e dano de impacto massivo do Jump Attack (Raio: 8.5m, Dano: 45, Empurrão: 12.0f, Elevação: 0.45f)
+        Vector3 impactPos = transform.position;
+        AplicarDanoEKnockbackEmArea(impactPos, 8.5f, 45, 12.0f, 0.45f);
         TriggerCameraShake(0.55f, 0.40f);
-        Debug.Log("💥 [BOSS JUMP ATTACK] Salto esmagador com choque no solo!");
+        VFXManager.Play(VFXType.BossJumpShockwave, transform.position, Quaternion.identity);
+        VFXManager.Play(VFXType.ImpactFrame, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+        Debug.Log("💥 [BOSS JUMP ATTACK] Salto esmagador com choque no solo e Impact Frame Vefects!");
 
         // Ancoragem de Solo: Impede que o Boss afunde 20cm ao pousar e se levantar!
         SnapToGround();
@@ -661,7 +678,8 @@ public class BossController : MonoBehaviour
         Collider[] hits = Physics.OverlapSphere(centro, raio);
         foreach (Collider col in hits)
         {
-            if (col.CompareTag("Player"))
+            if (col == null) continue;
+            if (col.CompareTag("Player") || col.name.ToLower().Contains("player"))
             {
                 PlayerHealth ph = col.GetComponent<PlayerHealth>() ?? col.GetComponentInParent<PlayerHealth>();
                 if (ph != null) ph.TakeDamage(dano, gameObject);
@@ -830,32 +848,35 @@ public class BossController : MonoBehaviour
 
         if (animator == null) return;
 
-        if (CurrentState == BossState.Dead)
+        if (CurrentState == BossState.Dead || CurrentState == BossState.Stunned)
         {
             animator.SetBool("IsWalking", false);
+            animator.SetBool("isSprinting", false);
+            animator.SetFloat("Speed", 0f);
             return;
         }
 
-        if (CurrentState == BossState.Stunned)
-        {
-            animator.SetBool("IsWalking", false);
-            return;
-        }
-
-        // Se estiver executando qualquer ataque melee ou de magia (Spell), desativa IsWalking para não cancelar os triggers!
+        // Se estiver executando qualquer ataque melee ou de magia (Spell), desativa IsWalking e isSprinting para não cancelar os triggers!
         BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
         if (isAttacking || (mestre != null && mestre.Atacando))
         {
             animator.SetBool("IsWalking", false);
+            animator.SetBool("isSprinting", false);
+            animator.SetFloat("Speed", 0f);
             return;
         }
 
         bool isMoving = false;
+        float currentMoveSpeed = 0f;
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            isMoving = agent.velocity.magnitude > 0.15f;
+            currentMoveSpeed = agent.velocity.magnitude;
+            isMoving = currentMoveSpeed > 0.15f;
         }
-        animator.SetBool("IsWalking", isMoving);
+
+        animator.SetBool("IsWalking", isMoving && !isSprinting);
+        animator.SetBool("isSprinting", isMoving && isSprinting);
+        animator.SetFloat("Speed", isMoving ? currentMoveSpeed : 0f);
     }
 
     private Vector3 lastDripPosition;
@@ -952,7 +973,7 @@ public class BossController : MonoBehaviour
     /// <summary>
     /// Congela a movimentação do Boss 100% (agent.speed = 0) durante o cast de feitiços.
     /// </summary>
-    public void FreezeMovementForSpell(float duration = 1.4f)
+    public void FreezeMovementForSpell(float duration = 1.8f)
     {
         StartCoroutine(SpellFreezeRoutine(duration));
     }
@@ -970,9 +991,9 @@ public class BossController : MonoBehaviour
 
         yield return new WaitForSeconds(duration);
 
-        if (agent != null && !IsStunned && !IsDead && !isCastingSpell && !isAttacking && !isExecutingCombo)
+        if (agent != null && !IsStunned && !IsDead && CanInitiateAction)
         {
-            // Restaura a movimentação e velocidade normal
+            // Restaura a movimentação e velocidade normal se o Boss estiver livre
             agent.speed = baseNavSpeed;
             agent.isStopped = false;
         }
@@ -981,31 +1002,84 @@ public class BossController : MonoBehaviour
     /// <summary>
     /// Dispara a animação PowerUP durante a transição da Fase 1 para a Fase 2.
     /// O Boss fica INVULNERÁVEL e congelado durante toda a animação.
+    /// <summary>
+    /// Dispara a animação PowerUP durante a transição de Fase.
+    /// O Boss fica INVULNERÁVEL e 100% CONGELADO no lugar durante toda a animação.
     /// </summary>
     public void TriggerPowerUP(float invulnerabilityDuration = 2.5f)
     {
         DesativarTodosOsTrails();
-        FreezeMovementForSpell(invulnerabilityDuration);
+        isCastingSpell = true;
+        isSprinting = false;
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            agent.speed = 0f;
+        }
         StartCoroutine(PowerUPInvulnerabilityRoutine(invulnerabilityDuration));
     }
 
     private IEnumerator PowerUPInvulnerabilityRoutine(float duration)
     {
+        isCastingSpell = true;
+        isSprinting = false;
         DesativarTodosOsTrails();
         if (health != null) health.isInvulnerable = true;
 
-        if (animator != null)
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            animator.SetTrigger("PowerUp");
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            agent.speed = 0f;
         }
 
-        if (showDebugLog) Debug.Log($"[BossController] 🛡️ Boss INVULNERÁVEL e CONGELADO durante o PowerUP ({duration}s)!");
+        if (animator != null)
+        {
+            animator.SetBool("IsWalking", false);
+            animator.SetBool("isSprinting", false);
+            animator.SetFloat("Speed", 0f);
+            animator.ResetTrigger("bossSwipe");
+            animator.ResetTrigger("bossPunch");
+            animator.ResetTrigger("bossJumpAttack");
+            animator.ResetTrigger("bossStomp");
+            animator.SetTrigger("PowerUp");
+            animator.Play("PowerUp", 0, 0f);
+        }
 
-        yield return new WaitForSeconds(duration);
+        // 🎬 CÂMERA LENTA TOTAL (Slow Motion 0.25x) + Impact Frame no PowerUp (com velocidade personalizada)!
+        Time.timeScale = 0.25f;
+        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+        VFXManager.Play(VFXType.ImpactFrame, transform.position + Vector3.up * 1.5f, Quaternion.identity, 1.0f, powerUpImpactFrameSpeed);
+
+        if (showDebugLog) Debug.Log($"[BossController] 🛡️⚡ Boss em POWERUP: Câmera Lenta Total (0.25x) e Impact Frame (Speed {powerUpImpactFrameSpeed}x) ativados por {duration}s!");
+
+        float timer = 0f;
+        while (timer < duration)
+        {
+            timer += Time.unscaledDeltaTime;
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.velocity = Vector3.zero;
+            }
+            yield return null;
+        }
+
+        // Restaura a velocidade normal do jogo
+        Time.timeScale = 1.0f;
+        Time.fixedDeltaTime = 0.02f;
 
         if (health != null && !IsDead) health.isInvulnerable = false;
+        isCastingSpell = false;
 
-        if (showDebugLog) Debug.Log("[BossController] ⚔️ Invulnerabilidade do PowerUP encerrada! Boss pronto para combate na Fase 2.");
+        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead && CanInitiateAction)
+        {
+            agent.speed = phaseConfig != null ? phaseConfig.baseSpeed : 4.8f;
+            agent.isStopped = false;
+        }
+
+        if (showDebugLog) Debug.Log("[BossController] ⚔️ PowerUP e Câmera Lenta encerrados! Velocidade normal restaurada.");
     }
 
     /// <summary>
@@ -1299,7 +1373,7 @@ public class BossController : MonoBehaviour
 
     /// <summary>
     /// Combo Tático: PRISÃO ESMAGADORA (Trap & Stomp)
-    ///  1. Prende o jogador com a prisão de pilares/espinhos.
+    ///  1. Prende o jogador com a prisão de pilares/espinhos (se não houver pilares na cena).
     ///  2. Vira para o centro da prisão e desfere o Stomp na direção do jogador contido.
     /// </summary>
     public bool ExecuteTrapAndStompCombo()
@@ -1322,33 +1396,37 @@ public class BossController : MonoBehaviour
 
         if (showDebugLog) Debug.Log("⚔️ [BOSS COMBO] 🕸️ Iniciando Combo Tático: PRISÃO ESMAGADORA (Trap & Stomp)!");
 
-        // Passo 1: Vira para o jogador e conjura os pilares ao redor dele
-        if (playerTransform != null)
-        {
-            Vector3 lookDir = (playerTransform.position - transform.position).normalized;
-            lookDir.y = 0f;
-            if (lookDir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(lookDir);
-        }
-
-        if (animator != null)
-        {
-            animator.ResetTrigger("bossSpell");
-            animator.SetTrigger("bossSpell");
-            animator.Play("SpellGround", 0, 0f);
-        }
-
         BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
-        if (mestre != null)
-        {
-            mestre.InvocarPrisaoForado();
-        }
 
-        // Aguarda os pilares emergirem e prenderem o jogador (1.0s)
-        yield return new WaitForSeconds(1.0f);
+        // Passo 1: Se não houver pilares e houver prefabs configurados, vira para o jogador e conjura os pilares ao redor dele
+        if (mestre != null && !mestre.ExistemPilaresNaCena() && (mestre.pilarPrefab != null || mestre.espinhoPrefab != null))
+        {
+            if (playerTransform != null)
+            {
+                Vector3 lookDir = (playerTransform.position - transform.position).normalized;
+                lookDir.y = 0f;
+                if (lookDir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(lookDir);
+            }
+
+            if (animator != null)
+            {
+                animator.ResetTrigger("bossSpell");
+                animator.SetTrigger("bossSpell");
+                animator.Play("SpellGround", 0, 0f);
+            }
+
+            bool spawned = mestre.InvocarPrisaoForcado(bypassActionCheck: true);
+
+            // Aguarda os pilares emergirem e prenderem o jogador (duração completa de SpellGround: 1.80s)
+            if (spawned)
+            {
+                yield return new WaitForSeconds(1.80f);
+            }
+        }
 
         isCastingSpell = false;
 
-        // Passo 2: Vira para o centro da prisão e desfere o Stomp / Salto Esmagador!
+        // Passo 2: Vira para o centro da prisão e desfere o Stomp Esmagador!
         if (playerTransform != null)
         {
             Vector3 targetDir = (playerTransform.position - transform.position).normalized;
@@ -1365,21 +1443,33 @@ public class BossController : MonoBehaviour
             animator.Play("STOMP", 0, 0f);
         }
 
-        // Telegrafagem do Stomp
-        yield return new WaitForSeconds(0.45f);
+        // Telegrafagem precisa do Stomp (1.40s até o impacto do pé no chão com speed 0.5x)
+        float stompWindup = 1.40f;
+        float trackingCutoff = 0.45f;
+        float elapsedStompWindup = 0f;
+
+        while (elapsedStompWindup < stompWindup)
+        {
+            elapsedStompWindup += Time.deltaTime;
+            if (elapsedStompWindup <= trackingCutoff)
+            {
+                HandleRotationSmooth(turnSmoothSpeed * 1.4f);
+            }
+            yield return null;
+        }
 
         // Impacto do Stomp
         AnimEvent_StompImpact();
 
-        // Janela de recuperação do golpe pesado
+        // Janela de recuperação do golpe pesado (2.00s restantes da animação STOMP)
         isRecovering = true;
-        yield return new WaitForSeconds(1.2f);
+        yield return new WaitForSeconds(2.00f);
         isRecovering = false;
 
         isAttacking = false;
         isExecutingCombo = false;
 
-        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead)
+        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead && CanInitiateAction)
             agent.isStopped = false;
 
         if (showDebugLog) Debug.Log("⚔️ [BOSS COMBO] ✅ Combo Prisão Esmagadora finalizado com sucesso!");
@@ -1649,15 +1739,16 @@ public class BossController : MonoBehaviour
                 CurrentState = BossState.Phase2;
                 TriggerCameraShake(0.5f, 0.20f);
                 StartCoroutine(CocoonShatterLightPulseRoutine());
-                TriggerPowerUP();
+                TriggerPowerUP(2.5f);
                 break;
             case 3:
                 CurrentState = BossState.Phase3;
                 TriggerCameraShake(0.5f, 0.22f);
+                TriggerPowerUP(2.5f);
                 break;
         }
 
-        // Garante que o agent está despausado e posicionado no NavMesh
+        // Garante que o agent está posicionado no NavMesh e respeita travas de congelamento
         if (agent != null)
         {
             agent.enabled = true;
@@ -1665,7 +1756,7 @@ public class BossController : MonoBehaviour
             {
                 agent.Warp(hit.position);
             }
-            if (agent.isOnNavMesh) agent.isStopped = false;
+            if (agent.isOnNavMesh && CanInitiateAction) agent.isStopped = false;
         }
 
         // Notifica todos os sistemas
@@ -1685,6 +1776,10 @@ public class BossController : MonoBehaviour
 
     private IEnumerator CocoonShatterLightPulseRoutine()
     {
+        // 🍃 Dispara a explosão de folhas Hit Leaves A e o Impact Frame na transição para a Fase 2
+        VFXManager.Play(VFXType.CocoonLeavesBurst, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+        VFXManager.Play(VFXType.ImpactFrame, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+
         GameObject flashLightObj = new GameObject("Phase2_Cocoon_Shatter_Flash");
         flashLightObj.transform.position = transform.position + Vector3.up * 2.0f;
 
@@ -1739,17 +1834,47 @@ public class BossController : MonoBehaviour
         HandleRotation();
 
         // Checa distância para ataque melee
-        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 6.5f;
+        float meleeRange = phaseConfig != null ? phaseConfig.baseMeleeRange : 4.5f;
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        if (distToPlayer <= meleeRange && meleeTimer <= 0f)
+        // Checa se o player está atordoado/preso para disparar sprint agressivo de punição
+        PlayerHealth playerHealthComp = playerTransform.GetComponent<PlayerHealth>() ?? playerTransform.GetComponentInParent<PlayerHealth>();
+        bool isPlayerStunned = playerHealthComp != null && playerHealthComp.isStunned;
+
+        // Se chegou no alcance de ataque melee:
+        if (distToPlayer <= meleeRange)
         {
-            StartCoroutine(PerformMeleeAttack());
-            return;
+            // Se estava correndo (sprint) ou se o cooldown expirou, ataca de surpresa SEM frear/andar!
+            if (isSprinting || meleeTimer <= 0f)
+            {
+                if (isSprinting && meleeTimer > 0f) meleeTimer = 0f; // Instantâneo na chegada da corrida
+                StartCoroutine(PerformMeleeAttack());
+                return;
+            }
         }
 
-        // Movimentação em direção ao player via NavMeshAgent
-        float speed = phaseConfig != null ? phaseConfig.baseSpeed : 4f;
+        // Decisão de Aproximação: Teleporte estilo SharpBlur OU Sprint tradicional
+        float sprintThreshold = phaseConfig != null ? phaseConfig.sprintDistanceThreshold : 5.5f;
+        float teleportThreshold = Mathf.Min(sprintThreshold, meleeRange + 0.5f);
+
+        if (enableSharpBlurTeleport && distToPlayer > teleportThreshold && meleeTimer <= 0f && !isTeleporting && CanInitiateAction)
+        {
+            if (UnityEngine.Random.Range(0f, 100f) <= teleportChance)
+            {
+                StartCoroutine(SharpBlurTeleportRoutine());
+                return;
+            }
+        }
+
+        // Sprint de Aproximação:
+        // Mantém a corrida contínua até encostar no player (não desacelera aos 5.5m)!
+        bool shouldSprint = isSprinting ? (distToPlayer > meleeRange) : (distToPlayer > sprintThreshold || (isPlayerStunned && distToPlayer > 2.0f));
+
+        isSprinting = shouldSprint;
+
+        float sprintSpeedVal = phaseConfig != null ? phaseConfig.sprintSpeed : 8.5f;
+        float baseSpeedVal = phaseConfig != null ? phaseConfig.baseSpeed : 4.8f;
+        float speed = isSprinting ? sprintSpeedVal : baseSpeedVal;
 
         // Enquanto invisível na Fase 2, o boss ganha +35% de velocidade para se mover com maior fluidez
         if (IsInvisible) speed *= 1.35f;
@@ -1757,12 +1882,13 @@ public class BossController : MonoBehaviour
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.speed = speed;
+            agent.acceleration = isSprinting ? 28f : 16f;
             agent.radius = 0.45f;
             agent.isStopped = false;
             agent.SetDestination(playerTransform.position);
 
-            // Ajusta a distância de parada para COLAR no player (1.2m ao invés de 5.2m)
-            agent.stoppingDistance = 1.2f;
+            // Ajusta a distância de parada para COLAR no player (1.0m)
+            agent.stoppingDistance = 1.0f;
             return;
         }
 
@@ -1771,7 +1897,7 @@ public class BossController : MonoBehaviour
         Vector3 target = playerTransform.position;
         target.y = transform.position.y;
 
-        float meleeStopRange = 1.2f;
+        float meleeStopRange = 1.0f;
         if (distToPlayer > meleeStopRange)
         {
             transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
@@ -1783,12 +1909,25 @@ public class BossController : MonoBehaviour
     }
     // --------------------
 
+    [Header("🏃 Root Motion & Locomotion")]
+    [Tooltip("Usa o Root Motion da animação durante o Sprint para sincronização 100% perfeita com a passada do Boss.")]
+    public bool useRootMotionOnSprint = false;
+
+    /// <summary>
+    /// Chamado pelo BossAnimationEvents no GameObject do Animator.
+    /// O NavMeshAgent já conduz o Boss com precisão a 8.5m/s evitando duplicação indesejada de deslocamento.
+    /// </summary>
+    public void OnChildAnimatorMove(Animator anim)
+    {
+        if (anim == null) return;
+    }
+
     [Header("🏃 Steering & Locomotion Easing")]
     [Tooltip("Velocidade de rotação suave em graus por segundo (Slerp Easing).")]
-    public float turnSmoothSpeed = 8.5f;
+    public float turnSmoothSpeed = 10.0f;
 
-    [Tooltip("Tempo de antecedência (em segundos) em que o Boss TRAVA o rastreamento antes do ataque (Tracking Cutoff).")]
-    public float trackingCutoffWindow = 0.40f;
+    [Tooltip("Tempo de antecedência (em segundos) em que o Boss TRAVA o rastreamento antes do ataque (Tracking Cutoff). Ajustado para 0.25s para esquiva por reflexo justa.")]
+    public float trackingCutoffWindow = 0.25f;
 
     private void HandleRotation()
     {
@@ -1799,10 +1938,10 @@ public class BossController : MonoBehaviour
 
         if (directionToPlayer != Vector3.zero)
         {
-            float rotSpeed = phaseConfig != null ? phaseConfig.rotationSpeed : 120f;
+            float rotSpeed = phaseConfig != null ? phaseConfig.rotationSpeed : 360f;
             Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
             
-            // Slerp Easing: Rotação suave que desacelera organicamente ao se aproximar da direção do player
+            // Slerp Easing: Rotação suave e ágil que acompanha o jogador
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * turnSmoothSpeed);
         }
     }
@@ -1846,17 +1985,147 @@ public class BossController : MonoBehaviour
     }
 
     [HideInInspector] public bool isCastingSpell = false;
+    [HideInInspector] public bool isTeleporting = false;
 
     /// <summary>
     /// Trava de Fluxo de Animação: Garante que o Boss NUNCA sobreponha ataques, magias ou staggers!
     /// </summary>
-    public bool CanInitiateAction => !isAttacking && !isCastingSpell && !isExecutingCombo && !isRecovering && CurrentState != BossState.Stunned && CurrentState != BossState.Dead;
+    public bool CanInitiateAction => !isAttacking && !isCastingSpell && !isExecutingCombo && !isRecovering && !isTeleporting && CurrentState != BossState.Stunned && CurrentState != BossState.Dead;
+
+    /// <summary>
+    /// Executa o Teleporte com Mímica do SharpBlur: Holograma de predição no destino, flash de VFX e ataque surpresa!
+    /// </summary>
+    public void TriggerSharpBlurTeleport()
+    {
+        if (playerTransform == null) playerTransform = FindPlayerTransform();
+        if (playerTransform != null && !isTeleporting && !isAttacking && CanInitiateAction)
+        {
+            StartCoroutine(SharpBlurTeleportRoutine());
+        }
+    }
+
+    private IEnumerator SharpBlurTeleportRoutine()
+    {
+        if (playerTransform == null || isTeleporting) yield break;
+
+        isTeleporting = true;
+        isSprinting = false;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        // 1. Calcula a posição preditiva do player (mímica SharpBlur)
+        Vector3 playerPos = playerTransform.position;
+        Rigidbody playerRb = playerTransform.GetComponent<Rigidbody>() ?? playerTransform.GetComponentInParent<Rigidbody>();
+        if (playerRb != null && teleportLeadPrediction > 0f)
+        {
+            playerPos += playerRb.linearVelocity * 0.25f * teleportLeadPrediction;
+        }
+
+        // 2. Calcula posição de reaparecimento ao redor do player
+        Vector3 dirFromPlayer = (transform.position - playerPos).normalized;
+        dirFromPlayer.y = 0f;
+        if (dirFromPlayer == Vector3.zero) dirFromPlayer = -playerTransform.forward;
+
+        Vector3 targetTeleportPos = playerPos + (dirFromPlayer * teleportDistanceOffset);
+
+        // Snap seguro no NavMesh
+        if (UnityEngine.AI.NavMesh.SamplePosition(targetTeleportPos, out UnityEngine.AI.NavMeshHit navHit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            targetTeleportPos = navHit.position;
+        }
+
+        Vector3 lookDir = (playerPos - targetTeleportPos).normalized;
+        lookDir.y = 0f;
+        Quaternion targetRot = (lookDir != Vector3.zero) ? Quaternion.LookRotation(lookDir) : transform.rotation;
+
+        // 3. Spawna o Holograma de Antecipação no destino
+        SpawnTeleportHologram(targetTeleportPos, targetRot, teleportAnticipationTime);
+
+        // VFX de partida (fumaça estilizada)
+        VFXManager.Play(VFXType.WWExplosionVariant1, transform.position + Vector3.up * 0.5f, Quaternion.identity, 0.45f);
+
+        if (showDebugLog) Debug.Log($"[BossController] ⚡ [SHARPBLUR TELEPORT] Holograma gerado em {targetTeleportPos}. Teleportando em {teleportAnticipationTime}s...");
+
+        // Aguarda a antecipação
+        yield return new WaitForSeconds(teleportAnticipationTime);
+
+        // 4. Warp / Teleporte instantâneo
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.Warp(targetTeleportPos);
+        }
+        else
+        {
+            transform.position = targetTeleportPos;
+        }
+        transform.rotation = targetRot;
+
+        // VFX de chegada (fumaça estilizada + leve tremor)
+        VFXManager.Play(VFXType.WWExplosionVariant1, targetTeleportPos + Vector3.up * 0.5f, Quaternion.identity, 0.6f);
+        TriggerCameraShake(0.22f, 0.15f);
+
+        isTeleporting = false;
+
+        // 5. Desfere ataque melee surpresa logo após teleportar
+        StartCoroutine(PerformMeleeAttack());
+    }
+
+    private void SpawnTeleportHologram(Vector3 futurePos, Quaternion futureRot, float lifetime)
+    {
+        EnsureHologramAssets();
+
+        GameObject holoObj = null;
+        if (teleportHologramPrefab != null)
+        {
+            holoObj = Instantiate(teleportHologramPrefab);
+        }
+        else
+        {
+            holoObj = new GameObject("Boss_DashHologram");
+            holoObj.AddComponent<DashHologram>();
+        }
+
+        DashHologram holoScript = holoObj.GetComponent<DashHologram>() ?? holoObj.AddComponent<DashHologram>();
+        if (holoScript != null && teleportHologramMaterial != null)
+        {
+            holoScript.Init(transform, futurePos, futureRot, lifetime, teleportHologramMaterial, teleportHologramAlpha);
+        }
+    }
+
+    private void EnsureHologramAssets()
+    {
+#if UNITY_EDITOR
+        if (teleportHologramPrefab == null)
+        {
+            teleportHologramPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Effects/prefabs/hologramPrefab.prefab");
+        }
+        if (teleportHologramMaterial == null)
+        {
+            teleportHologramMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Effects/shaders/hologramEffect/hologramMaterial.mat");
+        }
+#endif
+        if (teleportHologramMaterial == null)
+        {
+            Shader sh = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+            if (sh != null)
+            {
+                teleportHologramMaterial = new Material(sh);
+                teleportHologramMaterial.color = new Color(0.8f, 0.2f, 1.0f, teleportHologramAlpha);
+            }
+        }
+    }
 
     private IEnumerator PerformMeleeAttack()
     {
         if (!CanInitiateAction) yield break;
 
+        bool wasSprinting = isSprinting;
         isAttacking = true;
+        isSprinting = false;
         float baseCooldown = phaseConfig != null ? phaseConfig.baseMeleeCooldown : 2.5f;
         float cooldown = IsInvisible ? (baseCooldown * 0.6f) : baseCooldown;
         meleeTimer = cooldown;
@@ -1868,7 +2137,7 @@ public class BossController : MonoBehaviour
             refractionComp.SetTemporaryVisibility(true);
         }
 
-        if (showDebugLog) Debug.Log("[BossController] 👊 ATAQUE DO BOSS — Executando golpe exclusivo!");
+        if (showDebugLog) Debug.Log("[BossController] 👊 ATAQUE DO BOSS — Executando golpe!");
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
@@ -1877,10 +2146,56 @@ public class BossController : MonoBehaviour
         }
 
         string selectedTrigger = "bossSwipe";
-        if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
+
+        PlayerHealth targetHealth = playerTransform != null ? (playerTransform.GetComponent<PlayerHealth>() ?? playerTransform.GetComponentInParent<PlayerHealth>()) : null;
+        bool isTargetStunned = (targetHealth != null && targetHealth.isStunned);
+
+        // Define a lista de candidatos para o ataque
+        List<string> candidateAttacks = new List<string>();
+
+        if (isTargetStunned)
         {
-            selectedTrigger = meleeAttackTriggers[UnityEngine.Random.Range(0, meleeAttackTriggers.Length)];
-            
+            // Player atordoado: punição pesada com Stomp ou Punch
+            candidateAttacks.Add("bossStomp");
+            candidateAttacks.Add("bossPunch");
+        }
+        else if (wasSprinting)
+        {
+            // Chegando de Sprint em velocidade máxima: arsenal completo com variação rica
+            candidateAttacks.Add("bossPunch");
+            candidateAttacks.Add("bossSwipe");
+            candidateAttacks.Add("bossStomp");
+            candidateAttacks.Add("bossJumpAttack");
+        }
+        else if (animator != null && meleeAttackTriggers != null && meleeAttackTriggers.Length > 0)
+        {
+            candidateAttacks.AddRange(meleeAttackTriggers);
+        }
+        else
+        {
+            candidateAttacks.Add("bossSwipe");
+            candidateAttacks.Add("bossPunch");
+            candidateAttacks.Add("bossStomp");
+            candidateAttacks.Add("bossJumpAttack");
+        }
+
+        // SISTEMA ANTI-REPETIÇÃO: Impede repetir o mesmo ataque consecutivamente (ex: Jump Attack 3x seguidas)
+        if (candidateAttacks.Count > 1 && !string.IsNullOrEmpty(lastMeleeAttack))
+        {
+            candidateAttacks.RemoveAll(atk => atk == lastMeleeAttack);
+            if (candidateAttacks.Count == 0)
+            {
+                candidateAttacks.Add("bossPunch");
+                candidateAttacks.Add("bossSwipe");
+            }
+        }
+
+        // Sorteia o ataque escolhido
+        selectedTrigger = candidateAttacks[UnityEngine.Random.Range(0, candidateAttacks.Count)];
+        lastMeleeAttack = selectedTrigger;
+
+        if (animator != null)
+        {
             string stateName = selectedTrigger;
             if (selectedTrigger == "bossSwipe") stateName = "BossSwipe";
             else if (selectedTrigger == "bossPunch") stateName = "BossPunch";
@@ -1896,34 +2211,125 @@ public class BossController : MonoBehaviour
             animator.Play(stateName, 0, 0f);
         }
 
-        // === 1. ANTICIPATION & TRACKING CUTOFF (Telegrafagem com janela justa de Esquiva estilo Hades) ===
-        float windUp = IsInvisible ? 0.20f : 0.55f;
-        float trackingCutoffTime = Mathf.Max(0.08f, windUp - trackingCutoffWindow);
+        // === 1. ANTICIPATION, SALTO PERSEGUIDOR & TRACKING CUTOFF ===
+        // Timings específicos por animação para o Boss NUNCA patinar nem cancelar a pose precocemente:
+        // - STOMP (speed 0.5x, duração total: 3.40s): windup até impacto = 1.40s, recovery = 2.00s
+        // - JumpAttack (speed 1.0x, duração total: 3.67s): windup/salto = 2.03s, recovery/pouso = 1.64s
+        // - BossPunch (speed 1.0x, duração total: 2.67s): windup = 0.80s, recovery = 1.87s
+        // - BossSwipe (speed 1.0x, duração total: 1.10s): windup = 0.45s, recovery = 0.65s
+        float windUp = 0.45f;
+        float recoveryWindow = 0.65f;
+
+        if (selectedTrigger == "bossStomp")
+        {
+            windUp = 1.40f;
+            recoveryWindow = 2.00f;
+        }
+        else if (selectedTrigger == "bossJumpAttack")
+        {
+            windUp = 2.03f;
+            recoveryWindow = 1.64f;
+        }
+        else if (selectedTrigger == "bossPunch")
+        {
+            windUp = 0.80f;
+            recoveryWindow = 1.87f;
+        }
+        else if (selectedTrigger == "bossSwipe")
+        {
+            windUp = 0.45f;
+            recoveryWindow = 0.65f;
+        }
+
+        if (IsInvisible)
+        {
+            windUp *= 0.75f;
+        }
+
+        float trackingCutoffTime = Mathf.Max(0.10f, windUp - trackingCutoffWindow);
         float elapsedWindUp = 0f;
 
-        while (elapsedWindUp < windUp)
+        // SALTO PERSEGUIDOR (Gap-Closer Aéreo no Jump Attack):
+        if (selectedTrigger == "bossJumpAttack")
         {
-            elapsedWindUp += Time.deltaTime;
-            
-            // Rastreia o player suavemente até atingir a janela de corte (Cutoff). Nos últimos 0.40s, o Boss trava a direção!
-            if (elapsedWindUp <= trackingCutoffTime)
+            Vector3 startJumpPos = transform.position;
+            Vector3 targetLandingPos = playerTransform != null ? playerTransform.position : (startJumpPos + transform.forward * 5f);
+            if (UnityEngine.AI.NavMesh.SamplePosition(targetLandingPos, out UnityEngine.AI.NavMeshHit navHit, 6.0f, UnityEngine.AI.NavMesh.AllAreas))
             {
-                HandleRotationSmooth(turnSmoothSpeed * 1.4f);
+                targetLandingPos = navHit.position;
             }
-            yield return null;
+
+            float leapTakeoff = 0.35f;
+            float leapLand = 1.95f;
+            float leapDuration = leapLand - leapTakeoff;
+
+            while (elapsedWindUp < windUp)
+            {
+                elapsedWindUp += Time.deltaTime;
+
+                if (elapsedWindUp < leapTakeoff)
+                {
+                    // Mira e gira suavemente em direção ao player antes da decolagem e atualiza ponto de pouso
+                    if (playerTransform != null)
+                    {
+                        targetLandingPos = playerTransform.position;
+                        if (UnityEngine.AI.NavMesh.SamplePosition(targetLandingPos, out UnityEngine.AI.NavMeshHit hit2, 6.0f, UnityEngine.AI.NavMesh.AllAreas))
+                        {
+                            targetLandingPos = hit2.position;
+                        }
+                    }
+                    HandleRotationSmooth(turnSmoothSpeed * 2.0f);
+                }
+                else if (elapsedWindUp >= leapTakeoff && elapsedWindUp <= leapLand)
+                {
+                    float leapProgress = Mathf.Clamp01((elapsedWindUp - leapTakeoff) / leapDuration);
+                    float t = Mathf.SmoothStep(0f, 1f, leapProgress);
+                    Vector3 currentPos = Vector3.Lerp(startJumpPos, targetLandingPos, t);
+
+                    if (agent != null && agent.enabled && agent.isOnNavMesh)
+                    {
+                        agent.Warp(currentPos);
+                    }
+                    else
+                    {
+                        transform.position = currentPos;
+                    }
+                }
+
+                yield return null;
+            }
+        }
+        else
+        {
+            while (elapsedWindUp < windUp)
+            {
+                elapsedWindUp += Time.deltaTime;
+                
+                // Rastreia o player responsivamente até os últimos 0.25s antes do golpe para esquiva justa de reflexo!
+                if (elapsedWindUp <= trackingCutoffTime)
+                {
+                    HandleRotationSmooth(turnSmoothSpeed * 1.6f);
+                }
+                yield return null;
+            }
         }
 
         // === 2. MOMENTO DO IMPACTO & HITSTOP ===
         int dmg = phaseConfig != null ? phaseConfig.baseMeleeDamage : 35;
         EnableMeleeHitboxBothHands(0.45f, dmg, 16f);
 
-        // Onda de choque no solo e knockback pesado APENAS para ataques de impacto no solo (JumpAttack e Stomp)
-        // Para ataques simples (Punch e Swipe), o dano vem diretamente das mãos/hitbox sem shockwave nos pés!
+        // Se for Stomp ou JumpAttack e os AnimationEvents do clip não tiverem sido chamados via evento do model
         bool isHeavyAttack = (selectedTrigger == "bossJumpAttack" || selectedTrigger == "bossStomp");
         if (isHeavyAttack)
         {
-            Vector3 blastPos = transform.position + transform.forward * 1.5f;
-            BossAoEShockwave.TriggerBossExplosion(blastPos, 7.5f, 35, 16.0f);
+            if (selectedTrigger == "bossStomp")
+            {
+                AnimEvent_StompImpact();
+            }
+            else if (selectedTrigger == "bossJumpAttack")
+            {
+                AnimEvent_JumpImpact();
+            }
         }
 
         TriggerCameraShake(0.25f, 0.15f);
@@ -1931,9 +2337,7 @@ public class BossController : MonoBehaviour
         // Aplica o Hitstop (Micro-freeze de 0.06s no momento exato do impacto)
         TriggerHitstop(defaultHitstopDuration);
 
-        // === 3. RECOVERY FRAMES (Janela de Punição para o Player) ===
-        float recoveryWindow = isHeavyAttack ? 1.4f : 0.85f;
-
+        // === 3. RECOVERY FRAMES (Janela de Punição para o Player onde o Boss permanece 100% imóvel) ===
         isRecovering = true;
         float recoveryElapsed = 0f;
 
@@ -1951,8 +2355,14 @@ public class BossController : MonoBehaviour
             refractionComp.SetTemporaryVisibility(false);
         }
 
-        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead)
+        if (agent != null && agent.enabled && agent.isOnNavMesh && !IsStunned && !IsDead && CanInitiateAction)
+        {
             agent.isStopped = false;
+            if (playerTransform != null)
+            {
+                agent.SetDestination(playerTransform.position);
+            }
+        }
 
         isAttacking = false;
     }

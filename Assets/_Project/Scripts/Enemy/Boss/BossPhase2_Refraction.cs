@@ -161,7 +161,7 @@ public class BossPhase2_Refraction : MonoBehaviour
                         else
                         {
                             BossPhase1_MestreDoSolo mestre = GetComponent<BossPhase1_MestreDoSolo>();
-                            if (mestre != null) mestre.InvocarPrisaoForado();
+                            if (mestre != null && !mestre.ExistemPilaresNaCena()) mestre.InvocarPrisaoForado();
                         }
                     }
                 }
@@ -254,7 +254,7 @@ public class BossPhase2_Refraction : MonoBehaviour
             {
                 agent.Warp(hit.position);
             }
-            if (agent.isOnNavMesh) agent.isStopped = false;
+            if (agent.isOnNavMesh && bossController != null && bossController.CanInitiateAction) agent.isStopped = false;
             if (originalAgentSpeed > 0f) agent.speed = originalAgentSpeed;
         }
     }
@@ -291,7 +291,8 @@ public class BossPhase2_Refraction : MonoBehaviour
             if (nextReposition <= 0f)
             {
                 nextReposition = repositionInterval;
-                StartCoroutine(FleeRoutine());
+                if (bossController != null && bossController.CanInitiateAction)
+                    StartCoroutine(FleeRoutine());
             }
 
             if (nextMobSpawn <= 0f)
@@ -313,7 +314,7 @@ public class BossPhase2_Refraction : MonoBehaviour
                 {
                     bossController.PerformGolemStunCast();
                 }
-                else if (mestre != null && !mestre.Atacando)
+                else if (mestre != null && !mestre.Atacando && !mestre.ExistemPilaresNaCena())
                 {
                     mestre.InvocarPrisaoForado();
                 }
@@ -331,6 +332,8 @@ public class BossPhase2_Refraction : MonoBehaviour
 
     IEnumerator FleeRoutine()
     {
+        // Se o Boss estiver ocupado conjurando feitiço ou executando golpe, NÃO interrompe nem desliza!
+        if (bossController != null && !bossController.CanInitiateAction) yield break;
         if (playerTransform == null) yield break;
 
         Vector3 dirAway = (transform.position - playerTransform.position).normalized;
@@ -339,7 +342,7 @@ public class BossPhase2_Refraction : MonoBehaviour
         if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 4.0f, NavMesh.AllAreas))
             targetPos = navHit.position;
 
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        if (agent != null && agent.enabled && agent.isOnNavMesh && bossController != null && bossController.CanInitiateAction)
         {
             agent.isStopped = false;
             agent.SetDestination(targetPos);

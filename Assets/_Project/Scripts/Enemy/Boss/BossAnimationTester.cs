@@ -153,6 +153,12 @@ public class BossAnimationTester : MonoBehaviour
         // Dispara o Trigger solicitado
         animator.SetTrigger(triggerName);
 
+        if (triggerName.Equals("PowerUp", System.StringComparison.OrdinalIgnoreCase) && bossController != null)
+        {
+            bossController.TriggerPowerUP(2.5f);
+            return;
+        }
+
         // Fallbacks de busca de State no Animator (com variações de caixa e prefixos)
         string[] candidates = new string[] 
         { 
@@ -225,6 +231,19 @@ public class BossAnimationTester : MonoBehaviour
         else
         {
             PlayAnimationTrigger("BossSpellWide");
+        }
+    }
+
+    public void TriggerSharpBlurTeleport()
+    {
+        FindReferences();
+        if (bossController != null)
+        {
+            bossController.TriggerSharpBlurTeleport();
+        }
+        else
+        {
+            Debug.LogWarning("[BossAnimationTester] ⚠️ BossController não encontrado para testar o Teleporte!");
         }
     }
 }
@@ -340,6 +359,13 @@ public class BossAnimationTesterEditor : Editor
         {
             tester.TriggerSuperAtaqueEspinhos();
         }
+
+        GUI.backgroundColor = new Color(0.75f, 0.4f, 1f);
+        if (GUILayout.Button("⚡ TESTAR: Teleporte Estilo SharpBlur (Holograma + Warp + Golpe)", GUILayout.Height(32)))
+        {
+            tester.TriggerSharpBlurTeleport();
+        }
+        GUI.backgroundColor = Color.white;
 
         if (GUILayout.Button("📳 Tremor de Câmera (Camera Shake)", GUILayout.Height(30)))
         {
