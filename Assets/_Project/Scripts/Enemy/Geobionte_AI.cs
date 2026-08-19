@@ -1157,10 +1157,18 @@ public class Geobionte_AI : MonoBehaviour
 
     public void PlayBismutadoAttackSound()
     {
+        StartCoroutine(PlayBismutadoAttackSoundDelayed(0.5f));
+    }
+
+    private IEnumerator PlayBismutadoAttackSoundDelayed(float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
         if (bismutadoAttackSounds == null || bismutadoAttackSounds.Length == 0)
         {
             Debug.LogWarning("[GEOBIONTE] Tentou tocar som de ataque do Bismutado, mas o vetor bismutadoAttackSounds está VAZIO no Inspector!");
-            return;
+            yield break;
         }
 
         int randIndex = Random.Range(0, bismutadoAttackSounds.Length);
@@ -1170,7 +1178,7 @@ public class Geobionte_AI : MonoBehaviour
         {
             float pitch = Random.Range(0.9f, 1.1f);
             PlayClipAtPointWithPitch(clipToPlay, transform.position, pitch, bismutadoAttackSoundVolume);
-            Debug.Log($"[GEOBIONTE] Som de ataque do Bismutado tocado! ({clipToPlay.name})");
+            Debug.Log($"[GEOBIONTE] Som de ataque do Bismutado tocado após delay de {delay}s! ({clipToPlay.name})");
         }
         else
         {

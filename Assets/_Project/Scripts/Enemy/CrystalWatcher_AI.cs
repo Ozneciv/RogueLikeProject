@@ -65,6 +65,37 @@ public class CrystalWatcher_AI : MonoBehaviour
     [Tooltip("Largura do laser para detecção de colisão")]
     public float laserWidth = 0.5f;
 
+    // ÁUDIO
+
+    [Header("Áudio")]
+    [Tooltip("Som do hover/flutuação (loop constante do inimigo)")]
+    public AudioClip hoverSound;
+    [Tooltip("Volume do som de hover")]
+    [Range(0f, 1f)]
+    public float hoverSoundVolume = 0.4f;
+
+    [Tooltip("Som do carregamento antes do disparo")]
+    public AudioClip chargeSound;
+    [Tooltip("Volume do som de carregamento")]
+    [Range(0f, 1f)]
+    public float chargeSoundVolume = 0.8f;
+
+    [Tooltip("Som do feixe de laser disparando (loop durante o disparo)")]
+    public AudioClip firingSound;
+    [Tooltip("Volume do som de disparo do laser")]
+    [Range(0f, 1f)]
+    public float firingSoundVolume = 0.8f;
+
+    [Tooltip("Som do impacto do laser no player (loop enquanto atinge o player)")]
+    public AudioClip impactSound;
+    [Tooltip("Volume do som de impacto no player")]
+    [Range(0f, 1f)]
+    public float impactSoundVolume = 0.8f;
+
+    private AudioSource hoverAudioSource;
+    private AudioSource firingAudioSource;
+    private AudioSource impactAudioSource;
+
     // BUFF (quando Crystal Tuner está conectado)
     
     [Header("Buff")]
@@ -127,6 +158,9 @@ public class CrystalWatcher_AI : MonoBehaviour
         {
             vfx = gameObject.AddComponent<CrystalWatcherVFX>();
         }
+
+        // Configura AudioSources de hover, disparo e impacto
+        SetupAudioSources();
     }
 
     // UPDATE — Roda todo frame
@@ -136,11 +170,11 @@ public class CrystalWatcher_AI : MonoBehaviour
         // Se não achou o player, não faz nada
         if (playerTransform == null) return;
 
-        // Se o inimigo morreu, não faz nada
+        // Se o inimigo morreu, desliga visual e áudios
         if (health != null && health.CurrentHealth <= 0)
         {
-            // Desliga o laser ao morrer
             if (laserLine != null) laserLine.enabled = false;
+            StopAllAudioSources();
             return;
         }
 
@@ -195,6 +229,9 @@ public class CrystalWatcher_AI : MonoBehaviour
         {
             // FASE 1: CARREGAMENTO 
             currentState = State.Charging;
+            StopFiringAudioLoop();
+            StopImpactAudioLoop();
+            PlayChargeSound();
             Debug.Log("[WATCHER] Carregando laser...");
 
             // Aponta o laser na direção do player ANTES de carregar
@@ -221,6 +258,7 @@ public class CrystalWatcher_AI : MonoBehaviour
             // FASE 2: DISPARANDO 
             currentState = State.Firing;
             damageTimer = 0f;
+            StartFiringAudioLoop();
             Debug.Log("[WATCHER] LASER ATIVO!");
 
             // Para carregamento e ativa partículas do laser
@@ -240,6 +278,9 @@ public class CrystalWatcher_AI : MonoBehaviour
 
             // FASE 3: DESLIGANDO 
             ShowLaserFiring(false);
+            StopFiringAudioLoop();
+            StopImpactAudioLoop();
+
             if (vfx != null)
             {
                 vfx.StopLaserEffect();
@@ -318,9 +359,7 @@ public class CrystalWatcher_AI : MonoBehaviour
 
     void CheckLaserHit()
     {
-        // Timer de dano — só causa dano a cada 'damageTickRate' segundos
         damageTimer += Time.deltaTime;
-        if (damageTimer < damageTickRate) return;
 
         Vector3 origin = GetLaserOrigin(); // Um pouco acima do chão
         
@@ -351,6 +390,8 @@ public class CrystalWatcher_AI : MonoBehaviour
         // SphereCast = como um Raycast mas com "espessura"
         RaycastHit[] hits = Physics.SphereCastAll(origin, laserWidth, laserDirection, laserRange);
         
+        bool hitPlayerThisFrame = false;
+
         foreach (RaycastHit h in hits)
         {
             // Se algum desses alvos for o Player, causa dano!
@@ -359,21 +400,152 @@ public class CrystalWatcher_AI : MonoBehaviour
                 // Só causa dano se o player estiver antes/rente à parede
                 if (h.distance <= finalLaserDist + 0.5f) // pequena margem de tolerância
                 {
-                    PlayerHealth playerHealth = h.collider.GetComponent<PlayerHealth>();
-                    if (playerHealth != null)
+                    hitPlayerThisFrame = true;
+
+                    if (damageTimer >= damageTickRate)
                     {
-                        int finalDamage = laserDamage;
-                        
-                        if (isBuffed) finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
-                        
-                        playerHealth.TakeDamage(finalDamage, gameObject);
-                        damageTimer = 0f; // Reseta o timer pra não dar multi-hit insano no mesmo frame
-                        Debug.Log("[WATCHER] Laser acertou o player! Dano: " + finalDamage);
-                        break; // Já achou o player e deu dano, pode parar de procurar nos hits.
+                        PlayerHealth playerHealth = h.collider.GetComponent<PlayerHealth>();
+                        if (playerHealth != null)
+                        {
+                            int finalDamage = laserDamage;
+                            
+                            if (isBuffed) finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
+                            
+                            playerHealth.TakeDamage(finalDamage, gameObject);
+                            damageTimer = 0f; // Reseta o timer pra não dar multi-hit insano no mesmo frame
+                            Debug.Log("[WATCHER] Laser acertou o player! Dano: " + finalDamage);
+                        }
                     }
+                    break; // Já achou o player, pode parar de procurar nos hits.
                 }
             }
         }
+
+        // Controla o loop de som de impacto enquanto o laser atinge o player
+        SetImpactAudioHitting(hitPlayerThisFrame);
+    }
+
+    // =============================================
+    // SISTEMA DE ÁUDIO (Hover, Charge, Firing, Impact)
+    // =============================================
+
+    private void SetupAudioSources()
+    {
+        // Hover AudioSource (Loop constante)
+        if (hoverSound != null)
+        {
+            GameObject hoverObj = new GameObject("Audio_Hover");
+            hoverObj.transform.SetParent(transform, false);
+            hoverAudioSource = hoverObj.AddComponent<AudioSource>();
+            hoverAudioSource.clip = hoverSound;
+            hoverAudioSource.volume = hoverSoundVolume;
+            hoverAudioSource.loop = true;
+            hoverAudioSource.spatialBlend = 1f; // 3D Audio
+            hoverAudioSource.minDistance = 3f;
+            hoverAudioSource.maxDistance = 25f;
+            hoverAudioSource.Play();
+        }
+
+        // Firing AudioSource (Loop do feixe de laser)
+        if (firingSound != null)
+        {
+            GameObject firingObj = new GameObject("Audio_Firing");
+            firingObj.transform.SetParent(transform, false);
+            firingAudioSource = firingObj.AddComponent<AudioSource>();
+            firingAudioSource.clip = firingSound;
+            firingAudioSource.volume = firingSoundVolume;
+            firingAudioSource.loop = true;
+            firingAudioSource.spatialBlend = 1f;
+            firingAudioSource.minDistance = 3f;
+            firingAudioSource.maxDistance = 30f;
+        }
+
+        // Impact AudioSource (Loop de impacto no player)
+        if (impactSound != null)
+        {
+            GameObject impactObj = new GameObject("Audio_Impact");
+            impactObj.transform.SetParent(transform, false);
+            impactAudioSource = impactObj.AddComponent<AudioSource>();
+            impactAudioSource.clip = impactSound;
+            impactAudioSource.volume = impactSoundVolume;
+            impactAudioSource.loop = true;
+            impactAudioSource.spatialBlend = 1f;
+            impactAudioSource.minDistance = 3f;
+            impactAudioSource.maxDistance = 30f;
+        }
+    }
+
+    private void PlayChargeSound()
+    {
+        if (chargeSound != null)
+        {
+            PlayClipAtPointWithPitch(chargeSound, transform.position, 1.0f, chargeSoundVolume);
+        }
+    }
+
+    private void StartFiringAudioLoop()
+    {
+        if (firingAudioSource != null && firingSound != null)
+        {
+            firingAudioSource.volume = firingSoundVolume;
+            if (!firingAudioSource.isPlaying)
+                firingAudioSource.Play();
+        }
+    }
+
+    private void StopFiringAudioLoop()
+    {
+        if (firingAudioSource != null && firingAudioSource.isPlaying)
+        {
+            firingAudioSource.Stop();
+        }
+    }
+
+    private void SetImpactAudioHitting(bool hitting)
+    {
+        if (impactAudioSource != null && impactSound != null)
+        {
+            impactAudioSource.volume = impactSoundVolume;
+            if (hitting)
+            {
+                if (!impactAudioSource.isPlaying)
+                    impactAudioSource.Play();
+            }
+            else
+            {
+                if (impactAudioSource.isPlaying)
+                    impactAudioSource.Stop();
+            }
+        }
+    }
+
+    private void StopImpactAudioLoop()
+    {
+        SetImpactAudioHitting(false);
+    }
+
+    private void StopAllAudioSources()
+    {
+        if (hoverAudioSource != null && hoverAudioSource.isPlaying) hoverAudioSource.Stop();
+        StopFiringAudioLoop();
+        StopImpactAudioLoop();
+    }
+
+    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+    {
+        GameObject audioObj = new GameObject("TempWatcherAudio");
+        audioObj.transform.position = position;
+        AudioSource aSource = audioObj.AddComponent<AudioSource>();
+        aSource.clip = clip;
+        aSource.pitch = pitch;
+        aSource.volume = volume;
+        aSource.spatialBlend = 1f;
+        aSource.minDistance = 3f;
+        aSource.maxDistance = 25f;
+        aSource.rolloffMode = AudioRolloffMode.Linear;
+        aSource.Play();
+        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
+        Destroy(audioObj, clip.length / safePitch);
     }
 
     // VISUAL DO LASER (LineRenderer)
