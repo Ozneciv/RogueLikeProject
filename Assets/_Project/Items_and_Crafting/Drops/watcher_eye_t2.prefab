@@ -137,8 +137,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cefb9ed1af2e0e4198994613a48cc25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacteristicItemPickup
-  itemId: watcher_eye_t2
-  itemName: Olho Vigilante (T2)
+  itemId: "watcher_carca\xE7a_t2"
+  itemName: "Carca\xE7a Vigilante(T2)"
   itemDescription: WeaponRangeProjectile, Piercing
   rotateSpeed: 45
   bobSpeed: 2

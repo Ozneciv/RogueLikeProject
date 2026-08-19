@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5041491971345050335}
   - component: {fileID: 2317186382959886810}
   m_Layer: 0
-  m_Name: watcher_sight_t3
+  m_Name: "Cristalus_cabe\xE7a_t4"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -48,9 +48,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cefb9ed1af2e0e4198994613a48cc25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacteristicItemPickup
-  itemId: watcher_anel_t3
-  itemName: Anel estabilizador (T3)
-  itemDescription: WeaponRangeProjectile, Piercing, CritChance
+  itemId: 04cl
+  itemName: "Cabe\xE7a Oca(T4)"
+  itemDescription: Knockback,Damage Negation, Weapon Melee Range
   rotateSpeed: 45
   bobSpeed: 2
   bobHeight: 0.2
