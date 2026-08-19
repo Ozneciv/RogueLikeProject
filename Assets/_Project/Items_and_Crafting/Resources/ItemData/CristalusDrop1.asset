@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: 01cl
   itemName: Cristal rachado
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 5f4bde9310314954686d0daecf542099, type: 3}
   tier: 0
   enemySource: Cristalus
+  returnsToBase: 0
   recycleEssenceValue: 24
   infusionEssenceCost: 60
   itemAttributes:

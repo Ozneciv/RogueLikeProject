@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: 02cl
   itemName: Espinhos
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 52ac5b480834f334f8b27a1390348459, type: 3}
   tier: 1
   enemySource: Cristalus
+  returnsToBase: 0
   recycleEssenceValue: 72
   infusionEssenceCost: 180
   itemAttributes:
