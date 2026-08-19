@@ -12,6 +12,8 @@ using UnityEngine;
 /// </summary>
 public class FogZoneSpawner : MonoBehaviour
 {
+    public enum ActivationMode { BossPhase, OnStart, Manual }
+
     [Header("Prefab")]
     [Tooltip("Prefab da FogZone com BoxCollider, FogZone script e Particle System.")]
     public GameObject fogZonePrefab;
@@ -31,7 +33,10 @@ public class FogZoneSpawner : MonoBehaviour
     public float minDistanceBetween = 3f;
 
     [Header("Ativacao")]
-    [Tooltip("0 = spawna ao iniciar a luta. 1/2/3 = spawna ao entrar nessa fase.")]
+    [Tooltip("BossPhase: ativa via BossEvents. OnStart: ativa ao habilitar o GameObject. Manual: só via Activate().")]
+    public ActivationMode activationMode = ActivationMode.BossPhase;
+
+    [Tooltip("0 = spawna ao iniciar a luta. 1/2/3 = spawna ao entrar nessa fase. Ignorado fora do modo BossPhase.")]
     [Range(0, 3)]
     public int activateOnPhase = 3;
 
@@ -42,13 +47,15 @@ public class FogZoneSpawner : MonoBehaviour
     private readonly List<GameObject> spawnedZones = new List<GameObject>();
 
     // ── Eventos ──────────────────────────────────────────────────────────────
-    void Awake()
+    void Start()
     {
-        Debug.Log($"[FogZoneSpawner] Awake - activateOnPhase={activateOnPhase} | prefab={fogZonePrefab} | center={arenaCenter}");
+        if (activationMode == ActivationMode.OnStart)
+            Activate();
     }
 
     void OnEnable()
     {
+        if (activationMode != ActivationMode.BossPhase) return;
         BossEvents.OnPhaseChanged     += OnPhaseChanged;
         BossEvents.OnBossFightStarted += OnFightStarted;
         BossEvents.OnBossDefeated     += OnBossDefeated;
@@ -56,6 +63,7 @@ public class FogZoneSpawner : MonoBehaviour
 
     void OnDisable()
     {
+        if (activationMode != ActivationMode.BossPhase) return;
         BossEvents.OnPhaseChanged     -= OnPhaseChanged;
         BossEvents.OnBossFightStarted -= OnFightStarted;
         BossEvents.OnBossDefeated     -= OnBossDefeated;
@@ -75,6 +83,17 @@ public class FogZoneSpawner : MonoBehaviour
     }
 
     private void OnBossDefeated()
+    {
+        Deactivate();
+    }
+
+    // ── API Pública ───────────────────────────────────────────────────────────
+    public void Activate()
+    {
+        SpawnZones();
+    }
+
+    public void Deactivate()
     {
         foreach (GameObject zone in spawnedZones)
             if (zone != null) Destroy(zone);
@@ -121,7 +140,7 @@ public class FogZoneSpawner : MonoBehaviour
 
         if (showDebugLog)
         {
-            Debug.Log($"[FogZoneSpawner] {spawned} FogZones spawnadas na Fase {activateOnPhase}. Centro: {arenaCenter?.position} | Raio: {arenaRadius}");
+            Debug.Log($"[FogZoneSpawner] {spawned} FogZones spawnadas | modo: {activationMode} | fase: {activateOnPhase} | Centro: {arenaCenter?.position} | Raio: {arenaRadius}");
             foreach (GameObject z in spawnedZones)
                 if (z != null) Debug.Log($"[FogZoneSpawner] -> {z.name} em {z.transform.position}");
         }
