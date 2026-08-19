@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: tuner_shard_t1
   itemName: Estilha Sintonizada (T1)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2dc13c6f2a029c54b852ef5a0094d2ab, type: 3}
   tier: 0
   enemySource: Crystal Tuner
+  returnsToBase: 0
   recycleEssenceValue: 24
   infusionEssenceCost: 60
   itemAttributes:
