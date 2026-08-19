@@ -500,6 +500,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b1d1b3e172858c47913a9d62f9c3c5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
+  isSlowed: 0
   maxHealth: 180
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
@@ -584,6 +585,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ce7845d12a23e84f85901fd8ad9bec1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShardSwarmHealth
+  isSlowed: 0
   maxHealth: 180
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
