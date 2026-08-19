@@ -1728,7 +1728,6 @@ GameObject:
   - component: {fileID: 1830613685876521810}
   - component: {fileID: 7718046246604685597}
   - component: {fileID: 8971367577999715950}
-  - component: {fileID: 3397804959345520971}
   - component: {fileID: 5240561299179774875}
   - component: {fileID: 9188255382873321215}
   - component: {fileID: 5799582598024903971}
@@ -1807,18 +1806,6 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &3397804959345520971
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017463410146802124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 073bfd2066eff6245be6f1e338e82d12, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!54 &5240561299179774875
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1865,6 +1852,7 @@ MonoBehaviour:
   dashCooldown: 5
   dashCountText: {fileID: 0}
   dashKey: 101
+  inputBufferWindow: 0.2
 --- !u!114 &5799582598024903971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1899,7 +1887,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
   maxArmor: 300
-  armorRegenRate: 1
+  armorRegenRate: 50
   isInvulnerable: 0
   playerMovement: {fileID: 0}
   playerAttack: {fileID: 399265535294509767}
@@ -1925,6 +1913,7 @@ MonoBehaviour:
   enemiesBuffed: 0
   canRegenArmor: 1
   damageLightObj: {fileID: 0}
+  damageIFrameCooldown: 0.25
 --- !u!114 &2877796600527432851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1964,6 +1953,7 @@ MonoBehaviour:
     m_Bits: 8
   groundRadius: 0.2
   animator: {fileID: 3618305479678570340}
+  debuffSpeedMultiplier: 1
 --- !u!114 &5745442842706831329
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2213,6 +2203,208 @@ MonoBehaviour:
   defaultSkinID: astronaut
   activeSkinID: 
   mainAnimatorController: {fileID: 0}
+--- !u!114 &8291047582019485712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a6e23913e76ab549b2631e77ace4e66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ultimate_Axe
+  axeBladeTip: {fileID: 0}
+  groundYOffset: -0.225
+  leapMode: 0
+  enableRunningTransition: 1
+  windupGlideFactor: 0.4
+  windupDelay: 0.15
+  parabolaForwardDistance: 6
+  parabolaPeakHeight: 2
+  parabolaAirTime: 0.8
+  customJumpCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 3.5
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -3.5
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  forwardMotionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0.4
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.35
+      value: 0.2
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  shockwaveRingCount: 4
+  delayBetweenRings: 0.06
+  ringExpansionDuration: 0.7
+  enableSlowMotionOnUlt: 0
+  slowMotionTimeScale: 0.25
+  slowMotionDuration: 1
+  slamDamage: 1000
+  shockwaveRadius: 5
+  knockbackForce: 12
+  upwardKnockbackForce: 0.4
+  useAnimationEventForImpact: 1
+  unlockPlayerOnImpact: 0
+  customShockwaveSprite: {fileID: -535416314, guid: c5c05f2ab9320c2448e675faed50e290, type: 3}
+  spriteHeightOffset: -0.95
+  spriteMaxScale: 2
+  spriteFormDuration: 0.15
+  crackStayDuration: 1
+  crackFadeDuration: 0.8
+  shockwaveVFX: {fileID: 0}
+  vfxDurationOnField: 0.8
+  maxShockwaveOpacity: 0.6
+  shockwaveColor: {r: 1, g: 0.5, b: 0.1, a: 1}
+  enable3DShockwaveRingOverlay: 1
+  shockwaveRingDuration: 1
+  shockwaveRingScaleMultiplier: 50
+  shockwaveRingMaxOpacity: 0.05
+  shockwaveRingExpansionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 2.5
+      outSlope: 2.5
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 0.75
+      inSlope: 0.8
+      outSlope: 0.8
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  shockwaveRingOpacityCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.4091797
+      value: 0.338089
+      inSlope: -1.2
+      outSlope: -1.2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -0.4
+      outSlope: -0.4
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  triggerVFXTestNow: 0
+--- !u!114 &8291047582019485713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3017463410146802124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a1e5261aae30f14484da4a9d99afbd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UltimateUI
+  ultimateScript: {fileID: 0}
+  cooldownFillImage: {fileID: 0}
+  countdownText: {fileID: 0}
+  statusBorderImage: {fileID: 0}
+  useAutoGeneratedUI: 1
+  screenPosition: {x: -280, y: 40}
+  panelSize: {x: 220, y: 65}
+  readyColor: {r: 0.2, g: 1, b: 0.4, a: 1}
+  cooldownColor: {r: 1, g: 0.3, b: 0.2, a: 1}
+  activeColor: {r: 1, g: 0.85, b: 0.2, a: 1}
 --- !u!1 &3037435734811326214
 GameObject:
   m_ObjectHideFlags: 0
@@ -3897,7 +4089,7 @@ Transform:
   m_GameObject: {fileID: 6086151839073817554}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.069, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4076,6 +4268,7 @@ MonoBehaviour:
   playerRb: {fileID: 5240561299179774875}
   playerHealth: {fileID: 6793213990562782912}
   handHitbox: {fileID: 3140321211315949011}
+  inputBufferWindow: 0.2
   currentRange: 0
   defaultRange: 2
   daggerRange: 6
@@ -4101,6 +4294,7 @@ MonoBehaviour:
   swordComboResetTime: 1.2
   axeComboResetTime: 1.2
   comboResetTime: 1.2
+  enableLunge: 0
   daggerHitDelay: 0.15
   daggerHitDuration: 0.2
   axeHitDelay: 1
@@ -5354,139 +5548,3 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1830613685876521810}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8291047582019485712
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017463410146802124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6a6e23913e76ab549b2631e77ace4e66, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ultimate_Axe
-  axeBladeTip: {fileID: 0}
-  groundYOffset: -0.225
-  leapMode: 0
-  enableRunningTransition: 1
-  windupGlideFactor: 0.4
-  windupDelay: 0.15
-  parabolaForwardDistance: 6
-  parabolaPeakHeight: 2
-  parabolaAirTime: 0.8
-  customJumpCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 3.5
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.5
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: -3.5
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  forwardMotionCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0.4
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.35
-      value: 0.2
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 1
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  shockwaveRingCount: 4
-  delayBetweenRings: 0.06
-  ringExpansionDuration: 0.7
-  enableSlowMotionOnUlt: 0
-  slowMotionTimeScale: 0.25
-  slowMotionDuration: 1
-  slamDamage: 1000
-  shockwaveRadius: 5
-  knockbackForce: 12
-  upwardKnockbackForce: 0.4
-  useAnimationEventForImpact: 1
-  unlockPlayerOnImpact: 0
-  customShockwaveSprite: {fileID: -535416314, guid: e2f3928190c1f5a4a90fa763c8a14b52, type: 3}
-  spriteHeightOffset: -0.95
-  spriteMaxScale: 2
-  spriteFormDuration: 0.15
-  crackStayDuration: 1
-  crackFadeDuration: 0.8
-  shockwaveVFX: {fileID: 0}
-  vfxDurationOnField: 0.8
-  maxShockwaveOpacity: 0.6
-  shockwaveColor: {r: 1, g: 0.5, b: 0.1, a: 1}
-  enable3DShockwaveRingOverlay: 1
-  shockwaveRingDuration: 1
-  shockwaveRingScaleMultiplier: 50
-  shockwaveRingMaxOpacity: 0.15
-  triggerVFXTestNow: 0
---- !u!114 &8291047582019485713
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3017463410146802124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a1e5261aae30f14484da4a9d99afbd0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UltimateUI
-  ultimateScript: {fileID: 1286581841674779122}
-  cooldownFillImage: {fileID: 0}
-  countdownText: {fileID: 0}
-  statusBorderImage: {fileID: 0}
-  useAutoGeneratedUI: 1
-  screenPosition: {x: -280, y: 40}
-  panelSize: {x: 220, y: 65}
-  readyColor: {r: 0.2, g: 1, b: 0.4, a: 1}
-  cooldownColor: {r: 1, g: 0.3, b: 0.2, a: 1}
-  activeColor: {r: 1, g: 0.85, b: 0.2, a: 1}

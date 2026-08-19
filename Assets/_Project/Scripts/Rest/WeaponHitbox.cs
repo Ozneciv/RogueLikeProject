@@ -29,14 +29,20 @@ public class WeaponHitbox : MonoBehaviour
     {
         if (other == null) return;
 
-        // Ao colidir ou permanecer na área, verificamos se é um inimigo (DummyHealth ou ShardSwarmHealth)
+        // Ao colidir ou permanecer na área, verificamos se é um inimigo (DummyHealth ou ShardSwarmHealth) ou um NPC/Escudo (InvulnerableShieldNPC)
         DummyHealth enemyHealth = other.GetComponent<DummyHealth>()
                                 ?? other.GetComponentInParent<DummyHealth>();
 
         ShardSwarmHealth swarmHealth = other.GetComponent<ShardSwarmHealth>()
                                     ?? other.GetComponentInParent<ShardSwarmHealth>();
 
-        if (enemyHealth != null || swarmHealth != null)
+        InvulnerableShieldNPC invShield = other.GetComponent<InvulnerableShieldNPC>()
+                                       ?? other.GetComponentInParent<InvulnerableShieldNPC>();
+
+        MerchantVFX merchantVfx = other.GetComponent<MerchantVFX>()
+                               ?? other.GetComponentInParent<MerchantVFX>();
+
+        if (enemyHealth != null || swarmHealth != null || invShield != null || merchantVfx != null)
         {
             if (primaryAttackScript == null)
             {

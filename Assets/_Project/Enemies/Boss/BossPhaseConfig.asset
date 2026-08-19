@@ -15,10 +15,12 @@ MonoBehaviour:
   maxHealth: 1000
   phase2Threshold: 0.8
   phase3Threshold: 0.35
-  baseSpeed: 3.5
-  rotationSpeed: 120
-  baseMeleeDamage: 25
-  baseMeleeRange: 4
+  baseSpeed: 4.8
+  sprintSpeed: 8.5
+  sprintDistanceThreshold: 5.5
+  rotationSpeed: 360
+  baseMeleeDamage: 35
+  baseMeleeRange: 4.5
   baseMeleeCooldown: 2.5
   phase1MaxMobs: 5
   phase1SpawnCooldown: 8

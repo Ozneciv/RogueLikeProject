@@ -19,6 +19,12 @@ public class MoveCam : MonoBehaviour
         
         // Garante a rotação correta para vista isométrica (olhando para baixo)
         transform.rotation = Quaternion.Euler(50, 0, 0);
+
+        // Garante a presença do sistema de tremor de câmera (CameraShakeFeedback) desacoplado
+        if (GetComponent<CameraShakeFeedback>() == null)
+        {
+            gameObject.AddComponent<CameraShakeFeedback>();
+        }
     }
 
     private void LateUpdate()

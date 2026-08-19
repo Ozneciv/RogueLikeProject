@@ -32,6 +32,19 @@ public class BossHealthBarUI : MonoBehaviour
     public Color colorPhase2 = new Color(0.95f, 0.15f, 0.15f);  // Vermelho (Fase 2 - Cristal)
     public Color colorPhase3 = new Color(0.2f, 0.9f, 0.35f);   // Verde (Fase 3 - Raízes)
 
+    [Header("Nome Dinâmico do Chefe na UI")]
+    [Tooltip("Texto (TMPro) para o nome/título dinâmico do Boss.")]
+    public TMPro.TextMeshProUGUI bossNameText;
+
+    [Tooltip("Nome do Boss na Fase 1")]
+    public string namePhase1 = "ORC CROMÁTICO — O GUARDIÃO CRISTALINO";
+
+    [Tooltip("Nome do Boss na Fase 2")]
+    public string namePhase2 = "ORC CROMÁTICO — FORMA REFRATADA";
+
+    [Tooltip("Nome do Boss na Fase 3")]
+    public string namePhase3 = "ORC CROMÁTICO — CORRUPÇÃO ÁCIDA";
+
     [Header("Controle de Visibilidade e Persistência")]
     [Tooltip("Se verdadeiro, o Canvas da barra de vida sobrevive a trocas de cena/portas.")]
     public bool dontDestroyOnLoad = true;
@@ -64,10 +77,39 @@ public class BossHealthBarUI : MonoBehaviour
         {
             DontDestroyOnLoad(gameObject);
         }
+
+        AutoDetectComponents();
+    }
+
+    private void AutoDetectComponents()
+    {
+        if (fillImage == null || frameImage == null)
+        {
+            Image[] imgs = GetComponentsInChildren<Image>(true);
+            foreach (var img in imgs)
+            {
+                string n = img.name.ToLower();
+                if (fillImage == null && n.Contains("fill")) fillImage = img;
+                if (frameImage == null && n.Contains("frame")) frameImage = img;
+            }
+        }
+
+        if (bossNameText == null)
+        {
+            bossNameText = GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+        }
+
+        if (fillImage != null)
+        {
+            fillImage.type = Image.Type.Filled;
+            fillImage.fillMethod = Image.FillMethod.Horizontal;
+            fillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+        }
     }
 
     void OnEnable()
     {
+        AutoDetectComponents();
         BossEvents.OnBossHealthChanged += OnHealthChanged;
         BossEvents.OnPhaseChanged      += OnPhaseChanged;
         BossEvents.OnBossFightStarted  += OnFightStarted;
@@ -84,10 +126,11 @@ public class BossHealthBarUI : MonoBehaviour
 
     void Start()
     {
+        AutoDetectComponents();
         UpdateFrame(1);
         UpdateColor(1);
         ResetBar();
-        SetBarVisible(false); // Começa oculta até chegar perto do boss
+        SetBarVisible(false); // Começa oculta até o combate iniciar
     }
 
     void Update()
@@ -95,7 +138,7 @@ public class BossHealthBarUI : MonoBehaviour
         // Procura BossController na cena atual caso tenha trocado de sala ou recarregado
         if (bossController == null)
         {
-            bossController = FindObjectOfType<BossController>();
+            bossController = FindFirstObjectByType<BossController>();
             if (bossController != null && bossController.IsFighting)
             {
                 OnFightStarted();
@@ -131,17 +174,19 @@ public class BossHealthBarUI : MonoBehaviour
         }
     }
 
-    void OnFightStarted()
+    public void OnFightStarted()
     {
         isFightActive = true;
+        AutoDetectComponents();
         currentPhase = (bossController != null && bossController.CurrentPhase > 0) ? bossController.CurrentPhase : 1;
         UpdateFrame(currentPhase);
         UpdateColor(currentPhase);
+        UpdateName(currentPhase);
         ResetBar();
         SetBarVisible(true);
     }
 
-    void OnHealthChanged(float hpPercent)
+    public void OnHealthChanged(float hpPercent)
     {
         if (!isFightActive && hpPercent < 1.0f)
         {
@@ -154,13 +199,33 @@ public class BossHealthBarUI : MonoBehaviour
         }
     }
 
-    void OnPhaseChanged(int newPhase)
+    public void OnPhaseChanged(int newPhase)
     {
         currentPhase = newPhase;
+        AutoDetectComponents();
         UpdateFrame(newPhase);
         UpdateColor(newPhase);
+        UpdateName(newPhase);
         if (fillImage != null) fillImage.fillAmount = 1.0f; // Reseta a barra para 100% ao entrar na nova fase!
         if (!isFightActive) SetBarVisible(true);
+    }
+
+    void UpdateName(int phase)
+    {
+        if (bossNameText == null)
+        {
+            bossNameText = GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+        }
+
+        if (bossNameText != null)
+        {
+            switch (phase)
+            {
+                case 1: bossNameText.text = namePhase1; break;
+                case 2: bossNameText.text = namePhase2; break;
+                case 3: bossNameText.text = namePhase3; break;
+            }
+        }
     }
 
     void UpdateFrame(int phase)
@@ -193,10 +258,10 @@ public class BossHealthBarUI : MonoBehaviour
         }
     }
 
-    void OnBossDefeated()
+    public void OnBossDefeated()
     {
         if (fillImage != null) fillImage.fillAmount = 0f;
-        Invoke(nameof(HideWithDelay), 1.5f);
+        Invoke(nameof(HideWithDelay), 2.5f);
     }
 
     void ResetBar()
@@ -204,8 +269,10 @@ public class BossHealthBarUI : MonoBehaviour
         if (fillImage != null) fillImage.fillAmount = 1f;
     }
 
-    void SetBarVisible(bool visible)
+    public void SetBarVisible(bool visible)
     {
+        AutoDetectComponents();
+
         if (containerPanel != null)
         {
             containerPanel.SetActive(visible);
@@ -214,6 +281,7 @@ public class BossHealthBarUI : MonoBehaviour
         {
             if (fillImage != null) fillImage.gameObject.SetActive(visible);
             if (frameImage != null) frameImage.gameObject.SetActive(visible);
+            if (bossNameText != null) bossNameText.gameObject.SetActive(visible);
         }
     }
 

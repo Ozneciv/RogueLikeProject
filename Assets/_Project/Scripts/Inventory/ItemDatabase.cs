@@ -61,17 +61,30 @@ public class ItemDatabase : MonoBehaviour
 
         try
         {
-            ItemData[] loaded = Resources.LoadAll<ItemData>("");
-            if (loaded != null && loaded.Length > 0)
+            List<ItemData> loadedList = new List<ItemData>();
+
+            ItemData[] itemDataFolder = Resources.LoadAll<ItemData>("ItemData");
+            if (itemDataFolder != null && itemDataFolder.Length > 0) loadedList.AddRange(itemDataFolder);
+
+            ItemData[] spawnItemsFolder = Resources.LoadAll<ItemData>("SpawnItems");
+            if (spawnItemsFolder != null && spawnItemsFolder.Length > 0) loadedList.AddRange(spawnItemsFolder);
+
+            if (loadedList.Count == 0)
             {
-                foreach (var item in loaded)
+                ItemData[] fallbackItems = Resources.LoadAll<ItemData>("");
+                if (fallbackItems != null && fallbackItems.Length > 0) loadedList.AddRange(fallbackItems);
+            }
+
+            if (loadedList.Count > 0)
+            {
+                foreach (var item in loadedList)
                 {
                     if (item != null && !allItems.Contains(item))
                     {
                         allItems.Add(item);
                     }
                 }
-                Debug.Log($"[ITEM DATABASE] Mesclou {loaded.Length} itens do Resources. Total agora: {allItems.Count}");
+                Debug.Log($"[ITEM DATABASE] Mesclou {loadedList.Count} itens do Resources. Total agora: {allItems.Count}");
             }
         }
         catch (System.Exception ex)

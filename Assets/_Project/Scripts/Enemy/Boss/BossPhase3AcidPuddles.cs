@@ -211,12 +211,6 @@ public class BossPhase3AcidPuddles : MonoBehaviour
 
     private void SpawnPuddleAt(Vector3 position)
     {
-        if (acidPuddlePrefab == null)
-        {
-            Debug.LogWarning("[Phase3AcidPuddles] ⚠️ acidPuddlePrefab não atribuído no Inspector!");
-            return;
-        }
-
         if (AcidPuddle.ActiveCount >= maxSimultaneousPuddles)
         {
             if (showDebugLog)
@@ -224,10 +218,44 @@ public class BossPhase3AcidPuddles : MonoBehaviour
             return;
         }
 
-        Instantiate(acidPuddlePrefab, position, Quaternion.identity);
+        Vector3 spawnPos = position;
+        if (Physics.Raycast(position + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 5f))
+        {
+            spawnPos = hit.point + Vector3.up * 0.05f;
+        }
+
+        if (acidPuddlePrefab != null)
+        {
+            Instantiate(acidPuddlePrefab, spawnPos, Quaternion.identity);
+        }
+        else
+        {
+            // Fallback Procedural de Poça Ácida com Trigger e DoT
+            GameObject puddleObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            puddleObj.name = "AcidPuddle_Procedural";
+            puddleObj.transform.position = spawnPos;
+            puddleObj.transform.localScale = new Vector3(3.5f, 0.05f, 3.5f);
+
+            Collider col = puddleObj.GetComponent<Collider>();
+            if (col != null) col.isTrigger = true;
+
+            Renderer rend = puddleObj.GetComponent<Renderer>();
+            if (rend != null)
+            {
+                Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+                mat.color = new Color(0.2f, 0.95f, 0.2f, 0.65f);
+                rend.material = mat;
+            }
+
+            AcidPuddle puddleComp = puddleObj.AddComponent<AcidPuddle>();
+            puddleComp.damagePerTick = 6;
+            puddleComp.tickInterval = 0.75f;
+            puddleComp.slowPercent = 0.35f;
+            puddleComp.lifetime = 7.0f;
+        }
 
         if (showDebugLog)
-            Debug.Log($"[Phase3AcidPuddles] 🟢 Poça spawnou em {position} | Ativas: {AcidPuddle.ActiveCount + 1}/{maxSimultaneousPuddles}");
+            Debug.Log($"[Phase3AcidPuddles] 🟢 Poça ácida spawnou em {spawnPos} | Ativas: {AcidPuddle.ActiveCount + 1}/{maxSimultaneousPuddles}");
     }
 
     // =====================================================

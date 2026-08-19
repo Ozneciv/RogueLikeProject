@@ -3,10 +3,24 @@ using UnityEngine;
 public class PlayerAnimationEvents : MonoBehaviour
 {
     private PrimaryAttackKnife attackScript;
+    private Animator anim;
+    private Rigidbody playerRb;
 
     private void Awake()
     {
         FindAttackScript();
+        anim = GetComponent<Animator>();
+        playerRb = GetComponentInParent<Rigidbody>();
+    }
+
+    private void OnAnimatorMove()
+    {
+        if (anim != null && anim.applyRootMotion && playerRb != null)
+        {
+            // Repassa o deslocamento do Root Motion da animação para a física do Rigidbody pai
+            playerRb.MovePosition(playerRb.position + anim.deltaPosition);
+            playerRb.MoveRotation(playerRb.rotation * anim.deltaRotation);
+        }
     }
 
     private void FindAttackScript()

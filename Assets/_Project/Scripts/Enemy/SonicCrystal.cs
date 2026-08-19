@@ -23,9 +23,12 @@ public class SonicCrystal : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
      
-        if (other.CompareTag("Player") || other.CompareTag("PlayerAttack"))
+        bool isPlayer = other.CompareTag("Player");
+        bool isAttack = other.name.Contains("Attack") || other.name.Contains("Weapon") || other.gameObject.layer == LayerMask.NameToLayer("PlayerAttack");
+
+        if (isPlayer || isAttack)
         {
-            if (other.CompareTag("Player"))
+            if (isPlayer)
             {
                 ApplyEffects(other.gameObject);
             }
