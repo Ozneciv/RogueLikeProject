@@ -104,8 +104,8 @@ public class BossController : MonoBehaviour
     [Header("🎯 Inclinação de Ataque no Chão (Opção 1 - Spine Tilt)")]
     [Tooltip("Osso da coluna/peito (Spine/Chest) do seu Rig atual que será inclinado para baixo durante os ataques.")]
     public Transform spineBone;
-    [Tooltip("Ângulo de inclinação em graus para baixo durante o golpe (Padrão: 25.0°).")]
-    public float attackTiltAngle = 25.0f;
+    [Tooltip("Ângulo de inclinação em graus para baixo durante o golpe (0 = Postura normal ereta).")]
+    public float attackTiltAngle = 0.0f;
     [Tooltip("Velocidade de suavização do movimento de inclinação.")]
     public float tiltSmoothSpeed = 12.0f;
     private float currentTilt = 0f;

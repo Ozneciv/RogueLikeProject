@@ -1990,7 +1990,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerUltimate
   ultimateKey: 117
-  ultimateCooldown: 30
+  ultimateCooldown: 2
   forwardLeapImpulse: 6
   grantInvulnerability: 1
   isUltimateReady: 1
@@ -2217,6 +2217,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Ultimate_Axe
   axeBladeTip: {fileID: 0}
   groundYOffset: -0.225
+  useRootMotion: 0
   leapMode: 0
   enableRunningTransition: 1
   windupGlideFactor: 0.4
@@ -4204,6 +4205,7 @@ GameObject:
   - component: {fileID: 1627733104494296859}
   - component: {fileID: 5301761075157900069}
   - component: {fileID: 4903610608914846769}
+  - component: {fileID: 7616712902417337525}
   m_Layer: 8
   m_Name: astronaut
   m_TagString: Player
@@ -4242,7 +4244,7 @@ Animator:
   m_Controller: {fileID: 9100000, guid: b06cbbe08fe816e41b5cc3db0dc1afa9, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
-  m_ApplyRootMotion: 0
+  m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
@@ -4353,6 +4355,26 @@ MonoBehaviour:
   animator: {fileID: 3618305479678570340}
   rightHand: {fileID: 1845917321114070400}
   handHitbox: {fileID: 3140321211315949011}
+--- !u!114 &7616712902417337525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6284554266325809849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55d5bf26756cae847a610bb1c2ae7bf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ultimate_Dagger
+  bladeWaveVFX: {fileID: 3020920808754819069, guid: 9e1749955dc6c7042aa459a890276a34, type: 3}
+  groundYOffset: 0
+  spawnForwardOffset: 1
+  waveDamage: 500
+  waveSpeed: 8
+  waveMaxDistance: 10
+  hitboxHalfExtents: {x: 1.5, y: 1, z: 0.5}
+  knockbackForce: 5
 --- !u!1 &6320494353973819877
 GameObject:
   m_ObjectHideFlags: 0

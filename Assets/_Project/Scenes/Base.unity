@@ -590,6 +590,76 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &382147883
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 382147885}
+  - component: {fileID: 382147884}
+  m_Layer: 0
+  m_Name: VFXManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &382147884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 382147883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9410372283f571747acc6751342f31fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXManager
+  vfxRegistry:
+  - type: 0
+    prefab: {fileID: 2353600328335836179, guid: ceec7516237b4104b94300043ca39784, type: 3}
+    poolSize: 3
+  - type: 1
+    prefab: {fileID: 5880797563127281583, guid: 265d3a5ba69981a4698ceabcedf368b0, type: 3}
+    poolSize: 3
+  - type: 2
+    prefab: {fileID: 8525990746615576120, guid: b85d21f3b8fed714bacf0c4fd50fa512, type: 3}
+    poolSize: 3
+  - type: 3
+    prefab: {fileID: 5112403345868107898, guid: 6f34ef0d986e9db4199cf75805f79753, type: 3}
+    poolSize: 3
+  - type: 4
+    prefab: {fileID: 5112403345868107898, guid: 6f34ef0d986e9db4199cf75805f79753, type: 3}
+    poolSize: 3
+  - type: 5
+    prefab: {fileID: 725748389856807714, guid: 4bda94453d2ca7444a0fff05b2d425f5, type: 3}
+    poolSize: 3
+  - type: 6
+    prefab: {fileID: 7434498302926140362, guid: 66209373dd5e22140a220a74414d244b, type: 3}
+    poolSize: 3
+  - type: 7
+    prefab: {fileID: 5627696518775099638, guid: 4567f1a4893865a4e99367437ee729af, type: 3}
+    poolSize: 3
+  impactFrameSpeed: 2.5
+--- !u!4 &382147885
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 382147883}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.27175, y: 1.64028, z: -80.14673}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &394274700
 GameObject:
   m_ObjectHideFlags: 0
@@ -979,10 +1049,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 3618305479678570340, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
-      propertyPath: m_ApplyRootMotion
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 8291047582019485712, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: axeBladeTip
       value: 
@@ -990,10 +1056,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6284554266325809849, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1234251460}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
 --- !u!1001 &720140867
 PrefabInstance:
@@ -1006,18 +1069,6 @@ PrefabInstance:
     - target: {fileID: 6809705995638202345, guid: 92e5e0e28afbff8419af913a7592af46, type: 3}
       propertyPath: m_Name
       value: Crystal_Axe
-      objectReference: {fileID: 0}
-    - target: {fileID: 8799496771998367871, guid: 92e5e0e28afbff8419af913a7592af46, type: 3}
-      propertyPath: m_Size.y
-      value: 2.15
-      objectReference: {fileID: 0}
-    - target: {fileID: 8799496771998367871, guid: 92e5e0e28afbff8419af913a7592af46, type: 3}
-      propertyPath: m_Size.z
-      value: 0.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8799496771998367871, guid: 92e5e0e28afbff8419af913a7592af46, type: 3}
-      propertyPath: m_Center.y
-      value: 0.12545688
       objectReference: {fileID: 0}
     - target: {fileID: 9134916084758666910, guid: 92e5e0e28afbff8419af913a7592af46, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1074,7 +1125,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
   m_PrefabInstance: {fileID: 670016264}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1234251454}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d885b6f971474394b86e9c0df6231369, type: 3}
@@ -1482,31 +1533,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8172568531489577954, guid: 9e5721d39f16106429f8a8c3ac74fab0, type: 3}
   m_PrefabInstance: {fileID: 1461961181571249074}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1234251454 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6284554266325809849, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
-  m_PrefabInstance: {fileID: 670016264}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1234251460
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1234251454}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55d5bf26756cae847a610bb1c2ae7bf6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ultimate_Dagger
-  bladeWaveVFX: {fileID: 3020920808754819069, guid: 9e1749955dc6c7042aa459a890276a34, type: 3}
-  groundYOffset: 0
-  spawnForwardOffset: 1
-  waveDamage: 500
-  waveSpeed: 8
-  waveMaxDistance: 10
-  hitboxHalfExtents: {x: 1.5, y: 1, z: 0.5}
-  knockbackForce: 5
 --- !u!114 &1331199985 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2622090170748288850, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
@@ -3130,3 +3156,4 @@ SceneRoots:
   - {fileID: 1724997292}
   - {fileID: 6228625513993179602}
   - {fileID: 208513286}
+  - {fileID: 382147885}
