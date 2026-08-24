@@ -89,6 +89,35 @@ public class GoblinAI_Transform : MonoBehaviour
     [FormerlySerializedAs("strafeChangeDuration")]
     public float strafeChangeDuration = 1.2f;
 
+    // ── Audio ────────────────────────────────────────────────────────
+    [Header("Áudio")]
+    [Tooltip("Som único de passo do Goblin (tocado a cada stepInterval)")]
+    public AudioClip walkSound;
+    [Tooltip("Volume do som de passo")]
+    [Range(0f, 1f)]
+    public float walkSoundVolume = 0.5f;
+    [Tooltip("Intervalo entre cada passo enquanto caminha em segundos (ex: 0.22s)")]
+    public float stepInterval = 0.22f;
+    private float stepTimer = 0f;
+
+    [Tooltip("Som do arremesso da bomba pelo Goblin")]
+    public AudioClip throwSound;
+    [Tooltip("Volume do som de arremesso")]
+    [Range(0f, 1f)]
+    public float throwSoundVolume = 0.8f;
+
+    [Tooltip("Som de tick da bomba acesa voando no ar")]
+    public AudioClip bombTickSound;
+    [Tooltip("Volume do som de tick da bomba")]
+    [Range(0f, 1f)]
+    public float bombTickSoundVolume = 0.6f;
+
+    [Tooltip("Som da explosão da bomba ao impactar")]
+    public AudioClip bombExplosionSound;
+    [Tooltip("Volume do som da explosão da bomba")]
+    [Range(0f, 1f)]
+    public float bombExplosionSoundVolume = 1.0f;
+
     // ── Private ─────────────────────────────────────────────────────    
     private Rigidbody rb;
     private Animator anim;
@@ -181,6 +210,53 @@ public class GoblinAI_Transform : MonoBehaviour
     {
         if (player == null) return;
         ExecuteMovement();
+        HandleWalkSound();
+    }
+
+    private void HandleWalkSound()
+    {
+        if (walkSound == null) return;
+        if (rb == null) return;
+
+        Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        if (flatVel.magnitude > 0.1f)
+        {
+            stepTimer -= Time.fixedDeltaTime;
+            if (stepTimer <= 0f)
+            {
+                PlayWalkSound();
+                stepTimer = stepInterval;
+            }
+        }
+        else
+        {
+            stepTimer = 0f;
+        }
+    }
+
+    private void PlayWalkSound()
+    {
+        if (walkSound == null) return;
+
+        float pitch = Random.Range(0.9f, 1.1f);
+        PlayClipAtPointWithPitch(walkSound, transform.position, pitch, walkSoundVolume);
+    }
+
+    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+    {
+        GameObject audioObj = new GameObject("TempGoblinAudio");
+        audioObj.transform.position = position;
+        AudioSource aSource = audioObj.AddComponent<AudioSource>();
+        aSource.clip = clip;
+        aSource.pitch = pitch;
+        aSource.volume = volume;
+        aSource.spatialBlend = 1f; // Som 3D
+        aSource.minDistance = 3f;
+        aSource.maxDistance = 25f;
+        aSource.rolloffMode = AudioRolloffMode.Linear;
+        aSource.Play();
+        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
+        Destroy(audioObj, clip.length / safePitch);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -391,6 +467,12 @@ public class GoblinAI_Transform : MonoBehaviour
 
         if (bombPrefab == null || throwPoint == null) return;
 
+        // Toca o som do arremesso da bomba
+        if (throwSound != null)
+        {
+            PlayClipAtPointWithPitch(throwSound, throwPoint.position, 1f, throwSoundVolume);
+        }
+
         GameObject bomb = Instantiate(bombPrefab, throwPoint.position, Quaternion.identity);
 
         // Ignore collision with the Goblin itself
@@ -399,12 +481,23 @@ public class GoblinAI_Transform : MonoBehaviour
         if (cBomb != null && cGoblin != null)
             Physics.IgnoreCollision(cBomb, cGoblin);
 
-        // Pass references and buff stats
+        // Pass references, audio settings, and buff stats
         BombaExplosiva script = bomb.GetComponent<BombaExplosiva>();
         if (script != null)
         {
             script.owner = gameObject;
             script.raioExplosao = isBuffed ? 4f : 2f;
+
+            if (bombTickSound != null)
+            {
+                script.tickSound = bombTickSound;
+                script.tickSoundVolume = bombTickSoundVolume;
+            }
+            if (bombExplosionSound != null)
+            {
+                script.explosionSound = bombExplosionSound;
+                script.explosionSoundVolume = bombExplosionSoundVolume;
+            }
         }
 
         // Apply parabolic force towards player
