@@ -1624,7 +1624,6 @@ public class BossController : MonoBehaviour
         if (CurrentState == BossState.Stunned) return; // Não empilha stun
 
         float stunTime = duration > 0f ? duration : 3.0f;
-
         if (stunCoroutine != null) StopCoroutine(stunCoroutine);
         stunCoroutine = StartCoroutine(StunRoutine(stunTime));
     }
@@ -1668,7 +1667,12 @@ public class BossController : MonoBehaviour
         {
             int damageTaken = previousHP - health.CurrentHealth;
             ApplyPoiseDamage(damageTaken * 0.85f);
-            OnTookDamage?.Invoke(); 
+            OnTookDamage?.Invoke();
+            if (showDebugLog)
+            {
+                int p3HP = phaseConfig != null ? Mathf.RoundToInt(phaseConfig.phase3Threshold * health.maxHealth) : -1;
+                Debug.Log($"[BossController] HP: {health.CurrentHealth}/{health.maxHealth} ({(float)health.CurrentHealth/health.maxHealth:P0}) | Fase: {CurrentPhase} | Threshold Fase3: {p3HP}");
+            }
         }
 
         if (phaseConfig != null)

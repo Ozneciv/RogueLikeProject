@@ -86,7 +86,7 @@ public class BossAnimationTester : MonoBehaviour
         var phase2 = GetComponent<BossPhase2_Refraction>() ?? GetComponentInChildren<BossPhase2_Refraction>();
         if (phase2 != null) { phase2.StopAllCoroutines(); phase2.enabled = enableBossAI; }
 
-        var puddles = GetComponent<BossPhase3AcidPuddles>() ?? GetComponentInChildren<BossPhase3AcidPuddles>();
+        var puddles = GetComponent<AcidPuddleSpawner>() ?? GetComponentInChildren<AcidPuddleSpawner>();
         if (puddles != null) { puddles.StopAllCoroutines(); puddles.enabled = enableBossAI; }
 
         if (navAgent != null && navAgent.isOnNavMesh)

@@ -15,7 +15,7 @@ using System.Collections;
 ///   2. Adicione um CapsuleCollider → marque "Is Trigger"
 ///      Ajuste o raio do Collider para o tamanho visual desejado
 ///   3. Adicione um Material semi-transparente (verde ácido) no MeshRenderer
-///   4. Salve como Prefab e arraste no BossPhase3AcidPuddles.acidPuddlePrefab
+///   4. Salve como Prefab e arraste no AcidPuddleSpawner.acidPuddlePrefab
 ///
 /// SOBRE OS CONTADORES ESTÁTICOS:
 ///   AcidPuddle.ActiveCount    → poças ativas na cena (lido pelo spawner para o cap)
@@ -29,8 +29,11 @@ public class AcidPuddle : MonoBehaviour
     // =====================================================
 
     [Header("Dano Contínuo (DoT)")]
-    [Tooltip("Dano aplicado ao jogador a cada tick enquanto estiver dentro da poça.")]
-    public int damagePerTick = 5;
+    [Tooltip("Dano mínimo por tick.")]
+    public int damageMin = 3;
+
+    [Tooltip("Dano máximo por tick.")]
+    public int damageMax = 5;
 
     [Tooltip("Intervalo em segundos entre cada tick de dano.\n" +
              "O primeiro tick ocorre após este intervalo (não imediato ao entrar).")]
@@ -180,9 +183,9 @@ public class AcidPuddle : MonoBehaviour
         {
             if (cachedPlayerHealth != null)
             {
-                cachedPlayerHealth.TakeDamage(damagePerTick, gameObject);
-                if (showDebugLog)
-                    Debug.Log($"[AcidPuddle] ☠️ DoT tick: -{damagePerTick} HP");
+                int dmg = Random.Range(damageMin, damageMax + 1);
+                cachedPlayerHealth.TakeDamage(dmg, gameObject);
+                Debug.Log($"[AcidPuddle] DoT: -{dmg} HP | Vida: {cachedPlayerHealth.currentHealth}/{cachedPlayerHealth.maxHealth}");
             }
 
             yield return new WaitForSeconds(tickInterval);
@@ -196,7 +199,7 @@ public class AcidPuddle : MonoBehaviour
     /// <summary>
     /// Reseta os contadores estáticos para 0.
     /// Chame ao reiniciar a arena, mudar de cena ou iniciar uma nova Run.
-    /// Exemplo: chamado por BossPhase3AcidPuddles.OnBossDefeated()
+    /// Exemplo: chamado por AcidPuddleSpawner.OnBossDefeated()
     /// </summary>
     public static void ResetStaticCounters()
     {
