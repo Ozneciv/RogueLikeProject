@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: shard_prismatic_t4
   itemName: "Fragmento Prism\xE1tico (T4)"
   description: "Efeito \xDAnico T4: ShardOrbit"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2a24d80fc3f1b6d43ad9f35fe8150e32, type: 3}
   tier: 3
   enemySource: Shard Swarm
+  returnsToBase: 0
   recycleEssenceValue: 168
   infusionEssenceCost: 420
   itemAttributes:

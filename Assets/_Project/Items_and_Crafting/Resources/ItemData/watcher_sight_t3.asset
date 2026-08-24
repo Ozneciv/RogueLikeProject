@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f50c879d2315cfe4fa88c7211306d9c7, type: 3}
   m_Name: watcher_sight_t3
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemId: watcher_sight_t3
+  itemId: watcher_anel_t3
   itemName: "Vis\xE3o Vigilante (T3)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 538d0133ebc66f346b3e49ca94988ce6, type: 3}
   tier: 2
   enemySource: Crystal Watcher
+  returnsToBase: 0
   recycleEssenceValue: 120
   infusionEssenceCost: 300
   itemAttributes:

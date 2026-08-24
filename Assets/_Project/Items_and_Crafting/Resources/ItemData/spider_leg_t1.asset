@@ -18,6 +18,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: a73e25cee4f92ca4a9c0a3ecb553d6e1, type: 3}
   tier: 0
   enemySource: Spider
+  returnsToBase: 0
   recycleEssenceValue: 24
   infusionEssenceCost: 60
   itemAttributes:

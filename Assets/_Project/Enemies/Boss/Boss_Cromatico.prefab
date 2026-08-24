@@ -183,7 +183,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DummyHealth
   isSlowed: 0
-  maxHealth: 1000
+  maxHealth: 100
   debugLogDamage: 0
   healthBarSlider: {fileID: 0}
   normalColor: {r: 1, g: 0, b: 0, a: 1}
@@ -237,8 +237,9 @@ MonoBehaviour:
   stunBeamPrefab: {fileID: 0}
   wideSpinhoPrefab: {fileID: 7936005269762645577, guid: 04a5f360bf41f5e48a96dcd756facd86, type: 3}
   wideSpikeDamage: 45
-  toxicBloodPrefab: {fileID: 0}
-  toxicBloodInterval: 0.4
+  toxicBloodPrefab: {fileID: 4684590844720067136, guid: 35f4515f9e0ed9c40b9f52cb121327bb, type: 3}
+  drippingParticlePrefab: {fileID: 7000988831508164087, guid: af4f7b8208cb6f041ad01611d21c2a63, type: 3}
+  toxicBloodInterval: 1
   footSpawnPoint: {fileID: 0}
   powerUpImpactFrameSpeed: 1
   enableSharpBlurTeleport: 1
@@ -340,7 +341,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c74faec359655c445aeae7fb755382b9, type: 3}
   m_Name: 
@@ -355,7 +356,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 292c5e3549394fc48ac38cd94cc35c83, type: 3}
   m_Name: 
@@ -373,7 +374,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a016a06159236dd40a9dbd0db36e5b59, type: 3}
   m_Name: 

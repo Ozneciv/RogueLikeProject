@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: tuner_prism_t3
   itemName: Prisma Sintonizador (T3)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: babb1f747e5ad064f997c5e9f24f5c89, type: 3}
   tier: 2
   enemySource: Crystal Tuner
+  returnsToBase: 0
   recycleEssenceValue: 120
   infusionEssenceCost: 300
   itemAttributes:

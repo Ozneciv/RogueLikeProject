@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: magic_catalyst_t4
   itemName: "Catalisador M\xE1gico (T4)"
   description: "Efeito \xDAnico T4: MagicSkybeam"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: dda022a6c5cb2d34ea5aeb32858309a0, type: 3}
   tier: 3
   enemySource: Magic Crystal
+  returnsToBase: 0
   recycleEssenceValue: 168
   infusionEssenceCost: 420
   itemAttributes:

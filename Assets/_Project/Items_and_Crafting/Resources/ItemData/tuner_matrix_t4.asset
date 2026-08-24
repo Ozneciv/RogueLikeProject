@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: tuner_matrix_t4
   itemName: Matriz Sintonizadora (T4)
   description: "Efeito \xDAnico T4: TunerAdrenaline"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2c2c11844f021c24893562a23390961a, type: 3}
   tier: 3
   enemySource: Crystal Tuner
+  returnsToBase: 0
   recycleEssenceValue: 168
   infusionEssenceCost: 420
   itemAttributes:
