@@ -54,10 +54,10 @@ public class PrimaryAttackKnife : MonoBehaviour
     [Range(0f, 1f)]
     public float axeHitVolume = 0.8f;
 
-    [Tooltip("Som de swing do machado no ar (toca a cada ataque, independente de acertar)")]
-    public AudioClip axeSwingAirSound;
+    [Tooltip("Sons de swing do machado no ar (um por golpe do combo). Índice 0 = Swing 1, 1 = Swing 2, etc.")]
+    public AudioClip[] axeSwingAirSounds = new AudioClip[4];
 
-    [Tooltip("Volume do som de swing no ar (0.0 a 1.0)")]
+    [Tooltip("Volume dos sons de swing no ar (0.0 a 1.0)")]
     [Range(0f, 1f)]
     public float axeSwingAirVolume = 0.6f;
 
@@ -129,6 +129,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     private float lastAttackTime = 0f;
     private Coroutine comboResetCoroutine;
     private Coroutine backupAttackCoroutine;
+    private AudioSource axeSwingAudioSource; // AudioSource reutilizável para interromper o swing anterior
     private bool eventFiredEnableHitbox = false;
     private bool eventFiredDisableHitbox = false;
     private bool eventFiredOpenWindow = false;
@@ -370,11 +371,31 @@ public class PrimaryAttackKnife : MonoBehaviour
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
 
-            // --- SFX de swing do Machado no ar ---
-            if (axeSwingAirSound != null)
+            // --- SFX de swing do Machado no ar (um som por golpe do combo, interrompendo o anterior) ---
+            if (axeSwingAirSounds != null && comboStep > 0 && comboStep <= axeSwingAirSounds.Length)
             {
-                float pitch = Random.Range(0.93f, 1.07f);
-                PlayClipAtPointWithPitch(axeSwingAirSound, transform.position + Vector3.up, pitch, axeSwingAirVolume);
+                AudioClip swingClip = axeSwingAirSounds[comboStep - 1];
+                if (swingClip != null)
+                {
+                    // Interrompe o swing anterior reutilizando o mesmo AudioSource
+                    if (axeSwingAudioSource == null)
+                    {
+                        GameObject audioObj = new GameObject("AxeSwingAudioSource");
+                        audioObj.transform.SetParent(transform);
+                        audioObj.transform.localPosition = Vector3.up;
+                        axeSwingAudioSource = audioObj.AddComponent<AudioSource>();
+                        axeSwingAudioSource.spatialBlend = 1f;
+                        axeSwingAudioSource.minDistance = 3f;
+                        axeSwingAudioSource.maxDistance = 30f;
+                        axeSwingAudioSource.rolloffMode = AudioRolloffMode.Linear;
+                    }
+
+                    axeSwingAudioSource.Stop();
+                    axeSwingAudioSource.clip = swingClip;
+                    axeSwingAudioSource.pitch = Random.Range(0.93f, 1.07f);
+                    axeSwingAudioSource.volume = axeSwingAirVolume;
+                    axeSwingAudioSource.Play();
+                }
             }
 
             // --- LUNGE FORWARD FOR ATTACKS (Apenas se enableLunge for ativado) ---
