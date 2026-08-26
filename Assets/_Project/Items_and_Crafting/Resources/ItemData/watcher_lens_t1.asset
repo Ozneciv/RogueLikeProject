@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: watcher_lens_t1
   itemName: Lente Vigilante (T1)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: fa53db19190aea648bb45d6b81d17a27, type: 3}
   tier: 0
   enemySource: Crystal Watcher
+  returnsToBase: 0
   recycleEssenceValue: 24
   infusionEssenceCost: 60
   itemAttributes:

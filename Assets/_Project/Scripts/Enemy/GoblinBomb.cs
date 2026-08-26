@@ -24,9 +24,23 @@ public class BombaExplosiva : MonoBehaviour
     [Header("Indicador de Perigo")]
     public Renderer bombaRenderer;
 
+    [Header("Áudio")]
+    [Tooltip("Som de tick da bomba acesa voando (loop enquanto está no ar)")]
+    public AudioClip tickSound;
+    [Tooltip("Volume do som de tick")]
+    [Range(0f, 1f)]
+    public float tickSoundVolume = 0.6f;
+
+    [Tooltip("Som da explosão ao detonar")]
+    public AudioClip explosionSound;
+    [Tooltip("Volume do som da explosão")]
+    [Range(0f, 1f)]
+    public float explosionSoundVolume = 1.0f;
+
     [HideInInspector] public GameObject owner;
 
     private bool explodiu = false;
+    private AudioSource tickAudioSource;
 
     // ─────────────────────────────────────────────────────────────────
     void Start()
@@ -39,6 +53,21 @@ public class BombaExplosiva : MonoBehaviour
             Collider cBomba  = GetComponent<Collider>();
             if (cPlayer != null && cBomba != null)
                 Physics.IgnoreCollision(cBomba, cPlayer);
+        }
+
+        // Toca o som em loop do tick da bomba acesa
+        if (tickSound != null)
+        {
+            GameObject tickObj = new GameObject("Audio_Tick");
+            tickObj.transform.SetParent(transform, false);
+            tickAudioSource = tickObj.AddComponent<AudioSource>();
+            tickAudioSource.clip = tickSound;
+            tickAudioSource.volume = tickSoundVolume;
+            tickAudioSource.loop = true;
+            tickAudioSource.spatialBlend = 1f;
+            tickAudioSource.minDistance = 2f;
+            tickAudioSource.maxDistance = 25f;
+            tickAudioSource.Play();
         }
 
         if (bombaRenderer != null)
@@ -60,6 +89,27 @@ public class BombaExplosiva : MonoBehaviour
         if (explodiu) return;
         explodiu = true;
         CancelInvoke();
+
+        // Para o som de tick
+        if (tickAudioSource != null && tickAudioSource.isPlaying)
+        {
+            tickAudioSource.Stop();
+        }
+
+        // Toca o som de explosão no local
+        if (explosionSound != null)
+        {
+            GameObject audioObj = new GameObject("TempExplosionAudio");
+            audioObj.transform.position = transform.position;
+            AudioSource aSource = audioObj.AddComponent<AudioSource>();
+            aSource.clip = explosionSound;
+            aSource.volume = explosionSoundVolume;
+            aSource.spatialBlend = 1f; // Som 3D
+            aSource.minDistance = 5f;
+            aSource.maxDistance = 45f;
+            aSource.Play();
+            Destroy(audioObj, explosionSound.length + 0.1f);
+        }
 
         // Para o movimento e esconde a bomba imediatamente
         Renderer rend = GetComponent<Renderer>();

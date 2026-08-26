@@ -250,33 +250,51 @@ public class PlayerUltimate : MonoBehaviour
     {
         WeaponType activeType = GetEquippedWeaponType();
 
-        Ultimate_Axe axeUlt = GetComponent<Ultimate_Axe>() ?? GetComponentInChildren<Ultimate_Axe>() ?? GetComponentInParent<Ultimate_Axe>();
-        if (axeUlt != null)
+        if (activeType == WeaponType.Axe) 
         {
-            Debug.Log("🎯 [PlayerUltimate] Ultimate_Axe localizado! Chamando ExecuteUltimate()...");
-            axeUlt.ExecuteUltimate();
+            Ultimate_Axe axeUlt = GetComponent<Ultimate_Axe>() ?? GetComponentInChildren<Ultimate_Axe>() ?? GetComponentInParent<Ultimate_Axe>();
+            if (axeUlt != null)
+            {
+                Debug.Log("🎯 [PlayerUltimate] Machado equipado! Chamando Ultimate_Axe...");
+                axeUlt.ExecuteUltimate();
+            }
+            else
+            {
+                Debug.LogError("❌ [PlayerUltimate] Componente Ultimate_Axe NÃO ENCONTRADO!");
+            }
         }
-        else
+        else if (activeType == WeaponType.Dagger)
         {
-            Debug.LogError("❌ [PlayerUltimate] Componente Ultimate_Axe NÃO ENCONTRADO no Player! Adicionando automaticamente...");
-            axeUlt = gameObject.AddComponent<Ultimate_Axe>();
-            axeUlt.ExecuteUltimate();
+            Ultimate_Dagger daggerUlt = GetComponent<Ultimate_Dagger>() ?? GetComponentInChildren<Ultimate_Dagger>() ?? GetComponentInParent<Ultimate_Dagger>();
+            if (daggerUlt != null)
+            {
+                Debug.Log("🎯 [PlayerUltimate] Adaga equipada! Chamando Ultimate_Dagger...");
+                daggerUlt.ExecuteUltimate();
+            }
+            else
+            {
+                Debug.LogError("❌ [PlayerUltimate] Componente Ultimate_Dagger NÃO ENCONTRADO no Player! Arraste o script para o personagem.");
+            }
         }
     }
 
     private WeaponType GetEquippedWeaponType()
     {
-        if (weaponManager != null && weaponManager.rightHand != null && weaponManager.rightHand.childCount > 0)
+        // NOVO: Agora olha direto para a 'currentWeapon' que o WeaponManager diz estar usando!
+        if (weaponManager != null && weaponManager.currentWeapon != null)
         {
-            WeaponOffset offset = weaponManager.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+            WeaponOffset offset = weaponManager.currentWeapon.GetComponent<WeaponOffset>();
             if (offset != null)
             {
                 return offset.weaponType;
             }
         }
+        
+        // Se der algo errado, avisa no console e assume Machado como fallback
+        Debug.LogWarning("⚠️ [PlayerUltimate] Não foi possível ler a arma atual. Assumindo Axe por padrão.");
         return WeaponType.Axe;
     }
-
+        
     private IEnumerator FallbackUnlockCoroutine(float delay)
     {
         yield return new WaitForSeconds(delay);

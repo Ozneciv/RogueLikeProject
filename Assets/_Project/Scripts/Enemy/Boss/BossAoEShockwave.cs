@@ -9,17 +9,17 @@ using System.Collections.Generic;
 public class BossAoEShockwave : MonoBehaviour
 {
     [Header("💥 Parâmetros do Impacto Exclusivo do Boss")]
-    public float shockwaveRadius = 7.5f;
+    public float shockwaveRadius = 6.0f;
     public int shockwaveDamage = 35;
-    public float knockbackForce = 16.0f;
-    public float upwardForce = 0.35f;
+    public float knockbackForce = 5.0f;
+    public float upwardForce = 0.20f;
 
     [Header("✨ Estética Visual (Cristal Roxo/Ciano)")]
     public Color shockwaveColor = new Color(0.75f, 0.25f, 1.00f, 0.90f); // Roxo Místico
     public Color innerGlowColor = new Color(0.20f, 0.85f, 1.00f, 0.90f); // Ciano Brilhante
     public float duration = 0.65f;
 
-    public static void TriggerBossExplosion(Vector3 centerPosition, float radius = 7.5f, int damage = 35, float pushForce = 16.0f)
+    public static void TriggerBossExplosion(Vector3 centerPosition, float radius = 6.0f, int damage = 35, float pushForce = 5.0f)
     {
         GameObject shockwaveObj = new GameObject("Boss_Exclusive_Shockwave");
         shockwaveObj.transform.position = centerPosition;

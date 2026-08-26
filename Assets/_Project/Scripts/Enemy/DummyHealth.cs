@@ -57,6 +57,11 @@ public class DummyHealth : MonoBehaviour
     /// </summary>
     [HideInInspector] public System.Action onDeathOverride = null;
 
+    /// <summary>
+    /// Evento disparado sempre que este objeto recebe dano de um ataque.
+    /// </summary>
+    [HideInInspector] public System.Action<int, GameObject> onDamageTaken = null;
+
     private Color originalRenderColor;
     private Color originalBaseColor;
     private bool hasBaseColor = false;
@@ -176,6 +181,8 @@ public class DummyHealth : MonoBehaviour
 
         CurrentHealth -= damage;
         RunStatsManager.Instance?.RecordDamageDealt(damage);
+
+        onDamageTaken?.Invoke(damage, null);
 
         UpdateHealthBar();
         ShowHealthBar();

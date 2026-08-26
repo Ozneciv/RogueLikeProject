@@ -326,9 +326,6 @@ public class PlayerSkinManager : MonoBehaviour
 
             foreach (var anim in animators)
             {
-                // Disable Root Motion to prevent physics conflicts
-                anim.applyRootMotion = false;
-
                 // Force main RuntimeAnimatorController (or weapon override) to sync state machine
                 RuntimeAnimatorController controllerToApply = mainAnimatorController;
                 if (equippedWeapon != null)

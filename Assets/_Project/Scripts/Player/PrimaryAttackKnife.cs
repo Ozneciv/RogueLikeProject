@@ -86,19 +86,23 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float comboResetTime = 1.2f;
     private int comboStep = 0;
 
+    [Header("Lunge Impulse Control")]
+    [Tooltip("Se verdadeiro, aplica uma investida física (Lunge) para a frente ao atacar. Se falso (padrão), o ataque executa no lugar de forma instantânea sem arrasto.")]
+    public bool enableLunge = false;
+
     [Header("Backup Animation Timing Settings (When no Animation Events exist)")]
     [Tooltip("Delay (em segundos) para ativar o colisor de dano da Adaga")]
-    public float daggerHitDelay = 0.15f;
+    public float daggerHitDelay = 0.05f;
     [Tooltip("Duração (em segundos) que o colisor da Adaga fica ativo")]
     public float daggerHitDuration = 0.2f;
 
     [Tooltip("Delay (em segundos) para ativar o colisor de dano do Machado")]
-    public float axeHitDelay = 0.15f;
+    public float axeHitDelay = 0.22f;
     [Tooltip("Duração (em segundos) que o colisor do Machado fica ativo")]
     public float axeHitDuration = 0.2f;
 
     [Tooltip("Delay (em segundos) para ativar o colisor de dano padrão")]
-    public float defaultHitDelay = 0.15f;
+    public float defaultHitDelay = 0.05f;
     [Tooltip("Duração (em segundos) que o colisor padrão fica ativo")]
     public float defaultHitDuration = 0.2f;
 
@@ -220,12 +224,11 @@ public class PrimaryAttackKnife : MonoBehaviour
                     }
                     else
                     {
+                        // Permite bufferizar o próximo ataque mesmo durante o último golpe (loopando de volta para o Attack 1)
+                        hasBufferedAttack = true;
                         int maxComboSteps = GetMaxComboSteps();
-                        if (comboStep < maxComboSteps)
-                        {
-                            hasBufferedAttack = true;
-                            Debug.Log($"[PrimaryAttackKnife] Input buffered para o próximo passo do combo ({comboStep + 1}/{maxComboSteps}).");
-                        }
+                        int nextStep = (comboStep >= maxComboSteps) ? 1 : comboStep + 1;
+                        Debug.Log($"[PrimaryAttackKnife] Input buffered para o próximo passo do combo ({nextStep}/{maxComboSteps}).");
                     }
                 }
             }
@@ -352,37 +355,40 @@ public class PrimaryAttackKnife : MonoBehaviour
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
 
-            // --- LUNGE FORWARD FOR ATTACKS ---
-            if (playerRb == null) playerRb = GetComponent<Rigidbody>();
-            if (playerRb != null)
+            // --- LUNGE FORWARD FOR ATTACKS (Apenas se enableLunge for ativado) ---
+            if (enableLunge)
             {
-                float lungeForce = 3.5f; // lunge padrão
-                Player_WeaponManager wm = GetComponent<Player_WeaponManager>();
-                if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
+                if (playerRb == null) playerRb = GetComponent<Rigidbody>();
+                if (playerRb != null)
                 {
-                    WeaponOffset offsetData = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
-                    if (offsetData != null)
+                    float lungeForce = 3.5f; // lunge padrão
+                    Player_WeaponManager wm = GetComponent<Player_WeaponManager>();
+                    if (wm != null && wm.rightHand != null && wm.rightHand.childCount > 0)
                     {
-                        if (offsetData.weaponType == WeaponType.Axe)
+                        WeaponOffset offsetData = wm.rightHand.GetChild(0).GetComponent<WeaponOffset>();
+                        if (offsetData != null)
                         {
-                            lungeForce = 7.5f; // Machado lunge mais forte e pesado
-                        }
-                        else if (offsetData.weaponType == WeaponType.Dagger)
-                        {
-                            lungeForce = 5f; // Adaga lunge médio rápido
+                            if (offsetData.weaponType == WeaponType.Axe)
+                            {
+                                lungeForce = 7.5f; // Machado lunge mais forte e pesado
+                            }
+                            else if (offsetData.weaponType == WeaponType.Dagger)
+                            {
+                                lungeForce = 5f; // Adaga lunge médio rápido
+                            }
                         }
                     }
-                }
 
-                // Aplica impulso na direção frontal do jogador com verificação de parede próxima (Raycast)
-                Vector3 lungeDir = transform.forward;
-                if (Physics.Raycast(transform.position + Vector3.up * 0.5f, lungeDir, out RaycastHit wallHit, 1.2f))
-                {
-                    lungeForce *= 0.15f; // Evita atravessar a geometria de paredes
-                }
+                    // Aplica impulso na direção frontal do jogador com verificação de parede próxima (Raycast)
+                    Vector3 lungeDir = transform.forward;
+                    if (Physics.Raycast(transform.position + Vector3.up * 0.5f, lungeDir, out RaycastHit wallHit, 1.2f))
+                    {
+                        lungeForce *= 0.15f; // Evita atravessar a geometria de paredes
+                    }
 
-                playerRb.linearVelocity = new Vector3(lungeDir.x * lungeForce, playerRb.linearVelocity.y, lungeDir.z * lungeForce);
-                Debug.Log($"[PrimaryAttackKnife] Lunge aplicado com força {lungeForce} na direção {lungeDir}");
+                    playerRb.linearVelocity = new Vector3(lungeDir.x * lungeForce, playerRb.linearVelocity.y, lungeDir.z * lungeForce);
+                    Debug.Log($"[PrimaryAttackKnife] Lunge aplicado com força {lungeForce} na direção {lungeDir}");
+                }
             }
 
             // Aplicar Attack Speed multiplicada pela velocidade específica de cada passo do combo (apenas para o Machado)
@@ -469,12 +475,40 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         if (!isHitboxActive) return;
 
-        // Busca DummyHealth ou ShardSwarmHealth: primeiro no próprio collider, depois no pai
+        // Busca DummyHealth, ShardSwarmHealth ou InvulnerableShieldNPC
         DummyHealth enemy = enemyCollider.GetComponent<DummyHealth>()
                          ?? enemyCollider.GetComponentInParent<DummyHealth>();
 
         ShardSwarmHealth swarmEnemy = enemyCollider.GetComponent<ShardSwarmHealth>()
                                    ?? enemyCollider.GetComponentInParent<ShardSwarmHealth>();
+
+        InvulnerableShieldNPC invShield = enemyCollider.GetComponent<InvulnerableShieldNPC>()
+                                       ?? enemyCollider.GetComponentInParent<InvulnerableShieldNPC>();
+
+        MerchantVFX merchantVfx = enemyCollider.GetComponent<MerchantVFX>()
+                               ?? enemyCollider.GetComponentInParent<MerchantVFX>();
+
+        if (merchantVfx != null)
+        {
+            if (!enemiesHitInThisAttack.Contains(merchantVfx.gameObject))
+            {
+                enemiesHitInThisAttack.Add(merchantVfx.gameObject);
+                Vector3 contactPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up * 0.8f);
+                merchantVfx.TriggerMerchantHitReaction(contactPoint);
+            }
+            if (enemy == null && swarmEnemy == null) return;
+        }
+
+        if (invShield != null)
+        {
+            if (!enemiesHitInThisAttack.Contains(invShield.gameObject))
+            {
+                enemiesHitInThisAttack.Add(invShield.gameObject);
+                Vector3 contactPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up * 0.8f);
+                invShield.TriggerShield(contactPoint);
+            }
+            if (enemy == null && swarmEnemy == null) return;
+        }
 
         if (enemy == null && swarmEnemy == null) return;
 
@@ -614,7 +648,8 @@ public class PrimaryAttackKnife : MonoBehaviour
     {
         eventFiredOpenWindow = true;
         
-        if (hasBufferedAttack)
+        // Proteção para evitar consumir buffer quase instantaneamente com menos de 0.15s de ataque
+        if (hasBufferedAttack && (Time.time - lastAttackTime >= 0.15f))
         {
             hasBufferedAttack = false;
             Debug.Log("[PrimaryAttackKnife] Consumindo ataque buffered.");

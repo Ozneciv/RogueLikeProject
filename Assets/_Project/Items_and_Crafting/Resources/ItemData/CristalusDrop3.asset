@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: 03cl
   itemName: Olho cristalico
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e7b7e65da77ce3b49b3bb85b22c8c605, type: 3}
   tier: 2
   enemySource: Cristalus
+  returnsToBase: 0
   recycleEssenceValue: 120
   infusionEssenceCost: 300
   itemAttributes:

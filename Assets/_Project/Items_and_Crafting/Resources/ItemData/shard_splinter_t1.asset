@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: shard_splinter_t1
   itemName: "Estilha\xE7o Cristalino (T1)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0fe5de23e7a58e741a3ef2d222b7b991, type: 3}
   tier: 0
   enemySource: Shard Swarm
+  returnsToBase: 0
   recycleEssenceValue: 24
   infusionEssenceCost: 60
   itemAttributes:

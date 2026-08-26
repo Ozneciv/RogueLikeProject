@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: 02sb
   itemName: SharpItem2
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 76863c1a186da014485830e8fea8bf26, type: 3}
   tier: 1
   enemySource: SharpBlur
+  returnsToBase: 0
   recycleEssenceValue: 10
   infusionEssenceCost: 60
   itemAttributes:

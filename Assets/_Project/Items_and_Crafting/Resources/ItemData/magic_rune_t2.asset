@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: magic_rune_t2
   itemName: "Runa Inst\xE1vel (T2)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 3424fe24a55835b4d95940bc6de527a5, type: 3}
   tier: 1
   enemySource: Magic Crystal
+  returnsToBase: 0
   recycleEssenceValue: 72
   infusionEssenceCost: 180
   itemAttributes:

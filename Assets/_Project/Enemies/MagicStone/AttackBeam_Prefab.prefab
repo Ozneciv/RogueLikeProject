@@ -129,7 +129,6 @@ GameObject:
   - component: {fileID: 5641375590785598395}
   - component: {fileID: 1532951076759362557}
   - component: {fileID: 1504550628172171521}
-  - component: {fileID: 4149717219613606241}
   m_Layer: 0
   m_Name: AttackBeam_Prefab
   m_TagString: Untagged
@@ -235,16 +234,3 @@ MonoBehaviour:
   particleLifetime: 10
   lightIntensity: 8
   owner: {fileID: 0}
---- !u!114 &4149717219613606241
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2483372131443543816}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f1781cece36389e44a58f2c323624784, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  lifetime: 2

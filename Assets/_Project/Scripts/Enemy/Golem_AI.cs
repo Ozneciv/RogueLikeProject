@@ -62,6 +62,16 @@ public class Golem_AI : MonoBehaviour
     private int meleeCombo = 0; // Para usar stun em combos
     private bool isBuffed = false;
 
+    [Header("Áudio")]
+    [Tooltip("Vetor de áudios de passos do Golem selecionados aleatoriamente")]
+    public AudioClip[] walkingSounds;
+    [Tooltip("Volume dos sons de passos do Golem")]
+    [Range(0f, 1f)]
+    public float walkingSoundVolume = 0.6f;
+    [Tooltip("Intervalo entre cada passo enquanto caminha")]
+    public float stepInterval = 0.45f;
+    private float stepTimer = 0f;
+
     public bool IsAttacking => isAttacking;
     public bool IsCastingStun => isCastingStun;
     public bool IsActivated => isActivated;
@@ -133,6 +143,59 @@ public class Golem_AI : MonoBehaviour
         if (health != null && health.CurrentHealth <= 0) return;
 
         HandleMovement();
+        HandleWalkingSound();
+    }
+
+    private void HandleWalkingSound()
+    {
+        if (rb == null) return;
+
+        Vector3 flatVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        if (flatVelocity.magnitude > 0.1f)
+        {
+            stepTimer -= Time.fixedDeltaTime;
+            if (stepTimer <= 0f)
+            {
+                PlayWalkingSound();
+                stepTimer = stepInterval;
+            }
+        }
+        else
+        {
+            stepTimer = 0f;
+        }
+    }
+
+    private void PlayWalkingSound()
+    {
+        if (walkingSounds == null || walkingSounds.Length == 0)
+            return;
+
+        int randIndex = Random.Range(0, walkingSounds.Length);
+        AudioClip clipToPlay = walkingSounds[randIndex];
+
+        if (clipToPlay != null)
+        {
+            float pitch = Random.Range(0.85f, 1.15f);
+            PlayClipAtPointWithPitch(clipToPlay, transform.position, pitch, walkingSoundVolume);
+        }
+    }
+
+    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+    {
+        GameObject audioObj = new GameObject("TempGolemAudio");
+        audioObj.transform.position = position;
+        AudioSource aSource = audioObj.AddComponent<AudioSource>();
+        aSource.clip = clip;
+        aSource.pitch = pitch;
+        aSource.volume = volume;
+        aSource.spatialBlend = 1f; // Som 3D
+        aSource.minDistance = 3f;
+        aSource.maxDistance = 25f;
+        aSource.rolloffMode = AudioRolloffMode.Linear;
+        aSource.Play();
+        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
+        Destroy(audioObj, clip.length / safePitch);
     }
 
     void HandleRotation()

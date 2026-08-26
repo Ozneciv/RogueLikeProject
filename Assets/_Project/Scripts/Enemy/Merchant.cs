@@ -561,6 +561,22 @@ public class Merchant : MonoBehaviour
         UpdateRealtimeTextPosition();
     }
 
+    public void TakeDamage(int damage, bool isCritical = false)
+    {
+        MerchantVFX vfx = GetComponent<MerchantVFX>() ?? GetComponentInChildren<MerchantVFX>();
+        if (vfx != null)
+        {
+            vfx.TriggerMerchantHitReaction();
+            return;
+        }
+
+        InvulnerableShieldNPC shield = GetComponent<InvulnerableShieldNPC>() ?? GetComponentInChildren<InvulnerableShieldNPC>();
+        if (shield != null)
+        {
+            shield.TriggerShield();
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;

@@ -38,13 +38,19 @@ public class PlayerM : MonoBehaviour
     private float targetSpeed;
     private float currentRotationSpeed;
 
+    [HideInInspector]
+    public float debuffSpeedMultiplier = 1.0f;
+
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         if (attackScript == null) attackScript = GetComponent<PrimaryAttackKnife>() ?? GetComponentInChildren<PrimaryAttackKnife>();
         
-        // Busca automática do Animator no Start para evitar ficar nulo
+        // Buscar PlayerAttributesDefensive
+        playerAttributes = GetComponent<PlayerAttributesDefensive>() ?? GetComponentInParent<PlayerAttributesDefensive>() ?? GetComponentInChildren<PlayerAttributesDefensive>();
+
+        // Buscar Animator
         if (animator == null)
         {
             Player_WeaponManager wm = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
@@ -57,13 +63,6 @@ public class PlayerM : MonoBehaviour
                 animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
             }
         }
-
-        // Buscar PlayerAttributesDefensive
-        playerAttributes = GetComponent<PlayerAttributesDefensive>();
-        if (playerAttributes == null)
-        {
-            Debug.LogWarning("PlayerM: PlayerAttributesDefensive não encontrado! Speed multiplier não será aplicado.");
-        }
     }
 
     private void Update()
@@ -73,9 +72,7 @@ public class PlayerM : MonoBehaviour
         {
             Debug.LogWarning($"=== DIAGNÓSTICO DE MOVIMENTAÇÃO ===");
             Debug.LogWarning($"[PlayerM] Script Ativo: {enabled}, Objeto: {gameObject.name}, Ativo na Hierarquia: {gameObject.activeInHierarchy}");
-            Debug.LogWarning($"[PlayerM] Animator associado: {(animator != null ? animator.name : "null")}, Animator Ativo: {(animator != null ? animator.isActiveAndEnabled.ToString() : "false")}");
-            Debug.LogWarning($"[PlayerM] Controller: {(animator != null && animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "null")}");
-            Debug.LogWarning($"[PlayerM] moveDirection: {moveDirection}, grounded: {grounded}, linearVelocity: {rb.linearVelocity}");
+            Debug.LogWarning($"[PlayerM] targetSpeed: {targetSpeed}, debuffSpeedMultiplier: {debuffSpeedMultiplier}, speedMultiplier: {(playerAttributes != null ? playerAttributes.speedMultiplier : 1f)}");
         }
 
         // Bloquear rotação e movimentação manual se o Ultimate estiver ativo
@@ -94,7 +91,6 @@ public class PlayerM : MonoBehaviour
         PlayerUltimate ult = GetComponent<PlayerUltimate>() ?? GetComponentInChildren<PlayerUltimate>();
         if (ult != null && ult.IsUltimateActive())
         {
-            // Zera totalmente a velocidade no plano horizontal para travar o jogador no chão no fim do slam sem deslizar!
             rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
             return;
         }
@@ -109,27 +105,19 @@ public class PlayerM : MonoBehaviour
         float vertical = Input.GetAxisRaw("Vertical");
         moveDirection = new Vector3(horizontal, 0, vertical).normalized;
 
-        // Verifica se estamos na janela crítica de dano (EnableHitbox -> DisableHitbox)
         bool inDamageWindow = attackScript != null && attackScript.isHitboxActive;
+
+        float attrMult = (playerAttributes != null) ? playerAttributes.speedMultiplier : 1f;
+        float totalSpeedMult = attrMult * debuffSpeedMultiplier;
 
         if (inDamageWindow)
         {
-            // Usa as velocidades configuradas para o momento do impacto
-            targetSpeed = hitboxMoveSpeed; 
+            targetSpeed = hitboxMoveSpeed * totalSpeedMult; 
             currentRotationSpeed = hitboxRotationSpeed;
         }
         else
         {
-            // Fora do impacto, usa a velocidade normal de corrida
-            // Aplicar Speed Multiplier do PlayerAttributesDefensive
-            if (playerAttributes != null)
-            {
-                targetSpeed = sprintSpeed * playerAttributes.speedMultiplier;
-            }
-            else
-            {
-                targetSpeed = sprintSpeed;
-            }
+            targetSpeed = sprintSpeed * totalSpeedMult;
             currentRotationSpeed = rotationSpeed;
         }
     }
@@ -207,10 +195,9 @@ public class PlayerM : MonoBehaviour
             {
                 animator.speed = 1f; 
 
-                // Lógica normal de pernas correndo/paradas (verifica entrada de movimento E velocidade do Rigidbody)
+                // Lógica de pernas correndo/paradas (baseada no input de movimento para parada instantânea)
                 float moveMagnitude = moveDirection.sqrMagnitude;
-                float velocityMagnitude = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-                float speedParam = (moveMagnitude > 0.01f || velocityMagnitude > 0.1f) ? 1f : 0f;
+                float speedParam = (moveMagnitude > 0.01f) ? 1f : 0f;
 
                 animator.SetFloat("Speed", speedParam);
             }
