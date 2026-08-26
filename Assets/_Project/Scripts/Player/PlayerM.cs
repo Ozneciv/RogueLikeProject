@@ -41,6 +41,17 @@ public class PlayerM : MonoBehaviour
     [HideInInspector]
     public float debuffSpeedMultiplier = 1.0f;
 
+    [Header("Running Footstep SFX")]
+    [Tooltip("Som de passos ao correr. Arraste o AudioClip Running aqui.")]
+    public AudioClip runningFootstepClip;
+
+    [Tooltip("Volume dos passos (0.0 a 1.0)")]
+    [Range(0f, 1f)]
+    public float footstepVolume = 0.5f;
+
+    private AudioSource footstepSource;
+    private bool isFootstepPlaying = false;
+
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -63,6 +74,14 @@ public class PlayerM : MonoBehaviour
                 animator = GetComponentInChildren<Animator>(false) ?? GetComponentInParent<Animator>();
             }
         }
+
+        // Setup do AudioSource para passos (loop contínuo)
+        footstepSource = gameObject.AddComponent<AudioSource>();
+        footstepSource.clip = runningFootstepClip;
+        footstepSource.loop = true;
+        footstepSource.playOnAwake = false;
+        footstepSource.volume = footstepVolume;
+        footstepSource.spatialBlend = 0f; // Som 2D
     }
 
     private void Update()
@@ -84,6 +103,7 @@ public class PlayerM : MonoBehaviour
         MyInput();
         LookAtMoveDirection();
         UpdateAnimations();
+        UpdateFootstepSound();
     }
 
     private void FixedUpdate()
@@ -205,6 +225,34 @@ public class PlayerM : MonoBehaviour
         catch (System.Exception)
         {
             // Evita crashar o loop se referências estiverem se reestabelecendo
+        }
+    }
+
+    private void UpdateFootstepSound()
+    {
+        if (footstepSource == null || runningFootstepClip == null) return;
+
+        bool isMoving = moveDirection.sqrMagnitude > 0.01f;
+        bool isDashing = dashScript != null && dashScript.isDashing;
+        bool isAttacking = attackScript != null && attackScript.isHitboxActive;
+
+        // Verifica se o player está morto
+        PlayerHealth health = GetComponent<PlayerHealth>();
+        bool isDead = health != null && health.isDead;
+
+        bool shouldPlay = isMoving && !isDashing && !isAttacking && !isDead;
+
+        if (shouldPlay && !isFootstepPlaying)
+        {
+            footstepSource.clip = runningFootstepClip;
+            footstepSource.volume = footstepVolume;
+            footstepSource.Play();
+            isFootstepPlaying = true;
+        }
+        else if (!shouldPlay && isFootstepPlaying)
+        {
+            footstepSource.Stop();
+            isFootstepPlaying = false;
         }
     }
 }
