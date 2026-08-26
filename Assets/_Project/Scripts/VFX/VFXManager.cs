@@ -21,6 +21,7 @@ public enum VFXType
     ImpactFrame,            // Easy Impact Frame oficial da Vefects (VFX_Impact_Frame_01)
     ImpactEyeCandy,         // Eye Candy / Faíscas estilizadas da Vefects (VFX_Extra_Eye_Candy_01)
     WWExplosionVariant1,    // CFXR2 WW Explosion 1 (Variação Semi-Estilizada)
+    PlayerDash,             // VFX de partículas do Dash do Player (speedlines/burst)
     Custom                  // VFX avulso/customizado
 }
 

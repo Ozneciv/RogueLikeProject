@@ -1848,7 +1848,7 @@ MonoBehaviour:
   isDashing: 0
   dashSpeed: 100
   dashDuration: 0.05
-  maxDashes: 10
+  maxDashes: 100
   dashCooldown: 5
   dashCountText: {fileID: 0}
   dashKey: 101
@@ -1885,7 +1885,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f438548421a8c841b86d43804752999, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 100
+  maxHealth: 10000
   maxArmor: 300
   armorRegenRate: 50
   isInvulnerable: 0
@@ -4206,6 +4206,7 @@ GameObject:
   - component: {fileID: 5301761075157900069}
   - component: {fileID: 4903610608914846769}
   - component: {fileID: 7616712902417337525}
+  - component: {fileID: 4453166240833020818}
   m_Layer: 8
   m_Name: astronaut
   m_TagString: Player
@@ -4277,7 +4278,8 @@ MonoBehaviour:
   swordRange: 7
   axeRange: 7.5
   hitImpactVariations:
-  - {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
+  - {fileID: 5085208710604937735, guid: 415eb90ccc98be644a2a61308ed50644, type: 3}
+  criticalHitImpactPrefab: {fileID: 8827767439292419669, guid: eb35369d1a0ba8548a679606b869f46e, type: 3}
   hitImpactPrefab: {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
   weaponTrail: {fileID: 0}
   attackAnimationSpeed: 1
@@ -4329,7 +4331,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttributesOffensive
   baseDamageMultiplier: 1
   attackSpeedMelee: 1
-  critChance: 5
+  critChance: 50
   critMultiplier: 1.5
   weaponRangeMelee: 1
   weaponRangeProjectile: 10
@@ -4375,6 +4377,28 @@ MonoBehaviour:
   waveMaxDistance: 10
   hitboxHalfExtents: {x: 1.5, y: 1, z: 0.5}
   knockbackForce: 5
+--- !u!114 &4453166240833020818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6284554266325809849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d0dd87ab0412bc4885743995febc8ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDashVFX
+  dashVFXType: 9
+  vfxScale: 1
+  verticalOffset: 0.3
+  spawnAtStart: 1
+  customSimulationSpeed: -1
+  rotationOffset: {x: -90, y: 0, z: 0}
+  rotationMode: 0
+  followPlayer: 1
+  detachDelay: 0
+  dashScript: {fileID: 0}
 --- !u!1 &6320494353973819877
 GameObject:
   m_ObjectHideFlags: 0
