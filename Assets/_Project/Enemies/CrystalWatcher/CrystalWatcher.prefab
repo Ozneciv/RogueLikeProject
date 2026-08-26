@@ -161,6 +161,14 @@ MonoBehaviour:
   rotationSpeed: 30
   laserRange: 30
   laserWidth: 0.5
+  hoverSound: {fileID: 8300000, guid: 1a7958a85828d894091fd61e1973427b, type: 3}
+  hoverSoundVolume: 0.4
+  chargeSound: {fileID: 8300000, guid: b9957e08c0a7fc2459e3d76fcd8be036, type: 3}
+  chargeSoundVolume: 0.8
+  firingSound: {fileID: 8300000, guid: ec07d54076feaf34b850ab0fe4b0d953, type: 3}
+  firingSoundVolume: 0.8
+  impactSound: {fileID: 8300000, guid: 64d109e81035d064fa02de6c260ecdbc, type: 3}
+  impactSoundVolume: 0.8
 --- !u!114 &2726038420584316830
 MonoBehaviour:
   m_ObjectHideFlags: 0
