@@ -210,6 +210,12 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 708a2536156843e583e65338002e1388, type: 3}
   walkingSoundVolume: 0.5
   stepInterval: 0.18
+  dashSounds:
+  - {fileID: 8300000, guid: 51c24fa66a5693143a4eace2f529db23, type: 3}
+  - {fileID: 8300000, guid: 507d6070eb153284d841b80a8e76d341, type: 3}
+  - {fileID: 8300000, guid: abf282179dac9a14aa3796bb3546458d, type: 3}
+  - {fileID: 8300000, guid: f312cbfc9547c674b9cbd57a3660a6f5, type: 3}
+  dashSoundVolume: 0.8
 --- !u!114 &5632678571611438161
 MonoBehaviour:
   m_ObjectHideFlags: 0

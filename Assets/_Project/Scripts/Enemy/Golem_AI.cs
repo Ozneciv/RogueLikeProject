@@ -72,6 +72,12 @@ public class Golem_AI : MonoBehaviour
     public float stepInterval = 0.45f;
     private float stepTimer = 0f;
 
+    [Tooltip("Som do impacto da pisada/estouro de Stun (Stomp)")]
+    public AudioClip stompSound;
+    [Tooltip("Volume do som de Stomp")]
+    [Range(0f, 1f)]
+    public float stompSoundVolume = 0.9f;
+
     public bool IsAttacking => isAttacking;
     public bool IsCastingStun => isCastingStun;
     public bool IsActivated => isActivated;
@@ -179,6 +185,14 @@ public class Golem_AI : MonoBehaviour
             float pitch = Random.Range(0.85f, 1.15f);
             PlayClipAtPointWithPitch(clipToPlay, transform.position, pitch, walkingSoundVolume);
         }
+    }
+
+    private void PlayStompSound(Vector3 position)
+    {
+        if (stompSound == null) return;
+
+        float pitch = Random.Range(0.9f, 1.1f);
+        PlayClipAtPointWithPitch(stompSound, position, pitch, stompSoundVolume);
     }
 
     private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
@@ -324,6 +338,9 @@ public class Golem_AI : MonoBehaviour
 
         // Destrói o marcador
         if (marker != null) Destroy(marker);
+
+        // Toca o som do impacto do Stomp
+        PlayStompSound(targetPosition);
 
         // Dispara o stun
         if (stunBeamPrefab != null)

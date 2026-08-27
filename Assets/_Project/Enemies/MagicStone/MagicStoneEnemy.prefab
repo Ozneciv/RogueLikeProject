@@ -89,12 +89,20 @@ MonoBehaviour:
   orbitDirection: 1
   floatHeight: 0.25
   floatSpeed: 1
-  attackInterval: 1.5
-  attackTelegraphTime: 0.5
-  teleportCooldown: 30
   teleportRange: 4
   minTeleportDistance: 15
   maxTeleportDistance: 20
+  teleportCooldown: 30
+  attackInterval: 1.5
+  attackTelegraphTime: 0.5
+  hoverSound: {fileID: 8300000, guid: 1a7958a85828d894091fd61e1973427b, type: 3}
+  hoverSoundVolume: 0.4
+  teleportSound: {fileID: 8300000, guid: 5e27c96573a6eb347ba4ea633f5627a9, type: 3}
+  teleportSoundVolume: 0.8
+  telegraphSound: {fileID: 8300000, guid: 7fb6525b7763856469aea26dcbf67519, type: 3}
+  telegraphSoundVolume: 0.76
+  skybeamSound: {fileID: 8300000, guid: 02233295b715d2e41ac88150aa77bc42, type: 3}
+  skybeamSoundVolume: 0.25
 --- !u!65 &1884827477303362434
 BoxCollider:
   m_ObjectHideFlags: 0
