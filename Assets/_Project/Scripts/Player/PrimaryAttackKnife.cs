@@ -371,32 +371,6 @@ public class PrimaryAttackKnife : MonoBehaviour
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
 
-            // --- SFX de swing do Machado no ar (um som por golpe do combo, interrompendo o anterior) ---
-            if (axeSwingAirSounds != null && comboStep > 0 && comboStep <= axeSwingAirSounds.Length)
-            {
-                AudioClip swingClip = axeSwingAirSounds[comboStep - 1];
-                if (swingClip != null)
-                {
-                    // Interrompe o swing anterior reutilizando o mesmo AudioSource
-                    if (axeSwingAudioSource == null)
-                    {
-                        GameObject audioObj = new GameObject("AxeSwingAudioSource");
-                        audioObj.transform.SetParent(transform);
-                        audioObj.transform.localPosition = Vector3.up;
-                        axeSwingAudioSource = audioObj.AddComponent<AudioSource>();
-                        axeSwingAudioSource.spatialBlend = 1f;
-                        axeSwingAudioSource.minDistance = 3f;
-                        axeSwingAudioSource.maxDistance = 30f;
-                        axeSwingAudioSource.rolloffMode = AudioRolloffMode.Linear;
-                    }
-
-                    axeSwingAudioSource.Stop();
-                    axeSwingAudioSource.clip = swingClip;
-                    axeSwingAudioSource.pitch = Random.Range(0.93f, 1.07f);
-                    axeSwingAudioSource.volume = axeSwingAirVolume;
-                    axeSwingAudioSource.Play();
-                }
-            }
 
             // --- LUNGE FORWARD FOR ATTACKS (Apenas se enableLunge for ativado) ---
             if (enableLunge)
@@ -634,12 +608,18 @@ public class PrimaryAttackKnife : MonoBehaviour
                 Destroy(hitVFX, 2f);
             }
 
-            // --- SFX de impacto do Machado ---
+            // --- SFX de impacto do Machado (interrompe o swing no ar ao conectar) ---
             if (axeHitSounds != null && comboStep > 0 && comboStep <= axeHitSounds.Length)
             {
                 AudioClip hitClip = axeHitSounds[comboStep - 1];
                 if (hitClip != null)
                 {
+                    // Interrompe o som de swing (whoosh) para que não se misture com o impacto
+                    if (axeSwingAudioSource != null && axeSwingAudioSource.isPlaying)
+                    {
+                        axeSwingAudioSource.Stop();
+                    }
+
                     float pitch = Random.Range(0.95f, 1.05f);
                     Vector3 sfxPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up);
                     PlayClipAtPointWithPitch(hitClip, sfxPoint, pitch, axeHitVolume);
@@ -673,6 +653,33 @@ public class PrimaryAttackKnife : MonoBehaviour
         eventFiredEnableHitbox = true;
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
+
+        // --- SFX de swing do Machado no ar (sincronizado com a animação, não com o clique) ---
+        if (axeSwingAirSounds != null && comboStep > 0 && comboStep <= axeSwingAirSounds.Length)
+        {
+            AudioClip swingClip = axeSwingAirSounds[comboStep - 1];
+            if (swingClip != null)
+            {
+                // Cria o AudioSource persistente na primeira vez (reutilizado para interromper o swing anterior)
+                if (axeSwingAudioSource == null)
+                {
+                    GameObject audioObj = new GameObject("AxeSwingAudioSource");
+                    audioObj.transform.SetParent(transform);
+                    audioObj.transform.localPosition = Vector3.up;
+                    axeSwingAudioSource = audioObj.AddComponent<AudioSource>();
+                    axeSwingAudioSource.spatialBlend = 1f;
+                    axeSwingAudioSource.minDistance = 3f;
+                    axeSwingAudioSource.maxDistance = 30f;
+                    axeSwingAudioSource.rolloffMode = AudioRolloffMode.Linear;
+                }
+
+                axeSwingAudioSource.Stop();
+                axeSwingAudioSource.clip = swingClip;
+                axeSwingAudioSource.pitch = Random.Range(0.93f, 1.07f);
+                axeSwingAudioSource.volume = axeSwingAirVolume;
+                axeSwingAudioSource.Play();
+            }
+        }
 
         SetTrailsEmitting(true);
 

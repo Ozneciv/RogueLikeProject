@@ -1911,6 +1911,8 @@ MonoBehaviour:
   isKnockbackImmune: 0
   abilityCooldownMultiplier: 1
   enemiesBuffed: 0
+  heartbeatClip: {fileID: 8300000, guid: 9699e7ecb5d3f424987bd5414e8999b4, type: 3}
+  heartbeatVolume: 0.5
   canRegenArmor: 1
   damageLightObj: {fileID: 0}
   damageIFrameCooldown: 0.25
@@ -1954,6 +1956,8 @@ MonoBehaviour:
   groundRadius: 0.2
   animator: {fileID: 3618305479678570340}
   debuffSpeedMultiplier: 1
+  runningFootstepClip: {fileID: 8300000, guid: cbd2ad0506c6bcb4e84e17726f093dec, type: 3}
+  footstepVolume: 0.3
 --- !u!114 &5745442842706831329
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4279,6 +4283,18 @@ MonoBehaviour:
   hitImpactVariations:
   - {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
   hitImpactPrefab: {fileID: 383840337370359756, guid: 898dc2ffaeee5bf46a1db7ebc4ff1e7c, type: 3}
+  axeHitSounds:
+  - {fileID: 8300000, guid: 7cf2d9e620d64a84786e9e8b2869d6aa, type: 3}
+  - {fileID: 8300000, guid: d8d145cbc4821e542976857612fcaec3, type: 3}
+  - {fileID: 8300000, guid: 67b65d083273b3f4b82610e974ae5991, type: 3}
+  - {fileID: 8300000, guid: 77ceb9485bcbcda448fec49de86efc6a, type: 3}
+  axeHitVolume: 0.4
+  axeSwingAirSounds:
+  - {fileID: 8300000, guid: a3feedcdd886b144ab4a79e6b1462d4c, type: 3}
+  - {fileID: 8300000, guid: 008d307cce6a60c48b6572f43c943c44, type: 3}
+  - {fileID: 8300000, guid: ab1322e654678d645b0de1835310afc9, type: 3}
+  - {fileID: 8300000, guid: 6c33346e9ccc302439eceb869f582175, type: 3}
+  axeSwingAirVolume: 0.3
   weaponTrail: {fileID: 0}
   attackAnimationSpeed: 1
   defaultAttackSpeed: 1

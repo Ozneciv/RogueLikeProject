@@ -73080,10 +73080,21 @@ MonoBehaviour:
   surgicalRemovalVFX: {fileID: 0}
   curseAuraVFX: {fileID: 6699036710834913460}
   audioSource: {fileID: 0}
-  deflectSound: {fileID: 0}
+  deflectSounds:
+  - {fileID: 8300000, guid: a71a46d138802444c915884fed9ffabd, type: 3}
+  - {fileID: 8300000, guid: b0936c9915d2bdb489d03a083dc3c0ef, type: 3}
+  - {fileID: 8300000, guid: 86b405745421bae46a24cfe82462dd7d, type: 3}
+  deflectVolume: 0.4
+  randomizePitch: 1
+  pitchMin: 0.9
+  pitchMax: 1.1
   enableRepulsionKnockback: 1
   repulsionForce: 6
   knockbackDuration: 0.12
+  hitsToTriggerHallucination: 4
+  hitsToTriggerDarkEnvironment: 7
+  hitsToTriggerColorInversion: 9
+  hitsToTriggerDeath: 10
 --- !u!1 &4570464795882390089
 GameObject:
   m_ObjectHideFlags: 0
