@@ -86,6 +86,12 @@ public class PlayerM : MonoBehaviour
         footstepSource.playOnAwake = false;
         footstepSource.volume = footstepVolume;
         footstepSource.spatialBlend = 0f; // Som 2D
+
+        // Garante que o KeybindApplier esteja presente para aplicar as teclas configuradas
+        if (GetComponent<KeybindApplier>() == null)
+        {
+            gameObject.AddComponent<KeybindApplier>();
+        }
     }
 
     private void Update()
