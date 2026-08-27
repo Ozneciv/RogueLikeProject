@@ -8,6 +8,9 @@ public class PrimaryAttackKnife : MonoBehaviour
     public bool isHitboxActive { get; private set; } = false;
     public bool isAttacking { get; private set; }
 
+    [Header("Input de Ataque")]
+    public KeyCode attackKey = KeyCode.Q;
+
     [Header("Estado da Arma")]
     public bool hasWeapon = false;
 
@@ -225,7 +228,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(0))
+            if (Input.GetKeyDown(attackKey) || Input.GetMouseButtonDown(0))
             {
                 lastAttackInputTime = Time.time;
 

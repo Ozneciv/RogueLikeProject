@@ -25,8 +25,14 @@ public class DashM : MonoBehaviour
     [Header("UI")]
     public TextMeshProUGUI dashCountText;
 
-    [Header("Input")]
+    [Header("Input de Ação")]
     public KeyCode dashKey = KeyCode.E;
+
+    [Header("Input de Movimento (Direção do Dash)")]
+    public KeyCode keyUp = KeyCode.W;
+    public KeyCode keyDown = KeyCode.S;
+    public KeyCode keyLeft = KeyCode.A;
+    public KeyCode keyRight = KeyCode.D;
 
     [Header("Input Buffer & Dash-Canceling (Estilo Hades)")]
     public float inputBufferWindow = 0.20f;
@@ -118,13 +124,24 @@ public class DashM : MonoBehaviour
         isDashing = true;
         dashesLeft--; // Gasta um dash
         
-        Vector3 dashDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical")).normalized;
+        // === NOVA LÓGICA MANUAL DE DIREÇÃO DO DASH ===
+        float horizontal = 0f;
+        if (Input.GetKey(keyRight)) horizontal += 1f;
+        if (Input.GetKey(keyLeft)) horizontal -= 1f;
+
+        float vertical = 0f;
+        if (Input.GetKey(keyUp)) vertical += 1f;
+        if (Input.GetKey(keyDown)) vertical -= 1f;
+
+        Vector3 dashDirection = new Vector3(horizontal, 0f, vertical).normalized;
+
+        // Se o cara apertar dash parado, esquiva para frente
         if (dashDirection == Vector3.zero)
         {
             dashDirection = transform.forward;
         }
 
-        rb.linearVelocity = Vector3.zero; // Usar 'velocity' em vez de 'linearVelocity' e AddForce
+        rb.linearVelocity = Vector3.zero; 
         rb.linearVelocity = dashDirection * dashSpeed;
         
         // Ativar invulnerabilidade durante o dash
