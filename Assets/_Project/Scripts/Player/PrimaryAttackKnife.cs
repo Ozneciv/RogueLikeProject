@@ -41,8 +41,12 @@ public class PrimaryAttackKnife : MonoBehaviour
     public float axeRange = 7.5f; 
 
     [Header("VFX")]
-    [Tooltip("Arraste aqui suas variações de VFX (o original e o Slash). O script vai sortear um deles a cada hit!")]
+    [Tooltip("Arraste aqui suas variações de VFX para hits NORMAIS. O script vai sortear um deles a cada hit!")]
     public GameObject[] hitImpactVariations;
+
+    [Tooltip("VFX específico para ACERTO CRÍTICO. Se vazio, usa as variações normais mesmo em crits.")]
+    public GameObject criticalHitImpactPrefab;
+
     // (Mantive o antigo escondido só para não dar erro se alguma outra coisa puxar ele)
     [HideInInspector] public GameObject hitImpactPrefab;
 
@@ -577,11 +581,23 @@ public class PrimaryAttackKnife : MonoBehaviour
                 }
             }
 
-            // Escolhe o VFX: tenta pegar do array de variações, se estiver vazio, usa o antigo
-            GameObject vfxToSpawn = hitImpactPrefab;
-            if (hitImpactVariations != null && hitImpactVariations.Length > 0)
+            // Escolhe o VFX: crítico usa prefab dedicado, normal sorteia das variações
+            GameObject vfxToSpawn = null;
+
+            if (isCritical && criticalHitImpactPrefab != null)
             {
+                // Hit crítico com VFX dedicado!
+                vfxToSpawn = criticalHitImpactPrefab;
+            }
+            else if (hitImpactVariations != null && hitImpactVariations.Length > 0)
+            {
+                // Hit normal: sorteia entre as variações
                 vfxToSpawn = hitImpactVariations[Random.Range(0, hitImpactVariations.Length)];
+            }
+            else
+            {
+                // Fallback: prefab legado
+                vfxToSpawn = hitImpactPrefab;
             }
 
             if (vfxToSpawn != null)
