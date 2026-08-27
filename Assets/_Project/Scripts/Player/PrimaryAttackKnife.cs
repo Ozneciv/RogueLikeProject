@@ -50,6 +50,21 @@ public class PrimaryAttackKnife : MonoBehaviour
     // (Mantive o antigo escondido só para não dar erro se alguma outra coisa puxar ele)
     [HideInInspector] public GameObject hitImpactPrefab;
 
+    [Header("Axe Hit SFX")]
+    [Tooltip("Sons de impacto do machado em inimigos. Índice 0 = Hit 1, 1 = Hit 2, etc.")]
+    public AudioClip[] axeHitSounds = new AudioClip[4];
+
+    [Tooltip("Volume dos sons de impacto do machado (0.0 a 1.0)")]
+    [Range(0f, 1f)]
+    public float axeHitVolume = 0.8f;
+
+    [Tooltip("Sons de swing do machado no ar (um por golpe do combo). Índice 0 = Swing 1, 1 = Swing 2, etc.")]
+    public AudioClip[] axeSwingAirSounds = new AudioClip[4];
+
+    [Tooltip("Volume dos sons de swing no ar (0.0 a 1.0)")]
+    [Range(0f, 1f)]
+    public float axeSwingAirVolume = 0.6f;
+
     [Header("Trail Settings")]
     [Tooltip("Arraste aqui o TrailRenderer da arma (ou do objeto filho) para ativar automaticamente no momento do ataque.")]
     public TrailRenderer weaponTrail; 
@@ -118,6 +133,7 @@ public class PrimaryAttackKnife : MonoBehaviour
     private float lastAttackTime = 0f;
     private Coroutine comboResetCoroutine;
     private Coroutine backupAttackCoroutine;
+    private AudioSource axeSwingAudioSource; // AudioSource reutilizável para interromper o swing anterior
     private bool eventFiredEnableHitbox = false;
     private bool eventFiredDisableHitbox = false;
     private bool eventFiredOpenWindow = false;
@@ -358,6 +374,7 @@ public class PrimaryAttackKnife : MonoBehaviour
             animator.ResetTrigger("Attack");
             animator.SetInteger("ComboStep", comboStep);
             animator.SetTrigger("Attack");
+
 
             // --- LUNGE FORWARD FOR ATTACKS (Apenas se enableLunge for ativado) ---
             if (enableLunge)
@@ -606,6 +623,24 @@ public class PrimaryAttackKnife : MonoBehaviour
                 GameObject hitVFX = Instantiate(vfxToSpawn, hitPoint, Quaternion.identity);
                 Destroy(hitVFX, 2f);
             }
+
+            // --- SFX de impacto do Machado (interrompe o swing no ar ao conectar) ---
+            if (axeHitSounds != null && comboStep > 0 && comboStep <= axeHitSounds.Length)
+            {
+                AudioClip hitClip = axeHitSounds[comboStep - 1];
+                if (hitClip != null)
+                {
+                    // Interrompe o som de swing (whoosh) para que não se misture com o impacto
+                    if (axeSwingAudioSource != null && axeSwingAudioSource.isPlaying)
+                    {
+                        axeSwingAudioSource.Stop();
+                    }
+
+                    float pitch = Random.Range(0.95f, 1.05f);
+                    Vector3 sfxPoint = enemyCollider.ClosestPoint(transform.position + Vector3.up);
+                    PlayClipAtPointWithPitch(hitClip, sfxPoint, pitch, axeHitVolume);
+                }
+            }
         }
     }
 
@@ -634,6 +669,33 @@ public class PrimaryAttackKnife : MonoBehaviour
         eventFiredEnableHitbox = true;
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
+
+        // --- SFX de swing do Machado no ar (sincronizado com a animação, não com o clique) ---
+        if (axeSwingAirSounds != null && comboStep > 0 && comboStep <= axeSwingAirSounds.Length)
+        {
+            AudioClip swingClip = axeSwingAirSounds[comboStep - 1];
+            if (swingClip != null)
+            {
+                // Cria o AudioSource persistente na primeira vez (reutilizado para interromper o swing anterior)
+                if (axeSwingAudioSource == null)
+                {
+                    GameObject audioObj = new GameObject("AxeSwingAudioSource");
+                    audioObj.transform.SetParent(transform);
+                    audioObj.transform.localPosition = Vector3.up;
+                    axeSwingAudioSource = audioObj.AddComponent<AudioSource>();
+                    axeSwingAudioSource.spatialBlend = 1f;
+                    axeSwingAudioSource.minDistance = 3f;
+                    axeSwingAudioSource.maxDistance = 30f;
+                    axeSwingAudioSource.rolloffMode = AudioRolloffMode.Linear;
+                }
+
+                axeSwingAudioSource.Stop();
+                axeSwingAudioSource.clip = swingClip;
+                axeSwingAudioSource.pitch = Random.Range(0.93f, 1.07f);
+                axeSwingAudioSource.volume = axeSwingAirVolume;
+                axeSwingAudioSource.Play();
+            }
+        }
 
         SetTrailsEmitting(true);
 
@@ -860,5 +922,23 @@ public class PrimaryAttackKnife : MonoBehaviour
         hasWeapon = true;
 
         ApplyWeaponRangeScale();
+    }
+
+    // --- Método utilitário de áudio (mesmo padrão do projeto: GoblinMove, Golem_AI, Spider_AI, etc.) ---
+    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+    {
+        GameObject audioObj = new GameObject("TempAxeHitAudio");
+        audioObj.transform.position = position;
+        AudioSource aSource = audioObj.AddComponent<AudioSource>();
+        aSource.clip = clip;
+        aSource.pitch = pitch;
+        aSource.volume = volume;
+        aSource.spatialBlend = 1f;
+        aSource.minDistance = 3f;
+        aSource.maxDistance = 30f;
+        aSource.rolloffMode = AudioRolloffMode.Linear;
+        aSource.Play();
+        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
+        Destroy(audioObj, clip.length / safePitch);
     }
 }

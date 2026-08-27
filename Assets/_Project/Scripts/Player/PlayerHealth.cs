@@ -73,6 +73,17 @@ public class PlayerHealth : MonoBehaviour
     private float armorRegenAccumulator = 0f;
     private float healthRegenAccumulator = 0f;
 
+    [Header("Heartbeat SFX (Sem Armadura)")]
+    [Tooltip("Som de coração batendo quando o player está sem armadura. Arraste o AudioClip HeartBeat aqui.")]
+    public AudioClip heartbeatClip;
+
+    [Tooltip("Volume do som de heartbeat (0.0 a 1.0)")]
+    [Range(0f, 1f)]
+    public float heartbeatVolume = 0.7f;
+
+    private AudioSource heartbeatSource;
+    private bool isHeartbeatPlaying = false;
+
     void Start()
     {
         playerLayer = gameObject.layer;
@@ -87,6 +98,14 @@ public class PlayerHealth : MonoBehaviour
         {
             Debug.LogWarning("PlayerHealth: PlayerAttributesDefensive não encontrado! Atributos defensivos não funcionarão.");
         }
+
+        // Setup do AudioSource para heartbeat (loop contínuo)
+        heartbeatSource = gameObject.AddComponent<AudioSource>();
+        heartbeatSource.clip = heartbeatClip;
+        heartbeatSource.loop = true;
+        heartbeatSource.playOnAwake = false;
+        heartbeatSource.volume = heartbeatVolume;
+        heartbeatSource.spatialBlend = 0f; // Som 2D (direto nos ouvidos do player)
 
         if (SceneManager.GetActiveScene().name == "Base")
         {
@@ -531,6 +550,26 @@ public class PlayerHealth : MonoBehaviour
                 currentHealth -= necroseDamage;
                 if (currentHealth <= 0) Die();
                 UpdateHealthBar();
+            }
+        }
+        // === HEARTBEAT (Som de coração quando sem armadura) ===
+        if (heartbeatSource != null && heartbeatClip != null)
+        {
+            bool shouldPlay = !isDead && maxArmor > 0 && canRegenArmor && currentArmor <= 0;
+
+            if (shouldPlay && !isHeartbeatPlaying)
+            {
+                heartbeatSource.clip = heartbeatClip;
+                heartbeatSource.volume = heartbeatVolume;
+                heartbeatSource.Play();
+                isHeartbeatPlaying = true;
+                Debug.Log("💓 [HEARTBEAT] Coração batendo — armadura zerada!");
+            }
+            else if (!shouldPlay && isHeartbeatPlaying)
+            {
+                heartbeatSource.Stop();
+                isHeartbeatPlaying = false;
+                Debug.Log("💓 [HEARTBEAT] Coração parou — armadura regenerando.");
             }
         }
     }
