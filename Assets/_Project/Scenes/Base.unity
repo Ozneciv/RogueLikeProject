@@ -1113,6 +1113,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 3072499769774279680, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: ultimateCooldown
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6793213990562782912, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: maxArmor
       value: 30

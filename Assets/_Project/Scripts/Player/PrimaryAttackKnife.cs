@@ -654,10 +654,32 @@ public class PrimaryAttackKnife : MonoBehaviour
         isHitboxActive = true;
         enemiesHitInThisAttack.Clear();
 
-        // --- SFX de swing do Machado no ar (sincronizado com a animação, não com o clique) ---
-        if (axeSwingAirSounds != null && comboStep > 0 && comboStep <= axeSwingAirSounds.Length)
+        // --- SFX de swing do Machado no ar (apenas com Machado equipado, sincronizado com a animação) ---
+        bool isAxeEquipped = false;
+        Player_WeaponManager wmSwing = GetComponent<Player_WeaponManager>() ?? GetComponentInParent<Player_WeaponManager>();
+        if (wmSwing != null && wmSwing.currentWeapon != null && wmSwing.isWeaponDrawn)
+        {
+            WeaponOffset offsetSwing = wmSwing.currentWeapon.GetComponent<WeaponOffset>();
+            if (offsetSwing != null && offsetSwing.weaponType == WeaponType.Axe)
+            {
+                isAxeEquipped = true;
+            }
+            else
+            {
+                Debug.Log($"[SwingSFX] Arma encontrada mas NÃO é Axe. offsetSwing={offsetSwing != null}, weaponType={offsetSwing?.weaponType}, weapon={wmSwing.currentWeapon.name}");
+            }
+        }
+        else
+        {
+            Debug.Log($"[SwingSFX] Sem arma equipada/empunhada. wmSwing={wmSwing != null}, currentWeapon={wmSwing?.currentWeapon != null}, isWeaponDrawn={wmSwing?.isWeaponDrawn}");
+        }
+
+        Debug.Log($"[SwingSFX] isAxeEquipped={isAxeEquipped}, comboStep={comboStep}, arrayLength={axeSwingAirSounds?.Length}");
+
+        if (isAxeEquipped && axeSwingAirSounds != null && comboStep > 0 && comboStep <= axeSwingAirSounds.Length)
         {
             AudioClip swingClip = axeSwingAirSounds[comboStep - 1];
+            Debug.Log($"[SwingSFX] Tentando tocar Swing_{comboStep:D2}, clip={(swingClip != null ? swingClip.name : "NULL")}");
             if (swingClip != null)
             {
                 // Cria o AudioSource persistente na primeira vez (reutilizado para interromper o swing anterior)
@@ -678,6 +700,7 @@ public class PrimaryAttackKnife : MonoBehaviour
                 axeSwingAudioSource.pitch = Random.Range(0.93f, 1.07f);
                 axeSwingAudioSource.volume = axeSwingAirVolume;
                 axeSwingAudioSource.Play();
+                Debug.Log($"[SwingSFX] ✅ Tocando Swing_{comboStep:D2} ({swingClip.name})");
             }
         }
 
