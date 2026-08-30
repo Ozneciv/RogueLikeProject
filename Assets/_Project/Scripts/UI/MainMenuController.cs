@@ -23,6 +23,7 @@ public class MainMenuController : MonoBehaviour
     public void OnPlayClicked()
     {
         Time.timeScale = 1f;
+        PlayerHealth.shouldPlayWakeUpAnimation = true;
         SceneManager.LoadScene(playSceneName);
     }
 

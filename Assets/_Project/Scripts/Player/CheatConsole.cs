@@ -230,6 +230,37 @@ public class CheatConsole : MonoBehaviour
                 }
             }
         }
+        else if (string.Equals(command, "allmobs", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "spawnall", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "mobs", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "mobsall", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "showcase", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "bichos", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "todosmobs", System.StringComparison.OrdinalIgnoreCase))
+        {
+            RoomController.forceAllMobsMode = true;
+            int spawned = RoomController.SpawnAllMobsNow();
+
+            string statusText = $"MODO TODOS OS MOBS ATIVADO!\n{spawned} bichos spawnados na sala!";
+            Debug.Log($"💻 CHEAT: {statusText}");
+
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso(statusText);
+            }
+        }
+        else if (string.Equals(command, "togglemobs", System.StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(command, "normalmobs", System.StringComparison.OrdinalIgnoreCase))
+        {
+            RoomController.forceAllMobsMode = !RoomController.forceAllMobsMode;
+            string statusText = RoomController.forceAllMobsMode ? "Modo Todos os Mobs: ATIVADO!" : "Modo Todos os Mobs: DESATIVADO (Normal)";
+            Debug.Log($"💻 CHEAT: {statusText}");
+
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso(statusText);
+            }
+        }
         else if (string.Equals(command, "recursos", System.StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(command, "allitems", System.StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(command, "giveall", System.StringComparison.OrdinalIgnoreCase) ||

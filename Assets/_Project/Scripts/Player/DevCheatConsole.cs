@@ -191,13 +191,35 @@ public class DevCheatConsole : MonoBehaviour
         {
             HealPlayer();
         }
+        else if (cmd == "allmobs" || cmd == "spawnall" || cmd == "mobs" || cmd == "mobsall" || cmd == "showcase" || cmd == "bichos" || cmd == "5")
+        {
+            RoomController.forceAllMobsMode = true;
+            int spawned = RoomController.SpawnAllMobsNow();
+            Log($"<color=#FF5555>[ALL MOBS]</color> Modo Todos os Mobs Ativado! ({spawned} inimigos spawnados)");
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso($"MODO TODOS OS MOBS ATIVADO!\n{spawned} bichos spawnados!");
+            }
+        }
+        else if (cmd == "togglemobs" || cmd == "normalmobs")
+        {
+            RoomController.forceAllMobsMode = !RoomController.forceAllMobsMode;
+            string status = RoomController.forceAllMobsMode ? "ATIVADO" : "DESATIVADO";
+            Log($"<color=#FF5555>[ALL MOBS]</color> Modo Todos os Mobs: {status}");
+            if (EptinhoPopupController.instancia != null)
+            {
+                EptinhoPopupController.instancia.MostrarPopupAviso($"Modo Todos os Mobs: {status}");
+            }
+        }
         else if (cmd == "help" || cmd == "?")
         {
             Log("Comandos disponíveis:");
+            Log(" • allmobs / spawnall   -> Spawnar 1 de cada bicho e ativar modo de todos os mobs");
             Log(" • allitems / recursos  -> Dar +999 de todos os materiais");
             Log(" • unlockall / equip    -> Destravar todas as melhorias");
             Log(" • orbs / money         -> Dar +99.999 Orbs");
             Log(" • heal / god           -> Curar o player ao máximo");
+            Log(" • togglemobs           -> Alternar modo Todos os Mobs ligado/desligado");
         }
         else
         {

@@ -84,6 +84,8 @@ public class PlayerHealth : MonoBehaviour
     private AudioSource heartbeatSource;
     private bool isHeartbeatPlaying = false;
 
+    public static bool shouldPlayWakeUpAnimation = false;
+
     void Start()
     {
         playerLayer = gameObject.layer;
@@ -125,18 +127,10 @@ public class PlayerHealth : MonoBehaviour
         // Reset rotação do pai para posição limpa e em pé
         transform.rotation = Quaternion.identity;
 
-        // Restaura o Animator para estado Idle em pé e sem animações de acordar
-        if (playerAnimator != null)
-        {
-            playerAnimator.ResetTrigger("Revive1");
-            playerAnimator.ResetTrigger("Revive2");
-            playerAnimator.ResetTrigger("DeathForward");
-            playerAnimator.ResetTrigger("DeathBackward");
-            playerAnimator.Rebind();
-            playerAnimator.Update(0f);
-        }
+        // Garante que o player esteja perfeitamente alinhado na superfície do chão
+        SnapToGround();
 
-        // Unequip weapon ao renascer na base (player em pé sem arma na mão)
+        // Unequip weapon ao renascer na base (player acorda sem arma na mão)
         Player_WeaponManager weaponManager = GetComponent<Player_WeaponManager>() ?? GetComponentInChildren<Player_WeaponManager>();
         if (weaponManager != null)
         {
@@ -147,6 +141,61 @@ public class PlayerHealth : MonoBehaviour
             playerAttack.hasWeapon = false;
         }
 
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponentInChildren<Animator>();
+        }
+
+        // Restaura o Animator para estado Idle em pé e sem animações de acordar
+        if (playerAnimator != null)
+        {
+            playerAnimator.ResetTrigger("Revive1");
+            playerAnimator.ResetTrigger("Revive2");
+            playerAnimator.ResetTrigger("DeathForward");
+            playerAnimator.ResetTrigger("DeathBackward");
+            playerAnimator.Play("Idle Default State", 0, 0f);
+            playerAnimator.Update(0f);
+        }
+
+        if (shouldPlayWakeUpAnimation)
+        {
+            shouldPlayWakeUpAnimation = false;
+
+            // Bloqueia movimentação durante o acordar (piscar de olhos)
+            if (playerMovement != null) playerMovement.enabled = false;
+            if (playerAttack != null) playerAttack.enabled = false;
+
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = false;
+            }
+
+            // Inicia o efeito de abrir os olhos
+            PlayerWakeUpEffect.TriggerWakeUp(this, () =>
+            {
+                UnlockPlayer();
+            }, heartbeatClip);
+        }
+        else
+        {
+            UnlockPlayer();
+        }
+    }
+
+    private void SnapToGround()
+    {
+        if (Physics.Raycast(transform.position + Vector3.up * 1.5f, Vector3.down, out RaycastHit hit, 5f))
+        {
+            Vector3 pos = transform.position;
+            pos.y = hit.point.y;
+            transform.position = pos;
+        }
+    }
+
+    public void HandleReviveCompletion()
+    {
         UnlockPlayer();
     }
 
@@ -316,7 +365,6 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    public void HandleReviveCompletion() { UnlockPlayer(); }
 
     public void SetPactCorrupted(bool corrupted)
     {

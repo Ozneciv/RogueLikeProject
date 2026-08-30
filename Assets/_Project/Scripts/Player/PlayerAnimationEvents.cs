@@ -75,8 +75,12 @@ public class PlayerAnimationEvents : MonoBehaviour
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
             {
-                healthScript = playerObj.GetComponent<PlayerHealth>();
+                healthScript = playerObj.GetComponent<PlayerHealth>() ?? playerObj.GetComponentInChildren<PlayerHealth>();
             }
+        }
+        if (healthScript == null)
+        {
+            healthScript = Object.FindFirstObjectByType<PlayerHealth>();
         }
         
         if (healthScript != null)

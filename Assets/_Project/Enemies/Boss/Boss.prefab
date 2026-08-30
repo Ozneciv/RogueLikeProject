@@ -145,7 +145,6 @@ GameObject:
   - component: {fileID: -1991061182138122264}
   - component: {fileID: 3900001590433597433}
   - component: {fileID: 2810678485431716362}
-  - component: {fileID: 3115384044589524954}
   m_Layer: 0
   m_Name: Boss
   m_TagString: Boss
@@ -248,6 +247,7 @@ MonoBehaviour:
   stunBeamPrefab: {fileID: 0}
   wideSpinhoPrefab: {fileID: 7936005269762645577, guid: 04a5f360bf41f5e48a96dcd756facd86, type: 3}
   wideSpikeDamage: 45
+  spikeShatterVFXPrefab: {fileID: 0}
   toxicBloodPrefab: {fileID: 4684590844720067136, guid: 35f4515f9e0ed9c40b9f52cb121327bb, type: 3}
   drippingParticlePrefab: {fileID: 7000988831508164087, guid: af4f7b8208cb6f041ad01611d21c2a63, type: 3}
   toxicBloodInterval: 1
@@ -262,13 +262,15 @@ MonoBehaviour:
   teleportHologramMaterial: {fileID: 0}
   teleportHologramAlpha: 0.6
   bossHealthBarPrefab: {fileID: 1715828090872878114, guid: 8573b314ece098040b44500ed0e678f9, type: 3}
+  useRootMotion: 1
   showDebugLog: 1
+  alwaysFacePlayerInSandbox: 1
+  playerTransform: {fileID: 0}
   allHandHitboxes: []
   isExecutingCombo: 0
   maxPoise: 100
   currentPoise: 100
   poiseRegenRate: 12
-  useRootMotionOnSprint: 0
   turnSmoothSpeed: 8.5
   trackingCutoffWindow: 0.4
   defaultHitstopDuration: 0.06
@@ -435,21 +437,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &3115384044589524954
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef45f539d81b8dd46ade09db06ff1862, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossAnimationTester
-  enableBossAI: 0
-  bossController: {fileID: 4966253884742131004}
-  animator: {fileID: 7172075124191138545}
 --- !u!1 &301648984676694571
 GameObject:
   m_ObjectHideFlags: 0
