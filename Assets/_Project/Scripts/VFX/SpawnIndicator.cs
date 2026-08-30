@@ -2,11 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// Indicador visual premium de spawn de inimigos.
-/// Apresenta múltiplos anéis concêntricos (de mira, de carga e ondulado de energia)
-/// que pulsam, giram em direções opostas, e aceleram junto com partículas espiraladas
-/// em direção ao momento do spawn (pico/flash).
+/// Suporta tanto o prefab de VFX com partículas (Magic Circle / Vórtice de Invocação)
+/// quanto fallback procedural via LineRenderer para garantir compatibilidade total.
 /// </summary>
-[RequireComponent(typeof(LineRenderer))]
 public class SpawnIndicator : MonoBehaviour
 {
     [Header("Visual Geral")]
@@ -29,14 +27,20 @@ public class SpawnIndicator : MonoBehaviour
     [Tooltip("Frequência de pulsação de intensidade.")]
     public float pulseSpeed = 4f;
 
-    // --- Componentes de Renderização ---
-    private LineRenderer mainRing;   // Anel de contenção principal no raio alvo
-    private LineRenderer outerRing;  // Anel de mira que encolhe de fora para dentro
-    private LineRenderer wavyRing;   // Anel interno ondulado que mostra acúmulo de energia
-    private LineRenderer innerRing;  // Pequeno anel interno rotatório
-    private LineRenderer centerBeam; // Pilar de energia vertical central
+    // --- Componentes Prefab VFX ---
+    private bool hasPrefabVFX = false;
+    private ParticleSystem[] childParticleSystems;
+    private Light childLight;
+    private float initialLightIntensity = 1f;
+
+    // --- Componentes Procedurais (Fallback) ---
+    private LineRenderer mainRing;
+    private LineRenderer outerRing;
+    private LineRenderer wavyRing;
+    private LineRenderer innerRing;
+    private LineRenderer centerBeam;
     private ParticleSystem sparks;
-    private ParticleSystem centerGeyser; // Geyser de partículas subindo no centro
+    private ParticleSystem centerGeyser;
 
     // --- Internos ---
     private float time = 0f;
@@ -44,13 +48,32 @@ public class SpawnIndicator : MonoBehaviour
 
     void Awake()
     {
-        // Se as cores forem os valores padrão antigos (roxo/ciano), substitui pelos novos quentes
+        // 1. Verifica se já possui sistemas de partículas pré-configurados no prefab (Vórtice Magic Circle)
+        childParticleSystems = GetComponentsInChildren<ParticleSystem>(true);
+        childLight = GetComponentInChildren<Light>(true);
+        if (childLight != null)
+            initialLightIntensity = childLight.intensity;
+
+        if (childParticleSystems != null && childParticleSystems.Length > 0)
+        {
+            hasPrefabVFX = true;
+
+            // Desativa qualquer LineRenderer no objeto raiz para não poluir ou duplicar o VFX
+            LineRenderer rootLr = GetComponent<LineRenderer>();
+            if (rootLr != null) rootLr.enabled = false;
+            
+            MeshRenderer rootMr = GetComponent<MeshRenderer>();
+            if (rootMr != null) rootMr.enabled = false;
+
+            return;
+        }
+
+        // 2. Fallback procedural caso instanciado como objeto vazio sem prefab
         if (glowColor == new Color(0.55f, 0.1f, 0.9f, 1f))
             glowColor = new Color(0.95f, 0.35f, 0.05f, 1f);
         if (peakColor == new Color(0.15f, 0.85f, 1f, 1f))
             peakColor = new Color(1.0f, 0.85f, 0.1f, 1f);
 
-        // Cria material aditivo compatível com URP e Standard para efeito de Glow/Neon
         Shader additiveShader = Shader.Find("Legacy Shaders/Particles/Additive");
         if (additiveShader == null)
         {
@@ -67,48 +90,56 @@ public class SpawnIndicator : MonoBehaviour
         time += Time.deltaTime;
         float progress = Mathf.Clamp01(time / duration);
 
-        // Acelera a pulsação e a rotação à medida que se aproxima do final (100% de carga)
+        // --- MODO PREFAB VFX (Vórtice & Magic Circle) ---
+        if (hasPrefabVFX)
+        {
+            // Pulsação dinâmica e aceleração da luz
+            if (childLight != null)
+            {
+                float pulseFreq = pulseSpeed * Mathf.Lerp(1f, 3f, progress);
+                float pulse = (Mathf.Sin(time * pulseFreq) + 1f) * 0.5f;
+                float flashBonus = progress > 0.88f ? Mathf.Lerp(1f, 3.5f, (progress - 0.88f) / 0.12f) : 1f;
+                childLight.intensity = initialLightIntensity * (0.8f + pulse * 0.4f) * flashBonus;
+            }
+            return;
+        }
+
+        // --- MODO PROCEDURAL FALLBACK ---
         float currentRotationSpeed = rotationSpeed * Mathf.Lerp(1f, 6f, progress);
         float currentPulseSpeed = pulseSpeed * Mathf.Lerp(1f, 3f, progress);
-        
-        // Pulso oscilante (0 a 1)
-        float pulse = (Mathf.Sin(time * currentPulseSpeed) + 1f) * 0.5f;
+        float p = (Mathf.Sin(time * currentPulseSpeed) + 1f) * 0.5f;
 
-        // Cor dinâmica interpolada (fica mais ciano/elétrica perto do spawn)
         Color currentColor = Color.Lerp(glowColor, peakColor, progress);
-        
-        // Efeito de flash extremo nos últimos 10% da duração
         if (progress > 0.9f)
         {
             float flashT = (progress - 0.9f) / 0.1f;
             currentColor = Color.Lerp(currentColor, Color.white, flashT);
         }
 
-        // --- 1. Desenho do Anel de Mira Externo (Encolhe até o raio alvo) ---
-        // Nasce 2x maior e converge para o tamanho certo nos primeiros 40% do tempo
+        // 1. Anel de Mira Externo
         float outerProgress = Mathf.Clamp01(progress / 0.40f);
         float outerR = Mathf.Lerp(radius * 2.0f, radius, outerProgress);
         Color outerColor = currentColor;
         outerColor.a = Mathf.Lerp(0f, 1f, outerProgress) * (1f - progress * 0.3f);
-        DrawCircle(outerRing, outerR, 0.05f + pulse * 0.04f, outerColor, time * currentRotationSpeed);
+        DrawCircle(outerRing, outerR, 0.05f + p * 0.04f, outerColor, time * currentRotationSpeed);
 
-        // --- 2. Desenho do Anel Principal (Fixo no chão) ---
+        // 2. Anel Principal Fixo
         Color mainColor = currentColor;
-        mainColor.a = Mathf.Lerp(0f, 0.9f, progress * 4f); // Surge rápido
-        float mainWidth = Mathf.Lerp(0.06f, 0.14f, pulse);
+        mainColor.a = Mathf.Lerp(0f, 0.9f, progress * 4f);
+        float mainWidth = Mathf.Lerp(0.06f, 0.14f, p);
         DrawCircle(mainRing, radius, mainWidth, mainColor, -time * (currentRotationSpeed * 0.3f));
 
-        // --- 3. Desenho do Anel Ondulado (Wavy / Energia instável) ---
+        // 3. Anel Ondulado
         Color wavyColor = currentColor * 0.7f;
-        wavyColor.a = progress; // Fica mais evidente com o tempo
+        wavyColor.a = progress;
         DrawCircle(wavyRing, radius * 0.75f, 0.05f, wavyColor, time * (currentRotationSpeed * 1.5f), true, progress);
 
-        // --- 4. Desenho do Anel Interno (Gira rápido na direção oposta) ---
-        Color innerColor = Color.Lerp(glowColor, peakColor, pulse);
+        // 4. Anel Interno
+        Color innerColor = Color.Lerp(glowColor, peakColor, p);
         innerColor.a = Mathf.Lerp(0.2f, 0.8f, progress);
         DrawCircle(innerRing, radius * 0.35f, 0.04f, innerColor, -time * (currentRotationSpeed * 2f));
 
-        // --- 5. Desenho do Pilar de Energia Central (Cresce verticalmente e expande) ---
+        // 5. Pilar Central
         if (centerBeam != null)
         {
             centerBeam.startColor = currentColor;
@@ -122,22 +153,19 @@ public class SpawnIndicator : MonoBehaviour
             centerBeam.SetPosition(1, new Vector3(0f, 3.5f * progress, 0f));
         }
 
-        // --- 6. Controle Dinâmico das Partículas ---
+        // 6. Partículas Procedurais
         if (sparks != null)
         {
             var emission = sparks.emission;
-            // Taxa de faíscas aumenta conforme carrega
             emission.rateOverTime = Mathf.Lerp(15f, 70f, progress);
 
             var main = sparks.main;
-            // Partículas se movem mais rápido no final
             main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f * Mathf.Lerp(1f, 2.5f, progress));
         }
 
         if (centerGeyser != null)
         {
             var emission = centerGeyser.emission;
-            // Erupção de partículas aumenta exponencialmente conforme chega perto do spawn
             emission.rateOverTime = Mathf.Lerp(25f, 130f, Mathf.Pow(progress, 2.2f));
 
             var main = centerGeyser.main;
@@ -145,31 +173,23 @@ public class SpawnIndicator : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // INICIALIZAÇÃO DE COMPONENTES
-    // =========================================================
-
     void BuildRings()
     {
-        // Anel principal (GameObject raiz com LineRenderer)
         mainRing = GetComponent<LineRenderer>();
+        if (mainRing == null) mainRing = gameObject.AddComponent<LineRenderer>();
         SetupLineRenderer(mainRing);
 
-        // Anel externo (mira)
         outerRing = CreateChildRing("OuterRing");
-        // Anel ondulado (carregamento de energia)
         wavyRing = CreateChildRing("WavyRing");
-        // Anel interno
         innerRing = CreateChildRing("InnerRing");
-        // Pilar central vertical
         centerBeam = CreateChildRing("CenterBeam");
         centerBeam.loop = false;
         centerBeam.positionCount = 2;
     }
 
-    LineRenderer CreateChildRing(string name)
+    LineRenderer CreateChildRing(string ringName)
     {
-        GameObject child = new GameObject(name);
+        GameObject child = new GameObject(ringName);
         child.transform.SetParent(transform, false);
         child.transform.localPosition = Vector3.zero;
         child.transform.localRotation = Quaternion.identity;
@@ -201,7 +221,7 @@ public class SpawnIndicator : MonoBehaviour
         main.startLifetime   = new ParticleSystem.MinMaxCurve(0.4f, 0.9f);
         main.startSpeed      = new ParticleSystem.MinMaxCurve(1.0f, 2.5f);
         main.startSize       = new ParticleSystem.MinMaxCurve(0.04f, 0.12f);
-        main.gravityModifier = -0.3f; // Sobem flutuando como brasas
+        main.gravityModifier = -0.3f;
         main.maxParticles    = 100;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
 
@@ -209,14 +229,12 @@ public class SpawnIndicator : MonoBehaviour
         emission.enabled = true;
         emission.rateOverTime = 15f;
 
-        // Emite a partir de uma borda circular fina
         var shape = sparks.shape;
         shape.enabled = true;
         shape.shapeType = ParticleSystemShapeType.Circle;
         shape.radius = radius * 0.9f;
         shape.radiusThickness = 0.05f;
 
-        // Comportamento estético das partículas (Cores & Tamanho)
         var sizeOverLifetime = sparks.sizeOverLifetime;
         sizeOverLifetime.enabled = true;
         AnimationCurve sizeCurve = new AnimationCurve();
@@ -243,7 +261,6 @@ public class SpawnIndicator : MonoBehaviour
         );
         colorOverLifetime.color = grad;
 
-        // Ruído orgânico tridimensional para simular calor ondulante/espir
         var noise = sparks.noise;
         noise.enabled = true;
         noise.strength = 0.6f;
@@ -256,7 +273,6 @@ public class SpawnIndicator : MonoBehaviour
 
         sparks.Play();
 
-        // Geyser Central (fountain of energy/dust shooting up from center)
         GameObject geyserObj = new GameObject("CenterGeyser");
         geyserObj.transform.SetParent(transform, false);
         geyserObj.transform.localPosition = new Vector3(0f, 0.02f, 0f);
@@ -321,10 +337,6 @@ public class SpawnIndicator : MonoBehaviour
         centerGeyser.Play();
     }
 
-    // =========================================================
-    // DESENHO GEOMÉTRICO DOS CÍRCULOS
-    // =========================================================
-
     void DrawCircle(LineRenderer lr, float r, float width, Color color, float rotationAngle, bool isWavy = false, float progress = 0f)
     {
         if (lr == null) return;
@@ -343,7 +355,6 @@ public class SpawnIndicator : MonoBehaviour
             float currentR = r;
             if (isWavy)
             {
-                // A distorção ondulatória aumenta com o progresso do tempo e pulsação
                 float waveFrequency = 10f;
                 float waveAmplitude = 0.08f * progress;
                 currentR += Mathf.Sin(angleRad * waveFrequency + time * 15f) * waveAmplitude;
@@ -352,7 +363,6 @@ public class SpawnIndicator : MonoBehaviour
             float x = Mathf.Cos(angleRad) * currentR;
             float z = Mathf.Sin(angleRad) * currentR;
             
-            // Desenha rente ao chão (3cm acima do plano Y para evitar Z-fighting)
             lr.SetPosition(i, new Vector3(x, 0.03f, z));
         }
     }

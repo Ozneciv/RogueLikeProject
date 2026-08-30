@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: tuner_lens_t2
   itemName: Lente Ressonante (T2)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e814269d40c061447bad461962623a2a, type: 3}
   tier: 1
   enemySource: Crystal Tuner
+  returnsToBase: 0
   recycleEssenceValue: 72
   infusionEssenceCost: 180
   itemAttributes:

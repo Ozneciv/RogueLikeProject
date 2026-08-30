@@ -88,6 +88,13 @@ public class ShardSwarmHealth : MonoBehaviour
             }
             if (healthBarFill != null) healthBarFill.color = normalColor;
             healthBarSlider.gameObject.SetActive(false);
+
+            // Garante que o Canvas da barra de vida encare a câmera fixo sem girar
+            Canvas parentCanvas = healthBarSlider.GetComponentInParent<Canvas>();
+            if (parentCanvas != null && parentCanvas.GetComponent<FaceCamera>() == null)
+            {
+                parentCanvas.gameObject.AddComponent<FaceCamera>();
+            }
         }
 
         UpdateHealthBar();
@@ -134,7 +141,29 @@ public class ShardSwarmHealth : MonoBehaviour
         if (isInvulnerable) return;
         if (CurrentHealth <= 0) return;
 
-        if (isBuffed) damage = Mathf.RoundToInt(damage * 0.5f);
+        if (shardSwarmAI == null)
+        {
+            shardSwarmAI = GetComponent<ShardSwarm_AI>() ?? GetComponentInChildren<ShardSwarm_AI>() ?? GetComponentInParent<ShardSwarm_AI>();
+        }
+
+        if (shardSwarmAI != null)
+        {
+            float mult = shardSwarmAI.GetCurrentDamageMultiplier();
+            damage = Mathf.RoundToInt(damage * mult);
+            if (mult > 1.0f)
+            {
+                isCritical = true; // Exibe Dano Crítico ao acertar o Núcleo EXPOSTO!
+            }
+            else
+            {
+                // Dispara a ativação do holograma 'Escudo' ao receber dano no modo protegido!
+                shardSwarmAI.FlashShieldVisual();
+            }
+        }
+        else if (isBuffed)
+        {
+            damage = Mathf.RoundToInt(damage * 0.5f);
+        }
 
         CurrentHealth -= damage;
 
@@ -191,6 +220,11 @@ public class ShardSwarmHealth : MonoBehaviour
 
     private void Die()
     {
+        if (shardSwarmAI != null)
+        {
+            shardSwarmAI.DestroyAllSpikes();
+        }
+
         // Se um override foi definido (ex: ShardSwarm_AI controla o split),
         // chama o callback e retorna sem executar a lógica padrão.
         if (onDeathOverride != null)

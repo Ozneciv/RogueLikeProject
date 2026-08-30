@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5809795868433124743
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1208567150296849268}
+  - component: {fileID: 6090640333953327935}
+  m_Layer: 0
+  m_Name: EptinhoPopUp
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1208567150296849268
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5809795868433124743}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -16.60405, y: 0, z: 6.72028}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6090640333953327935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5809795868433124743}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9ac40b0e3aae494aadb54e117819293, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EptinhoPopupController
+  popupUI: {fileID: 0}
+  imagemDoItem: {fileID: 0}
+  textoDoItem: {fileID: 0}
+  autoResizePanel: 1
+  minPanelWidth: 320
+  maxPanelWidth: 750
+  minPanelHeight: 95
+  maxPanelHeight: 450
+  paddingX: 25
+  paddingY: 20
+  panelWidth: 620
+  panelHeight: 250
+  marginX: -40
+  marginY: -40
+  panelColor: {r: 0.23, g: 0.28, b: 0.7, a: 0.5}
+  borderColor: {r: 0.52, g: 0.45, b: 0.15, a: 0.5}
+  borderThickness: 20
+  eptinhoNormalSprite: {fileID: -1032455289, guid: 58b757ba0be671d49a5dc82c592c0c10, type: 3}
+  eptinhoTensoSprite: {fileID: 1960042803, guid: eb2dc13b79fdb4d48b789d791729681d, type: 3}
+  eptinhoMedoSprite: {fileID: 1370882292, guid: fc7b01b9b5b97c24188dc3990daa4975, type: 3}
+  portraitSize: 192
+  portraitMarginLeft: 0
+  portraitMarginRight: 70
+  portraitBgColor: {r: 0.08, g: 0.05, b: 0.18, a: 0.95}
+  portraitBorderColor: {r: 0.62, g: 0.38, b: 0.92, a: 1}
+  textFontSize: 40
+  textColor: {r: 0.72, g: 0.76, b: 0.78, a: 1}
+  previewPermanente: 0

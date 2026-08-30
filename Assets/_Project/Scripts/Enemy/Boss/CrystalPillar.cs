@@ -1,83 +1,100 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Pilar de Cristal destrutível (Fase 1 do Boss - Mestre do Solo).
+/// Integrado ao sistema de dano (DummyHealth) para registrar Hit Impact VFX da arma,
+/// números de dano flutuante, flash de material e explosão de estilhaços ao quebrar.
+/// </summary>
+[RequireComponent(typeof(DummyHealth))]
 public class CrystalPillar : MonoBehaviour
 {
-    [Header("Configuração")]
-    public int vida = 3; 
-    public string tagDoAtaque = "Untagged"; 
+    [Header("Configuração de Vida")]
+    public int vidaMax = 30; 
 
-    [Header("Feedback Visual")]
+    [Header("Feedback Visual & VFX")]
     public Renderer meshRenderer;
-    public Color corDeDano = Color.white;
+    public Color corDeDano = new Color(2f, 2f, 2f, 1f); // Piscar Branco Brilhante
+    [Tooltip("Prefab de poeira/estilhaços ao receber cada golpe.")]
+    public GameObject hitDustVFX;
+    [Tooltip("Prefab de explosão/estilhaçamento de cristal ao ser totalmente destruído.")]
+    public GameObject shatterDebrisVFX;
+
+    private DummyHealth dummyHealth;
     private Color corOriginal;
+    private int vidaAnterior;
     private bool piscando = false;
+
+    private void Awake()
+    {
+        dummyHealth = GetComponent<DummyHealth>();
+        if (dummyHealth != null)
+        {
+            dummyHealth.maxHealth = vidaMax;
+            dummyHealth.ResetHealth();
+            dummyHealth.onDeathOverride += DestruirPilar;
+            vidaAnterior = dummyHealth.CurrentHealth;
+        }
+
+        if (meshRenderer == null) meshRenderer = GetComponentInChildren<Renderer>();
+        if (meshRenderer != null && meshRenderer.material.HasProperty("_Color"))
+        {
+            corOriginal = meshRenderer.material.color;
+        }
+    }
 
     private void Start()
     {
-        if (meshRenderer == null) meshRenderer = GetComponentInChildren<Renderer>();
-        if (meshRenderer != null) corOriginal = meshRenderer.material.color;
+        // Garante que o colisor do pilar seja sólido para dar impacto físico no golpe
+        Collider col = GetComponent<Collider>() ?? GetComponentInChildren<Collider>();
+        if (col != null) col.isTrigger = false;
     }
 
-    // O Pilar detecta o impacto físico sozinho
-    private void OnCollisionEnter(Collision collision)
+    private void Update()
     {
-        if (EhAtaqueValido(collision.gameObject))
+        if (dummyHealth == null || piscando) return;
+
+        // Se a vida reduziu por qualquer ataque do jogador
+        if (dummyHealth.CurrentHealth < vidaAnterior)
         {
-            ReceberDano(1);
+            vidaAnterior = dummyHealth.CurrentHealth;
+            if (meshRenderer != null)
+            {
+                StartCoroutine(EfeitoPiscarDano());
+            }
+
+            if (hitDustVFX != null)
+            {
+                Instantiate(hitDustVFX, transform.position + Vector3.up * 1.2f, Quaternion.identity);
+            }
         }
     }
 
-    // Caso o ataque do jogador seja um Trigger (transponível)
-    private void OnTriggerEnter(Collider other)
+    private void DestruirPilar()
     {
-        if (EhAtaqueValido(other.gameObject))
+        // Efeito de estilhaçamento de cristal ao quebrar o pilar
+        if (shatterDebrisVFX != null)
         {
-            ReceberDano(1);
-        }
-    }
-
-    // Verifica se quem bateu foi o player ou a arma do player
-    private bool EhAtaqueValido(GameObject obj)
-    {
-        // Se bater explicitamente com a tag configurada (ex: "Player" ou "Weapon")
-        if (!string.IsNullOrEmpty(tagDoAtaque) && tagDoAtaque != "Untagged" && obj.CompareTag(tagDoAtaque))
-            return true;
-            
-        // Se for o próprio player (corpo ou dash)
-        if (obj.CompareTag("Player"))
-            return true;
-
-        // Se for a arma do player (tem o script WeaponHitbox)
-        if (obj.GetComponent<WeaponHitbox>() != null)
-            return true;
-
-        return false;
-    }
-
-    private void ReceberDano(int dano)
-    {
-        vida -= dano;
-
-        // Feedback de impacto visual rápido (Piscar)
-        if (meshRenderer != null && !piscando) 
-        {
-            StartCoroutine(EfeitoPiscarDano());
+            Instantiate(shatterDebrisVFX, transform.position + Vector3.up * 1.5f, Quaternion.identity);
         }
 
-        // Destrói estritamente ESTE pilar quando a vida zera
-        if (vida <= 0)
-        {
-            Destroy(gameObject); 
-        }
+        Destroy(gameObject);
     }
 
     private IEnumerator EfeitoPiscarDano()
     {
         piscando = true;
-        meshRenderer.material.color = corDeDano;
-        yield return new WaitForSeconds(0.1f); // Duração do flash branco
-        meshRenderer.material.color = corOriginal;
+        if (meshRenderer != null && meshRenderer.material.HasProperty("_Color"))
+        {
+            meshRenderer.material.color = corDeDano;
+        }
+
+        yield return new WaitForSeconds(0.12f);
+
+        if (meshRenderer != null && meshRenderer.material.HasProperty("_Color"))
+        {
+            meshRenderer.material.color = corOriginal;
+        }
         piscando = false;
     }
 }

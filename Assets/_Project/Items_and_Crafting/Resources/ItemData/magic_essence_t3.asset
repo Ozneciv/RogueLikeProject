@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: magic_essence_t3
   itemName: "Ess\xEAncia M\xE1gica (T3)"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 06e237e88e4b00846b67deff2295f997, type: 3}
   tier: 2
   enemySource: Magic Crystal
+  returnsToBase: 0
   recycleEssenceValue: 120
   infusionEssenceCost: 300
   itemAttributes:

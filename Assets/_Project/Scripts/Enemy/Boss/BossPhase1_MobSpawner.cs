@@ -91,7 +91,10 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     [Tooltip("Tempo que os mobs levam para emergir do chão (segundos).")]
     public float emergeTime = 0.6f;
 
-    [Header("Toggles de Triggers")]
+    [Header("Modo Teste Solo (Sem Mobs)")]
+    [Tooltip("Quando ativado via Cheat Console (bosssolo), desativa totalmente o spawn de mobs na luta do boss para testes isolados.")]
+    public static bool isBossSoloMode = false;
+
     [Tooltip("Habilita spawn de mobs após ataques de prisão.")]
     public bool enablePostPrisonSpawn = true;
 
@@ -100,6 +103,21 @@ public class BossPhase1_MobSpawner : MonoBehaviour
 
     [Tooltip("Habilita spawn de mobs como contra-ataque.")]
     public bool enableCounterAttackSpawn = true;
+
+    public static void SetBossSoloMode(bool solo)
+    {
+        isBossSoloMode = solo;
+        Debug.Log($"💻 [BOSS SOLO MODE] Modo Solo do Boss setado para: {isBossSoloMode}");
+
+        if (isBossSoloMode)
+        {
+            BossPhase1_MobSpawner spawner = FindFirstObjectByType<BossPhase1_MobSpawner>();
+            if (spawner != null)
+            {
+                spawner.KillAllMobs();
+            }
+        }
+    }
 
     // =====================================================
     // ESTADO INTERNO
@@ -260,6 +278,8 @@ public class BossPhase1_MobSpawner : MonoBehaviour
     /// </summary>
     public void SpawnWave(WaveType waveType)
     {
+        if (isBossSoloMode) return;
+
         // Permite spawnar mobs durante a Fase 1 OU durante a Refração/Invisibilidade da Fase 2
         BossPhase2_Refraction refraction = GetComponent<BossPhase2_Refraction>();
         bool isRefractingInPhase2 = (refraction != null && refraction.IsRefracting) || (bossController != null && bossController.IsInvisible);

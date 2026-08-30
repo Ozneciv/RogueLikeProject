@@ -35,6 +35,12 @@ public class BossPhaseConfig : ScriptableObject
     [Tooltip("Velocidade base do NavMeshAgent nas fases 1 e 2.")]
     public float baseSpeed = 4.8f;
 
+    [Tooltip("Velocidade de corrida (Sprint) para encurtar distância do jogador rapidamente.")]
+    public float sprintSpeed = 8.5f;
+
+    [Tooltip("Distância mínima até o jogador para o Boss engajar a velocidade de Sprint (em metros).")]
+    public float sprintDistanceThreshold = 5.5f;
+
     [Tooltip("Velocidade de rotação do boss em graus/segundo (agora super ágil: 360°/s).")]
     public float rotationSpeed = 360f;
 

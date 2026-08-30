@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: shard_resonant_t2
   itemName: Fragmento Ressonante (T2)
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d7df19ac8b19bb04b8b772e845e57d8d, type: 3}
   tier: 1
   enemySource: Shard Swarm
+  returnsToBase: 0
   recycleEssenceValue: 72
   infusionEssenceCost: 180
   itemAttributes:

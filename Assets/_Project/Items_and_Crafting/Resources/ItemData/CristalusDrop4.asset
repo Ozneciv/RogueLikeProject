@@ -15,9 +15,10 @@ MonoBehaviour:
   itemId: 04cl
   itemName: "Cabe\xE7a oca"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f16514ce9087e7b4ab9e0de0ec15731e, type: 3}
   tier: 3
   enemySource: Cristalus
+  returnsToBase: 0
   recycleEssenceValue: 168
   infusionEssenceCost: 420
   itemAttributes:

@@ -27,16 +27,30 @@ public class MagicStone_AI : MonoBehaviour
     public float floatSpeed = 1f;
     private float startY;
 
+    [Header("Teleporte")]
+    public float teleportRange = 6f;
+    public float minTeleportDistance = 8f;
+    public float maxTeleportDistance = 14f;
+    public float teleportCooldown = 8f;
+
     [Header("Ataque")]
     public float attackInterval = 5f;
     public float attackTelegraphTime = 2.5f;
 
-    [Header("Teleporte")]
-    public float teleportCooldown = 30f;
-    public float teleportRange = 4f;
-    public float minTeleportDistance = 15f;
-    public float maxTeleportDistance = 20f;
+    [Header("Áudio")]
+    [Tooltip("Som do hover/flutuação (loop constante da pedra flutuando)")]
+    public AudioClip hoverSound;
+    [Tooltip("Volume do som de hover")]
+    [Range(0f, 1f)]
+    public float hoverSoundVolume = 0.4f;
 
+    [Tooltip("Som do raio caindo do céu (Skybeam/Trovão)")]
+    public AudioClip skybeamSound;
+    [Tooltip("Volume do som do raio caindo")]
+    [Range(0f, 1f)]
+    public float skybeamSoundVolume = 0.9f;
+
+    private AudioSource hoverAudioSource;
     private float originalAttackInterval;
     private float originalMoveSpeed;
     private bool isBuffed = false;
@@ -65,6 +79,9 @@ public class MagicStone_AI : MonoBehaviour
         startY = transform.position.y;
 
         if (Random.value > 0.5f) orbitDirection = -1;
+
+        // Configura o som de flutuação/hover constante
+        SetupHoverAudio();
     }
 
     void Update()
@@ -224,6 +241,9 @@ public class MagicStone_AI : MonoBehaviour
         yield return new WaitForSeconds(attackTelegraphTime);
         Destroy(marker); // Garante destruição mesmo se o efeito falhar
 
+        // Toca o som do raio caindo na posição de impacto
+        PlaySkybeamSound(targetPosition);
+
         // Criar o raio e definir o owner para thorns
         GameObject beam = Instantiate(attackBeamPrefab, targetPosition, Quaternion.identity);
         AttackBeam beamScript = beam.GetComponent<AttackBeam>();
@@ -231,5 +251,51 @@ public class MagicStone_AI : MonoBehaviour
         {
             beamScript.owner = gameObject;
         }
+    }
+
+    // =============================================
+    // SISTEMA DE ÁUDIO (Hover & Skybeam)
+    // =============================================
+
+    private void SetupHoverAudio()
+    {
+        if (hoverSound != null)
+        {
+            GameObject hoverObj = new GameObject("Audio_Hover");
+            hoverObj.transform.SetParent(transform, false);
+            hoverAudioSource = hoverObj.AddComponent<AudioSource>();
+            hoverAudioSource.clip = hoverSound;
+            hoverAudioSource.volume = hoverSoundVolume;
+            hoverAudioSource.loop = true;
+            hoverAudioSource.spatialBlend = 1f; // Som 3D
+            hoverAudioSource.minDistance = 3f;
+            hoverAudioSource.maxDistance = 25f;
+            hoverAudioSource.Play();
+        }
+    }
+
+    private void PlaySkybeamSound(Vector3 position)
+    {
+        if (skybeamSound == null) return;
+
+        float pitch = Random.Range(0.95f, 1.05f);
+        PlayClipAtPointWithPitch(skybeamSound, position, pitch, skybeamSoundVolume);
+    }
+
+    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
+    {
+        GameObject audioObj = new GameObject("TempSkybeamAudio");
+        audioObj.transform.position = position;
+        AudioSource aSource = audioObj.AddComponent<AudioSource>();
+        aSource.clip = clip;
+        aSource.pitch = pitch;
+        aSource.volume = volume;
+        aSource.spatialBlend = 1f; // Som 3D
+        aSource.minDistance = 5f;
+        aSource.maxDistance = 40f;
+        aSource.rolloffMode = AudioRolloffMode.Linear;
+        aSource.Play();
+        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
+        Destroy(audioObj, clip.length / safePitch);
     }
 }
