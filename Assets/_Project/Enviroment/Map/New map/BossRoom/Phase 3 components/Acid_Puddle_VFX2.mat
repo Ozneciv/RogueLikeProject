@@ -30,7 +30,6 @@ Material:
   - _WATER_FOAM
   - _WATER_RIPPLES
   - _WATER_SECOND_COLOR
-  - _WATER_VERTEX_WAVES
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -63,7 +62,7 @@ Material:
     - _EnableRipples: 1
     - _EnableSecondColor: 1
     - _EnableSecondFoam: 0
-    - _EnableVertexWaves: 1
+    - _EnableVertexWaves: 0
     - _FoamIntensity: 0.9
     - _FoamScale: 0.001
     - _FoamSpeed: -2
@@ -92,7 +91,7 @@ Material:
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
     - _RippleColor: {r: 1, g: 1, b: 1, a: 1}
     - _SecondFoamColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShallowColor: {r: 0.6462264, g: 0.94274426, b: 1, a: 1}
+    - _ShallowColor: {r: 0.2509804, g: 0.2509804, b: 0.2509804, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &8936590992475540306

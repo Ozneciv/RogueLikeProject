@@ -140,7 +140,6 @@ GameObject:
   - component: {fileID: 7888690823959187624}
   - component: {fileID: 3623146103869598672}
   - component: {fileID: 3724460904401237682}
-  - component: {fileID: 6831200880444395433}
   - component: {fileID: -1991061182138122264}
   - component: {fileID: 3900001590433597433}
   - component: {fileID: 2810678485431716362}
@@ -348,24 +347,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossPhase3Modifiers
   speedMultiplier: 1.4
   attackCooldownMultiplier: 0.5
-  showDebugLog: 1
---- !u!114 &6831200880444395433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 202263891992115952}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 292c5e3549394fc48ac38cd94cc35c83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossPhase3AcidPuddles
-  acidPuddlePrefab: {fileID: 7445730668720387329, guid: ae0c23bf7354a5f45b55b132be0db1ac, type: 3}
-  bossController: {fileID: 4966253884742131004}
-  spawnIntervalMin: 3
-  spawnIntervalMax: 6
-  maxSimultaneousPuddles: 6
   showDebugLog: 1
 --- !u!114 &-1991061182138122264
 MonoBehaviour:
