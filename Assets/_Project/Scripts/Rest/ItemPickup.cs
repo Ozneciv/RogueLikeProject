@@ -59,9 +59,115 @@ public class ItemPickup : MonoBehaviour
         spawnTime = Time.time;
         if (lifetime > 0) Destroy(gameObject, lifetime);
         
+        // Converte qualquer Mesh de Cubo para Esfera (Círculo 3D) automaticamente
+        ConvertCubesToSpheres();
+
         if (!isInitialized)
         {
             RandomizeItemData();
+        }
+    }
+
+    private void ConvertCubesToSpheres()
+    {
+        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>(true);
+        Mesh sphereMesh = null;
+
+        foreach (var mf in meshFilters)
+        {
+            if (mf != null && mf.sharedMesh != null && mf.sharedMesh.name.ToLower().Contains("cube"))
+            {
+                if (sphereMesh == null)
+                {
+                    GameObject tempSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    sphereMesh = tempSphere.GetComponent<MeshFilter>().sharedMesh;
+                    Destroy(tempSphere);
+                }
+                mf.sharedMesh = sphereMesh;
+            }
+        }
+
+        // Garante que nenhum material rosa/magenta apareça nos orbes
+        ApplyCleanMaterialToRenderers();
+    }
+
+    private void ApplyCleanMaterialToRenderers()
+    {
+        ApplyTierColorsToItem();
+    }
+
+    [Header("Luz e Iluminação do Drop")]
+    [Tooltip("Raio de alcance da luz do item no cenário (em metros)")]
+    public float lightRange = 2.0f;
+    [Tooltip("Intensidade mínima da luz na oscilação")]
+    public float minLightIntensity = 1.2f;
+    [Tooltip("Intensidade máxima da luz na oscilação")]
+    public float maxLightIntensity = 1.6f;
+    [Tooltip("Velocidade da oscilação do brilho da luz")]
+    public float lightPulseSpeed = 2.4f;
+
+    private Light cachedPointLight;
+
+    private void ApplyTierColorsToItem()
+    {
+        Shader defaultShader = Shader.Find("Universal Render Pipeline/Lit");
+        if (defaultShader == null) defaultShader = Shader.Find("Standard");
+
+        // Pega a cor exata da raridade (Tier 1 = Branco, Tier 2 = Azul, Tier 3 = Roxo, Tier 4 = Dourado)
+        Color tierColor = Color.white;
+        if (interactable != null && interactable.itemData != null)
+        {
+            tierColor = interactable.itemData.GetTierColor();
+        }
+
+        // 1. Aplica a cor do Tier no material e na emissão dos MeshRenderers da esfera
+        foreach (var r in GetComponentsInChildren<Renderer>(true))
+        {
+            if (r == null || r.gameObject.name.Contains("Text") || r.gameObject.name.Contains("Canvas") || r.gameObject.name.Contains("glow"))
+                continue;
+
+            Material mat = r.material;
+            if (mat == null || mat.name.Contains("Default") || mat.name.Contains("Internal"))
+            {
+                mat = new Material(defaultShader);
+                r.material = mat;
+            }
+
+            mat.color = tierColor;
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", tierColor * 0.7f);
+        }
+
+        // 2. Aplica a cor do Tier na Luz PointLight do item dropado (Ex: CFXR3 Point Light)
+        cachedPointLight = GetComponentInChildren<Light>(true);
+        if (cachedPointLight == null)
+        {
+            GameObject lightGo = new GameObject("TierGlowLight");
+            lightGo.transform.SetParent(transform, false);
+            lightGo.transform.localPosition = Vector3.up * 0.2f;
+            cachedPointLight = lightGo.AddComponent<Light>();
+            cachedPointLight.type = LightType.Point;
+        }
+
+        cachedPointLight.color = tierColor;
+        cachedPointLight.intensity = minLightIntensity;
+        cachedPointLight.range = lightRange;
+        cachedPointLight.enabled = true;
+
+        // 3. Aplica a cor do Tier em Sistemas de Partículas (Rays, Small Stars, CFXR3)
+        ParticleSystem[] particleSystems = GetComponentsInChildren<ParticleSystem>(true);
+        foreach (var ps in particleSystems)
+        {
+            if (ps == null) continue;
+            var main = ps.main;
+            main.startColor = tierColor;
+        }
+
+        // 4. Aplica a cor do Tier na imagem de brilho/glow caso exista
+        if (glowObject != null)
+        {
+            SpriteRenderer glowSr = glowObject.GetComponent<SpriteRenderer>();
+            if (glowSr != null) glowSr.color = new Color(tierColor.r, tierColor.g, tierColor.b, 0.8f);
         }
     }
 
@@ -126,7 +232,6 @@ public class ItemPickup : MonoBehaviour
     {
         if (source == "Minerals")
         {
-            // Minerals: solid items of medium size (represented by a cube)
             // Disable existing MeshRenderers except UI components
             foreach (var r in GetComponentsInChildren<MeshRenderer>())
             {
@@ -135,23 +240,26 @@ public class ItemPickup : MonoBehaviour
                 r.enabled = false;
             }
 
-            // Create primitive cube child
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = "MineralCube";
-            cube.transform.SetParent(transform);
-            cube.transform.localPosition = Vector3.zero;
-            cube.transform.localRotation = Quaternion.identity;
-            cube.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f); // Medium size
+            // Create primitive sphere child (esfera/orbe circular em vez de cubo)
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.name = "MineralSphere";
+            sphere.transform.SetParent(transform);
+            sphere.transform.localPosition = Vector3.zero;
+            sphere.transform.localRotation = Quaternion.identity;
+            sphere.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f); // Tamanho circular proporcional
 
-            // Remove box collider from the created cube to avoid blocking the trigger
-            Collider col = cube.GetComponent<Collider>();
+            // Remove sphere collider from the created sphere to avoid blocking the trigger
+            Collider col = sphere.GetComponent<Collider>();
             if (col != null) Destroy(col);
 
             // Change color to gold/orange mineral color
-            MeshRenderer cubeRenderer = cube.GetComponent<MeshRenderer>();
-            if (cubeRenderer != null)
+            MeshRenderer sphereRenderer = sphere.GetComponent<MeshRenderer>();
+            if (sphereRenderer != null)
             {
-                cubeRenderer.material.color = new Color(0.9f, 0.6f, 0.2f);
+                Color tierColor = interactable != null && interactable.itemData != null ? interactable.itemData.GetTierColor() : new Color(0.9f, 0.6f, 0.2f);
+                sphereRenderer.material.color = tierColor;
+                sphereRenderer.material.EnableKeyword("_EMISSION");
+                sphereRenderer.material.SetColor("_EmissionColor", tierColor * 0.7f);
             }
         }
         else if (source == "Fauna")
@@ -194,10 +302,49 @@ public class ItemPickup : MonoBehaviour
                 light.intensity = 1.8f;
             }
         }
+
+        // Aplica a cor do Tier em todas as luzes e materiais
+        ApplyTierColorsToItem();
+    }
+
+    private Vector3 initialScale;
+    private bool baseScaleSaved = false;
+
+    private void UpdatePulseEffect()
+    {
+        if (!baseScaleSaved)
+        {
+            initialScale = transform.localScale;
+            baseScaleSaved = true;
+        }
+
+        // Animação sutil de respiração: oscila entre 85% e 100% da escala inicial
+        float pulseT = (Mathf.Sin(Time.time * 2.6f) + 1.0f) * 0.5f;
+        float scaleRatio = Mathf.Lerp(0.85f, 1.0f, pulseT);
+        transform.localScale = initialScale * scaleRatio;
+    }
+
+    private void UpdateLightPulse()
+    {
+        if (cachedPointLight == null)
+        {
+            cachedPointLight = GetComponentInChildren<Light>(true);
+        }
+
+        if (cachedPointLight != null)
+        {
+            cachedPointLight.range = lightRange;
+            float lightT = (Mathf.Sin(Time.time * lightPulseSpeed) + 1.0f) * 0.5f;
+            cachedPointLight.intensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, lightT);
+        }
     }
 
     void Update()
     {
+        // Animação sutil de respiração e oscilação de luz (0.8 a 1.2)
+        UpdatePulseEffect();
+        UpdateLightPulse();
+
         // Libera coleta após o delay de spawn
         if (!canBePickedUp && Time.time - spawnTime >= pickupDelay)
         {
