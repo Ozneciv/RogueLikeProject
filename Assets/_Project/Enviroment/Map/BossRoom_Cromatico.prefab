@@ -659,6 +659,18 @@ PrefabInstance:
       propertyPath: arenaSeal
       value: 
       objectReference: {fileID: 9024326483547692222}
+    - target: {fileID: 4966253884742131004, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
+      propertyPath: acidSpitLaunchPoint
+      value: 
+      objectReference: {fileID: 1778388337573712023}
+    - target: {fileID: 4966253884742131004, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
+      propertyPath: acidPuddlePrefabForSpit
+      value: 
+      objectReference: {fileID: 1542574116282849277, guid: d9b983a744ef33748a305b7126949e19, type: 3}
+    - target: {fileID: 4966253884742131004, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
+      propertyPath: acidSpitProjectilePrefab
+      value: 
+      objectReference: {fileID: 1938004916827296771, guid: cfdd103dc750f7d4ab786840aa214b55, type: 3}
     - target: {fileID: 6161191072006833528, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
       propertyPath: spawnIndicatorPrefab
       value: 
@@ -717,6 +729,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
+--- !u!4 &1778388337573712023 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3123084922978259112, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
+  m_PrefabInstance: {fileID: 3745156461445513279}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6916140469749322161 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7782896255564550542, guid: 75c35d8d532f8bd4ca7842741f29b776, type: 3}
