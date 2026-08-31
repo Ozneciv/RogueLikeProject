@@ -51,6 +51,18 @@ public class MerchantUIController : MonoBehaviour
     [Header("Geral")]
     public Button closeButton;
 
+    [Header("🔊 Sons do Mercador")]
+    [Tooltip("Som tocado ao passar o mouse sobre uma carta do pacto.")]
+    [SerializeField] private AudioClip cardHoverClip;
+    [Range(0.0f, 1.0f)]
+    [SerializeField] private float cardHoverVolume = 0.7f;
+
+    [Tooltip("Som de downgrade tocado ao aceitar o Pacto de Sangue.")]
+    [SerializeField] private AudioClip pactAcceptClip;
+    [Range(0.0f, 1.0f)]
+    [SerializeField] private float pactAcceptVolume = 1.0f;
+    private AudioSource audioSource;
+
     [Header("Câmera do Pacto (Ajustes em Tempo Real)")]
     public bool enablePactCamera = true;
     public Vector3 cameraOffset = new Vector3(0f, 0.35f, 2.2f);
@@ -217,6 +229,11 @@ public class MerchantUIController : MonoBehaviour
         if (btnComprarArtefato != null) btnComprarArtefato.onClick.AddListener(OnComprarArtefatoClicked);
 
         EnsurePanelReferences();
+
+        // AudioSource para SFX do Mercador (cria automaticamente se não existir)
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = GetComponentInChildren<AudioSource>(true);
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
 
         if (interactionPrompt != null) interactionPrompt.SetActive(false);
         if (rootPanel != null) rootPanel.SetActive(false);
@@ -410,6 +427,11 @@ public class MerchantUIController : MonoBehaviour
 
             if (btn.GetComponent<MerchantCardHover>() == null)
                 btn.gameObject.AddComponent<MerchantCardHover>();
+
+            // Injeta o som de hover configurado no MerchantUIController para cada carta
+            MerchantCardHover hoverComp = btn.GetComponent<MerchantCardHover>();
+            if (hoverComp != null && cardHoverClip != null)
+                hoverComp.SetHoverAudio(cardHoverClip, cardHoverVolume, audioSource);
         }
     }
 
@@ -497,6 +519,10 @@ public class MerchantUIController : MonoBehaviour
         isRevealingPactCard = false;
         if (pendingPactIndex >= 0)
         {
+            // SFX de downgrade ao aceitar o pacto
+            if (audioSource != null && pactAcceptClip != null)
+                audioSource.PlayOneShot(pactAcceptClip, pactAcceptVolume);
+
             ApplyTarotEffect(pendingPactIndex, pendingHealthCost);
             OnPactCompleted();
         }

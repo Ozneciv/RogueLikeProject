@@ -5,6 +5,7 @@ public class PlayerAnimationEvents : MonoBehaviour
     private PrimaryAttackKnife attackScript;
     private Animator anim;
     private Rigidbody playerRb;
+    private Ultimate_Axe cachedAxeUlt;
 
     private void Awake()
     {
@@ -37,6 +38,24 @@ public class PlayerAnimationEvents : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Busca e faz cache da referência ao Ultimate_Axe na hierarquia do Player.
+    /// </summary>
+    private Ultimate_Axe FindUltimateAxe()
+    {
+        if (cachedAxeUlt != null) return cachedAxeUlt;
+
+        cachedAxeUlt = GetComponentInParent<Ultimate_Axe>() ?? GetComponent<Ultimate_Axe>();
+        if (cachedAxeUlt == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                cachedAxeUlt = player.GetComponentInChildren<Ultimate_Axe>() ?? player.GetComponent<Ultimate_Axe>();
+        }
+
+        return cachedAxeUlt;
     }
 
     public void EnableHitbox()
@@ -99,12 +118,7 @@ public class PlayerAnimationEvents : MonoBehaviour
     public void OnAxeSlamImpact()
     {
         Debug.Log("[PlayerAnimationEvents] Repassando evento 'OnAxeSlamImpact' para o Ultimate_Axe...");
-        Ultimate_Axe axeUlt = GetComponentInParent<Ultimate_Axe>() ?? GetComponent<Ultimate_Axe>();
-        if (axeUlt == null)
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) axeUlt = player.GetComponentInChildren<Ultimate_Axe>() ?? player.GetComponent<Ultimate_Axe>();
-        }
+        Ultimate_Axe axeUlt = FindUltimateAxe();
 
         if (axeUlt != null)
         {
@@ -114,6 +128,38 @@ public class PlayerAnimationEvents : MonoBehaviour
         {
             Debug.LogError("[PlayerAnimationEvents] ERRO: Ultimate_Axe não encontrado no Player!");
         }
+    }
+
+    // ── Ponte de SFX para Animation Events (Ultimate do Machado) ──────
+
+    /// <summary>
+    /// Ponte: Toca o som de carregamento da Ultimate do Machado. Chamado via Animation Event.
+    /// </summary>
+    public void PlayChargeSFX()
+    {
+        Ultimate_Axe axeUlt = FindUltimateAxe();
+        if (axeUlt != null)
+            axeUlt.PlayChargeSFX();
+    }
+
+    /// <summary>
+    /// Ponte: Toca o som de impacto no chão da Ultimate do Machado. Chamado via Animation Event.
+    /// </summary>
+    public void PlayGroundImpactSFX()
+    {
+        Ultimate_Axe axeUlt = FindUltimateAxe();
+        if (axeUlt != null)
+            axeUlt.PlayGroundImpactSFX();
+    }
+
+    /// <summary>
+    /// Ponte: Toca o som de estilhaçamento de cristais da Ultimate do Machado. Chamado via Animation Event.
+    /// </summary>
+    public void PlayCrystalShatterSFX()
+    {
+        Ultimate_Axe axeUlt = FindUltimateAxe();
+        if (axeUlt != null)
+            axeUlt.PlayCrystalShatterSFX();
     }
 
     /// <summary>
