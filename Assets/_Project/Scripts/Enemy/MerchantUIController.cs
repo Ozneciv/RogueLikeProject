@@ -520,8 +520,16 @@ public class MerchantUIController : MonoBehaviour
         if (pendingPactIndex >= 0)
         {
             // SFX de downgrade ao aceitar o pacto
-            if (audioSource != null && pactAcceptClip != null)
-                audioSource.PlayOneShot(pactAcceptClip, pactAcceptVolume);
+            if (pactAcceptClip != null)
+            {
+                GameObject tempAudio = new GameObject("TempPactAudio");
+                AudioSource aSource = tempAudio.AddComponent<AudioSource>();
+                aSource.clip = pactAcceptClip;
+                aSource.volume = pactAcceptVolume;
+                aSource.spatialBlend = 0f; // Som 2D
+                aSource.Play();
+                Destroy(tempAudio, pactAcceptClip.length + 0.1f);
+            }
 
             ApplyTarotEffect(pendingPactIndex, pendingHealthCost);
             OnPactCompleted();

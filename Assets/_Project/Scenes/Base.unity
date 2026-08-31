@@ -1115,6 +1115,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9028890574578618476, guid: 439bea62bc2f06f4e87293ba77d6853a, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2261,14 +2265,14 @@ PrefabInstance:
     - target: {fileID: 3389915105012161388, guid: 744d65fa64009c34da6871835ddff748, type: 3}
       propertyPath: pactAcceptClip
       value: 
-      objectReference: {fileID: 8300000, guid: 57515d99a98fcc444b695c2247390d3d, type: 3}
+      objectReference: {fileID: 8300000, guid: 090a3dbe7b9d7cf4a9c429f5ff091bfb, type: 3}
     - target: {fileID: 3389915105012161388, guid: 744d65fa64009c34da6871835ddff748, type: 3}
       propertyPath: cardHoverVolume
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3389915105012161388, guid: 744d65fa64009c34da6871835ddff748, type: 3}
       propertyPath: pactAcceptVolume
-      value: 0.843
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4570827476114874076, guid: 744d65fa64009c34da6871835ddff748, type: 3}
       propertyPath: m_AnchorMax.y
