@@ -50,17 +50,19 @@ public class MagicStone_AI : MonoBehaviour
     [Range(0f, 1f)]
     public float skybeamSoundVolume = 0.9f;
 
-    private AudioSource hoverAudioSource;
+    private AudioSource audioSource;
     private float originalAttackInterval;
     private float originalMoveSpeed;
     private bool isBuffed = false;
     private float teleportTimer;
     private float attackTimer;
     private Rigidbody rb;
+    
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        audioSource = GetComponent<AudioSource>();
         // Tenta achar o player se não foi atribuído
         if (playerTransform == null)
         {
@@ -253,49 +255,23 @@ public class MagicStone_AI : MonoBehaviour
         }
     }
 
-    // =============================================
-    // SISTEMA DE ÁUDIO (Hover & Skybeam)
-    // =============================================
-
     private void SetupHoverAudio()
     {
-        if (hoverSound != null)
+        if (hoverSound != null && audioSource != null)
         {
-            GameObject hoverObj = new GameObject("Audio_Hover");
-            hoverObj.transform.SetParent(transform, false);
-            hoverAudioSource = hoverObj.AddComponent<AudioSource>();
-            hoverAudioSource.clip = hoverSound;
-            hoverAudioSource.volume = hoverSoundVolume;
-            hoverAudioSource.loop = true;
-            hoverAudioSource.spatialBlend = 1f; // Som 3D
-            hoverAudioSource.minDistance = 3f;
-            hoverAudioSource.maxDistance = 25f;
-            hoverAudioSource.Play();
+            audioSource.clip = hoverSound;
+            audioSource.volume = hoverSoundVolume;
+            audioSource.loop = true;
+            audioSource.Play();
         }
     }
 
     private void PlaySkybeamSound(Vector3 position)
     {
-        if (skybeamSound == null) return;
-
-        float pitch = Random.Range(0.95f, 1.05f);
-        PlayClipAtPointWithPitch(skybeamSound, position, pitch, skybeamSoundVolume);
-    }
-
-    private void PlayClipAtPointWithPitch(AudioClip clip, Vector3 position, float pitch, float volume)
-    {
-        GameObject audioObj = new GameObject("TempSkybeamAudio");
-        audioObj.transform.position = position;
-        AudioSource aSource = audioObj.AddComponent<AudioSource>();
-        aSource.clip = clip;
-        aSource.pitch = pitch;
-        aSource.volume = volume;
-        aSource.spatialBlend = 1f; // Som 3D
-        aSource.minDistance = 5f;
-        aSource.maxDistance = 40f;
-        aSource.rolloffMode = AudioRolloffMode.Linear;
-        aSource.Play();
-        float safePitch = Mathf.Abs(pitch) > 0.01f ? Mathf.Abs(pitch) : 1f;
-        Destroy(audioObj, clip.length / safePitch);
+        if (skybeamSound != null && audioSource != null)
+        {
+            audioSource.pitch = Random.Range(0.95f, 1.05f);
+            audioSource.PlayOneShot(skybeamSound, skybeamSoundVolume);
+        }
     }
 }

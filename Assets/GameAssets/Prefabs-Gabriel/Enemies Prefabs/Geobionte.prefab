@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 8516439253392406912}
   - component: {fileID: 8252332029297462842}
   - component: {fileID: 344258591659258005}
+  - component: {fileID: 6535278829776325022}
   m_Layer: 6
   m_Name: Geobionte
   m_TagString: Untagged
@@ -207,11 +208,22 @@ MonoBehaviour:
   fleeSpeed: 10
   fleeDestroyDistance: 50
   respawnDelay: 30
+  bismutadoWalkingSounds: []
+  bismutadoWalkingSoundVolume: 0.6
+  bismutadoStepInterval: 0.25
+  crystalFieldSounds: []
+  crystalFieldSoundVolume: 0.8
+  bismutadoAttackSounds: []
+  bismutadoAttackSoundVolume: 0.8
   baseColor: {r: 0.03, g: 0.01, b: 0.05, a: 1}
   transformedColor: {r: 0.7, g: 0.3, b: 0.6, a: 1}
   sentinelColor: {r: 0.9, g: 0.2, b: 0.8, a: 1}
   bismutadoModelPrefab: {fileID: 6152432553688559953, guid: b4f63be0b516643478d6dfc372b0fe5a, type: 3}
+  usePrefabOriginalScale: 1
   bismutado3DModelScale: {x: 1, y: 1, z: 1}
+  bismutadoModelOffsetY: 0
+  bismutadoColliderRadius: 1.8
+  bismutadoColliderCenterY: 1.5
 --- !u!114 &344258591659258005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,6 +260,103 @@ MonoBehaviour:
   legDamageAmount: 10
   legDamageCooldown: 0.5
   legDamageRadius: 1
+--- !u!82 &6535278829776325022
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2219830635270719724}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: -3734819211358798770, guid: 109f686ee871606499bb41e6377158b1, type: 2}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &8312534338257933218
 GameObject:
   m_ObjectHideFlags: 0

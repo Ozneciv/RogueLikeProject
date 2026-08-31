@@ -322,13 +322,16 @@ public class BossController : MonoBehaviour
     // =====================================================
 
     void OnDisable()
-    {
-        if (Time.timeScale < 1.0f)
         {
-            Time.timeScale = 1.0f;
-            Time.fixedDeltaTime = 0.02f;
+            // Se o Boss já está morto, a Tela de Vitória assumiu. Não despause o jogo!
+            if (CurrentState == BossState.Dead) return;
+
+            if (Time.timeScale < 1.0f)
+            {
+                Time.timeScale = 1.0f;
+                Time.fixedDeltaTime = 0.02f;
+            }
         }
-    }
 
     void Awake()
     {
@@ -2537,6 +2540,12 @@ public class BossController : MonoBehaviour
             transform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
             yield return null;
         }
+
+        if (VictoryScreenUI.Instance != null)
+        {
+         VictoryScreenUI.Instance.ShowVictoryScreen();
+        }
+
 
         // Destroi o GameObject do boss
         Destroy(gameObject);
