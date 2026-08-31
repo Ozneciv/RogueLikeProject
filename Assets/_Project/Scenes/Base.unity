@@ -1062,11 +1062,11 @@ PrefabInstance:
     - target: {fileID: 3314172046702252266, guid: 439bea62bc2f06f4e87293ba77d6853a, type: 3}
       propertyPath: 'deflectSounds.Array.data[0]'
       value: 
-      objectReference: {fileID: 8300000, guid: a71a46d138802444c915884fed9ffabd, type: 3}
+      objectReference: {fileID: 8300000, guid: 52ae00b4841ea6b49be53f891335f335, type: 3}
     - target: {fileID: 3314172046702252266, guid: 439bea62bc2f06f4e87293ba77d6853a, type: 3}
       propertyPath: 'deflectSounds.Array.data[1]'
       value: 
-      objectReference: {fileID: 8300000, guid: b0936c9915d2bdb489d03a083dc3c0ef, type: 3}
+      objectReference: {fileID: 8300000, guid: 5e03e44a30567254397ff8886f1ad2b5, type: 3}
     - target: {fileID: 3314172046702252266, guid: 439bea62bc2f06f4e87293ba77d6853a, type: 3}
       propertyPath: 'deflectSounds.Array.data[2]'
       value: 
@@ -1246,7 +1246,7 @@ PrefabInstance:
     - target: {fileID: 3618305479678570340, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: e2d6c5ac1668e1542b67d06ea2dc47a8, type: 2}
+      objectReference: {fileID: 9100000, guid: b06cbbe08fe816e41b5cc3db0dc1afa9, type: 2}
     - target: {fileID: 6793213990562782912, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: maxArmor
       value: 30
@@ -3533,6 +3533,14 @@ PrefabInstance:
       propertyPath: m_BoundingSphereOverride.z
       value: 0.18688965
       objectReference: {fileID: 0}
+    - target: {fileID: 3562460375782651029, guid: 930c9fa773f6f3a4394862aeea697bd4, type: 3}
+      propertyPath: 'deflectSounds.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 52ae00b4841ea6b49be53f891335f335, type: 3}
+    - target: {fileID: 3562460375782651029, guid: 930c9fa773f6f3a4394862aeea697bd4, type: 3}
+      propertyPath: 'deflectSounds.Array.data[1]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 5e03e44a30567254397ff8886f1ad2b5, type: 3}
     - target: {fileID: 5682931997705340997, guid: 930c9fa773f6f3a4394862aeea697bd4, type: 3}
       propertyPath: m_BoundingSphereOverride.w
       value: 0.22460938
