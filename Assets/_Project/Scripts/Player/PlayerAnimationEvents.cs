@@ -130,6 +130,12 @@ public class PlayerAnimationEvents : MonoBehaviour
         }
     }
 
+    // ── Ponte de SFX para Animation Events (Combo Primário do Machado) ──────
+    public void PlayAxeSwing1() { FindAttackScript(); if (attackScript != null) attackScript.PlaySwing1(); }
+    public void PlayAxeSwing2() { FindAttackScript(); if (attackScript != null) attackScript.PlaySwing2(); }
+    public void PlayAxeSwing3() { FindAttackScript(); if (attackScript != null) attackScript.PlaySwing3(); }
+    public void PlayAxeSwing4() { FindAttackScript(); if (attackScript != null) attackScript.PlaySwing4(); }
+
     // ── Ponte de SFX para Animation Events (Ultimate do Machado) ──────
 
     /// <summary>

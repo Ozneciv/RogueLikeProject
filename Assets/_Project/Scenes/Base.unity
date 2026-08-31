@@ -1132,6 +1132,22 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: axeSwing1
+      value: 
+      objectReference: {fileID: 8300000, guid: a3feedcdd886b144ab4a79e6b1462d4c, type: 3}
+    - target: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: axeSwing2
+      value: 
+      objectReference: {fileID: 8300000, guid: 008d307cce6a60c48b6572f43c943c44, type: 3}
+    - target: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: axeSwing3
+      value: 
+      objectReference: {fileID: 8300000, guid: f6204551c453c7846ae123c53685bc9c, type: 3}
+    - target: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
+      propertyPath: axeSwing4
+      value: 
+      objectReference: {fileID: 8300000, guid: 6c33346e9ccc302439eceb869f582175, type: 3}
+    - target: {fileID: 399265535294509767, guid: 217bae9f660890143a86775e613ef9a4, type: 3}
       propertyPath: axeHitVolume
       value: 0.4
       objectReference: {fileID: 0}
@@ -3095,7 +3111,7 @@ PrefabInstance:
       objectReference: {fileID: 1460584915}
     - target: {fileID: 9214259655841687398, guid: 9e5721d39f16106429f8a8c3ac74fab0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.23
+      value: -1.4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
